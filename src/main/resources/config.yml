@@ -1,0 +1,173 @@
+# SmartCopperGolems configuration
+#
+# Vanilla copper golems only put an item into a chest that already holds that
+# exact item, or into an empty chest. This plugin adds "groups": a golem may
+# also put an item into a chest that holds other items from the same group.
+#
+# Example: with the "logs" group, a golem carrying birch logs will put them in a
+# chest that already has oak logs in it.
+#
+# Use /smartgolems reload after editing this file.
+
+# How a chest qualifies for a group match:
+#   all - every item in the chest must share a group with the carried item.
+#         This keeps sorted chests tidy: one stray item stops group matching.
+#   any - one item from the same group is enough.
+match-mode: all
+
+# Vanilla golems drop items into any empty chest they find. That can scatter
+# items before the golem reaches the chest where they belong.
+# Set this to false to stop golems from using empty chests. If you do, put one
+# item into each chest to "label" what goes there, and keep a catch-all chest
+# for anything that has no group.
+allow-empty-chests: true
+
+# Log every sort decision to the console. Useful while setting up groups.
+debug: false
+
+# Each group is a list of entries. An item can be in more than one group.
+# Entry formats:
+#   DIAMOND            one item (minecraft:diamond also works)
+#   *_ORE              name pattern; * matches anything
+#   #minecraft:logs    a vanilla or datapack item tag (#logs also works)
+#   @edible            items you can eat
+#   @fuel              items that burn in a furnace
+#   @record            music discs
+groups:
+  logs:
+    - "#minecraft:logs"
+  planks:
+    - "#minecraft:planks"
+  wooden-building:
+    - "#minecraft:wooden_slabs"
+    - "#minecraft:wooden_stairs"
+    - "#minecraft:wooden_fences"
+    - "#minecraft:fence_gates"
+    - "#minecraft:wooden_doors"
+    - "#minecraft:wooden_trapdoors"
+  saplings-and-leaves:
+    - "#minecraft:saplings"
+    - "#minecraft:leaves"
+  flowers:
+    - "#minecraft:flowers"
+  stone:
+    - STONE
+    - COBBLESTONE
+    - MOSSY_COBBLESTONE
+    - DEEPSLATE
+    - COBBLED_DEEPSLATE
+    - GRANITE
+    - DIORITE
+    - ANDESITE
+    - TUFF
+    - CALCITE
+    - BLACKSTONE
+    - BASALT
+    - NETHERRACK
+    - END_STONE
+  dirt-and-sand:
+    - "#minecraft:dirt"
+    - SAND
+    - RED_SAND
+    - GRAVEL
+    - CLAY
+    - CLAY_BALL
+  ores:
+    - "*_ORE"
+    - ANCIENT_DEBRIS
+  ingots-and-gems:
+    - "RAW_*"
+    - "*_INGOT"
+    - "*_NUGGET"
+    - DIAMOND
+    - EMERALD
+    - LAPIS_LAZULI
+    - COAL
+    - CHARCOAL
+    - REDSTONE
+    - QUARTZ
+    - AMETHYST_SHARD
+    - NETHERITE_SCRAP
+  wool-and-carpet:
+    - "#minecraft:wool"
+    - "#minecraft:wool_carpets"
+  colored-blocks:
+    - "*_TERRACOTTA"
+    - TERRACOTTA
+    - "*_CONCRETE"
+    - "*_CONCRETE_POWDER"
+  glass:
+    - GLASS
+    - "*_GLASS"
+    - GLASS_PANE
+    - "*_GLASS_PANE"
+  dyes:
+    - "*_DYE"
+  seeds:
+    - "*_SEEDS"
+  food:
+    - "@edible"
+  mob-drops:
+    - ROTTEN_FLESH
+    - BONE
+    - BONE_MEAL
+    - STRING
+    - SPIDER_EYE
+    - GUNPOWDER
+    - ENDER_PEARL
+    - SLIME_BALL
+    - LEATHER
+    - FEATHER
+    - PHANTOM_MEMBRANE
+    - BLAZE_ROD
+    - GHAST_TEAR
+    - MAGMA_CREAM
+    - INK_SAC
+    - GLOW_INK_SAC
+    - ARROW
+  tools:
+    - "*_PICKAXE"
+    - "*_AXE"
+    - "*_SHOVEL"
+    - "*_HOE"
+    - SHEARS
+    - FLINT_AND_STEEL
+    - FISHING_ROD
+  weapons:
+    - "*_SWORD"
+    - "*_SPEAR"
+    - BOW
+    - CROSSBOW
+    - TRIDENT
+    - MACE
+  armor:
+    - "*_HELMET"
+    - "*_CHESTPLATE"
+    - "*_LEGGINGS"
+    - "*_BOOTS"
+    - SHIELD
+  redstone:
+    - REDSTONE
+    - REDSTONE_TORCH
+    - REDSTONE_BLOCK
+    - REPEATER
+    - COMPARATOR
+    - PISTON
+    - STICKY_PISTON
+    - OBSERVER
+    - HOPPER
+    - DROPPER
+    - DISPENSER
+    - LEVER
+    - "*_BUTTON"
+    - "*_PRESSURE_PLATE"
+    - DAYLIGHT_DETECTOR
+    - TARGET
+  music-discs:
+    - "@record"
+  spawn-eggs:
+    - "*_SPAWN_EGG"
+  potions:
+    - POTION
+    - SPLASH_POTION
+    - LINGERING_POTION
