@@ -72,6 +72,11 @@ groups:
     - "#minecraft:leaves"
   flowers:
     - "#minecraft:flowers"
+  mushrooms:
+    - "#minecraft:mushrooms"
+    - RED_MUSHROOM_BLOCK
+    - BROWN_MUSHROOM_BLOCK
+    - MUSHROOM_STEM
   stone:
     - STONE
     - COBBLESTONE
@@ -85,7 +90,6 @@ groups:
     - CALCITE
     - BLACKSTONE
     - BASALT
-    - NETHERRACK
     - END_STONE
   dirt-and-sand:
     - "#minecraft:dirt"
@@ -97,6 +101,24 @@ groups:
     - CLAY_BALL
   soul:
     - "SOUL_*"
+  amethyst:
+    - "*AMETHYST*"
+  nether:
+    - NETHERRACK
+    - MAGMA_BLOCK
+    - NETHER_WART
+    - "*_WART_BLOCK"
+    - "*_NYLIUM"
+    - "*_FUNGUS"
+    - CRIMSON_ROOTS
+    - WARPED_ROOTS
+    - NETHER_SPROUTS
+    - WEEPING_VINES
+    - TWISTING_VINES
+    - SHROOMLIGHT
+    - "*BASALT"
+    - "*BLACKSTONE*"
+    - "*NETHER_BRICK*"
   ores:
     - "*_ORE"
     - ANCIENT_DEBRIS
@@ -126,6 +148,20 @@ groups:
     - "*_GLASS"
     - GLASS_PANE
     - "*_GLASS_PANE"
+  light-sources:
+    - GLOWSTONE
+    - SEA_LANTERN
+    - SHROOMLIGHT
+    - END_ROD
+    - "*_FROGLIGHT"
+    - "*LANTERN"
+    - TORCH
+    - SOUL_TORCH
+    - COPPER_TORCH
+    - CAMPFIRE
+    - SOUL_CAMPFIRE
+    - CANDLE
+    - "*_CANDLE"
   dyes:
     - "*_DYE"
   seeds:
