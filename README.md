@@ -23,13 +23,37 @@ Groups are defined in `config.yml` using:
 | `#minecraft:logs` | vanilla or datapack item tag             |
 | `@edible`, `@fuel`, `@record` | item properties              |
 
+### Smarter use of empty chests
+
+Vanilla golems walk to the nearest chest they haven't tried and drop their item
+into the first empty chest they reach, often before finding the chest where it
+belongs. They also give up after trying 10 chests, so far-away chests never get
+used.
+
+With `prefer-matching-chests` (on by default), a golem carrying an item first
+looks over every chest in its range: 32 blocks sideways and 8 up or down, in
+loaded chunks. If any chest matches the item (frame label, same item, or same
+group) and has room, the golem walks straight to it. Empty chests are used only
+when no matching chest has room. If the golem hasn't delivered within
+`matching-chest-timeout-seconds` (default 30), for example because the chest is
+walled off, it falls back to vanilla behavior for that item.
+
+### Item frame labels
+
+Hang an item frame (or glow item frame) with an item in it on any side of a
+chest, and golems put **only that exact item** in that chest. A label overrides
+groups and the empty-chest rule. Several frames on one chest allow each framed
+item; empty frames are ignored. Turn this off with `item-frame-labels: false`.
+
 Settings:
 
 - `match-mode: all` (default): every item in the chest must share a group with the
   carried item. A stray item in a chest stops group matching, which keeps
   chests tidy. `any`: one item from the group is enough.
-- `allow-empty-chests: true` (default): vanilla behaviour. Set `false` so golems
-  only fill chests you've "labelled" by putting one item in them.
+- `prefer-matching-chests: true` (default): see above.
+- `matching-chest-timeout-seconds: 30`: when to give up on a matching chest.
+- `allow-empty-chests: true` (default): golems may use empty chests as a last
+  resort. Set `false` so golems only fill chests you've labelled.
 - `debug: true`: logs each sort decision to the console.
 
 ## Commands

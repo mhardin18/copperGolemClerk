@@ -18,6 +18,9 @@ public final class SmartCopperGolems extends JavaPlugin {
     private volatile boolean matchModeAll;
     private volatile boolean allowEmptyChests;
     private volatile boolean debug;
+    private volatile boolean itemFrameLabels;
+    private volatile boolean preferMatchingChests;
+    private volatile long matchingChestTimeoutMillis;
 
     @Override
     public void onEnable() {
@@ -38,6 +41,9 @@ public final class SmartCopperGolems extends JavaPlugin {
         matchModeAll = mode.equals("all");
         allowEmptyChests = config.getBoolean("allow-empty-chests", true);
         debug = config.getBoolean("debug", false);
+        itemFrameLabels = config.getBoolean("item-frame-labels", true);
+        preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
+        matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;
         groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());
         getLogger().info("Loaded " + groups.groupCount() + " item groups (match-mode: " + mode + ").");
     }
@@ -52,6 +58,18 @@ public final class SmartCopperGolems extends JavaPlugin {
 
     boolean allowEmptyChests() {
         return allowEmptyChests;
+    }
+
+    boolean preferMatchingChests() {
+        return preferMatchingChests;
+    }
+
+    long matchingChestTimeoutMillis() {
+        return matchingChestTimeoutMillis;
+    }
+
+    boolean itemFrameLabels() {
+        return itemFrameLabels;
     }
 
     boolean debug() {
