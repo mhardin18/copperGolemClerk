@@ -65,6 +65,8 @@ item-frame-labels: true
 #   [#planks]        an item tag
 # Golems then put only matching items in that chest, like item frame labels.
 # If a word is both a group and an item, the group wins: [stone] = stone group.
+# Group names work singular or plural: [Rail] = rails, [ore] = ores,
+# [light source] = light-sources.
 # Frames and signs on one chest combine: any matching label accepts the item.
 #
 # [Overflow] (any capitalization) makes a catch-all chest: golems put an item
@@ -81,9 +83,12 @@ overflow-before-empty: true
 # now has a home, e.g. ores after you add an [ores] chest. It takes up to 16, like
 # a normal pickup, and sorts them. Items that would just go back to overflow are
 # left alone. If it can't reach the overflow chest within 30 seconds it gives
-# up and waits a minute. Only one golem fetches from an overflow chest at a
-# time, so they don't crowd it. Items it can't deliver go back to that chest.
+# up and waits a minute. Items it can't deliver go back to that chest.
 fetch-from-overflow: true
+
+# How many golems may fetch from one overflow chest at the same time (each takes
+# a different item). Higher empties overflow faster but can crowd the chest.
+fetchers-per-overflow-chest: 2
 
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false

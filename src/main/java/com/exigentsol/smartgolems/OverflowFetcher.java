@@ -27,8 +27,9 @@ import org.bukkit.inventory.ItemStack;
  * anything it would take. It then looks for an overflow chest holding an item
  * that a chest in range would accept (label, exact or group, with room), walks
  * there, and takes up to 16 of it, like a normal pickup. From then on, normal
- * sorting steers it to the item's home. Only one golem fetches from a given
- * overflow chest at a time, so they don't crowd it.
+ * sorting steers it to the item's home. At most fetchers-per-overflow-chest
+ * golems fetch from one overflow chest at a time (each a different item), so
+ * they don't crowd it.
  *
  * Vanilla only lets an empty-handed golem target copper chests, so the walk uses
  * Paper's pathfinder, and the item is handed over when the golem is within reach.
@@ -114,15 +115,16 @@ final class OverflowFetcher {
                 halves.add(HomeFinder.Pos.of(half));
             }
             seen.addAll(halves);
-            if (isBusy(halves)) {
-                continue; // one golem fetches from a chest at a time, like vanilla's queue
+            Set<Material> claimed = claimedIn(halves);
+            if (claimed.size() >= plugin.fetchersPerOverflowChest()) {
+                continue; // limit golems per chest so they don't crowd it
             }
             ChestLabels.Labels labels = ChestLabels.of(inventory, plugin.groups(),
                     plugin.itemFrameLabels(), plugin.signLabels());
             if (!labels.overflow() || inventory.isEmpty()) {
                 continue;
             }
-            Material type = itemWithHome(golem, inventory);
+            Material type = itemWithHome(golem, inventory, claimed);
             if (type != null) {
                 Block block = state.getBlock();
                 fetching.put(golem.getUniqueId(),
@@ -137,22 +139,27 @@ final class OverflowFetcher {
         }
     }
 
-    /** True if another golem is already fetching from this chest. */
-    private boolean isBusy(Set<HomeFinder.Pos> halves) {
+    /** Item types other golems are already fetching from this chest (one golem per item). */
+    private Set<Material> claimedIn(Set<HomeFinder.Pos> halves) {
+        Set<Material> claimed = EnumSet.noneOf(Material.class);
         for (Fetch fetch : fetching.values()) {
             if (halves.contains(fetch.chest())) {
-                return true;
+                claimed.add(fetch.type());
             }
         }
-        return false;
+        return claimed;
     }
 
-    /** First item type in this overflow chest that a chest in range would now accept. */
-    private Material itemWithHome(CopperGolem golem, Inventory overflow) {
+    /**
+     * First item type in this overflow chest that a chest in range would now
+     * accept, skipping items another golem is already fetching.
+     */
+    private Material itemWithHome(CopperGolem golem, Inventory overflow, Set<Material> claimed) {
         Set<Material> seen = EnumSet.noneOf(Material.class);
         List<ItemStack> candidates = new ArrayList<>();
         for (ItemStack stack : overflow.getStorageContents()) {
-            if (stack == null || stack.isEmpty() || !seen.add(stack.getType())) {
+            if (stack == null || stack.isEmpty() || claimed.contains(stack.getType())
+                    || !seen.add(stack.getType())) {
                 continue;
             }
             if (!returns.isHomeless(overflow, stack.getType())) { // skip items returned here as homeless
