@@ -119,7 +119,7 @@ def main(argv):
     r = from_properties(os.path.join(arena.SERVER, "server.properties"))
     log = arena.Log(os.path.join(arena.SERVER, "logs/latest.log"))
     config_before = open(arena.CONFIG).read()
-    r.cmd("smartgolems reload")  # start clean: clears "no home" marks from earlier runs
+    r.cmd("smartcoppergolems reload")  # start clean: clears "no home" marks from earlier runs
 
     parallel = [(i, s) for i, s in chosen if not s["alone"]]
     alone = [(i, s) for i, s in chosen if s["alone"]]
@@ -139,13 +139,13 @@ def main(argv):
                 if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
                     with open(arena.CONFIG, "w") as f:
                         f.write(config_before)
-                    r.cmd("smartgolems reload")
+                    r.cmd("smartcoppergolems reload")
     finally:
         if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
             with open(arena.CONFIG, "w") as f:
                 f.write(config_before)
             print("Restored config.yml.")
-        r.cmd("smartgolems reload")
+        r.cmd("smartcoppergolems reload")
 
     print()
     failed = 0

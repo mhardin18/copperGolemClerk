@@ -1,4 +1,4 @@
-# smartGolems (SmartCopperGolems)
+# smartCopperGolems (SmartCopperGolems)
 
 A Paper plugin (Paper 26.3, Java 25) that makes copper golems sort *similar* items
 together, not just identical ones.
@@ -86,7 +86,7 @@ that, the item is put back into the copper chest it came from (golems can't walk
 copper chests while carrying, so it's moved directly) and marked "no home" there for
 `homeless-retry-minutes` (default 5). Golems take other items first and skip a copper
 chest that has only "no home" items left. Add a home for the item, then
-`/smartgolems reload` to have golems try again right away. Steps count only time the
+`/smartcoppergolems reload` to have golems try again right away. Steps count only time the
 golem is likely active (walking, or a player within the server's entity activation
 range), so golems that Paper pauses far from players don't run out of time, and a
 golem waiting its turn next to a chest that takes its item is never sent back.
@@ -119,10 +119,10 @@ Settings:
 
 ## Commands
 
-Requires `smartgolems.admin` (op by default). Alias `/sg`.
+Requires `smartcoppergolems.admin` (op by default). Alias `/sg`.
 
-- `/smartgolems reload`: reload `config.yml`
-- `/smartgolems check`: show which groups the item in your hand belongs to
+- `/smartcoppergolems reload`: reload `config.yml`
+- `/smartcoppergolems check`: show which groups the item in your hand belongs to
 
 ## Build
 

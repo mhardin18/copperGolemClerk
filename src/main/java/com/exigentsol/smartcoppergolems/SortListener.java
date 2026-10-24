@@ -1,4 +1,4 @@
-package com.exigentsol.smartgolems;
+package com.exigentsol.smartcoppergolems;
 
 import io.papermc.paper.event.entity.ItemTransportingEntitySortEvent;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
@@ -61,7 +61,7 @@ public final class SortListener implements Listener {
         plugin.getServer().getScheduler().runTaskTimer(plugin, tracer::tick, 20, 20);
     }
 
-    /** Forget which items had no home, so golems try them again (after /smartgolems reload). */
+    /** Forget which items had no home, so golems try them again (after /smartcoppergolems reload). */
     void clearHomeless() {
         returns.clear();
     }
