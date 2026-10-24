@@ -1,7 +1,6 @@
 package com.exigentsol.smartgolems;
 
 import java.util.BitSet;
-import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -10,10 +9,12 @@ import org.bukkit.inventory.ItemStack;
 final class ChestMatcher {
 
     enum Kind {
-        /** An item frame on the chest shows this item. */
+        /** A frame or sign label on the chest matches this item. */
         LABEL_MATCH,
-        /** Item frames on the chest show other items only. */
+        /** The chest has labels, and none match this item. */
         LABEL_OTHER,
+        /** An [overflow] sign: takes items with no other home. Never counts as a match. */
+        OVERFLOW,
         /** No label and nothing inside. */
         EMPTY,
         /** Already holds this exact item. */
@@ -41,12 +42,17 @@ final class ChestMatcher {
     Match classify(ItemStack held, Inventory container) {
         Material heldType = held.getType();
 
-        if (plugin.itemFrameLabels()) {
-            Set<Material> labels = FrameLabels.labelsOf(container);
-            if (!labels.isEmpty()) {
-                return labels.contains(heldType)
-                        ? new Match(Kind.LABEL_MATCH, "item frame label matches")
-                        : new Match(Kind.LABEL_OTHER, "item frame label " + labels);
+        if (plugin.itemFrameLabels() || plugin.signLabels()) {
+            ChestLabels.Labels labels = ChestLabels.of(container, plugin.groups(),
+                    plugin.itemFrameLabels(), plugin.signLabels());
+            if (labels.hasItemRules() && labels.accepts(heldType)) {
+                return new Match(Kind.LABEL_MATCH, "label matches " + labels.names());
+            }
+            if (labels.overflow()) {
+                return new Match(Kind.OVERFLOW, "overflow chest");
+            }
+            if (labels.hasItemRules()) {
+                return new Match(Kind.LABEL_OTHER, "labelled for " + labels.names());
             }
         }
         if (container.isEmpty()) {

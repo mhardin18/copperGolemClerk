@@ -26,10 +26,23 @@ match-mode: all
 # when no matching chest has room.
 prefer-matching-chests: true
 
-# If a golem still hasn't delivered its item after this many seconds (for
-# example, the matching chest is walled off), it falls back to vanilla behavior
-# for that item, including using an empty chest.
+# If a golem can't deliver its item, it works through these steps, each lasting
+# matching-chest-timeout-seconds:
+#   1. Go to a matching chest, then an [Overflow] chest, then an empty chest.
+#   2. Assume the matching chest is unreachable: [Overflow] or empty chests only.
+#   3. Vanilla behavior: wander from chest to chest.
+#   4. Put the item back into the copper chest it came from (see below).
 matching-chest-timeout-seconds: 30
+
+# After step 3, put the item back into the copper chest the golem took it from
+# (or the nearest copper chest in range with room). Golems can't walk to a copper
+# chest while carrying something, so the item is moved back directly.
+# Returned items are marked "no home" for that copper chest: golems take other
+# items first, and skip the chest if only "no home" items are left. The mark
+# lasts homeless-retry-minutes, or until /smartgolems reload. Add a home for
+# the item (a group, a label, an [Overflow] chest), then reload.
+return-unsortable-items: true
+homeless-retry-minutes: 5
 
 # Set to false to stop golems from ever using empty chests. Put one item into
 # each chest (or use item frame labels) to say what goes there, and keep a
@@ -43,6 +56,25 @@ allow-empty-chests: true
 # allow each framed item. Empty frames are ignored. Matching is by item type
 # (all enchanted books count as the same item, for example).
 item-frame-labels: true
+
+# Sign labels: put a wall sign on any side of a chest (or a standing sign on
+# top) and write rules on it, one per line, in square brackets:
+#   [logs]           a group from the list below
+#   [oak log]        one item (spaces or underscores, any capitalization)
+#   [*_ORE]          a name pattern
+#   [#planks]        an item tag
+# Golems then put only matching items in that chest, like item frame labels.
+# If a word is both a group and an item, the group wins: [stone] = stone group.
+# Frames and signs on one chest combine: any matching label accepts the item.
+#
+# [Overflow] (any capitalization) makes a catch-all chest: golems put an item
+# there only when no matching chest has room for it. Overflow chests never
+# attract items just because a similar item is already inside.
+sign-labels: true
+
+# When no matching chest has room, use overflow chests before empty chests.
+# Set to false to fill empty chests first and use overflow as the last resort.
+overflow-before-empty: true
 
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false
