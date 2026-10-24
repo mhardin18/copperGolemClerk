@@ -1,17 +1,24 @@
 package com.exigentsol.smartgolems;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Chest;
+import org.bukkit.block.Container;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.Inventory;
@@ -102,6 +109,13 @@ final class HomeFinder {
         return step == Step.ANY ? homes : new Homes(Set.of(), homes.overflow(), homes.empty());
     }
 
+    /** Start a search for an item the plugin just handed the golem, from a known chest. */
+    void startSearch(Entity golem, Material type, Block source) {
+        searches.put(golem.getUniqueId(), new Search(type, System.currentTimeMillis(),
+                golem.getWorld().getUID(), Pos.of(source)));
+        cache.remove(golem.getUniqueId());
+    }
+
     /** Start (or continue) timing this golem's search, without scanning for chests. */
     void track(Entity golem, Material type) {
         searchFor(golem, type);
@@ -172,12 +186,12 @@ final class HomeFinder {
         }
     }
 
-    private Homes scan(Entity golem, ItemStack held) {
-        Set<Pos> matching = new HashSet<>();
-        Set<Pos> overflow = new HashSet<>();
-        Set<Pos> empty = new HashSet<>();
-        Set<Pos> seen = new HashSet<>();
-
+    /**
+     * Container blocks of the given types within the golem's search area (vanilla's:
+     * 32 sideways, 8 up/down of its block, 1 if riding; loaded chunks only), nearest first.
+     */
+    static List<BlockState> containersInRange(Entity golem, Predicate<Material> types) {
+        List<BlockState> found = new ArrayList<>();
         World world = golem.getWorld();
         Block at = golem.getLocation().getBlock();
         boolean riding = golem.isInsideVehicle();
@@ -186,37 +200,82 @@ final class HomeFinder {
         int chunkX = at.getX() >> 4;
         int chunkZ = at.getZ() >> 4;
         int chunkRadius = Math.floorDiv(h, 16) + 1;
-
         for (int cx = chunkX - chunkRadius; cx <= chunkX + chunkRadius; cx++) {
             for (int cz = chunkZ - chunkRadius; cz <= chunkZ + chunkRadius; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
                 for (BlockState state : world.getChunkAt(cx, cz).getTileEntities(false)) {
-                    if (!(state instanceof Chest chest) || !isDestination(state.getType())) {
+                    if (!(state instanceof Container) || !types.test(state.getType())) {
                         continue;
                     }
                     Block block = state.getBlock();
-                    if (Math.abs(block.getX() - at.getX()) > h || Math.abs(block.getZ() - at.getZ()) > h
-                            || Math.abs(block.getY() - at.getY()) > v) {
-                        continue;
-                    }
-                    if (!seen.add(Pos.of(block))) {
-                        continue; // other half of a double chest already handled
-                    }
-                    Inventory inventory = chest.getInventory();
-                    Set<Pos> halves = halvesOf(inventory, block);
-                    seen.addAll(halves);
-
-                    ChestMatcher.Kind kind = matcher.classify(held, inventory).kind();
-                    if (kind.isHome() && ChestMatcher.hasRoom(held, inventory)) {
-                        matching.addAll(halves);
-                    } else if (kind == ChestMatcher.Kind.OVERFLOW && ChestMatcher.hasRoom(held, inventory)) {
-                        overflow.addAll(halves);
-                    } else if (kind == ChestMatcher.Kind.EMPTY) {
-                        empty.addAll(halves);
+                    if (Math.abs(block.getX() - at.getX()) <= h && Math.abs(block.getZ() - at.getZ()) <= h
+                            && Math.abs(block.getY() - at.getY()) <= v) {
+                        found.add(state);
                     }
                 }
+            }
+        }
+        Location here = golem.getLocation();
+        found.sort(Comparator.comparingDouble(st -> st.getLocation().add(0.5, 0.5, 0.5).distanceSquared(here)));
+        return found;
+    }
+
+    /**
+     * Which of these items have a home in range: a chest that matches it (label,
+     * exact or group) and has room. Reads each chest's labels once.
+     */
+    Set<Material> typesWithHome(Entity golem, List<ItemStack> candidates) {
+        Set<Material> withHome = EnumSet.noneOf(Material.class);
+        if (candidates.isEmpty()) {
+            return withHome;
+        }
+        for (BlockState state : containersInRange(golem, HomeFinder::isDestination)) {
+            Inventory inventory = ((Container) state).getInventory();
+            ChestLabels.Labels labels = matcher.labelsOf(inventory);
+            if (labels.overflow() && !labels.hasItemRules()) {
+                continue; // overflow chests are never a home
+            }
+            for (ItemStack item : candidates) {
+                if (!withHome.contains(item.getType())
+                        && matcher.classify(item, inventory, labels).kind().isHome()
+                        && ChestMatcher.hasRoom(item, inventory)) {
+                    withHome.add(item.getType());
+                }
+            }
+            if (withHome.size() == candidates.size()) {
+                break;
+            }
+        }
+        return withHome;
+    }
+
+    private Homes scan(Entity golem, ItemStack held) {
+        Set<Pos> matching = new HashSet<>();
+        Set<Pos> overflow = new HashSet<>();
+        Set<Pos> empty = new HashSet<>();
+        Set<Pos> seen = new HashSet<>();
+
+        for (BlockState state : containersInRange(golem, HomeFinder::isDestination)) {
+            if (!(state instanceof Chest chest)) {
+                continue;
+            }
+            Block block = state.getBlock();
+            if (!seen.add(Pos.of(block))) {
+                continue; // other half of a double chest already handled
+            }
+            Inventory inventory = chest.getInventory();
+            Set<Pos> halves = halvesOf(inventory, block);
+            seen.addAll(halves);
+
+            ChestMatcher.Kind kind = matcher.classify(held, inventory).kind();
+            if (kind.isHome() && ChestMatcher.hasRoom(held, inventory)) {
+                matching.addAll(halves);
+            } else if (kind == ChestMatcher.Kind.OVERFLOW && ChestMatcher.hasRoom(held, inventory)) {
+                overflow.addAll(halves);
+            } else if (kind == ChestMatcher.Kind.EMPTY) {
+                empty.addAll(halves);
             }
         }
         return new Homes(matching, overflow, empty);

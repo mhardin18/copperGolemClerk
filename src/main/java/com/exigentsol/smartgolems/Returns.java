@@ -76,8 +76,9 @@ final class Returns {
     }
 
     /**
-     * Put the golem's item back. Tries the copper chest it came from, then the
-     * nearest copper chest in its range with room. Returns false if nothing
+     * Put the golem's item back. Tries the chest it came from (a copper chest, or
+     * the overflow chest it was fetched from), then the nearest copper chest in
+     * its range with room. Returns false if nothing
      * could take it (the golem keeps the item).
      */
     boolean returnItem(LivingEntity golem, World sourceWorld, HomeFinder.Pos source) {
@@ -92,8 +93,8 @@ final class Returns {
         List<Block> candidates = new ArrayList<>();
         if (source != null && sourceWorld != null && sourceWorld.equals(golem.getWorld())) {
             Block b = sourceWorld.getBlockAt(source.x(), source.y(), source.z());
-            if (isCopperChest(b.getType())) {
-                candidates.add(b);
+            if (isCopperChest(b.getType()) || HomeFinder.isDestination(b.getType())) {
+                candidates.add(b); // its copper chest, or the overflow chest it was fetched from
             }
         }
         candidates.addAll(copperChestsInRange(golem));
@@ -136,26 +137,14 @@ final class Returns {
      * false if the chest holds only homeless items (skip it).
      */
     boolean prepareSource(Block block) {
-        if (!isCopperChest(block.getType()) || homeless.isEmpty()
-                || !(block.getState(false) instanceof Container container)) {
+        if (!isCopperChest(block.getType()) || !(block.getState(false) instanceof Container container)) {
             return true;
         }
         Inventory inventory = container.getInventory();
-        long now = System.currentTimeMillis();
-        Map<Material, Long> marks = new EnumMap<>(Material.class);
-        for (Block half : ChestLabels.blocksOf(inventory)) {
-            ChestKey key = new ChestKey(half.getWorld().getUID(), HomeFinder.Pos.of(half));
-            Map<Material, Long> forChest = homeless.get(key);
-            if (forChest == null) {
-                continue;
-            }
-            forChest.values().removeIf(expiry -> expiry < now);
-            if (forChest.isEmpty()) {
-                homeless.remove(key);
-            } else {
-                marks.putAll(forChest);
-            }
+        if (inventory.isEmpty()) {
+            return false; // nothing to take: don't walk over to find that out
         }
+        Map<Material, Long> marks = marksFor(inventory);
         if (marks.isEmpty()) {
             return true;
         }
@@ -194,30 +183,53 @@ final class Returns {
         return true;
     }
 
-    private static List<Block> copperChestsInRange(Entity golem) {
-        List<Block> found = new ArrayList<>();
-        World world = golem.getWorld();
-        Block at = golem.getLocation().getBlock();
-        int chunkX = at.getX() >> 4;
-        int chunkZ = at.getZ() >> 4;
-        for (int cx = chunkX - 3; cx <= chunkX + 3; cx++) {
-            for (int cz = chunkZ - 3; cz <= chunkZ + 3; cz++) {
-                if (!world.isChunkLoaded(cx, cz)) {
-                    continue;
-                }
-                for (BlockState state : world.getChunkAt(cx, cz).getTileEntities(false)) {
-                    Block b = state.getBlock();
-                    if (isCopperChest(state.getType())
-                            && Math.abs(b.getX() - at.getX()) <= 32 && Math.abs(b.getZ() - at.getZ()) <= 32
-                            && Math.abs(b.getY() - at.getY()) <= 8) {
-                        found.add(b);
-                    }
-                }
+    /** True if this copper chest has an item a golem would take (not empty, not only homeless). */
+    boolean hasPickable(Inventory inventory) {
+        if (inventory.isEmpty()) {
+            return false;
+        }
+        Map<Material, Long> marks = marksFor(inventory);
+        for (ItemStack stack : inventory.getStorageContents()) {
+            if (stack != null && !stack.isEmpty() && !marks.containsKey(stack.getType())) {
+                return true;
             }
         }
-        found.sort((a, b) -> Double.compare(
-                a.getLocation().distanceSquared(golem.getLocation()),
-                b.getLocation().distanceSquared(golem.getLocation())));
+        return false;
+    }
+
+    /** True if this item type was returned to this chest as homeless (and the mark hasn't expired). */
+    boolean isHomeless(Inventory inventory, Material type) {
+        return marksFor(inventory).containsKey(type);
+    }
+
+    /** Unexpired homeless marks for the chest (both halves) behind this inventory. */
+    private Map<Material, Long> marksFor(Inventory inventory) {
+        Map<Material, Long> marks = new EnumMap<>(Material.class);
+        if (homeless.isEmpty()) {
+            return marks;
+        }
+        long now = System.currentTimeMillis();
+        for (Block half : ChestLabels.blocksOf(inventory)) {
+            ChestKey key = new ChestKey(half.getWorld().getUID(), HomeFinder.Pos.of(half));
+            Map<Material, Long> forChest = homeless.get(key);
+            if (forChest == null) {
+                continue;
+            }
+            forChest.values().removeIf(expiry -> expiry < now);
+            if (forChest.isEmpty()) {
+                homeless.remove(key);
+            } else {
+                marks.putAll(forChest);
+            }
+        }
+        return marks;
+    }
+
+    private static List<Block> copperChestsInRange(Entity golem) {
+        List<Block> found = new ArrayList<>();
+        for (BlockState state : HomeFinder.containersInRange(golem, Returns::isCopperChest)) {
+            found.add(state.getBlock());
+        }
         return found;
     }
 }

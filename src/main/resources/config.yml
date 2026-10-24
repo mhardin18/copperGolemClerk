@@ -76,6 +76,15 @@ sign-labels: true
 # Set to false to fill empty chests first and use overflow as the last resort.
 overflow-before-empty: true
 
+# When a golem has nothing to do (empty hand, and no copper chest in range has
+# anything it would take), send it to an [Overflow] chest to fetch an item that
+# now has a home, e.g. ores after you add an [ores] chest. It takes up to 16, like
+# a normal pickup, and sorts them. Items that would just go back to overflow are
+# left alone. If it can't reach the overflow chest within 30 seconds it gives
+# up and waits a minute. Only one golem fetches from an overflow chest at a
+# time, so they don't crowd it. Items it can't deliver go back to that chest.
+fetch-from-overflow: true
+
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false
 
