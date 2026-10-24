@@ -1,0 +1,364 @@
+<title>Golem Sorting Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: a sorting room. Unsorted tray on top, category bins in a wrapping grid below,
+   items as chips you drag between bins (or select, then "Move to"). */
+:root {
+  --bg: #eaefed;          /* weathered stone, faint verdigris */
+  --surface: #ffffff;
+  --sunk: #dfe6e3;
+  --ink: #1b2321;
+  --muted: #5a6864;
+  --line: #cdd7d3;
+  --copper: #a8562a;      /* fresh copper: actions */
+  --copper-soft: #f6e3d6;
+  --verdigris: #23806e;   /* oxidized copper: saved / sorted */
+  --verdigris-soft: #d5ece6;
+  --warn: #9a5b00;
+  --warn-soft: #fbecd2;
+  --chip: #f4f7f6;
+  --chip-hover: #e7eeeb;
+  --sel: #a8562a;
+  --font-display: "Pixelify Sans", "Courier New", monospace;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121817; --surface: #1a2220; --sunk: #0f1413; --ink: #e4ebe8; --muted: #94a39e;
+    --line: #2b3633; --copper: #e48c58; --copper-soft: #3a2518; --verdigris: #5cc2ac;
+    --verdigris-soft: #173029; --warn: #f0b25a; --warn-soft: #34260f; --chip: #212b29;
+    --chip-hover: #2a3633; --sel: #e48c58; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121817; --surface: #1a2220; --sunk: #0f1413; --ink: #e4ebe8; --muted: #94a39e;
+  --line: #2b3633; --copper: #e48c58; --copper-soft: #3a2518; --verdigris: #5cc2ac;
+  --verdigris-soft: #173029; --warn: #f0b25a; --warn-soft: #34260f; --chip: #212b29;
+  --chip-hover: #2a3633; --sel: #e48c58; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 96px;
+}
+.wrap { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 4vw, 38px); letter-spacing: .5px; margin: 0; line-height: 1.05; text-wrap: balance; }
+.sub { color: var(--muted); margin: 6px 0 0; max-width: 62ch; }
+.stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; min-width: 92px; }
+.stat b { display: block; font-family: var(--font-display); font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.stat.warn b { color: var(--warn); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 8px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.search { flex: 1 1 260px; min-width: 0; position: relative; }
+.search input { width: 100%; font: inherit; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+button { font: inherit; cursor: pointer; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 12px; }
+button:hover { background: var(--chip-hover); }
+button.primary { background: var(--copper); border-color: var(--copper); color: #fff; }
+button.primary:hover { filter: brightness(1.08); background: var(--copper); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.save { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.save::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--muted); }
+.save[data-s="saved"]::before { background: var(--verdigris); }
+.save[data-s="saving"]::before { background: var(--copper); }
+.save[data-s="error"]::before, .save[data-s="readonly"]::before { background: var(--warn); }
+
+.tray { background: var(--warn-soft); border: 1px dashed var(--warn); border-radius: 8px; padding: 12px 14px; }
+.tray.empty { background: var(--verdigris-soft); border-color: var(--verdigris); }
+.tray h2, .bin h3 { font-family: var(--font-display); font-weight: 500; margin: 0; }
+.tray h2 { font-size: 20px; }
+.tray p { margin: 4px 0 10px; color: var(--muted); font-size: 14px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
+.bin { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; min-width: 0; }
+.bin.drop, .tray.drop { outline: 2px dashed var(--copper); outline-offset: 2px; }
+.bin.dim { opacity: .35; }
+.binhead { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.bin h3 { font-size: 17px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.count { font-family: var(--font-display); font-size: 14px; background: var(--sunk); color: var(--muted); border-radius: 4px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.iconbtn { padding: 3px 7px; font-size: 12px; color: var(--muted); }
+.renamer { flex: 1; min-width: 0; font: inherit; font-family: var(--font-display); font-size: 16px; padding: 4px 6px; border: 1px solid var(--copper); border-radius: 4px; background: var(--surface); color: var(--ink); }
+.confirm { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; background: var(--warn-soft); font-size: 13px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 12px; min-height: 44px; }
+.chip { font-size: 13px; background: var(--chip); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; cursor: grab; user-select: none; max-width: 100%; overflow-wrap: anywhere; }
+.chip:hover { background: var(--chip-hover); }
+.chip.sel { background: var(--copper-soft); border-color: var(--sel); box-shadow: inset 0 0 0 1px var(--sel); }
+.chip.hit { border-color: var(--copper); }
+.chip .hint { color: var(--muted); font-size: 11px; margin-left: 6px; }
+.more { margin: 0 12px 10px; align-self: flex-start; font-size: 13px; padding: 4px 10px; }
+.emptybin { color: var(--muted); font-size: 13px; font-style: italic; }
+
+.selbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center; box-shadow: 0 -6px 18px rgb(0 0 0 / .12); }
+.selbar select { font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); max-width: 100%; }
+.export { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.export pre { margin: 0; max-height: 320px; overflow: auto; font-family: var(--font-mono); font-size: 12px; background: var(--sunk); border-radius: 6px; padding: 10px; white-space: pre; }
+.notice { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .chip, .bin { transition: background .12s, opacity .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Golem Sorting Board</h1>
+      <p class="sub">Every item you can get in survival on Minecraft 26.3, grouped by theme. Drag items between bins, or click to select them and use <em>Move to</em>. Your changes save automatically and become the plugin's groups.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <div class="toolbar">
+    <div class="search"><input id="q" type="search" placeholder="Find an item, e.g. copper door" autocomplete="off" aria-label="Find an item"></div>
+    <button id="addcat" type="button">New category</button>
+    <button id="showexport" type="button">Copy as config</button>
+    <span class="save" id="save" data-s="loading">Loading…</span>
+  </div>
+
+  <section id="exportbox" class="export" hidden>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <strong>Groups for config.yml</strong>
+      <button id="copy" class="primary" type="button">Copy</button>
+      <span id="copied" class="save" hidden>Copied</span>
+    </div>
+    <pre id="yaml"></pre>
+  </section>
+
+  <section id="tray" class="tray" data-cat="">
+    <h2>Unsorted <span class="count" id="traycount">0</span></h2>
+    <p>No clear home for these. The grey note on each is a suggestion. Drag each one into a bin.</p>
+    <div class="chips" id="traychips"></div>
+  </section>
+
+  <section class="grid" id="grid">
+    <div class="notice">Loading the grouping. The bins fill in once your saved layout arrives.</div>
+  </section>
+</div>
+
+<div class="selbar" id="selbar" hidden>
+  <strong id="selcount">0 selected</strong>
+  <label for="moveto" class="save" style="color:var(--ink)">Move to</label>
+  <select id="moveto"></select>
+  <button id="domove" class="primary" type="button">Move</button>
+  <button id="clearsel" type="button">Clear selection</button>
+</div>
+
+<script>
+const ITEMS = /*ITEMS*/[];
+const DOC_PATH = "board/layout";
+const COLLAPSE_AT = 36;
+
+let state = null;            // {categories:[{id,name}], assign:{ITEM:catId}, hints:{ITEM:catId}}
+let canWrite = true, dbRef = null;
+let pending = false, saving = false, saveTimer = null;
+const selected = new Set();
+const expanded = new Set();
+let renaming = null, confirming = null, query = "";
+
+const $ = (id) => document.getElementById(id);
+const pretty = (id) => { const s = id.toLowerCase().replace(/_/g, " "); return s.charAt(0).toUpperCase() + s.slice(1); };
+const byName = (a, b) => pretty(a).localeCompare(pretty(b));
+const catName = (id) => (state.categories.find(c => c.id === id) || {}).name || id;
+
+function itemsIn(catId) {
+  return ITEMS.filter(i => (state.assign[i] || "") === catId).sort(byName);
+}
+function matches(i) { return !query || pretty(i).toLowerCase().includes(query) || i.toLowerCase().includes(query.replace(/ /g, "_")); }
+
+function chip(i) {
+  const el = document.createElement("span");
+  el.className = "chip" + (selected.has(i) ? " sel" : "") + (query && matches(i) ? " hit" : "");
+  el.textContent = pretty(i);
+  el.draggable = canWrite;
+  el.tabIndex = 0;
+  el.dataset.item = i;
+  el.title = i;
+  const hint = state.hints && state.hints[i];
+  if (hint && !state.assign[i]) {
+    const h = document.createElement("span"); h.className = "hint"; h.textContent = "→ " + catName(hint); el.append(h);
+  }
+  return el;
+}
+
+function render() {
+  if (!state) return;
+  const unsorted = itemsIn("");
+  // stats
+  const st = $("stats"); st.replaceChildren();
+  for (const [n, label, warn] of [[ITEMS.length, "items", false], [state.categories.length, "categories", false], [unsorted.length, "unsorted", unsorted.length > 0]]) {
+    const d = document.createElement("div"); d.className = "stat" + (warn ? " warn" : "");
+    const b = document.createElement("b"); b.textContent = n.toLocaleString();
+    const s = document.createElement("span"); s.textContent = label; d.append(b, s); st.append(d);
+  }
+  // tray
+  $("tray").classList.toggle("empty", unsorted.length === 0);
+  $("traycount").textContent = unsorted.length;
+  const tc = $("traychips"); tc.replaceChildren();
+  if (!unsorted.length) { const e = document.createElement("span"); e.className = "emptybin"; e.textContent = "Everything has a home."; tc.append(e); }
+  for (const i of unsorted) if (matches(i)) tc.append(chip(i));
+  // bins
+  const grid = $("grid"); grid.replaceChildren();
+  for (const c of state.categories) {
+    const all = itemsIn(c.id), shown = all.filter(matches);
+    const bin = document.createElement("article"); bin.className = "bin" + (query && !shown.length ? " dim" : ""); bin.dataset.cat = c.id;
+    const head = document.createElement("div"); head.className = "binhead";
+    if (renaming === c.id) {
+      const inp = document.createElement("input"); inp.className = "renamer"; inp.value = c.name; inp.id = "rename-" + c.id; inp.setAttribute("aria-label", "Category name");
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") finishRename(c.id, inp.value); if (e.key === "Escape") { renaming = null; render(); } });
+      inp.addEventListener("blur", () => finishRename(c.id, inp.value));
+      head.append(inp); setTimeout(() => { inp.focus(); inp.select(); });
+    } else {
+      const h = document.createElement("h3"); h.textContent = c.name; head.append(h);
+    }
+    const cnt = document.createElement("span"); cnt.className = "count"; cnt.textContent = query ? `${shown.length}/${all.length}` : all.length;
+    head.append(cnt);
+    if (canWrite && renaming !== c.id) {
+      const rn = document.createElement("button"); rn.className = "iconbtn"; rn.type = "button"; rn.textContent = "Rename"; rn.onclick = () => { renaming = c.id; render(); };
+      const del = document.createElement("button"); del.className = "iconbtn"; del.type = "button"; del.textContent = "Delete"; del.onclick = () => { confirming = c.id; render(); };
+      head.append(rn, del);
+    }
+    bin.append(head);
+    if (confirming === c.id) {
+      const cf = document.createElement("div"); cf.className = "confirm";
+      cf.append(all.length ? `Delete "${c.name}" and move its ${all.length} items to Unsorted?` : `Delete "${c.name}"?`);
+      const yes = document.createElement("button"); yes.type = "button"; yes.className = "primary"; yes.textContent = "Delete"; yes.onclick = () => deleteCat(c.id);
+      const no = document.createElement("button"); no.type = "button"; no.textContent = "Cancel"; no.onclick = () => { confirming = null; render(); };
+      cf.append(yes, no); bin.append(cf);
+    }
+    const chips = document.createElement("div"); chips.className = "chips";
+    const limit = (expanded.has(c.id) || query) ? shown.length : Math.min(shown.length, COLLAPSE_AT);
+    for (const i of shown.slice(0, limit)) chips.append(chip(i));
+    if (!all.length) { const e = document.createElement("span"); e.className = "emptybin"; e.textContent = "Empty. Drop items here."; chips.append(e); }
+    bin.append(chips);
+    if (shown.length > limit || (expanded.has(c.id) && !query && shown.length > COLLAPSE_AT)) {
+      const more = document.createElement("button"); more.type = "button"; more.className = "more";
+      more.textContent = expanded.has(c.id) ? "Show fewer" : `Show all ${shown.length}`;
+      more.onclick = () => { expanded.has(c.id) ? expanded.delete(c.id) : expanded.add(c.id); render(); };
+      bin.append(more);
+    }
+    grid.append(bin);
+  }
+  renderSelbar();
+  if (!$("exportbox").hidden) $("yaml").textContent = toYaml();
+}
+
+function renderSelbar() {
+  const bar = $("selbar");
+  bar.hidden = selected.size === 0 || !canWrite;
+  $("selcount").textContent = `${selected.size} selected`;
+  const sel = $("moveto"), prev = sel.value; sel.replaceChildren();
+  const o0 = document.createElement("option"); o0.value = ""; o0.textContent = "Unsorted"; sel.append(o0);
+  const sorted = [...state.categories].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  for (const c of sorted) { const o = document.createElement("option"); o.value = c.id; o.textContent = c.name; sel.append(o); }
+  sel.value = prev;
+}
+
+function moveItems(items, catId) {
+  for (const i of items) { if (catId) state.assign[i] = catId; else delete state.assign[i]; }
+  selected.clear(); changed();
+}
+function finishRename(id, name) {
+  if (renaming !== id) return;
+  name = name.trim(); renaming = null;
+  const c = state.categories.find(x => x.id === id);
+  if (c && name && name !== c.name) { c.name = name; changed(); } else render();
+}
+function deleteCat(id) {
+  for (const i of Object.keys(state.assign)) if (state.assign[i] === id) delete state.assign[i];
+  state.categories = state.categories.filter(c => c.id !== id); confirming = null; changed();
+}
+function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "group"; }
+function toYaml() {
+  const lines = ["groups:"];
+  for (const c of state.categories) {
+    const its = itemsIn(c.id); if (!its.length) continue;
+    lines.push(`  ${slug(c.name)}:`); for (const i of its) lines.push(`    - ${i}`);
+  }
+  const un = itemsIn(""); if (un.length) lines.push("# unsorted: " + un.join(" "));
+  return lines.join("\n");
+}
+
+// ---- saving: one write at a time, coalesced
+function changed() { render(); if (!canWrite || !dbRef) return; pending = true; setSave("saving", "Saving…"); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 600); }
+async function flush() {
+  if (saving || !pending) return;
+  saving = true; pending = false;
+  try { await dbRef.set({ ...state, version: 1, updatedAt: new Date().toISOString() }); setSave("saved", "Saved"); }
+  catch (e) {
+    if (e && e.code === "invalid_argument") { canWrite = false; setSave("readonly", "View only: changes aren't saved"); render(); }
+    else setSave("error", "Couldn't save. Your next change will try again.");
+  } finally { saving = false; if (pending) flush(); }
+}
+function setSave(s, text) { const el = $("save"); el.dataset.s = s; el.textContent = text; }
+
+// ---- interactions
+document.addEventListener("click", (e) => {
+  const c = e.target.closest(".chip"); if (!c || !canWrite) return;
+  const i = c.dataset.item; selected.has(i) ? selected.delete(i) : selected.add(i); render();
+});
+document.addEventListener("keydown", (e) => {
+  const c = e.target.closest && e.target.closest(".chip");
+  if (c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); c.click(); }
+});
+document.addEventListener("dragstart", (e) => {
+  const c = e.target.closest(".chip"); if (!c) return;
+  const i = c.dataset.item; if (!selected.has(i)) { selected.clear(); selected.add(i); }
+  e.dataTransfer.setData("text/plain", [...selected].join(",")); e.dataTransfer.effectAllowed = "move";
+});
+function dropTarget(e) { return e.target.closest(".bin, .tray"); }
+document.addEventListener("dragover", (e) => { const t = dropTarget(e); if (t && canWrite) { e.preventDefault(); t.classList.add("drop"); } });
+document.addEventListener("dragleave", (e) => { const t = dropTarget(e); if (t && !t.contains(e.relatedTarget)) t.classList.remove("drop"); });
+document.addEventListener("drop", (e) => {
+  const t = dropTarget(e); if (!t) return; e.preventDefault(); t.classList.remove("drop");
+  const items = (e.dataTransfer.getData("text/plain") || "").split(",").filter(Boolean);
+  if (items.length) moveItems(items, t.dataset.cat || "");
+});
+$("domove").onclick = () => moveItems([...selected], $("moveto").value);
+$("clearsel").onclick = () => { selected.clear(); render(); };
+$("q").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); render(); });
+$("addcat").onclick = () => {
+  if (!state || !canWrite) return;
+  const id = "c-" + Date.now().toString(36);
+  state.categories.unshift({ id, name: "New category" }); renaming = id; changed();
+};
+$("showexport").onclick = () => { const b = $("exportbox"); b.hidden = !b.hidden; if (!b.hidden && state) $("yaml").textContent = toYaml(); };
+$("copy").onclick = async () => {
+  const text = $("yaml").textContent;
+  try { await navigator.clipboard.writeText(text); $("copied").hidden = false; setTimeout(() => $("copied").hidden = true, 1500); }
+  catch { const r = document.createRange(); r.selectNodeContents($("yaml")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+};
+
+// ---- data
+(async () => {
+  const db = await claude.use("db");
+  if (!db) {
+    setSave("error", "Not connected");
+    $("grid").replaceChildren(Object.assign(document.createElement("div"), { className: "notice", textContent: "The saved grouping can't load here. Open this board in Claude, signed in, to see and edit it." }));
+    return;
+  }
+  const user = await claude.use("user");
+  const can = user ? await user.can("data.write") : null;
+  if (can === false) { canWrite = false; }
+  dbRef = db.doc(DOC_PATH);
+  dbRef.onSnapshot((snap) => {
+    if (pending || saving) return;              // our own edits win until saved
+    if (!snap.exists) {
+      setSave("error", "No grouping saved yet");
+      $("grid").replaceChildren(Object.assign(document.createElement("div"), { className: "notice", textContent: "No grouping has been saved to this board yet. Ask Claude to load it." }));
+      return;
+    }
+    const d = snap.data();
+    state = { categories: (d.categories || []).map(c => ({ ...c })), assign: { ...(d.assign || {}) }, hints: { ...(d.hints || {}) } };
+    setSave(canWrite ? "saved" : "readonly", canWrite ? "Saved" : "View only");
+    render();
+  }, () => setSave("error", "Lost connection to the saved grouping. Reload to reconnect."));
+})();
+</script>
