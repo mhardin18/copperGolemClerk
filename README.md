@@ -8,6 +8,44 @@ or into an empty chest. With this plugin, a golem carrying birch logs will also
 use a chest that holds oak logs. A golem carrying a diamond pickaxe will use a
 chest of tools, and so on.
 
+## Requirements
+
+- A [Paper](https://papermc.io/downloads/paper) server, version **26.3**
+- Java **25**
+
+Spigot and Bukkit aren't supported: the plugin uses Paper-only golem events.
+
+## Install
+
+1. Download `SmartCopperGolems-<version>.jar` from the
+   [latest release](https://github.com/mhardin18/smartCopperGolems/releases/latest).
+   Release tags name the Paper version they're for (e.g. `v1.0.0-paper26.3`).
+2. Put the jar in your server's `plugins/` folder.
+3. Restart the server (don't use `/reload`).
+4. Check the console for `Enabling SmartCopperGolems`, or run `/plugins` in game.
+
+On first start the plugin creates `plugins/SmartCopperGolems/config.yml`. The
+defaults work as-is: about 50 groups that cover every survival item. After editing
+the file, run `/sg reload` to apply it without a restart.
+
+To update, replace the old jar with the new one and restart. Your `config.yml` is
+kept. To uninstall, delete the jar (and the `plugins/SmartCopperGolems/` folder if
+you don't want to keep the config).
+
+### Quick start
+
+1. Place a copper chest and fill it with mixed items.
+2. Place a few chests nearby (within 32 blocks sideways, 8 up or down). Put one
+   item in each to say what goes there, or label it with a sign like `[logs]` or
+   an item frame.
+3. Build a copper golem (a carved pumpkin on top of a copper block) next to the
+   copper chest.
+4. Stay nearby: golems only work in loaded chunks, and Paper slows them down
+   when no player is close.
+
+The golem now puts birch logs in your oak log chest, a diamond pickaxe in your
+tools chest, and so on.
+
 ## How it works
 
 Paper fires `ItemTransportingEntitySortEvent` whenever a golem checks whether
@@ -124,14 +162,18 @@ Requires `smartcoppergolems.admin` (op by default). Alias `/sg`.
 - `/smartcoppergolems reload`: reload `config.yml`
 - `/smartcoppergolems check`: show which groups the item in your hand belongs to
 
-## Build
+## Building from source
+
+Needs Java 25 (the Gradle wrapper downloads Gradle itself).
 
 ```
+git clone https://github.com/mhardin18/smartCopperGolems.git
+cd smartCopperGolems
 ./gradlew build
 ```
 
-The jar is written to `build/libs/SmartCopperGolems-<version>.jar`. Copy it into
-your server's `plugins/` folder and restart.
+The jar is written to `build/libs/SmartCopperGolems-<version>.jar`. Install it as
+described in [Install](#install).
 
 ## License
 
