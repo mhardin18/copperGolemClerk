@@ -338,29 +338,45 @@ groups:
   sulfur:
     - "*SULFUR*"
     - CINNABAR
+  # Villager job site blocks only (one per profession).
   workstations:
-    - CRAFTING_TABLE
-    - FURNACE
-    - BLAST_FURNACE
-    - SMOKER
-    - BARREL
-    - COMPOSTER
-    - CAULDRON
-    - LECTERN
+    - BLAST_FURNACE      # armorer
+    - SMOKER             # butcher
+    - CARTOGRAPHY_TABLE  # cartographer
+    - BREWING_STAND      # cleric
+    - COMPOSTER          # farmer
+    - BARREL             # fisherman
+    - FLETCHING_TABLE    # fletcher
+    - CAULDRON           # leatherworker
+    - LECTERN            # librarian
+    - STONECUTTER        # mason
+    - LOOM               # shepherd
+    - SMITHING_TABLE     # toolsmith
+    - GRINDSTONE         # weaponsmith
+  decorations:
+    - "#minecraft:banners"
+    - "*_BANNER_PATTERN"
+    - "*_BED"
+    - "#minecraft:signs"
+    - "#minecraft:hanging_signs"
+    - "#minecraft:skulls"
+    - ITEM_FRAME
+    - GLOW_ITEM_FRAME
+    - PAINTING
+    - FLOWER_POT
+    - ARMOR_STAND
+    - DECORATED_POT
+    - "#minecraft:decorated_pot_sherds"
+    - "*COPPER_GOLEM_STATUE"
     - "*BOOKSHELF"
     - "*_SHELF"
-    - JUKEBOX
-    - BELL
-    - DECORATED_POT
-    - ARMOR_STAND
-    - SMITHING_TABLE
-    - STONECUTTER
-    - LOOM
-    - GRINDSTONE
-    - CARTOGRAPHY_TABLE
-    - FLETCHING_TABLE
+  # Useful blocks that aren't villager job sites.
+  utility-blocks:
+    - CRAFTING_TABLE
+    - FURNACE
     - ANVIL
     - CHIPPED_ANVIL
     - DAMAGED_ANVIL
-    - BREWING_STAND
     - ENCHANTING_TABLE
+    - JUKEBOX
+    - BELL
