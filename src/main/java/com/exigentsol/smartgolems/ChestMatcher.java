@@ -32,10 +32,17 @@ final class ChestMatcher {
     }
 
     /**
-     * @param specificity how many item types the matching rule covers: 1 for a framed
-     *                    item or an exact match, the group size for a group, else
-     *                    Integer.MAX_VALUE. Golems prefer the most specific home.
+     * @param specificity lower is more specific: a label's item count (1 for a framed
+     *                    item), or CONTENTS_RANK plus the count for an exact (1) or group
+     *                    match, else Integer.MAX_VALUE. Golems prefer the most specific home.
      */
+    /**
+     * Added to contents-based matches (exact item, group) so any label (frame or sign)
+     * outranks them: a label is the player's stated intent; contents can be incidental,
+     * like the input chest of a hopper feeding a copper chest.
+     */
+    static final int CONTENTS_RANK = 1_000_000;
+
     record Match(Kind kind, String reason, int specificity) {
         Match(Kind kind, String reason) {
             this(kind, reason, Integer.MAX_VALUE);
@@ -78,7 +85,7 @@ final class ChestMatcher {
             return new Match(Kind.EMPTY, "empty chest");
         }
         if (container.contains(heldType)) {
-            return new Match(Kind.EXACT, "exact match", 1);
+            return new Match(Kind.EXACT, "exact match", CONTENTS_RANK + 1);
         }
 
         ItemGroups groups = plugin.groups();
@@ -95,7 +102,7 @@ final class ChestMatcher {
             BitSet other = groups.groupsOf(stack.getType());
             int shared = other == null ? Integer.MAX_VALUE : groups.smallestSharedGroup(heldGroups, other);
             if (shared != Integer.MAX_VALUE && !requireAll) {
-                return new Match(Kind.GROUP, "group match", shared);
+                return new Match(Kind.GROUP, "group match", CONTENTS_RANK + shared);
             }
             if (shared == Integer.MAX_VALUE && requireAll) {
                 return new Match(Kind.NONE, stack.getType() + " is outside the item's groups");
@@ -104,7 +111,7 @@ final class ChestMatcher {
         }
         // "all" mode: every item matched. "any" mode: nothing matched.
         return requireAll
-                ? new Match(Kind.GROUP, "group match", narrowest)
+                ? new Match(Kind.GROUP, "group match", CONTENTS_RANK + narrowest)
                 : new Match(Kind.NONE, "no group match");
     }
 

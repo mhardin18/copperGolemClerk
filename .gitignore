@@ -4,3 +4,5 @@ run/
 *.iml
 .idea/
 __pycache__/
+tools/itest/hooks/build/
+tools/itest/hooks/.gradle/

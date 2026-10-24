@@ -112,11 +112,7 @@ final class Returns {
             ItemStack rest = leftover.isEmpty() ? ItemStack.empty() : leftover.values().iterator().next();
             equipment.setItemInMainHand(rest);
 
-            long expires = System.currentTimeMillis() + plugin.homelessRetryMillis();
-            for (Block half : ChestLabels.blocksOf(inventory)) {
-                homeless.computeIfAbsent(new ChestKey(half.getWorld().getUID(), HomeFinder.Pos.of(half)),
-                        k -> new EnumMap<>(Material.class)).put(type, expires);
-            }
+            markHomeless(inventory, type);
             Location at = block.getLocation().add(0.5, 0.5, 0.5);
             block.getWorld().playSound(at, Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
             if (plugin.debug()) {
@@ -129,6 +125,22 @@ final class Returns {
             held = rest;
         }
         return held.isEmpty();
+    }
+
+    /** Remember that this item had no home when it was put into this chest. */
+    void markHomeless(Inventory inventory, Material type) {
+        long expires = System.currentTimeMillis() + plugin.homelessRetryMillis();
+        for (Block half : ChestLabels.blocksOf(inventory)) {
+            homeless.computeIfAbsent(new ChestKey(half.getWorld().getUID(), HomeFinder.Pos.of(half)),
+                    k -> new EnumMap<>(Material.class)).put(type, expires);
+        }
+    }
+
+    /** Drop expired marks (marks on chests nobody visits again would otherwise stay forever). */
+    void prune() {
+        long now = System.currentTimeMillis();
+        homeless.values().forEach(m -> m.values().removeIf(expiry -> expiry < now));
+        homeless.values().removeIf(Map::isEmpty);
     }
 
     /**
