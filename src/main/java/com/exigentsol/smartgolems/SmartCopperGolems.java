@@ -19,6 +19,11 @@ public final class SmartCopperGolems extends JavaPlugin {
     private volatile boolean allowEmptyChests;
     private volatile boolean debug;
     private volatile boolean itemFrameLabels;
+    private volatile boolean signLabels;
+    private volatile boolean overflowBeforeEmpty;
+    private volatile boolean returnUnsortableItems;
+    private volatile long homelessRetryMillis;
+    private SortListener listener;
     private volatile boolean preferMatchingChests;
     private volatile long matchingChestTimeoutMillis;
 
@@ -26,7 +31,8 @@ public final class SmartCopperGolems extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         loadSettings();
-        getServer().getPluginManager().registerEvents(new SortListener(this), this);
+        listener = new SortListener(this);
+        getServer().getPluginManager().registerEvents(listener, this);
         registerCommand("smartgolems", "Manage smart copper golem sorting", List.of("sg"), new Command());
     }
 
@@ -42,6 +48,13 @@ public final class SmartCopperGolems extends JavaPlugin {
         allowEmptyChests = config.getBoolean("allow-empty-chests", true);
         debug = config.getBoolean("debug", false);
         itemFrameLabels = config.getBoolean("item-frame-labels", true);
+        signLabels = config.getBoolean("sign-labels", true);
+        overflowBeforeEmpty = config.getBoolean("overflow-before-empty", true);
+        returnUnsortableItems = config.getBoolean("return-unsortable-items", true);
+        homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
+        if (listener != null) {
+            listener.clearHomeless();
+        }
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
         matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;
         groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());
@@ -66,6 +79,22 @@ public final class SmartCopperGolems extends JavaPlugin {
 
     long matchingChestTimeoutMillis() {
         return matchingChestTimeoutMillis;
+    }
+
+    boolean signLabels() {
+        return signLabels;
+    }
+
+    boolean returnUnsortableItems() {
+        return returnUnsortableItems;
+    }
+
+    long homelessRetryMillis() {
+        return homelessRetryMillis;
+    }
+
+    boolean overflowBeforeEmpty() {
+        return overflowBeforeEmpty;
     }
 
     boolean itemFrameLabels() {

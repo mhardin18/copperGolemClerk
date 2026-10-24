@@ -20,8 +20,8 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * Finds, for a golem carrying an item, which chests in its search area are a
- * "home" for that item (label, exact or group match, with room) and which are
- * empty fallbacks. Results are cached briefly because Paper asks about every
+ * "home" for that item (label, exact or group match, with room), which are
+ * [overflow] chests with room, and which are empty fallbacks. Results are cached briefly because Paper asks about every
  * chest during one search.
  *
  * Mirrors vanilla's search area: chests and trapped chests within 32 blocks
@@ -36,15 +36,33 @@ final class HomeFinder {
         }
     }
 
-    /** Chest positions (both halves of double chests) by role. */
-    record Homes(Set<Pos> matching, Set<Pos> empty) {
+    /**
+     * Chest positions (both halves of double chests) by role: matching chests
+     * with room, [overflow] chests with room, and empty unlabelled chests.
+     */
+    record Homes(Set<Pos> matching, Set<Pos> overflow, Set<Pos> empty) {
     }
 
     private record CacheEntry(Material type, UUID world, int tick, Homes homes) {
     }
 
-    /** When a golem started looking for a home for its current item. */
-    private record Search(Material type, long startedMillis) {
+    /**
+     * A golem's search for a home for its current item: when it started, and the
+     * copper chest it took the item from (null if none was found next to it).
+     */
+    record Search(Material type, long startedMillis, UUID world, Pos source) {
+    }
+
+    /** Where a search is in its timeline. Each step lasts matching-chest-timeout-seconds. */
+    enum Step {
+        /** Matching chest, then overflow, then empty. */
+        ANY,
+        /** Matching chests assumed unreachable: overflow or empty only. */
+        NO_MATCHING,
+        /** Vanilla behavior. */
+        VANILLA,
+        /** Time to put the item back into a copper chest. */
+        RETURN
     }
 
     private static final int CACHE_TICKS = 20;
@@ -61,44 +79,85 @@ final class HomeFinder {
 
     /**
      * Homes for this golem's item, or null when the golem should get vanilla
-     * behavior because it has been searching longer than the timeout.
+     * behavior. In the NO_MATCHING step the matching set is left empty.
      */
     Homes homesFor(Entity golem, ItemStack held) {
         UUID id = golem.getUniqueId();
-        Material type = held.getType();
-        long now = System.currentTimeMillis();
-
-        Search search = searches.get(id);
-        if (search == null || search.type() != type) {
-            search = new Search(type, now);
-            searches.put(id, search);
-        }
-        if (now - search.startedMillis() > plugin.matchingChestTimeoutMillis()) {
+        Search search = searchFor(golem, held.getType());
+        Step step = stepOf(search);
+        if (step == Step.VANILLA || step == Step.RETURN) {
             return null;
         }
 
         int tick = Bukkit.getCurrentTick();
+        Homes homes;
         CacheEntry cached = cache.get(id);
-        if (cached != null && cached.type() == type && cached.world().equals(golem.getWorld().getUID())
+        if (cached != null && cached.type() == held.getType() && cached.world().equals(golem.getWorld().getUID())
                 && tick - cached.tick() < CACHE_TICKS) {
-            return cached.homes();
+            homes = cached.homes();
+        } else {
+            homes = scan(golem, held);
+            cache.put(id, new CacheEntry(held.getType(), golem.getWorld().getUID(), tick, homes));
         }
-        Homes homes = scan(golem, held);
-        cache.put(id, new CacheEntry(type, golem.getWorld().getUID(), tick, homes));
-        return homes;
+        return step == Step.ANY ? homes : new Homes(Set.of(), homes.overflow(), homes.empty());
+    }
+
+    /** Start (or continue) timing this golem's search, without scanning for chests. */
+    void track(Entity golem, Material type) {
+        searchFor(golem, type);
+    }
+
+    private Search searchFor(Entity golem, Material type) {
+        Search search = searches.get(golem.getUniqueId());
+        if (search == null || search.type() != type) {
+            Block source = Returns.sourceChestNear(golem);
+            search = new Search(type, System.currentTimeMillis(), golem.getWorld().getUID(),
+                    source == null ? null : Pos.of(source));
+            searches.put(golem.getUniqueId(), search);
+        }
+        return search;
+    }
+
+    Step stepOf(Search search) {
+        long elapsed = System.currentTimeMillis() - search.startedMillis();
+        long step = plugin.matchingChestTimeoutMillis();
+        if (elapsed < step) {
+            return Step.ANY;
+        }
+        if (elapsed < 2 * step) {
+            return Step.NO_MATCHING;
+        }
+        return elapsed < 3 * step ? Step.VANILLA : Step.RETURN;
+    }
+
+    /** Searches that have run through all steps, by golem UUID. */
+    Map<UUID, Search> searchesReadyToReturn() {
+        Map<UUID, Search> ready = new HashMap<>();
+        searches.forEach((id, search) -> {
+            if (stepOf(search) == Step.RETURN) {
+                ready.put(id, search);
+            }
+        });
+        return ready;
+    }
+
+    /** Start this golem's search over (nothing could take the returned item). */
+    void restart(UUID id) {
+        Search search = searches.get(id);
+        if (search != null) {
+            searches.put(id, new Search(search.type(), System.currentTimeMillis(), search.world(), search.source()));
+        }
+        cache.remove(id);
     }
 
     /** The golem's hand is empty again: its next item starts a fresh search. */
     void forget(Entity golem) {
-        searches.remove(golem.getUniqueId());
-        cache.remove(golem.getUniqueId());
+        forget(golem.getUniqueId());
     }
 
-    /** True if the timeout has passed for this golem's current item. */
-    boolean timedOut(Entity golem) {
-        Search search = searches.get(golem.getUniqueId());
-        return search != null
-                && System.currentTimeMillis() - search.startedMillis() > plugin.matchingChestTimeoutMillis();
+    void forget(UUID id) {
+        searches.remove(id);
+        cache.remove(id);
     }
 
     /** Drop state for golems that haven't been seen for a while (died, unloaded). */
@@ -115,6 +174,7 @@ final class HomeFinder {
 
     private Homes scan(Entity golem, ItemStack held) {
         Set<Pos> matching = new HashSet<>();
+        Set<Pos> overflow = new HashSet<>();
         Set<Pos> empty = new HashSet<>();
         Set<Pos> seen = new HashSet<>();
 
@@ -151,13 +211,15 @@ final class HomeFinder {
                     ChestMatcher.Kind kind = matcher.classify(held, inventory).kind();
                     if (kind.isHome() && ChestMatcher.hasRoom(held, inventory)) {
                         matching.addAll(halves);
+                    } else if (kind == ChestMatcher.Kind.OVERFLOW && ChestMatcher.hasRoom(held, inventory)) {
+                        overflow.addAll(halves);
                     } else if (kind == ChestMatcher.Kind.EMPTY) {
                         empty.addAll(halves);
                     }
                 }
             }
         }
-        return new Homes(matching, empty);
+        return new Homes(matching, overflow, empty);
     }
 
     static boolean isDestination(Material type) {
@@ -166,16 +228,14 @@ final class HomeFinder {
 
     private static Set<Pos> halvesOf(Inventory inventory, Block fallback) {
         Set<Pos> halves = new HashSet<>(2);
-        InventoryHolder holder = inventory.getHolder(false);
-        if (holder instanceof DoubleChest dc) {
-            if (dc.getLeftSide(false) instanceof BlockState left) {
-                halves.add(Pos.of(left.getBlock()));
-            }
-            if (dc.getRightSide(false) instanceof BlockState right) {
-                halves.add(Pos.of(right.getBlock()));
-            }
-        }
         halves.add(Pos.of(fallback));
+        Block other = ChestLabels.connectedHalf(fallback);
+        if (other != null) {
+            halves.add(Pos.of(other));
+        }
+        for (Block b : ChestLabels.blocksOf(inventory)) {
+            halves.add(Pos.of(b));
+        }
         return halves;
     }
 }
