@@ -113,7 +113,7 @@ groups:
     - "*DISC*"
   # Smithing templates (19 items)
   smithing-templates:
-    - "*_TEMPLATE"
+    - "*TEMPLATE*"
   # Rare & trophies (18 items)
   rare-items:
     - BEACON
@@ -167,8 +167,8 @@ groups:
   # Food (38 items)
   food:
     - "#minecraft:fishes"
-    - "*_STEW"
-    - "COOKED_*"
+    - "*STEW*"
+    - "*COOKED*"
     - "*POTATO*"
     - APPLE
     - BEEF
@@ -241,11 +241,14 @@ groups:
     - SPIDER_EYE
     - STRING
     - TURTLE_SCUTE
-  # Ores (19 items)
+  # Ores (22 items)
   ores:
     - "*_ORE"
     - ANCIENT_DEBRIS
-  # Mineral blocks (11 items)
+    - RAW_COPPER_BLOCK
+    - RAW_GOLD_BLOCK
+    - RAW_IRON_BLOCK
+  # Mineral blocks (8 items)
   mineral-blocks:
     - COAL_BLOCK
     - DIAMOND_BLOCK
@@ -254,14 +257,11 @@ groups:
     - IRON_BLOCK
     - LAPIS_BLOCK
     - NETHERITE_BLOCK
-    - RAW_COPPER_BLOCK
-    - RAW_GOLD_BLOCK
-    - RAW_IRON_BLOCK
     - REDSTONE_BLOCK
   # Ingots & gems (19 items)
   ingots-and-gems:
-    - "*_INGOT"
-    - "*_NUGGET"
+    - "*INGOT*"
+    - "*NUGGET*"
     - CHARCOAL
     - COAL
     - DIAMOND
@@ -297,16 +297,16 @@ groups:
   # Armor (31 items)
   armor:
     - "#minecraft:leg_armor"
-    - "#minecraft:head_armor"
     - "#minecraft:foot_armor"
+    - "#minecraft:head_armor"
     - "#minecraft:chest_armor"
     - ELYTRA
     - SHIELD
   # Weapons & ammo (23 items)
   weapons:
-    - "#minecraft:swords"
-    - "#minecraft:spears"
     - "#minecraft:arrows"
+    - "#minecraft:spears"
+    - "#minecraft:swords"
     - BOW
     - CROSSBOW
     - FIRE_CHARGE
@@ -412,8 +412,8 @@ groups:
     - "#minecraft:decorated_pot_sherds"
     - "*_BED"
     - "*SIGN*"
-    - "*_SHELF"
     - "*GOLEM*"
+    - "*_SHELF"
     - "*BANNER*"
     - "*CUSHION*"
     - ARMOR_STAND
@@ -504,9 +504,9 @@ groups:
   # Nether (44 items)
   nether:
     - "*BASALT*"
-    - "RED_NETHER_*"
     - "*_BLACKSTONE"
     - "BLACKSTONE_*"
+    - "RED_NETHER_*"
     - "NETHER_BRICK_*"
     - "POLISHED_BLACKSTONE_BRICK_*"
     - BLACKSTONE
@@ -544,13 +544,13 @@ groups:
     - "#minecraft:copper"
     - "*GRATE*"
     - "*_CUT_COPPER"
-    - "*_COPPER_SLAB"
-    - "*_COPPER_DOOR"
     - "*_COPPER_BARS"
+    - "*_COPPER_DOOR"
+    - "*_COPPER_SLAB"
     - "*_COPPER_CHAIN"
     - "*_COPPER_STAIRS"
-    - "*_COPPER_TRAPDOOR"
     - "*_CHISELED_COPPER"
+    - "*_COPPER_TRAPDOOR"
     - CHISELED_COPPER
     - COPPER_BARS
     - COPPER_CHAIN
@@ -567,10 +567,10 @@ groups:
   # Wooden building (80 items)
   wooden-building:
     - "#minecraft:fence_gates"
-    - "#minecraft:wooden_slabs"
     - "#minecraft:wooden_doors"
-    - "#minecraft:wooden_stairs"
+    - "#minecraft:wooden_slabs"
     - "#minecraft:wooden_fences"
+    - "#minecraft:wooden_stairs"
     - "#minecraft:wooden_trapdoors"
     - BAMBOO_MOSAIC_SLAB
     - BAMBOO_MOSAIC_STAIRS
@@ -622,12 +622,12 @@ groups:
   # Stone & deepslate (81 items)
   stone:
     - "#minecraft:stone_bricks"
-    - "*TUFF*"
     - "*TILE*"
+    - "*TUFF*"
     - "*MOSSY*"
+    - "*COBBLED*"
     - "*DIORITE*"
     - "*GRANITE*"
-    - "COBBLED_*"
     - "*ANDESITE*"
     - "*COBBLESTONE*"
     - "STONE_BRICK_*"

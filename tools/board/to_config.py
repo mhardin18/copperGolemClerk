@@ -78,16 +78,17 @@ for i in survival:
 for p in pats:
     cands[p] = {i for i in ALL if fnmatch.fnmatchcase(i, p)}
 
-def readable(e):  # tie-break: tags, then patterns, then shorter
-    return (0 if e.startswith("#") else 1 if e.startswith("@") else 2, len(e))
+def readable(e):  # tie-break: tags, then patterns, then shorter, then alphabetical
+    return (0 if e.startswith("#") else 1 if e.startswith("@") else 2, len(e), e)
 
 groups = {}
 for c in cats:
     members = {i for i in survival if assign[i] == c["id"]}
     if not members:
         continue
-    ok = [e for e, m in cands.items()
-          if (m & survival) and (m & survival) <= members and len(m & survival) >= 3]
+    ok = sorted((e for e, m in cands.items()
+                 if (m & survival) and (m & survival) <= members and len(m & survival) >= 3),
+                key=readable)  # fixed order, so the same board always gives the same config
     chosen, covered = [], set()
     while True:
         best, gain = None, 0
