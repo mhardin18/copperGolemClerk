@@ -119,6 +119,8 @@ groups:
     - BROWN_MUSHROOM_BLOCK
     - MUSHROOM_STEM
   stone:
+    - "#minecraft:stone_crafting_materials"
+    - "#minecraft:stone_bricks"
     - STONE
     - COBBLESTONE
     - MOSSY_COBBLESTONE
@@ -135,6 +137,9 @@ groups:
   dirt-and-sand:
     - "#minecraft:dirt"
     - PODZOL
+    - GRASS_BLOCK
+    - MYCELIUM
+    - "#minecraft:sand"
     - SAND
     - RED_SAND
     - GRAVEL
@@ -265,6 +270,18 @@ groups:
     - "*_PRESSURE_PLATE"
     - DAYLIGHT_DETECTOR
     - TARGET
+    - REDSTONE_LAMP
+    - NOTE_BLOCK
+    - TRIPWIRE_HOOK
+    - TNT
+    - CRAFTER
+    - SCULK_SENSOR
+    - CALIBRATED_SCULK_SENSOR
+    - IRON_DOOR
+    - IRON_TRAPDOOR
+    - SLIME_BLOCK
+    - HONEY_BLOCK
+    - "*LIGHTNING_ROD"
   music-discs:
     - "@record"
   spawn-eggs:
@@ -273,3 +290,65 @@ groups:
     - POTION
     - SPLASH_POTION
     - LINGERING_POTION
+  building:
+    - "#minecraft:slabs"
+    - "#minecraft:stairs"
+    - "#minecraft:walls"
+    - "*SANDSTONE*"
+    - "*PRISMARINE*"
+    - OBSIDIAN
+    - SNOW_BLOCK
+  rails:
+    - "#minecraft:rails"
+    - MINECART
+    - "*_MINECART"
+  copper-blocks:
+    - "#minecraft:copper"
+    - "#minecraft:chains"
+    - "#minecraft:copper_chests"
+    - "*COPPER_BULB"
+    - "*COPPER_GRATE"
+    - "*CUT_COPPER*"
+  cave-plants:
+    - "#minecraft:moss_blocks"
+    - "*MOSS_CARPET"
+    - PALE_HANGING_MOSS
+    - BIG_DRIPLEAF
+    - SMALL_DRIPLEAF
+    - "*DRIPSTONE*"
+    - GLOW_LICHEN
+    - SPORE_BLOSSOM
+    - AZALEA
+    - FLOWERING_AZALEA
+    - HANGING_ROOTS
+  sculk:
+    - "*SCULK*"
+  sulfur:
+    - "*SULFUR*"
+    - CINNABAR
+  workstations:
+    - CRAFTING_TABLE
+    - FURNACE
+    - BLAST_FURNACE
+    - SMOKER
+    - BARREL
+    - COMPOSTER
+    - CAULDRON
+    - LECTERN
+    - "*BOOKSHELF"
+    - "*_SHELF"
+    - JUKEBOX
+    - BELL
+    - DECORATED_POT
+    - ARMOR_STAND
+    - SMITHING_TABLE
+    - STONECUTTER
+    - LOOM
+    - GRINDSTONE
+    - CARTOGRAPHY_TABLE
+    - FLETCHING_TABLE
+    - ANVIL
+    - CHIPPED_ANVIL
+    - DAMAGED_ANVIL
+    - BREWING_STAND
+    - ENCHANTING_TABLE
