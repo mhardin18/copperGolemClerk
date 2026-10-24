@@ -1,4 +1,4 @@
-package com.exigentsol.smartgolems;
+package com.exigentsol.smartcoppergolems;
 
 import java.util.BitSet;
 import java.util.List;

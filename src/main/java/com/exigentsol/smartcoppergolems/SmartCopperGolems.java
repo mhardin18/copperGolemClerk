@@ -1,4 +1,4 @@
-package com.exigentsol.smartgolems;
+package com.exigentsol.smartcoppergolems;
 
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -44,7 +44,7 @@ public final class SmartCopperGolems extends JavaPlugin {
         loadSettings();
         listener = new SortListener(this);
         getServer().getPluginManager().registerEvents(listener, this);
-        registerCommand("smartgolems", "Manage smart copper golem sorting", List.of("sg"), new Command());
+        registerCommand("smartcoppergolems", "Manage smart copper golem sorting", List.of("sg"), new Command());
     }
 
     /**
@@ -200,7 +200,7 @@ public final class SmartCopperGolems extends JavaPlugin {
                             NamedTextColor.AQUA));
                 }
                 default -> sender.sendMessage(Component.text(
-                        "Usage: /smartgolems <reload|check>", NamedTextColor.YELLOW));
+                        "Usage: /smartcoppergolems <reload|check>", NamedTextColor.YELLOW));
             }
         }
 
@@ -215,7 +215,7 @@ public final class SmartCopperGolems extends JavaPlugin {
 
         @Override
         public String permission() {
-            return "smartgolems.admin";
+            return "smartcoppergolems.admin";
         }
     }
 }

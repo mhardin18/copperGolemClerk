@@ -1,4 +1,4 @@
-package com.exigentsol.smartgolems;
+package com.exigentsol.smartcoppergolems;
 
 import java.io.File;
 import java.util.ArrayList;

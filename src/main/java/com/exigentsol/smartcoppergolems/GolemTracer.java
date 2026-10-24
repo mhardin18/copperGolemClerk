@@ -1,4 +1,4 @@
-package com.exigentsol.smartgolems;
+package com.exigentsol.smartcoppergolems;
 
 import java.util.HashMap;
 import java.util.Map;

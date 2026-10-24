@@ -1,4 +1,4 @@
-package com.exigentsol.smartgolems;
+package com.exigentsol.smartcoppergolems;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -30,7 +30,7 @@ import org.bukkit.inventory.ItemStack;
  * Vanilla golems always take from the first filled slot of a copper chest, so
  * homeless items are moved behind the others, and a copper chest holding only
  * homeless items is skipped. Homeless marks expire after homeless-retry-minutes
- * and are cleared on /smartgolems reload.
+ * and are cleared on /smartcoppergolems reload.
  */
 final class Returns {
 

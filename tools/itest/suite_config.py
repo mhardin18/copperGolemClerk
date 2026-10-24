@@ -20,7 +20,7 @@ def original():
 def restore(c):
     with open(CONFIG, "w") as f:
         f.write(original())
-    return c.r.cmd("smartgolems reload")
+    return c.r.cmd("smartcoppergolems reload")
 
 
 def try_config(c, text):
@@ -30,7 +30,7 @@ def try_config(c, text):
     try:
         with open(CONFIG, "w") as f:
             f.write(text)
-        reply = re.sub(r"§.", "", c.r.cmd("smartgolems reload"))
+        reply = re.sub(r"§.", "", c.r.cmd("smartcoppergolems reload"))
         lines = [l for l in c.log.since(start) if "SmartCopperGolems" in l or "Exception" in l]
     finally:
         restored = re.sub(r"§.", "", restore(c))
@@ -112,8 +112,8 @@ def _(c):
 
 @scenario("console-commands", "config", 30, "From the console: /sg check explains it's for players, an unknown subcommand shows usage.", alone=True)
 def _(c):
-    check = re.sub(r"§.", "", c.r.cmd("smartgolems check"))
-    usage = re.sub(r"§.", "", c.r.cmd("smartgolems frobnicate"))
+    check = re.sub(r"§.", "", c.r.cmd("smartcoppergolems check"))
+    usage = re.sub(r"§.", "", c.r.cmd("smartcoppergolems frobnicate"))
     alias = re.sub(r"§.", "", c.r.cmd("sg"))
     return lambda: [("Only players" in check, f"/sg check -> {check.strip()}"),
                     ("Usage" in usage, f"/sg frobnicate -> {usage.strip()}"),

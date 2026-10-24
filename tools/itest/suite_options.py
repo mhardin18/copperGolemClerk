@@ -17,7 +17,7 @@ def set_options(c, **options):
             raise RuntimeError(f"config has no single '{key}:' line")
     with open(CONFIG, "w") as f:
         f.write(text)
-    reply = re.sub(r"§.", "", c.r.cmd("smartgolems reload"))
+    reply = re.sub(r"§.", "", c.r.cmd("smartcoppergolems reload"))
     if "reloaded" not in reply:
         raise RuntimeError(f"reload failed: {reply}")
 
