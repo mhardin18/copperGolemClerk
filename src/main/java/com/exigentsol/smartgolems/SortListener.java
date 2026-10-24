@@ -48,9 +48,17 @@ public final class SortListener implements Listener {
         this.homes = new HomeFinder(plugin, matcher);
         this.returns = new Returns(plugin);
         this.fetcher = new OverflowFetcher(plugin, homes, returns);
-        plugin.getServer().getScheduler().runTaskTimer(plugin, homes::prune, 20 * 60, 20 * 60);
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::returnHomelessItems, 20, 20);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            homes.prune();
+            returns.prune();
+        }, 20 * 60, 20 * 60);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            homes.tickClocks();
+            returnHomelessItems();
+        }, 20, 20);
         plugin.getServer().getScheduler().runTaskTimer(plugin, fetcher::tick, 40, 20);
+        GolemTracer tracer = new GolemTracer(plugin);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, tracer::tick, 20, 20);
     }
 
     /** Forget which items had no home, so golems try them again (after /smartgolems reload). */
@@ -71,13 +79,18 @@ public final class SortListener implements Listener {
                 homes.forget(id); // its next search starts fresh
                 return;
             }
+            if (homes.waitingNearHome(golem, held)) {
+                return; // waiting in line at a chest that takes the item: check again next second
+            }
             if (plugin.returnUnsortableItems()
                     && returns.returnItem(golem, Bukkit.getWorld(search.world()), search.source())) {
                 homes.forget(id);
             } else {
                 if (plugin.debug()) {
-                    plugin.getLogger().info(golem.getType() + " carrying " + held.getType()
-                            + ": no home and no copper chest to return it to; searching again");
+                    var at = golem.getLocation();
+                    plugin.getLogger().info(String.format("%s carrying %s at %d,%d,%d: no home and %s; searching again",
+                            golem.getType(), held.getType(), at.getBlockX(), at.getBlockY(), at.getBlockZ(),
+                            plugin.returnUnsortableItems() ? "no copper chest to return it to" : "returning is turned off"));
                 }
                 homes.restart(id);
             }
@@ -129,6 +142,11 @@ public final class SortListener implements Listener {
             Set<HomeFinder.Pos> first = overflowFirst ? found.overflow() : empty;
             Set<HomeFinder.Pos> second = overflowFirst ? empty : found.overflow();
             Set<HomeFinder.Pos> pick = !first.isEmpty() ? first : second;
+            if (pick.isEmpty()) {
+                // Nothing qualifies, so don't steer: let vanilla pick chests and decide on arrival.
+                // (Another plugin may accept the item somewhere we wouldn't.)
+                return;
+            }
             String kind = pick == found.overflow() ? "overflow chest" : "empty chest";
             allowed = pick.contains(pos);
             why = pick.isEmpty() ? "no chest has room for it"
@@ -170,6 +188,12 @@ public final class SortListener implements Listener {
                     reason = "overflow chest, but a matching chest is in range";
                 } else {
                     result = Event.Result.ALLOW;
+                    if (cameFromThisChest(event.getEntity(), held, container)) {
+                        // Fetched from here and couldn't be delivered (e.g. its home is unreachable):
+                        // don't let idle golems fetch it again straight away.
+                        returns.markHomeless(container, held.getType());
+                        reason = "overflow chest; fetched from here but undeliverable, so not fetched again for a while";
+                    }
                 }
             }
             case EMPTY -> {
@@ -191,14 +215,14 @@ public final class SortListener implements Listener {
         }
         event.setResult(result);
 
-        // The golem reached a chest that takes its item: it isn't stuck, so restart its
-        // timer. Otherwise a golem that queued a while could have the item returned
-        // while it's opening the right chest.
+        // The golem reached a chest that takes its item: hold off returning it for a few
+        // seconds, so a golem that queued a while isn't sent back while it's opening the
+        // right chest.
         boolean accepted = result == Event.Result.ALLOW
                 || (result == Event.Result.DEFAULT
                     && (match.kind() == ChestMatcher.Kind.EXACT || match.kind() == ChestMatcher.Kind.EMPTY));
         if (accepted) {
-            homes.restart(event.getEntity().getUniqueId());
+            homes.accepted(event.getEntity().getUniqueId());
         }
 
         if (plugin.debug()) {
@@ -206,6 +230,20 @@ public final class SortListener implements Listener {
                     event.getEntityType(), held.getType(), container.getType(),
                     formatLocation(container), result, reason));
         }
+    }
+
+    /** True if the golem's current item was fetched from (one half of) this chest. */
+    private boolean cameFromThisChest(Entity golem, ItemStack held, Inventory container) {
+        HomeFinder.Search search = homes.searchOf(golem.getUniqueId());
+        if (search == null || search.source() == null || search.type() != held.getType()) {
+            return false;
+        }
+        for (Block half : ChestLabels.blocksOf(container)) {
+            if (HomeFinder.Pos.of(half).equals(search.source()) && half.getWorld().getUID().equals(search.world())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ItemStack heldItem(Entity entity) {

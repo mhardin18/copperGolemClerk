@@ -1,0 +1,5 @@
+name: GolemTestHooks
+version: '1.0.0'
+main: com.exigentsol.golemtesthooks.GolemTestHooks
+api-version: '26.3'
+description: Test-only. Simulates other plugins deciding where golems may put items, inside the test arena only.

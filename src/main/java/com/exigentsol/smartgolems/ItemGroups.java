@@ -194,7 +194,7 @@ public final class ItemGroups {
     }
 
     /** True if the item name contains these words in order, each singular or plural. */
-    private static boolean containsWords(String itemName, String[] words) {
+    static boolean containsWords(String itemName, String[] words) {
         String[] parts = itemName.toLowerCase(Locale.ROOT).split("_");
         outer:
         for (int start = 0; start + words.length <= parts.length; start++) {
@@ -227,11 +227,11 @@ public final class ItemGroups {
     }
 
     /** Lower-case words of a name; spaces, dashes and underscores all separate words. */
-    private static String[] words(String name) {
+    static String[] words(String name) {
         return name.toLowerCase(Locale.ROOT).trim().split("[\\s_-]+");
     }
 
-    private static boolean sameWordsIgnoringPlural(String[] a, String[] b) {
+    static boolean sameWordsIgnoringPlural(String[] a, String[] b) {
         if (a.length != b.length) {
             return false;
         }
@@ -244,7 +244,7 @@ public final class ItemGroups {
     }
 
     /** Rough English singular: sources -> source, glasses -> glass, berries -> berry, rails -> rail. */
-    private static String singular(String word) {
+    static String singular(String word) {
         if (word.endsWith("ies") && word.length() > 4) {
             return word.substring(0, word.length() - 3) + "y";
         }

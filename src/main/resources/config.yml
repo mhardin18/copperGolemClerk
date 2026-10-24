@@ -28,13 +28,20 @@ prefer-matching-chests: true
 
 # If a golem can't deliver its item, it works through these steps, each lasting
 # matching-chest-timeout-seconds:
-#   1. Go to a matching chest, then an [Overflow] chest, then an empty chest.
-#   2. Assume the matching chest is unreachable: [Overflow] or empty chests only.
-#   3. Vanilla behavior: wander from chest to chest.
-#   4. Put the item back into the copper chest it came from (see below).
+#   1. Go to the most specific matching chest (labels first, then contents),
+#      then an [Overflow] chest, then an empty chest.
+#   2. The most specific chest may be unreachable: any matching chest.
+#   3. Assume matching chests are unreachable: [Overflow] or empty chests only.
+#   4. Vanilla behavior: wander from chest to chest.
+#   5. Put the item back into the copper chest it came from (see below).
+# Time only counts while the golem is likely active: walking, or with a player
+# within spigot.yml's entity-activation-range for animals (32 by default).
+# Further away, Paper runs golems in short bursts about once a minute, and a
+# paused golem shouldn't run out of time. A golem waiting in line next to a
+# chest that takes its item is never sent back.
 matching-chest-timeout-seconds: 30
 
-# After step 3, put the item back into the copper chest the golem took it from
+# After step 4, put the item back into the copper chest the golem took it from
 # (or the nearest copper chest in range with room). Golems can't walk to a copper
 # chest while carrying something, so the item is moved back directly.
 # Returned items are marked "no home" for that copper chest: golems take other
@@ -96,6 +103,10 @@ fetchers-per-overflow-chest: 2
 
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false
+
+# Diagnostics: log each golem's state, position and held item when they change.
+# Very chatty; leave off unless you're investigating what golems are doing.
+trace-golems: false
 
 # Each group is a list of entries. An item can be in more than one group.
 # Entry formats:

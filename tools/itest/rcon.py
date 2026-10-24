@@ -1,13 +1,39 @@
 """Minimal Source RCON client (what Minecraft speaks). Standard library only."""
 import socket
 import struct
+import time
 
 class Rcon:
     def __init__(self, host, port, password, timeout=10):
-        self.sock = socket.create_connection((host, port), timeout=timeout)
+        self.addr, self.password, self.timeout = (host, port), password, timeout
+        self._connect()
+
+    def _connect(self):
+        self.sock = socket.create_connection(self.addr, timeout=self.timeout)
         self._id = 0
-        if self._send(3, password)[0] == -1:
+        if self._send(3, self.password)[0] == -1:
             raise PermissionError("RCON login refused")
+
+    def reconnect_after_restart(self, down_timeout=600, up_timeout=600):
+        """Wait for the server to go down (someone restarts it), then reconnect once it's back."""
+        deadline = time.time() + down_timeout
+        while time.time() < deadline:
+            try:
+                self.cmd("list")
+                time.sleep(2)
+            except (OSError, ConnectionError):
+                break
+        else:
+            raise TimeoutError("the server was not restarted")
+        deadline = time.time() + up_timeout
+        while time.time() < deadline:
+            time.sleep(3)
+            try:
+                self._connect()
+                return
+            except (OSError, ConnectionError, PermissionError):
+                continue
+        raise TimeoutError("the server did not come back")
 
     def _send(self, kind, body):
         self._id += 1

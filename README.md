@@ -65,9 +65,11 @@ no group and no item, it matches items with that word in their name (`[carpet]`
 = every carpet). For one exact item that shares a group's name, use a framed
 item instead.
 
-When several chests would take an item, golems use the most specific one: a
-framed item or a chest already holding that exact item first, then the label or
-group with the fewest items. A stew goes to `[stews]` before `[food]`. Frame and sign labels on one chest combine.
+When several chests would take an item, golems use the most specific one. Labels
+(frames and signs) come before contents: a framed item first, then the sign label
+covering the fewest items, then a chest already holding that exact item, then a
+group match by contents. A stew goes to `[stews]` before `[food]`, and a `[logs]`
+chest wins over an unlabelled chest that happens to hold birch logs. Frame and sign labels on one chest combine.
 
 Where a golem takes an item, in order: a matching chest with room (label, same
 item or group), then an `[Overflow]` chest, then an empty chest
@@ -76,15 +78,18 @@ as a match for what's already in them.
 
 ### Items with no home
 
-If a golem can't deliver its item it works through three steps, each lasting
-`matching-chest-timeout-seconds` (default 30): steer to a matching, overflow or
-empty chest; then only overflow or empty chests (the matching chest may be
-unreachable); then plain vanilla wandering. After that, the item is put back
-into the copper chest it came from (golems can't walk to copper chests while
-carrying, so it's moved directly) and marked "no home" there for
-`homeless-retry-minutes` (default 5). Golems take other items first and skip a
-copper chest that has only "no home" items left. Add a home for the item, then
-`/smartgolems reload` to have golems try again right away.
+If a golem can't deliver its item it works through four steps, each lasting
+`matching-chest-timeout-seconds` (default 30): steer to the most specific matching
+chest, overflow or empty chest; then any matching chest (the most specific one may be
+unreachable); then only overflow or empty chests; then plain vanilla wandering. After
+that, the item is put back into the copper chest it came from (golems can't walk to
+copper chests while carrying, so it's moved directly) and marked "no home" there for
+`homeless-retry-minutes` (default 5). Golems take other items first and skip a copper
+chest that has only "no home" items left. Add a home for the item, then
+`/smartgolems reload` to have golems try again right away. Steps count only time the
+golem is likely active (walking, or a player within the server's entity activation
+range), so golems that Paper pauses far from players don't run out of time, and a
+golem waiting its turn next to a chest that takes its item is never sent back.
 
 ### Re-sorting the overflow chest
 
