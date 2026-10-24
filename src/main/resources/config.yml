@@ -15,12 +15,34 @@
 #   any - one item from the same group is enough.
 match-mode: all
 
-# Vanilla golems drop items into any empty chest they find. That can scatter
-# items before the golem reaches the chest where they belong.
-# Set this to false to stop golems from using empty chests. If you do, put one
-# item into each chest to "label" what goes there, and keep a catch-all chest
-# for anything that has no group.
+# Vanilla golems walk to the nearest chest they haven't tried, and drop their
+# item into the first empty chest they reach, often before finding the chest
+# where it belongs.
+#
+# With prefer-matching-chests on, a golem carrying an item first looks over every
+# chest in its range (32 blocks sideways, 8 up/down, loaded chunks only). If one
+# matches the item (item frame label, same item, or same group) and has room, the
+# golem walks straight to it and ignores empty chests. Empty chests are used only
+# when no matching chest has room.
+prefer-matching-chests: true
+
+# If a golem still hasn't delivered its item after this many seconds (for
+# example, the matching chest is walled off), it falls back to vanilla behavior
+# for that item, including using an empty chest.
+matching-chest-timeout-seconds: 30
+
+# Set to false to stop golems from ever using empty chests. Put one item into
+# each chest (or use item frame labels) to say what goes there, and keep a
+# labeled catch-all chest for anything without a home, or golems will carry
+# unsortable items around forever.
 allow-empty-chests: true
+
+# Item frame labels: hang an item frame (or glow item frame) holding an item on
+# any side of a chest, and golems will put ONLY that exact item in that chest.
+# This overrides groups and allow-empty-chests. Several frames on one chest
+# allow each framed item. Empty frames are ignored. Matching is by item type
+# (all enchanted books count as the same item, for example).
+item-frame-labels: true
 
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false
@@ -67,11 +89,14 @@ groups:
     - END_STONE
   dirt-and-sand:
     - "#minecraft:dirt"
+    - PODZOL
     - SAND
     - RED_SAND
     - GRAVEL
     - CLAY
     - CLAY_BALL
+  soul:
+    - "SOUL_*"
   ores:
     - "*_ORE"
     - ANCIENT_DEBRIS
