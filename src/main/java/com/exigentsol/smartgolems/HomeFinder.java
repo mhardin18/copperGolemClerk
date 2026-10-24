@@ -256,6 +256,7 @@ final class HomeFinder {
         Set<Pos> overflow = new HashSet<>();
         Set<Pos> empty = new HashSet<>();
         Set<Pos> seen = new HashSet<>();
+        int bestSpecificity = Integer.MAX_VALUE;
 
         for (BlockState state : containersInRange(golem, HomeFinder::isDestination)) {
             if (!(state instanceof Chest chest)) {
@@ -269,9 +270,17 @@ final class HomeFinder {
             Set<Pos> halves = halvesOf(inventory, block);
             seen.addAll(halves);
 
-            ChestMatcher.Kind kind = matcher.classify(held, inventory).kind();
+            ChestMatcher.Match match = matcher.classify(held, inventory);
+            ChestMatcher.Kind kind = match.kind();
             if (kind.isHome() && ChestMatcher.hasRoom(held, inventory)) {
-                matching.addAll(halves);
+                // Keep only the most specific homes: [stews] beats [food] for a stew.
+                if (match.specificity() < bestSpecificity) {
+                    bestSpecificity = match.specificity();
+                    matching.clear();
+                }
+                if (match.specificity() == bestSpecificity) {
+                    matching.addAll(halves);
+                }
             } else if (kind == ChestMatcher.Kind.OVERFLOW && ChestMatcher.hasRoom(held, inventory)) {
                 overflow.addAll(halves);
             } else if (kind == ChestMatcher.Kind.EMPTY) {

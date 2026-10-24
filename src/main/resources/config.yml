@@ -66,7 +66,11 @@ item-frame-labels: true
 # Golems then put only matching items in that chest, like item frame labels.
 # If a word is both a group and an item, the group wins: [stone] = stone group.
 # Group names work singular or plural: [Rail] = rails, [ore] = ores,
-# [light source] = light-sources.
+# [light source] = light-sources. If a word matches no group and no item, it
+# matches items with that word in their name: [carpet] = every carpet.
+# When several chests accept an item, golems use the most specific one: a
+# framed item or exact match first, then the label or group with the fewest
+# items ([stews] beats [food] for a stew).
 # Frames and signs on one chest combine: any matching label accepts the item.
 #
 # [Overflow] (any capitalization) makes a catch-all chest: golems put an item
@@ -219,6 +223,9 @@ groups:
     - "*_SEEDS"
   food:
     - "@edible"
+  stews:
+    - "*_STEW"
+    - "*_SOUP"
   mob-drops:
     - ROTTEN_FLESH
     - BONE

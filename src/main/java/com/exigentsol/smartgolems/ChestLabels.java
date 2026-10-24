@@ -3,7 +3,6 @@ package com.exigentsol.smartgolems;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
@@ -40,22 +39,29 @@ final class ChestLabels {
     private static final BlockFace[] SIDES = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
 
     /**
-     * @param rules     item rules from frames and signs (any match accepts the item)
+     * @param rules     item rules from frames and signs (any match accepts the item),
+     *                  each with the number of item types it covers
      * @param names     the label texts, for debug messages
      * @param overflow  an [overflow] sign is present
      */
-    record Labels(List<Predicate<Material>> rules, List<String> names, boolean overflow) {
+    record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow) {
         boolean hasItemRules() {
             return !rules.isEmpty();
         }
 
         boolean accepts(Material type) {
-            for (Predicate<Material> rule : rules) {
-                if (rule.test(type)) {
-                    return true;
+            return specificity(type) != Integer.MAX_VALUE;
+        }
+
+        /** Item count of the narrowest label that accepts this type (Integer.MAX_VALUE if none). */
+        int specificity(Material type) {
+            int best = Integer.MAX_VALUE;
+            for (ItemGroups.Rule rule : rules) {
+                if (rule.test().test(type)) {
+                    best = Math.min(best, rule.size());
                 }
             }
-            return false;
+            return best;
         }
     }
 
@@ -63,7 +69,7 @@ final class ChestLabels {
     }
 
     static Labels of(Inventory container, ItemGroups groups, boolean frames, boolean signs) {
-        List<Predicate<Material>> rules = new ArrayList<>();
+        List<ItemGroups.Rule> rules = new ArrayList<>();
         List<String> names = new ArrayList<>();
         boolean overflow = false;
 
@@ -85,7 +91,7 @@ final class ChestLabels {
                                 overflow = true;
                                 continue;
                             }
-                            Predicate<Material> rule = groups.signRule(inner);
+                            ItemGroups.Rule rule = groups.signRule(inner);
                             if (rule != null) {
                                 rules.add(rule);
                                 names.add("[" + inner + "]");
@@ -98,7 +104,7 @@ final class ChestLabels {
         return new Labels(rules, names, overflow);
     }
 
-    private static void readFrames(Block block, List<Predicate<Material>> rules, List<String> names) {
+    private static void readFrames(Block block, List<ItemGroups.Rule> rules, List<String> names) {
         Location center = block.getLocation().add(0.5, 0.5, 0.5);
         // A frame on this block sits just outside one of its faces.
         for (ItemFrame frame : block.getWorld().getNearbyEntitiesByType(ItemFrame.class, center, 1.0)) {
@@ -109,7 +115,7 @@ final class ChestLabels {
             ItemStack shown = frame.getItem();
             if (!shown.isEmpty()) {
                 Material type = shown.getType();
-                rules.add(m -> m == type);
+                rules.add(new ItemGroups.Rule(m -> m == type, 1)); // one exact item: most specific
                 names.add("frame " + type);
             }
         }
