@@ -105,278 +105,567 @@ debug: false
 #   @edible            items you can eat
 #   @fuel              items that burn in a furnace
 #   @record            music discs
+# Generated from the Golem Sorting Board (https://claude.ai/artifact/2saszixj5PGgx7Q5bUfA23):
+# every item you can get in survival on 26.3 is in exactly one group.
 groups:
-  logs:
-    - "#minecraft:logs"
-  planks:
-    - "#minecraft:planks"
-  wooden-building:
-    - "#minecraft:wooden_slabs"
-    - "#minecraft:wooden_stairs"
-    - "#minecraft:wooden_fences"
-    - "#minecraft:fence_gates"
-    - "#minecraft:wooden_doors"
-    - "#minecraft:wooden_trapdoors"
-  saplings-and-leaves:
-    - "#minecraft:saplings"
-    - "#minecraft:leaves"
-  flowers:
-    - "#minecraft:flowers"
-  mushrooms:
-    - "#minecraft:mushrooms"
-    - RED_MUSHROOM_BLOCK
-    - BROWN_MUSHROOM_BLOCK
-    - MUSHROOM_STEM
-  stone:
-    - "#minecraft:stone_crafting_materials"
-    - "#minecraft:stone_bricks"
-    - STONE
-    - COBBLESTONE
-    - MOSSY_COBBLESTONE
-    - DEEPSLATE
-    - COBBLED_DEEPSLATE
-    - GRANITE
-    - DIORITE
-    - ANDESITE
-    - TUFF
-    - CALCITE
-    - BLACKSTONE
-    - BASALT
-    - END_STONE
-  dirt-and-sand:
-    - "#minecraft:dirt"
-    - PODZOL
-    - GRASS_BLOCK
-    - MYCELIUM
-    - "#minecraft:sand"
-    - SAND
-    - RED_SAND
-    - GRAVEL
-    - CLAY
-    - CLAY_BALL
-  soul:
-    - "SOUL_*"
-  amethyst:
-    - "*AMETHYST*"
-  nether:
-    - NETHERRACK
-    - MAGMA_BLOCK
+  # Music discs (23 items)
+  music-discs:
+    - "*DISC*"
+  # Smithing templates (19 items)
+  smithing-templates:
+    - "*_TEMPLATE"
+  # Rare & trophies (18 items)
+  rare-items:
+    - BEACON
+    - CONDUIT
+    - CREAKING_HEART
+    - DRAGON_EGG
+    - DRIED_GHAST
+    - ECHO_SHARD
+    - ENCHANTED_GOLDEN_APPLE
+    - END_CRYSTAL
+    - GOAT_HORN
+    - HEART_OF_THE_SEA
+    - HEAVY_CORE
+    - NETHER_STAR
+    - OMINOUS_BOTTLE
+    - OMINOUS_TRIAL_KEY
+    - SNIFFER_EGG
+    - TOTEM_OF_UNDYING
+    - TRIAL_KEY
+    - TURTLE_EGG
+  # Buckets (12 items)
+  buckets:
+    - "*BUCKET*"
+  # Potions & brewing (9 items)
+  brewing:
+    - "*POTION*"
+    - BLAZE_POWDER
+    - DRAGON_BREATH
+    - FERMENTED_SPIDER_EYE
+    - GLASS_BOTTLE
+    - GLISTERING_MELON_SLICE
     - NETHER_WART
-    - "*_WART_BLOCK"
-    - "*_NYLIUM"
-    - "*_FUNGUS"
-    - CRIMSON_ROOTS
-    - WARPED_ROOTS
-    - NETHER_SPROUTS
-    - WEEPING_VINES
-    - TWISTING_VINES
-    - SHROOMLIGHT
-    - "*BASALT"
-    - "*BLACKSTONE*"
-    - "*NETHER_BRICK*"
+  # Books & enchanting (5 items)
+  books:
+    - "*_BOOK"
+    - BOOK
+    - EXPERIENCE_BOTTLE
+  # Maps & navigation (23 items)
+  maps:
+    - "*_MAP"
+    - CLOCK
+    - COMPASS
+    - LODESTONE
+    - MAP
+    - RECOVERY_COMPASS
+    - SPYGLASS
+  # Fireworks (2 items)
+  fireworks:
+    - FIREWORK_ROCKET
+    - FIREWORK_STAR
+  # Food (38 items)
+  food:
+    - "#minecraft:fishes"
+    - "*_STEW"
+    - "COOKED_*"
+    - "*POTATO*"
+    - APPLE
+    - BEEF
+    - BEETROOT
+    - BEETROOT_SOUP
+    - BREAD
+    - CAKE
+    - CARROT
+    - CHICKEN
+    - CHORUS_FRUIT
+    - COOKIE
+    - DRIED_KELP
+    - GLOW_BERRIES
+    - GOLDEN_APPLE
+    - GOLDEN_CARROT
+    - HONEY_BOTTLE
+    - MELON_SLICE
+    - MUTTON
+    - PORKCHOP
+    - PUMPKIN_PIE
+    - RABBIT
+    - SWEET_BERRIES
+  # Seeds (7 items)
+  seeds:
+    - "*SEEDS*"
+    - COCOA_BEANS
+    - PITCHER_POD
+  # Crops & farming (14 items)
+  farming:
+    - BEEHIVE
+    - BEE_NEST
+    - BONE_BLOCK
+    - BONE_MEAL
+    - CARVED_PUMPKIN
+    - DRIED_KELP_BLOCK
+    - HAY_BLOCK
+    - HONEYCOMB
+    - HONEYCOMB_BLOCK
+    - MELON
+    - PUMPKIN
+    - SUGAR
+    - SUGAR_CANE
+    - WHEAT
+  # Mob drops (27 items)
+  mob-drops:
+    - ARMADILLO_SCUTE
+    - BLAZE_ROD
+    - BLUE_EGG
+    - BONE
+    - BREEZE_ROD
+    - BROWN_EGG
+    - EGG
+    - ENDER_EYE
+    - ENDER_PEARL
+    - FEATHER
+    - GHAST_TEAR
+    - GLOW_INK_SAC
+    - GUNPOWDER
+    - INK_SAC
+    - LEATHER
+    - MAGMA_CREAM
+    - NAUTILUS_SHELL
+    - PHANTOM_MEMBRANE
+    - RABBIT_FOOT
+    - RABBIT_HIDE
+    - RESIN_CLUMP
+    - ROTTEN_FLESH
+    - SHULKER_SHELL
+    - SLIME_BALL
+    - SPIDER_EYE
+    - STRING
+    - TURTLE_SCUTE
+  # Ores (19 items)
   ores:
     - "*_ORE"
     - ANCIENT_DEBRIS
+  # Mineral blocks (11 items)
+  mineral-blocks:
+    - COAL_BLOCK
+    - DIAMOND_BLOCK
+    - EMERALD_BLOCK
+    - GOLD_BLOCK
+    - IRON_BLOCK
+    - LAPIS_BLOCK
+    - NETHERITE_BLOCK
+    - RAW_COPPER_BLOCK
+    - RAW_GOLD_BLOCK
+    - RAW_IRON_BLOCK
+    - REDSTONE_BLOCK
+  # Ingots & gems (19 items)
   ingots-and-gems:
-    - "RAW_*"
     - "*_INGOT"
     - "*_NUGGET"
+    - CHARCOAL
+    - COAL
     - DIAMOND
     - EMERALD
     - LAPIS_LAZULI
-    - COAL
-    - CHARCOAL
-    - REDSTONE
-    - QUARTZ
-    - AMETHYST_SHARD
     - NETHERITE_SCRAP
-  wool-and-carpet:
-    - "#minecraft:wool"
-    - "#minecraft:wool_carpets"
-  colored-blocks:
-    - "*_TERRACOTTA"
-    - TERRACOTTA
-    - "*_CONCRETE"
-    - "*_CONCRETE_POWDER"
-  glass:
-    - GLASS
-    - "*_GLASS"
-    - GLASS_PANE
-    - "*_GLASS_PANE"
-  light-sources:
-    - GLOWSTONE
-    - SEA_LANTERN
-    - SHROOMLIGHT
-    - END_ROD
-    - "*_FROGLIGHT"
-    - "*LANTERN"
-    - TORCH
-    - SOUL_TORCH
-    - COPPER_TORCH
-    - CAMPFIRE
-    - SOUL_CAMPFIRE
-    - CANDLE
-    - "*_CANDLE"
-  dyes:
-    - "*_DYE"
-  seeds:
-    - "*_SEEDS"
-  food:
-    - "@edible"
-  stews:
-    - "*_STEW"
-    - "*_SOUP"
-  mob-drops:
-    - ROTTEN_FLESH
-    - BONE
-    - BONE_MEAL
-    - STRING
-    - SPIDER_EYE
-    - GUNPOWDER
-    - ENDER_PEARL
-    - SLIME_BALL
-    - LEATHER
-    - FEATHER
-    - PHANTOM_MEMBRANE
-    - BLAZE_ROD
-    - GHAST_TEAR
-    - MAGMA_CREAM
-    - INK_SAC
-    - GLOW_INK_SAC
-    - ARROW
-  tools:
-    - "*_PICKAXE"
-    - "*_AXE"
-    - "*_SHOVEL"
-    - "*_HOE"
-    - SHEARS
-    - FLINT_AND_STEEL
-    - FISHING_ROD
+    - PRISMARINE_CRYSTALS
+    - PRISMARINE_SHARD
+    - QUARTZ
+    - RAW_COPPER
+    - RAW_GOLD
+    - RAW_IRON
+  # Crafting materials (9 items)
+  crafting-materials:
+    - BOWL
+    - BRICK
+    - CLAY_BALL
+    - FLINT
+    - GLOWSTONE_DUST
+    - NETHER_BRICK
+    - PAPER
+    - RESIN_BRICK
+    - STICK
+  # Amethyst (6 items)
+  amethyst:
+    - "*AMETHYST*"
+  # Saddles & animal armor (30 items)
+  animal-gear:
+    - "#minecraft:harnesses"
+    - "*_ARMOR"
+    - LEAD
+    - SADDLE
+  # Armor (31 items)
+  armor:
+    - "#minecraft:leg_armor"
+    - "#minecraft:head_armor"
+    - "#minecraft:foot_armor"
+    - "#minecraft:chest_armor"
+    - ELYTRA
+    - SHIELD
+  # Weapons & ammo (23 items)
   weapons:
-    - "*_SWORD"
-    - "*_SPEAR"
+    - "#minecraft:swords"
+    - "#minecraft:spears"
+    - "#minecraft:arrows"
     - BOW
     - CROSSBOW
-    - TRIDENT
+    - FIRE_CHARGE
     - MACE
-  armor:
-    - "*_HELMET"
-    - "*_CHESTPLATE"
-    - "*_LEGGINGS"
-    - "*_BOOTS"
-    - SHIELD
-  redstone:
-    - REDSTONE
-    - REDSTONE_TORCH
-    - REDSTONE_BLOCK
-    - REPEATER
-    - COMPARATOR
-    - PISTON
-    - STICKY_PISTON
-    - OBSERVER
-    - HOPPER
-    - DROPPER
-    - DISPENSER
-    - LEVER
-    - "*_BUTTON"
-    - "*_PRESSURE_PLATE"
-    - DAYLIGHT_DETECTOR
-    - TARGET
-    - REDSTONE_LAMP
-    - NOTE_BLOCK
-    - TRIPWIRE_HOOK
-    - TNT
-    - CRAFTER
-    - SCULK_SENSOR
-    - CALIBRATED_SCULK_SENSOR
-    - IRON_DOOR
-    - IRON_TRAPDOOR
-    - SLIME_BLOCK
-    - HONEY_BLOCK
-    - "*LIGHTNING_ROD"
-  music-discs:
-    - "@record"
-  spawn-eggs:
-    - "*_SPAWN_EGG"
-  potions:
-    - POTION
-    - SPLASH_POTION
-    - LINGERING_POTION
-  building:
-    - "#minecraft:slabs"
-    - "#minecraft:stairs"
-    - "#minecraft:walls"
-    - "*SANDSTONE*"
-    - "*PRISMARINE*"
-    - OBSIDIAN
-    - SNOW_BLOCK
+    - TRIDENT
+    - WIND_CHARGE
+  # Tools (35 items)
+  tools:
+    - "#minecraft:axes"
+    - "#minecraft:hoes"
+    - "#minecraft:shovels"
+    - "#minecraft:pickaxes"
+    - BRUSH
+    - CARROT_ON_A_STICK
+    - FISHING_ROD
+    - FLINT_AND_STEEL
+    - NAME_TAG
+    - SHEARS
+    - WARPED_FUNGUS_ON_A_STICK
+  # Boats (22 items)
+  boats:
+    - "#minecraft:boats"
+  # Rails & minecarts (9 items)
   rails:
     - "#minecraft:rails"
-    - MINECART
-    - "*_MINECART"
-  copper-blocks:
-    - "#minecraft:copper"
-    - "#minecraft:chains"
-    - "#minecraft:copper_chests"
-    - "*COPPER_BULB"
-    - "*COPPER_GRATE"
-    - "*CUT_COPPER*"
-  cave-plants:
-    - "#minecraft:moss_blocks"
-    - "*MOSS_CARPET"
-    - PALE_HANGING_MOSS
-    - BIG_DRIPLEAF
-    - SMALL_DRIPLEAF
-    - "*DRIPSTONE*"
-    - GLOW_LICHEN
-    - SPORE_BLOSSOM
-    - AZALEA
-    - FLOWERING_AZALEA
-    - HANGING_ROOTS
-  sculk:
-    - "*SCULK*"
-  sulfur:
-    - "*SULFUR*"
-    - CINNABAR
-  # Villager job site blocks only (one per profession).
+    - "*MINECART*"
+  # Redstone (72 items)
+  redstone:
+    - "#minecraft:buttons"
+    - "*BULB*"
+    - "*_PLATE"
+    - "*LIGHTNING*"
+    - CALIBRATED_SCULK_SENSOR
+    - COMPARATOR
+    - CRAFTER
+    - DAYLIGHT_DETECTOR
+    - DISPENSER
+    - DROPPER
+    - HONEY_BLOCK
+    - HOPPER
+    - IRON_DOOR
+    - IRON_TRAPDOOR
+    - LEVER
+    - NOTE_BLOCK
+    - OBSERVER
+    - PISTON
+    - REDSTONE
+    - REDSTONE_LAMP
+    - REDSTONE_TORCH
+    - REPEATER
+    - SCULK_SENSOR
+    - SLIME_BLOCK
+    - STICKY_PISTON
+    - TARGET
+    - TNT
+    - TRIPWIRE_HOOK
+  # Light sources (40 items)
+  light-sources:
+    - "#minecraft:candles"
+    - "*LANTERN*"
+    - "*FROGLIGHT*"
+    - CAMPFIRE
+    - COPPER_TORCH
+    - END_ROD
+    - GLOWSTONE
+    - SHROOMLIGHT
+    - SOUL_CAMPFIRE
+    - SOUL_TORCH
+    - TORCH
+  # Storage (45 items)
+  storage:
+    - "#minecraft:bundles"
+    - "#minecraft:shulker_boxes"
+    - "*_CHEST"
+    - CHEST
+  # Workstations (villager jobs) (13 items)
   workstations:
-    - BLAST_FURNACE      # armorer
-    - SMOKER             # butcher
-    - CARTOGRAPHY_TABLE  # cartographer
-    - BREWING_STAND      # cleric
-    - COMPOSTER          # farmer
-    - BARREL             # fisherman
-    - FLETCHING_TABLE    # fletcher
-    - CAULDRON           # leatherworker
-    - LECTERN            # librarian
-    - STONECUTTER        # mason
-    - LOOM               # shepherd
-    - SMITHING_TABLE     # toolsmith
-    - GRINDSTONE         # weaponsmith
-  decorations:
-    - "#minecraft:banners"
-    - "*_BANNER_PATTERN"
-    - "*_BED"
-    - "#minecraft:signs"
-    - "#minecraft:hanging_signs"
-    - "#minecraft:skulls"
-    - ITEM_FRAME
-    - GLOW_ITEM_FRAME
-    - PAINTING
-    - FLOWER_POT
-    - ARMOR_STAND
-    - DECORATED_POT
-    - "#minecraft:decorated_pot_sherds"
-    - "*COPPER_GOLEM_STATUE"
-    - "*BOOKSHELF"
-    - "*_SHELF"
-  # Useful blocks that aren't villager job sites.
+    - BARREL
+    - BLAST_FURNACE
+    - BREWING_STAND
+    - CARTOGRAPHY_TABLE
+    - CAULDRON
+    - COMPOSTER
+    - FLETCHING_TABLE
+    - GRINDSTONE
+    - LECTERN
+    - LOOM
+    - SMITHING_TABLE
+    - SMOKER
+    - STONECUTTER
+  # Utility blocks (9 items)
   utility-blocks:
-    - CRAFTING_TABLE
-    - FURNACE
-    - ANVIL
-    - CHIPPED_ANVIL
-    - DAMAGED_ANVIL
-    - ENCHANTING_TABLE
-    - JUKEBOX
+    - "*ANVIL*"
     - BELL
+    - CRAFTING_TABLE
+    - ENCHANTING_TABLE
+    - FURNACE
+    - JUKEBOX
+    - RESPAWN_ANCHOR
+  # Decorations (143 items)
+  decorations:
+    - "#minecraft:skulls"
+    - "#minecraft:decorated_pot_sherds"
+    - "*_BED"
+    - "*SIGN*"
+    - "*_SHELF"
+    - "*GOLEM*"
+    - "*BANNER*"
+    - "*CUSHION*"
+    - ARMOR_STAND
+    - BOOKSHELF
+    - CHISELED_BOOKSHELF
+    - DECORATED_POT
+    - FLOWER_POT
+    - GLOW_ITEM_FRAME
+    - ITEM_FRAME
+    - PAINTING
+  # Wool & carpet (64 items)
+  wool:
+    - "#minecraft:wool_carpets"
+    - "*WOOL*"
+  # Concrete & terracotta (97 items)
+  concrete-and-terracotta:
+    - "*CONCRETE*"
+    - "*TERRACOTTA*"
+  # Glass (35 items)
+  glass:
+    - "*STAINED*"
+    - GLASS
+    - GLASS_PANE
+    - TINTED_GLASS
+  # Dyes (16 items)
+  dyes:
+    - "#minecraft:dyes"
+  # Mushrooms (6 items)
+  mushrooms:
+    - "#minecraft:mushrooms"
+    - BROWN_MUSHROOM_BLOCK
+    - MUSHROOM_STEM
+    - RED_MUSHROOM_BLOCK
+  # Flowers (31 items)
+  flowers:
+    - "#minecraft:flowers"
+  # Saplings & leaves (23 items)
+  saplings-and-leaves:
+    - "*SAPLING*"
+    - "*_POPLAR_LEAVES"
+    - ACACIA_LEAVES
+    - AZALEA
+    - AZALEA_LEAVES
+    - BIRCH_LEAVES
+    - DARK_OAK_LEAVES
+    - JUNGLE_LEAVES
+    - LEAF_LITTER
+    - MANGROVE_LEAVES
+    - OAK_LEAVES
+    - PALE_OAK_LEAVES
+    - SPRUCE_LEAVES
+  # Sculk (4 items)
+  sculk:
+    - SCULK
+    - SCULK_CATALYST
+    - SCULK_SHRIEKER
+    - SCULK_VEIN
+  # Sulfur & cinnabar (28 items)
+  sulfur:
+    - "*_SULFUR"
+    - "*CINNABAR*"
+    - "SULFUR_BRICK_*"
+    - "POLISHED_SULFUR_*"
+    - SULFUR
+    - SULFUR_BRICKS
+    - SULFUR_SLAB
+    - SULFUR_SPIKE
+    - SULFUR_STAIRS
+    - SULFUR_WALL
+  # Ocean (45 items)
+  ocean:
+    - "*CORAL*"
+    - DARK_PRISMARINE
+    - DARK_PRISMARINE_SLAB
+    - DARK_PRISMARINE_STAIRS
+    - KELP
+    - PRISMARINE
+    - PRISMARINE_BRICKS
+    - PRISMARINE_BRICK_SLAB
+    - PRISMARINE_BRICK_STAIRS
+    - PRISMARINE_SLAB
+    - PRISMARINE_STAIRS
+    - PRISMARINE_WALL
+    - SEAGRASS
+    - SEA_PICKLE
+    - SPONGE
+    - WET_SPONGE
+  # Nether (44 items)
+  nether:
+    - "*BASALT*"
+    - "RED_NETHER_*"
+    - "*_BLACKSTONE"
+    - "BLACKSTONE_*"
+    - "NETHER_BRICK_*"
+    - "POLISHED_BLACKSTONE_BRICK_*"
+    - BLACKSTONE
+    - CHISELED_NETHER_BRICKS
+    - CRACKED_NETHER_BRICKS
+    - CRACKED_POLISHED_BLACKSTONE_BRICKS
+    - CRIMSON_FUNGUS
+    - CRIMSON_NYLIUM
+    - CRIMSON_ROOTS
+    - MAGMA_BLOCK
+    - NETHERRACK
+    - NETHER_BRICKS
+    - NETHER_SPROUTS
+    - NETHER_WART_BLOCK
+    - POLISHED_BLACKSTONE_BRICKS
+    - POLISHED_BLACKSTONE_SLAB
+    - POLISHED_BLACKSTONE_STAIRS
+    - POLISHED_BLACKSTONE_WALL
+    - SOUL_SAND
+    - SOUL_SOIL
+    - TWISTING_VINES
+    - WARPED_FUNGUS
+    - WARPED_NYLIUM
+    - WARPED_ROOTS
+    - WARPED_WART_BLOCK
+    - WEEPING_VINES
+  # The End (10 items)
+  end:
+    - "*PURPUR*"
+    - "END_STONE_*"
+    - END_STONE
+    - POPPED_CHORUS_FRUIT
+  # Copper blocks (80 items)
+  copper:
+    - "#minecraft:copper"
+    - "*GRATE*"
+    - "*_CUT_COPPER"
+    - "*_COPPER_SLAB"
+    - "*_COPPER_DOOR"
+    - "*_COPPER_BARS"
+    - "*_COPPER_CHAIN"
+    - "*_COPPER_STAIRS"
+    - "*_COPPER_TRAPDOOR"
+    - "*_CHISELED_COPPER"
+    - CHISELED_COPPER
+    - COPPER_BARS
+    - COPPER_CHAIN
+    - COPPER_DOOR
+    - COPPER_TRAPDOOR
+    - CUT_COPPER
+  # Logs & planks (64 items)
+  logs:
+    - "#minecraft:logs"
+    - "#minecraft:planks"
+    - BAMBOO_BLOCK
+    - BAMBOO_MOSAIC
+    - STRIPPED_BAMBOO_BLOCK
+  # Wooden building (80 items)
+  wooden-building:
+    - "#minecraft:fence_gates"
+    - "#minecraft:wooden_slabs"
+    - "#minecraft:wooden_doors"
+    - "#minecraft:wooden_stairs"
+    - "#minecraft:wooden_fences"
+    - "#minecraft:wooden_trapdoors"
+    - BAMBOO_MOSAIC_SLAB
+    - BAMBOO_MOSAIC_STAIRS
+  # Dirt, sand & gravel (12 items)
+  dirt-and-sand:
+    - "#minecraft:dirt"
+    - CLAY
+    - GRASS_BLOCK
+    - GRAVEL
+    - MUD
+    - MYCELIUM
+    - PACKED_MUD
+    - PODZOL
+    - RED_SAND
+    - SAND
+  # Ice & snow (6 items)
+  ice-and-snow:
+    - BLUE_ICE
+    - ICE
+    - PACKED_ICE
+    - SNOW
+    - SNOWBALL
+    - SNOW_BLOCK
+  # Plants (26 items)
+  plants:
+    - "*_GRASS"
+    - BAMBOO
+    - BIG_DRIPLEAF
+    - BUSH
+    - CACTUS
+    - COBWEB
+    - DEAD_BUSH
+    - FERN
+    - FIREFLY_BUSH
+    - GLOW_LICHEN
+    - HANGING_ROOTS
+    - LARGE_FERN
+    - LILY_PAD
+    - MANGROVE_ROOTS
+    - MOSS_BLOCK
+    - MOSS_CARPET
+    - MUDDY_MANGROVE_ROOTS
+    - PALE_HANGING_MOSS
+    - PALE_MOSS_BLOCK
+    - PALE_MOSS_CARPET
+    - RED_SHRUB
+    - SMALL_DRIPLEAF
+    - VINE
+  # Stone & deepslate (81 items)
+  stone:
+    - "#minecraft:stone_bricks"
+    - "*TUFF*"
+    - "*TILE*"
+    - "*MOSSY*"
+    - "*DIORITE*"
+    - "*GRANITE*"
+    - "COBBLED_*"
+    - "*ANDESITE*"
+    - "*COBBLESTONE*"
+    - "STONE_BRICK_*"
+    - "DEEPSLATE_BRICK_*"
+    - "POLISHED_DEEPSLATE_*"
+    - CALCITE
+    - CHISELED_DEEPSLATE
+    - CRACKED_DEEPSLATE_BRICKS
+    - DEEPSLATE
+    - DEEPSLATE_BRICKS
+    - DRIPSTONE_BLOCK
+    - POINTED_DRIPSTONE
+    - POLISHED_DEEPSLATE
+    - SMOOTH_STONE
+    - SMOOTH_STONE_SLAB
+    - STONE
+    - STONE_SLAB
+    - STONE_STAIRS
+  # Sandstone (20 items)
+  sandstone:
+    - "*SANDSTONE*"
+  # Bricks, quartz & other building (29 items)
+  building:
+    - "MUD_*"
+    - "BRICK_*"
+    - "QUARTZ_*"
+    - "RESIN_BRICK_*"
+    - BRICKS
+    - CHISELED_QUARTZ_BLOCK
+    - CHISELED_RESIN_BRICKS
+    - CRYING_OBSIDIAN
+    - IRON_BARS
+    - IRON_CHAIN
+    - LADDER
+    - OBSIDIAN
+    - RESIN_BLOCK
+    - RESIN_BRICKS
+    - SCAFFOLDING
+    - SMOOTH_QUARTZ
+    - SMOOTH_QUARTZ_SLAB
+    - SMOOTH_QUARTZ_STAIRS
