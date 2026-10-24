@@ -191,6 +191,16 @@ public final class SortListener implements Listener {
         }
         event.setResult(result);
 
+        // The golem reached a chest that takes its item: it isn't stuck, so restart its
+        // timer. Otherwise a golem that queued a while could have the item returned
+        // while it's opening the right chest.
+        boolean accepted = result == Event.Result.ALLOW
+                || (result == Event.Result.DEFAULT
+                    && (match.kind() == ChestMatcher.Kind.EXACT || match.kind() == ChestMatcher.Kind.EMPTY));
+        if (accepted) {
+            homes.restart(event.getEntity().getUniqueId());
+        }
+
         if (plugin.debug()) {
             plugin.getLogger().info(String.format("%s carrying %s -> %s at %s: %s (%s)",
                     event.getEntityType(), held.getType(), container.getType(),
