@@ -59,7 +59,9 @@ in square brackets, one per line:
 | `[Overflow]`| anything with no other home      |
 
 Case doesn't matter and spaces count as underscores. A group name wins over an
-item with the same name. Frame and sign labels on one chest combine.
+item with the same name, and group names work singular or plural (`[Rail]` =
+`rails`, `[ore]` = `ores`, `[light source]` = `light-sources`). For one exact item
+that shares a group's name, use a framed item instead. Frame and sign labels on one chest combine.
 
 Where a golem takes an item, in order: a matching chest with room (label, same
 item or group), then an `[Overflow]` chest, then an empty chest
@@ -82,8 +84,9 @@ copper chest that has only "no home" items left. Add a home for the item, then
 
 With `fetch-from-overflow` (on by default), a golem with nothing to do (empty
 hand, nothing to take from any copper chest in range) walks to an `[Overflow]`
-chest and takes up to 16 of an item that now has a home, then sorts it. Only
-one golem fetches from an overflow chest at a time, so they don't crowd it. So when
+chest and takes up to 16 of an item that now has a home, then sorts it. Up to
+`fetchers-per-overflow-chest` golems (default 2) fetch from one overflow chest
+at a time, each a different item, so they don't crowd it. So when
 you add a chest for something that was piling up in overflow, golems move it
 over on their own. Items with no home are left in overflow. Golems also no
 longer walk to empty copper chests.
@@ -96,7 +99,7 @@ Settings:
 - `prefer-matching-chests: true` (default): see above.
 - `matching-chest-timeout-seconds: 30`: length of each step above.
 - `return-unsortable-items: true`, `homeless-retry-minutes: 5`: see above.
-- `fetch-from-overflow: true`: see above.
+- `fetch-from-overflow: true`, `fetchers-per-overflow-chest: 2`: see above.
 - `sign-labels: true` (default): sign labels and `[Overflow]` chests.
 - `overflow-before-empty: true` (default): see above.
 - `allow-empty-chests: true` (default): golems may use empty chests as a last

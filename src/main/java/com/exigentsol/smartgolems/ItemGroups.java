@@ -122,8 +122,9 @@ public final class ItemGroups {
 
     /**
      * The rule for a sign label's bracket text, e.g. "logs", "oak log", "*_ORE",
-     * "#planks". A group name wins over an item of the same name. Spaces count
-     * as underscores and case is ignored. Returns null if it matches nothing.
+     * "#planks". A group name wins over an item of the same name, and group
+     * names match singular or plural ("rail" = "rails"). Spaces count as
+     * underscores and case is ignored. Returns null if it matches nothing.
      */
     Predicate<Material> signRule(String text) {
         String key = text.trim().toLowerCase(Locale.ROOT);
@@ -131,18 +132,64 @@ public final class ItemGroups {
     }
 
     private Optional<Predicate<Material>> parseSignRule(String key) {
-        String asGroup = key.replace(' ', '-').replace('_', '-');
-        for (int i = 0; i < groupNames.size(); i++) {
-            if (groupNames.get(i).toLowerCase(Locale.ROOT).replace('_', '-').equals(asGroup)) {
-                int index = i;
-                return Optional.of(m -> {
-                    BitSet bits = membership.get(m);
-                    return bits != null && bits.get(index);
-                });
+        boolean plainName = !key.startsWith("#") && !key.startsWith("@") && !key.contains("*");
+        if (plainName) {
+            // A group wins: exact name first, then allowing singular/plural ("rail" = "rails").
+            String[] words = words(key);
+            int fuzzy = -1;
+            for (int i = 0; i < groupNames.size(); i++) {
+                String[] groupWords = words(groupNames.get(i));
+                if (String.join("-", groupWords).equals(String.join("-", words))) {
+                    return Optional.of(inGroup(i));
+                }
+                if (fuzzy < 0 && sameWordsIgnoringPlural(words, groupWords)) {
+                    fuzzy = i;
+                }
+            }
+            if (fuzzy >= 0) {
+                return Optional.of(inGroup(fuzzy));
             }
         }
         String entry = key.startsWith("#") ? key.replace(' ', '_') : key.replace(' ', '_').replace('-', '_');
         return Optional.ofNullable(parseEntry(entry, "sign", null));
+    }
+
+    private Predicate<Material> inGroup(int index) {
+        return m -> {
+            BitSet bits = membership.get(m);
+            return bits != null && bits.get(index);
+        };
+    }
+
+    /** Lower-case words of a name; spaces, dashes and underscores all separate words. */
+    private static String[] words(String name) {
+        return name.toLowerCase(Locale.ROOT).trim().split("[\\s_-]+");
+    }
+
+    private static boolean sameWordsIgnoringPlural(String[] a, String[] b) {
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i = 0; i < a.length; i++) {
+            if (!singular(a[i]).equals(singular(b[i]))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** Rough English singular: sources -> source, glasses -> glass, berries -> berry, rails -> rail. */
+    private static String singular(String word) {
+        if (word.endsWith("ies") && word.length() > 4) {
+            return word.substring(0, word.length() - 3) + "y";
+        }
+        if (word.endsWith("sses") || word.endsWith("shes") || word.endsWith("ches") || word.endsWith("xes")) {
+            return word.substring(0, word.length() - 2);
+        }
+        if (word.endsWith("s") && !word.endsWith("ss") && word.length() > 3) {
+            return word.substring(0, word.length() - 1);
+        }
+        return word;
     }
 
     private static String stripNamespace(String s) {

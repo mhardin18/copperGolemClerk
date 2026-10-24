@@ -23,6 +23,7 @@ public final class SmartCopperGolems extends JavaPlugin {
     private volatile boolean overflowBeforeEmpty;
     private volatile boolean returnUnsortableItems;
     private volatile boolean fetchFromOverflow;
+    private volatile int fetchersPerOverflowChest;
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private volatile boolean preferMatchingChests;
@@ -53,6 +54,7 @@ public final class SmartCopperGolems extends JavaPlugin {
         overflowBeforeEmpty = config.getBoolean("overflow-before-empty", true);
         returnUnsortableItems = config.getBoolean("return-unsortable-items", true);
         fetchFromOverflow = config.getBoolean("fetch-from-overflow", true);
+        fetchersPerOverflowChest = Math.max(1, config.getInt("fetchers-per-overflow-chest", 2));
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
         if (listener != null) {
             listener.clearHomeless();
@@ -85,6 +87,10 @@ public final class SmartCopperGolems extends JavaPlugin {
 
     boolean signLabels() {
         return signLabels;
+    }
+
+    int fetchersPerOverflowChest() {
+        return fetchersPerOverflowChest;
     }
 
     boolean fetchFromOverflow() {
