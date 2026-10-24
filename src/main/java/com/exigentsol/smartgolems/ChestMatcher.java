@@ -31,7 +31,15 @@ final class ChestMatcher {
         }
     }
 
-    record Match(Kind kind, String reason) {
+    /**
+     * @param specificity how many item types the matching rule covers: 1 for a framed
+     *                    item or an exact match, the group size for a group, else
+     *                    Integer.MAX_VALUE. Golems prefer the most specific home.
+     */
+    record Match(Kind kind, String reason, int specificity) {
+        Match(Kind kind, String reason) {
+            this(kind, reason, Integer.MAX_VALUE);
+        }
     }
 
     private final SmartCopperGolems plugin;
@@ -57,7 +65,8 @@ final class ChestMatcher {
         Material heldType = held.getType();
 
         if (labels.hasItemRules() && labels.accepts(heldType)) {
-            return new Match(Kind.LABEL_MATCH, "label matches " + String.join(", ", labels.names()));
+            return new Match(Kind.LABEL_MATCH, "label matches " + String.join(", ", labels.names()),
+                    labels.specificity(heldType));
         }
         if (labels.overflow()) {
             return new Match(Kind.OVERFLOW, "overflow chest");
@@ -69,7 +78,7 @@ final class ChestMatcher {
             return new Match(Kind.EMPTY, "empty chest");
         }
         if (container.contains(heldType)) {
-            return new Match(Kind.EXACT, "exact match");
+            return new Match(Kind.EXACT, "exact match", 1);
         }
 
         ItemGroups groups = plugin.groups();
@@ -78,22 +87,24 @@ final class ChestMatcher {
             return new Match(Kind.NONE, "item has no groups");
         }
         boolean requireAll = plugin.matchModeAll();
+        int narrowest = Integer.MAX_VALUE;
         for (ItemStack stack : container.getContents()) {
             if (stack == null || stack.isEmpty()) {
                 continue;
             }
             BitSet other = groups.groupsOf(stack.getType());
-            boolean shared = other != null && heldGroups.intersects(other);
-            if (shared && !requireAll) {
-                return new Match(Kind.GROUP, "group match");
+            int shared = other == null ? Integer.MAX_VALUE : groups.smallestSharedGroup(heldGroups, other);
+            if (shared != Integer.MAX_VALUE && !requireAll) {
+                return new Match(Kind.GROUP, "group match", shared);
             }
-            if (!shared && requireAll) {
+            if (shared == Integer.MAX_VALUE && requireAll) {
                 return new Match(Kind.NONE, stack.getType() + " is outside the item's groups");
             }
+            narrowest = Math.min(narrowest, shared);
         }
         // "all" mode: every item matched. "any" mode: nothing matched.
         return requireAll
-                ? new Match(Kind.GROUP, "group match")
+                ? new Match(Kind.GROUP, "group match", narrowest)
                 : new Match(Kind.NONE, "no group match");
     }
 

@@ -60,8 +60,14 @@ in square brackets, one per line:
 
 Case doesn't matter and spaces count as underscores. A group name wins over an
 item with the same name, and group names work singular or plural (`[Rail]` =
-`rails`, `[ore]` = `ores`, `[light source]` = `light-sources`). For one exact item
-that shares a group's name, use a framed item instead. Frame and sign labels on one chest combine.
+`rails`, `[ore]` = `ores`, `[light source]` = `light-sources`). If a word matches
+no group and no item, it matches items with that word in their name (`[carpet]`
+= every carpet). For one exact item that shares a group's name, use a framed
+item instead.
+
+When several chests would take an item, golems use the most specific one: a
+framed item or a chest already holding that exact item first, then the label or
+group with the fewest items. A stew goes to `[stews]` before `[food]`. Frame and sign labels on one chest combine.
 
 Where a golem takes an item, in order: a matching chest with room (label, same
 item or group), then an `[Overflow]` chest, then an empty chest

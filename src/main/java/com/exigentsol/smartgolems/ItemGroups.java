@@ -24,14 +24,27 @@ import org.bukkit.configuration.ConfigurationSection;
  */
 public final class ItemGroups {
 
+    /** A label rule and how many item types it covers (fewer = more specific). */
+    record Rule(Predicate<Material> test, int size) {
+    }
+
     private final List<String> groupNames;
     private final Map<Material, BitSet> membership;
+    private final List<Material> items;
+    private final int[] groupSizes;
     /** Parsed sign rules by their bracket text; empty Optional = matches nothing. */
-    private final Map<String, Optional<Predicate<Material>>> signRules = new HashMap<>();
+    private final Map<String, Optional<Rule>> signRules = new HashMap<>();
 
-    private ItemGroups(List<String> groupNames, Map<Material, BitSet> membership) {
+    private ItemGroups(List<String> groupNames, Map<Material, BitSet> membership, List<Material> items) {
         this.groupNames = groupNames;
         this.membership = membership;
+        this.items = items;
+        this.groupSizes = new int[groupNames.size()];
+        for (BitSet bits : membership.values()) {
+            for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
+                groupSizes[i]++;
+            }
+        }
     }
 
     public static ItemGroups load(ConfigurationSection section, Logger log) {
@@ -39,15 +52,10 @@ public final class ItemGroups {
         Map<Material, BitSet> membership = new EnumMap<>(Material.class);
         if (section == null) {
             log.warning("No 'groups' section in config.yml; only vanilla sorting will apply.");
-            return new ItemGroups(names, membership);
+            return new ItemGroups(names, membership, allItems());
         }
 
-        List<Material> items = new ArrayList<>();
-        for (Material m : Material.values()) {
-            if (m.isItem() && !m.isAir() && !m.isLegacy()) {
-                items.add(m);
-            }
-        }
+        List<Material> items = allItems();
 
         for (String groupName : section.getKeys(false)) {
             int index = names.size();
@@ -72,7 +80,17 @@ public final class ItemGroups {
                 log.warning("Group '" + groupName + "' matches no items.");
             }
         }
-        return new ItemGroups(Collections.unmodifiableList(names), membership);
+        return new ItemGroups(Collections.unmodifiableList(names), membership, items);
+    }
+
+    private static List<Material> allItems() {
+        List<Material> items = new ArrayList<>();
+        for (Material m : Material.values()) {
+            if (m.isItem() && !m.isAir() && !m.isLegacy()) {
+                items.add(m);
+            }
+        }
+        return items;
     }
 
     /** Parses one config entry. Logs problems to {@code log} unless it is null. */
@@ -123,15 +141,17 @@ public final class ItemGroups {
     /**
      * The rule for a sign label's bracket text, e.g. "logs", "oak log", "*_ORE",
      * "#planks". A group name wins over an item of the same name, and group
-     * names match singular or plural ("rail" = "rails"). Spaces count as
-     * underscores and case is ignored. Returns null if it matches nothing.
+     * names match singular or plural ("rail" = "rails"). If nothing matches,
+     * items with those words in their name are used ("stew" = all *_STEW).
+     * Spaces count as underscores and case is ignored. Returns null if it
+     * matches nothing.
      */
-    Predicate<Material> signRule(String text) {
+    Rule signRule(String text) {
         String key = text.trim().toLowerCase(Locale.ROOT);
         return signRules.computeIfAbsent(key, this::parseSignRule).orElse(null);
     }
 
-    private Optional<Predicate<Material>> parseSignRule(String key) {
+    private Optional<Rule> parseSignRule(String key) {
         boolean plainName = !key.startsWith("#") && !key.startsWith("@") && !key.contains("*");
         if (plainName) {
             // A group wins: exact name first, then allowing singular/plural ("rail" = "rails").
@@ -140,18 +160,63 @@ public final class ItemGroups {
             for (int i = 0; i < groupNames.size(); i++) {
                 String[] groupWords = words(groupNames.get(i));
                 if (String.join("-", groupWords).equals(String.join("-", words))) {
-                    return Optional.of(inGroup(i));
+                    return Optional.of(new Rule(inGroup(i), groupSizes[i]));
                 }
                 if (fuzzy < 0 && sameWordsIgnoringPlural(words, groupWords)) {
                     fuzzy = i;
                 }
             }
             if (fuzzy >= 0) {
-                return Optional.of(inGroup(fuzzy));
+                return Optional.of(new Rule(inGroup(fuzzy), groupSizes[fuzzy]));
             }
         }
         String entry = key.startsWith("#") ? key.replace(' ', '_') : key.replace(' ', '_').replace('-', '_');
-        return Optional.ofNullable(parseEntry(entry, "sign", null));
+        Rule rule = ruleFor(parseEntry(entry, "sign", null));
+        if (rule == null && plainName) {
+            // Last try: items with these words in their name ([stew] = mushroom/rabbit/suspicious stew).
+            rule = ruleFor(m -> containsWords(m.name(), words(key)));
+        }
+        return Optional.ofNullable(rule);
+    }
+
+    /** The rule with its item count, or null if it matches no items. */
+    private Rule ruleFor(Predicate<Material> test) {
+        if (test == null) {
+            return null;
+        }
+        int size = 0;
+        for (Material m : items) {
+            if (test.test(m)) {
+                size++;
+            }
+        }
+        return size == 0 ? null : new Rule(test, size);
+    }
+
+    /** True if the item name contains these words in order, each singular or plural. */
+    private static boolean containsWords(String itemName, String[] words) {
+        String[] parts = itemName.toLowerCase(Locale.ROOT).split("_");
+        outer:
+        for (int start = 0; start + words.length <= parts.length; start++) {
+            for (int i = 0; i < words.length; i++) {
+                if (!singular(parts[start + i]).equals(singular(words[i]))) {
+                    continue outer;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /** Size of the smallest group in both sets, or Integer.MAX_VALUE if they share none. */
+    int smallestSharedGroup(BitSet a, BitSet b) {
+        int best = Integer.MAX_VALUE;
+        for (int i = a.nextSetBit(0); i >= 0; i = a.nextSetBit(i + 1)) {
+            if (b.get(i)) {
+                best = Math.min(best, groupSizes[i]);
+            }
+        }
+        return best;
     }
 
     private Predicate<Material> inGroup(int index) {
