@@ -40,14 +40,17 @@ public final class SortListener implements Listener {
     private final ChestMatcher matcher;
     private final HomeFinder homes;
     private final Returns returns;
+    private final OverflowFetcher fetcher;
 
     public SortListener(SmartCopperGolems plugin) {
         this.plugin = plugin;
         this.matcher = new ChestMatcher(plugin);
         this.homes = new HomeFinder(plugin, matcher);
         this.returns = new Returns(plugin);
+        this.fetcher = new OverflowFetcher(plugin, homes, returns);
         plugin.getServer().getScheduler().runTaskTimer(plugin, homes::prune, 20 * 60, 20 * 60);
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::returnHomelessItems, 20, 20);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, fetcher::tick, 40, 20);
     }
 
     /** Forget which items had no home, so golems try them again (after /smartgolems reload). */
@@ -91,13 +94,11 @@ public final class SortListener implements Listener {
         if (held.isEmpty()) {
             // Looking for a copper chest to take from: its next item starts a fresh search.
             homes.forget(golem);
-            if (plugin.returnUnsortableItems() && !returns.prepareSource(event.getBlock())) {
+            if (fetcher.isFetching(golem.getUniqueId())) {
+                event.setAllowed(false); // walking to an overflow chest; don't get pulled away
+            } else if (!returns.prepareSource(event.getBlock())) {
+                // Empty, or only items with no home: don't walk over for nothing.
                 event.setAllowed(false);
-                if (plugin.debug()) {
-                    Block b = event.getBlock();
-                    plugin.getLogger().info(String.format("%s skips %s at %d,%d,%d (only items with no home)",
-                            golem.getType(), b.getType(), b.getX(), b.getY(), b.getZ()));
-                }
             }
             return;
         }

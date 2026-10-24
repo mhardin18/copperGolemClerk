@@ -1,6 +1,7 @@
 package com.exigentsol.smartgolems;
 
 import java.util.BitSet;
+import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -40,20 +41,29 @@ final class ChestMatcher {
     }
 
     Match classify(ItemStack held, Inventory container) {
+        return classify(held, container, labelsOf(container));
+    }
+
+    /** The chest's frame and sign labels (empty if both kinds are turned off). */
+    ChestLabels.Labels labelsOf(Inventory container) {
+        if (plugin.itemFrameLabels() || plugin.signLabels()) {
+            return ChestLabels.of(container, plugin.groups(), plugin.itemFrameLabels(), plugin.signLabels());
+        }
+        return new ChestLabels.Labels(List.of(), List.of(), false);
+    }
+
+    /** Classify with labels already read, when checking many items against one chest. */
+    Match classify(ItemStack held, Inventory container, ChestLabels.Labels labels) {
         Material heldType = held.getType();
 
-        if (plugin.itemFrameLabels() || plugin.signLabels()) {
-            ChestLabels.Labels labels = ChestLabels.of(container, plugin.groups(),
-                    plugin.itemFrameLabels(), plugin.signLabels());
-            if (labels.hasItemRules() && labels.accepts(heldType)) {
-                return new Match(Kind.LABEL_MATCH, "label matches " + labels.names());
-            }
-            if (labels.overflow()) {
-                return new Match(Kind.OVERFLOW, "overflow chest");
-            }
-            if (labels.hasItemRules()) {
-                return new Match(Kind.LABEL_OTHER, "labelled for " + labels.names());
-            }
+        if (labels.hasItemRules() && labels.accepts(heldType)) {
+            return new Match(Kind.LABEL_MATCH, "label matches " + String.join(", ", labels.names()));
+        }
+        if (labels.overflow()) {
+            return new Match(Kind.OVERFLOW, "overflow chest");
+        }
+        if (labels.hasItemRules()) {
+            return new Match(Kind.LABEL_OTHER, "labelled for " + String.join(", ", labels.names()));
         }
         if (container.isEmpty()) {
             return new Match(Kind.EMPTY, "empty chest");
