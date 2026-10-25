@@ -115,6 +115,10 @@ golems-give-way: true
 # are left alone.
 tidy-chests: true
 
+# Worlds where the plugin does nothing (golems there behave as in vanilla), by
+# folder name, e.g. [world_nether, world_the_end].
+disabled-worlds: []
+
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false
 

@@ -287,10 +287,14 @@ final class HomeFinder {
      * 32 sideways, 8 up/down of its block, 1 if riding; loaded chunks only), nearest first.
      */
     static List<BlockState> containersInRange(Entity golem, Predicate<Material> types) {
+        return containersInRange(golem.getLocation(), golem.isInsideVehicle(), types);
+    }
+
+    /** Same, around any spot (for /scg overflow). */
+    static List<BlockState> containersInRange(Location center, boolean riding, Predicate<Material> types) {
         List<BlockState> found = new ArrayList<>();
-        World world = golem.getWorld();
-        Block at = golem.getLocation().getBlock();
-        boolean riding = golem.isInsideVehicle();
+        World world = center.getWorld();
+        Block at = center.getBlock();
         int h = riding ? 1 : 32;
         int v = riding ? 1 : 8;
         int chunkX = at.getX() >> 4;
@@ -313,7 +317,7 @@ final class HomeFinder {
                 }
             }
         }
-        Location here = golem.getLocation();
+        Location here = center;
         found.sort(Comparator.comparingDouble(st -> st.getLocation().add(0.5, 0.5, 0.5).distanceSquared(here)));
         return found;
     }

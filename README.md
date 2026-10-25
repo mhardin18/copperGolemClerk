@@ -26,7 +26,7 @@ Spigot and Bukkit aren't supported: the plugin uses Paper-only golem events.
 
 On first start the plugin creates `plugins/SmartCopperGolems/config.yml`. The
 defaults work as-is: about 50 groups that cover every survival item. After editing
-the file, run `/sg reload` to apply it without a restart.
+the file, run `/scg reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
 kept. To uninstall, delete the jar (and the `plugins/SmartCopperGolems/` folder if
@@ -182,14 +182,26 @@ Settings:
   resort. Set `false` so golems only fill chests you've labelled.
 - `golems-give-way: true` (default): see above.
 - `tidy-chests: true` (default): see above.
+- `disabled-worlds: []`: worlds where the plugin does nothing and golems behave as in
+  vanilla, e.g. `[world_nether, world_the_end]`.
 - `debug: true`: logs each sort decision to the console.
 
 ## Commands
 
-Requires `smartcoppergolems.admin` (op by default). Alias `/sg`.
+Requires `smartcoppergolems.admin` (op by default). Alias `/scg`.
 
-- `/smartcoppergolems reload`: reload `config.yml`
-- `/smartcoppergolems check`: show which groups the item in your hand belongs to
+- `/scg reload`: reload `config.yml`.
+- `/scg check` while looking at a chest: what each label on it means (`[Horse]` =
+  items with "horse" in their name, 9 items: ...), labels that match nothing, what
+  the chest takes, whether it takes the item in your hand, and anything stopping
+  golems from using it (a block on top, a lock, a hopper feeding a copper chest, full).
+- `/scg check` while not looking at a chest: which groups the item in your hand belongs to.
+- `/scg overflow`: what's in the `[Overflow]` chests within golem range of you, split into
+  items with no chest (with a sign label to use for each group), items whose chest is
+  full, and items golems will move on their own.
+
+From the console, give a position: `/scg check <x> <y> <z> [world]`,
+`/scg overflow <x> <y> <z> [world]`.
 
 ## Building from source
 
