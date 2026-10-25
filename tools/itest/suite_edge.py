@@ -443,3 +443,15 @@ def _(c):
         return [(c.elapsed() > 60, f"watched {c.elapsed():.0f}s of 60s"), (n == 0, f"{n} fetches of birch logs (want 0)"),
                 expect(c, "both", "birch_log", 16)]
     return check
+
+
+@scenario("hanging-sign-above", "edge", 120, "A hanging sign just above a chest (hung from the block over it) labels it.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("logs", 14, 10)
+    c.block(14, 10, "oak_planks", dy=2)
+    x, y, z = c.abs(14, 10, 1)
+    c.run(f'setblock {x} {y} {z} minecraft:oak_hanging_sign{{front_text:{{messages:["[logs]","","",""]}}}}')
+    c.golem(4, 10)
+    return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "empty", "*", 0)]

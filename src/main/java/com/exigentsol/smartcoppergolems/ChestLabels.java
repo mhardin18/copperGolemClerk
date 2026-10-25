@@ -26,7 +26,8 @@ import org.bukkit.inventory.ItemStack;
  * Labels on a chest that say what it is for:
  *
  * - Item frames (or glow frames) hung on any side, holding an item: that item only.
- * - Signs (a wall sign on any side, or a standing sign on top) with lines in
+ * - Signs (a wall sign on any side, a standing sign on top, or a hanging sign just
+ *   above) with lines in
  *   brackets: each [text] is a group name, item name, pattern or #tag.
  *   [overflow] (any case) marks the chest as a catch-all for items with no
  *   other home.
@@ -125,7 +126,7 @@ final class ChestLabels {
         }
     }
 
-    /** Wall signs facing away from this block, plus a standing sign on top. */
+    /** Wall signs facing away from this block, plus a standing or hanging sign on top. */
     private static List<Sign> signsOn(Block block) {
         List<Sign> signs = new ArrayList<>(1);
         for (BlockFace face : SIDES) {
@@ -137,8 +138,9 @@ final class ChestLabels {
             }
         }
         Block above = block.getRelative(BlockFace.UP);
-        if (Tag.STANDING_SIGNS.isTagged(above.getType()) && above.getState(false) instanceof Sign sign) {
-            signs.add(sign);
+        if ((Tag.STANDING_SIGNS.isTagged(above.getType()) || Tag.ALL_HANGING_SIGNS.isTagged(above.getType()))
+                && above.getState(false) instanceof Sign sign) {
+            signs.add(sign); // a standing sign on top, or a hanging sign just above
         }
         return signs;
     }

@@ -109,3 +109,10 @@ def _(c):
         return [(True, "killed the other golem mid-sidestep"), (t.since() > 5, "waited 5s"),
                 (stuck == 0, f"{stuck} golems still paused (want 0)"), (c.golems() == 1, f"{c.golems()} golem left (want 1)")]
     return check
+
+
+@scenario("give-way-three", "traffic", 480, "Three golems share the 1-wide corridor (two start west, one east): nobody stays stuck and every item arrives.")
+def _(c):
+    done = corridor(c)
+    c.golem(2, 11)
+    return done
