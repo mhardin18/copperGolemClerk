@@ -37,6 +37,7 @@ public final class SmartCopperGolems extends JavaPlugin {
     private SortListener listener;
     private GolemTraffic traffic;
     private volatile boolean giveWay;
+    private volatile boolean tidyChests;
     private volatile boolean preferMatchingChests;
     private volatile long matchingChestTimeoutMillis;
 
@@ -102,6 +103,7 @@ public final class SmartCopperGolems extends JavaPlugin {
         if (traffic != null) {
             traffic.setEnabled(giveWay);
         }
+        tidyChests = config.getBoolean("tidy-chests", true);
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
         matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;
         groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());
@@ -133,6 +135,10 @@ public final class SmartCopperGolems extends JavaPlugin {
 
     boolean matchModeAll() {
         return matchModeAll;
+    }
+
+    boolean tidyChests() {
+        return tidyChests;
     }
 
     boolean allowEmptyChests() {
