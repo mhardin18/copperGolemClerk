@@ -60,6 +60,21 @@ def golems_with(c, nbt, negate=False):
     return _count(c.r.cmd(f"execute if entity {sel}"))
 
 
+def wait_for_sidestep(c):
+    """Poll briefly for a golem that's stepping aside; keep both copper chests stocked so
+    the golems keep meeting until one does. True once a golem is caught mid-sidestep."""
+    import time
+    for _ in range(8):
+        if golems_with(c, MARKED) > 0:
+            return True
+        time.sleep(0.3)
+    for name, item in (("copperW", "birch_log"), ("copperE", "granite")):
+        if c.count(name) == 0:
+            x, y, z = c.chests[name][0]
+            c.r.cmd(f"item replace block {x} {y} {z} container.0 with minecraft:{item} 16")
+    return False
+
+
 def frozen(c):
     """Golems paused for giving way (marked) or left with their AI off."""
     return golems_with(c, MARKED) + golems_with(c, UNAWARE)
@@ -71,7 +86,7 @@ def _(c):
     t = Trigger()
 
     def check():
-        t.fire_when(lambda: golems_with(c, MARKED) > 0, lambda: set_options(c, golems_give_way="false"))
+        t.fire_when(lambda: wait_for_sidestep(c), lambda: set_options(c, golems_give_way="false"))
         if t.at is None:
             return [(False, "waiting for a golem to start giving way")]
         stuck = frozen(c)
@@ -80,18 +95,24 @@ def _(c):
     return check
 
 
-@scenario("give-way-unload", "traffic", 420, "The chunks unload while a golem is stepping aside, then load again: it's woken up and sorting finishes.")
+@scenario("give-way-unload", "traffic", 420, "The chunks unload while a golem is stepping aside, then load again: it's woken up and sorting carries on.")
 def _(c):
-    done = corridor(c)
+    corridor(c)
     unload, reload = Trigger(), Trigger()
+    before = {}
+
+    def delivered():
+        return c.count("logs") + c.count("stone")
 
     def check():
-        unload.fire_when(lambda: golems_with(c, MARKED) > 0, lambda: c.forceload(False))
-        reload.fire_when(lambda: unload.since() >= 10, lambda: c.forceload(True))
+        unload.fire_when(lambda: wait_for_sidestep(c), lambda: c.forceload(False))
+        reload.fire_when(lambda: unload.since() >= 10, lambda: (c.forceload(True), before.setdefault("n", delivered())))
         if reload.at is None:
             return [(False, "waiting to unload mid-sidestep, then reload")]
         stuck = frozen(c) if reload.since() > 5 else -1
-        return [(stuck == 0, f"{stuck} golems still paused 5s after reloading (want 0)")] + done()
+        now = delivered()
+        return [(stuck == 0, f"{stuck} golems still paused 5s after reloading (want 0)"),
+                (now > before["n"], f"items delivered since reloading: {now - before['n']} (want some)")]
     return check
 
 
@@ -101,7 +122,7 @@ def _(c):
     t = Trigger()
 
     def check():
-        t.fire_when(lambda: golems_with(c, MARKED) > 0,
+        t.fire_when(lambda: wait_for_sidestep(c),
                     lambda: c.r.cmd(f"kill {c.selector('copper_golem')[:-1]},nbt=!{MARKED}]"))
         if t.at is None:
             return [(False, "waiting for a golem to start giving way")]
