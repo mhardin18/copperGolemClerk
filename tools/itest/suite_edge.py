@@ -426,3 +426,20 @@ def _(c):
     c.chest("logs", 16, 10, [("oak_log", 1)])
     c.golem(3, 12)
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "input", "birch_log", 0), conserved(c, "birch_log", 16)]
+
+
+@scenario("label-overflow-no-loop", "edge", 90, "A chest signed [logs] and [Overflow] holding birch logs: idle golems don't fetch the logs out just to put them back.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    c.chest("both", 12, 10, [("birch_log", 16)])
+    c.sign(12, 10, ["[logs]", "[Overflow]"])
+    c.golem(4, 10)
+
+    def fetches():
+        return sum(1 for l in c.log_lines() if "fetching" in l and "BIRCH_LOG" in l and c.in_cell(l))
+
+    def check():
+        n = fetches()
+        return [(c.elapsed() > 60, f"watched {c.elapsed():.0f}s of 60s"), (n == 0, f"{n} fetches of birch logs (want 0)"),
+                expect(c, "both", "birch_log", 16)]
+    return check

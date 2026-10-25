@@ -132,7 +132,7 @@ final class OverflowFetcher {
             if (!labels.overflow() || inventory.isEmpty()) {
                 continue;
             }
-            Material type = itemWithHome(golem, inventory, claimed);
+            Material type = itemWithHome(golem, inventory, claimed, labels);
             if (type != null) {
                 Block block = state.getBlock();
                 fetching.put(golem.getUniqueId(),
@@ -162,13 +162,17 @@ final class OverflowFetcher {
      * First item type in this overflow chest that a chest in range would now
      * accept, skipping items another golem is already fetching.
      */
-    private Material itemWithHome(CopperGolem golem, Inventory overflow, Set<Material> claimed) {
+    private Material itemWithHome(CopperGolem golem, Inventory overflow, Set<Material> claimed,
+                                  ChestLabels.Labels labels) {
         Set<Material> seen = EnumSet.noneOf(Material.class);
         List<ItemStack> candidates = new ArrayList<>();
         for (ItemStack stack : overflow.getStorageContents()) {
             if (stack == null || stack.isEmpty() || claimed.contains(stack.getType())
                     || !seen.add(stack.getType())) {
                 continue;
+            }
+            if (labels.hasItemRules() && labels.accepts(stack.getType())) {
+                continue; // a chest signed e.g. [logs] and [Overflow]: its logs are already home
             }
             if (!returns.isHomeless(overflow, stack.getType())) { // skip items returned here as homeless
                 candidates.add(stack);

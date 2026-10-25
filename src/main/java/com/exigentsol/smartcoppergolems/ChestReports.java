@@ -188,6 +188,7 @@ final class ChestReports {
             return;
         }
         List<Inventory> overflowChests = new ArrayList<>();
+        List<ChestLabels.Labels> overflowLabels = new ArrayList<>();
         List<Inventory> destinations = new ArrayList<>();
         List<ChestLabels.Labels> destinationLabels = new ArrayList<>();
         List<Inventory> unusable = new ArrayList<>();
@@ -206,6 +207,7 @@ final class ChestReports {
             ChestLabels.Labels labels = matcher.labelsOf(inv);
             if (labels.overflow()) {
                 overflowChests.add(inv);
+                overflowLabels.add(labels);
             }
             if (labels.hasItemRules() || !labels.overflow()) {
                 String why = HomeFinder.isBlocked(center.getWorld(), halves) ? "a block on top"
@@ -228,9 +230,12 @@ final class ChestReports {
         }
 
         Map<Material, Seen> contents = new LinkedHashMap<>();
-        for (Inventory inv : overflowChests) {
+        for (int c = 0; c < overflowChests.size(); c++) {
+            Inventory inv = overflowChests.get(c);
+            ChestLabels.Labels own = overflowLabels.get(c);
             for (ItemStack s : inv.getStorageContents()) {
-                if (s != null && !s.isEmpty()) {
+                // Items the chest's own labels take (e.g. [logs] + [Overflow]) are home, not overflow.
+                if (s != null && !s.isEmpty() && !(own.hasItemRules() && own.accepts(s.getType()))) {
                     contents.merge(s.getType(), new Seen(s.getType(), s, s.getAmount()),
                             (a, b) -> new Seen(a.type(), a.sample(), a.count() + b.count()));
                 }
