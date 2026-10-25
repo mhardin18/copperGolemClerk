@@ -136,9 +136,11 @@ class Cell:
         self.chest(name, dx - 1, dz, (), half="right")
 
     def sign(self, dx, dz, text, dy=0):
-        """Wall sign on the north face of the chest at (dx, dz)."""
+        """Wall sign on the north face of the chest at (dx, dz). text: one line, or a list of up to 4."""
+        lines = ([text] if isinstance(text, str) else list(text)) + [""] * 4
+        messages = ",".join(f'"{line}"' for line in lines[:4])
         x, y, z = self.abs(dx, dz - 1, dy)
-        self.run(f'setblock {x} {y} {z} minecraft:oak_wall_sign[facing=north]{{front_text:{{messages:["{text}","","",""]}}}}')
+        self.run(f'setblock {x} {y} {z} minecraft:oak_wall_sign[facing=north]{{front_text:{{messages:[{messages}]}}}}')
 
     def remove_sign(self, dx, dz, dy=0):
         x, y, z = self.abs(dx, dz - 1, dy)
