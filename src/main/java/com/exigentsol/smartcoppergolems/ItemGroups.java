@@ -82,6 +82,9 @@ public final class ItemGroups {
             if (matched == 0) {
                 log.warning("Group '" + groupName + "' matches no items.");
             }
+            if (groupName.equalsIgnoreCase("overflow")) {
+                log.warning("Group 'overflow' can't be used on signs: [overflow] always means an overflow chest. Rename it.");
+            }
         }
         return new ItemGroups(Collections.unmodifiableList(names), membership, items);
     }

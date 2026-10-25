@@ -118,3 +118,13 @@ def _(c):
     return lambda: [("Only players" in check, f"/scg check -> {check.strip()}"),
                     ("Usage" in usage, f"/scg frobnicate -> {usage.strip()}"),
                     ("Usage" in alias, f"/scg -> {alias.strip()}")]
+
+
+@scenario("config-name-warnings", "config", 30, "A group named 'overflow' and a misspelled disabled world are warned about.", alone=True)
+def _(c):
+    text = original().replace("\ngroups:\n", "\ngroups:\n  overflow:\n    - DIRT\n", 1)
+    text = re.sub(r"(?m)^disabled-worlds: .*$", "disabled-worlds: [no_such_world_xyz]", text)
+    reply, lines, restored = try_config(c, text)
+    return lambda: [(logged(lines, "Group 'overflow' can't be used on signs"), "warned about the 'overflow' group"),
+                    (logged(lines, "no world named 'no_such_world_xyz'"), "warned about the unknown world"),
+                    ("reloaded" in restored, f"restored: {restored.strip()}")]

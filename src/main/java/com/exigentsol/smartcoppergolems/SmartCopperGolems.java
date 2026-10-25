@@ -217,6 +217,14 @@ public final class SmartCopperGolems extends JavaPlugin {
         public void execute(CommandSourceStack source, String[] args) {
             CommandSender sender = source.getSender();
             String sub = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
+            try {
+                run(sender, sub, args);
+            } catch (IllegalArgumentException e) {
+                sender.sendMessage(Component.text(e.getMessage(), NamedTextColor.RED));
+            }
+        }
+
+        private void run(CommandSender sender, String sub, String[] args) {
             switch (sub) {
                 case "reload" -> {
                     String problem = loadSettings();
@@ -275,14 +283,23 @@ public final class SmartCopperGolems extends JavaPlugin {
             if (args.length < 4) {
                 return null;
             }
+            int x, y, z;
             try {
-                int x = Integer.parseInt(args[1]), y = Integer.parseInt(args[2]), z = Integer.parseInt(args[3]);
-                World world = args.length > 4 ? getServer().getWorld(args[4])
-                        : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
-                return world == null ? null : world.getBlockAt(x, y, z);
+                x = Integer.parseInt(args[1]);
+                y = Integer.parseInt(args[2]);
+                z = Integer.parseInt(args[3]);
             } catch (NumberFormatException e) {
-                return null;
+                throw new IllegalArgumentException("Give whole-number coordinates: <x> <y> <z> [world]");
             }
+            World world = args.length > 4 ? getServer().getWorld(args[4])
+                    : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
+            if (world == null) {
+                throw new IllegalArgumentException("No world named '" + args[4] + "'.");
+            }
+            if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+                throw new IllegalArgumentException("That spot isn't loaded (golems only work in loaded chunks).");
+            }
+            return world.getBlockAt(x, y, z);
         }
 
         @Override
