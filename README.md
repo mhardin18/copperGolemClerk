@@ -85,8 +85,9 @@ item; empty frames are ignored. Turn this off with `item-frame-labels: false`.
 
 ### Sign labels and overflow chests
 
-Put a wall sign on any side of a chest (or a standing sign on top, or a hanging sign just above) with rules
-in square brackets, one per line:
+Put a wall sign on any side of a chest (or a standing sign on top, or a hanging
+sign just above) with rules in square brackets. Each line can hold one rule or
+several (`[ice][snow]`), and the chest takes anything any rule matches:
 
 | Line        | Accepts                         |
 |-------------|---------------------------------|

@@ -36,7 +36,9 @@ import org.bukkit.inventory.ItemStack;
  */
 final class ChestLabels {
 
-    private static final Pattern BRACKETED = Pattern.compile("^\\s*\\[(.+)]\\s*$");
+    /** A line of one or more bracketed labels and nothing else: "[logs]", "[ice][snow]", "[ice] [snow]". */
+    private static final Pattern LABEL_LINE = Pattern.compile("^\\s*(\\[[^\\[\\]]+]\\s*)+$");
+    private static final Pattern LABEL = Pattern.compile("\\[([^\\[\\]]+)]");
     private static final BlockFace[] SIDES = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
 
     /**
@@ -85,21 +87,26 @@ final class ChestLabels {
                     for (Side side : Side.values()) {
                         for (Component line : sign.getSide(side).lines()) {
                             String text = PlainTextComponentSerializer.plainText().serialize(line);
-                            Matcher m = BRACKETED.matcher(text);
-                            if (!m.matches()) {
+                            if (!LABEL_LINE.matcher(text).matches()) {
                                 continue;
                             }
-                            String inner = m.group(1).trim();
-                            if (inner.toLowerCase(Locale.ROOT).equals("overflow")) {
-                                overflow = true;
-                                continue;
-                            }
-                            ItemGroups.Rule rule = groups.signRule(inner);
-                            if (rule != null) {
-                                rules.add(rule);
-                                names.add("[" + inner + "]");
-                            } else {
-                                unknown.add("[" + inner + "]");
+                            Matcher m = LABEL.matcher(text);
+                            while (m.find()) {
+                                String inner = m.group(1).trim();
+                                if (inner.isEmpty()) {
+                                    continue;
+                                }
+                                if (inner.toLowerCase(Locale.ROOT).equals("overflow")) {
+                                    overflow = true;
+                                    continue;
+                                }
+                                ItemGroups.Rule rule = groups.signRule(inner);
+                                if (rule != null) {
+                                    rules.add(rule);
+                                    names.add("[" + inner + "]");
+                                } else {
+                                    unknown.add("[" + inner + "]");
+                                }
                             }
                         }
                     }

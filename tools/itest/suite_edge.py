@@ -455,3 +455,14 @@ def _(c):
     c.run(f'setblock {x} {y} {z} minecraft:oak_hanging_sign{{front_text:{{messages:["[logs]","","",""]}}}}')
     c.golem(4, 10)
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "empty", "*", 0)]
+
+
+@scenario("two-labels-one-line", "edge", 240, "One sign line can hold several labels: '[stone][logs]' takes granite and birch logs; a dirt block goes elsewhere.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 8), ("granite", 8), ("dirt", 4)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("both", 14, 10)
+    c.sign(14, 10, "[stone][logs]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "both", "birch_log", 8), expect(c, "both", "granite", 8), expect(c, "both", "dirt", 0),
+                    expect(c, "empty", "dirt", 4)]
