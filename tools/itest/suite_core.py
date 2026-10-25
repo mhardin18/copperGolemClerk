@@ -136,3 +136,16 @@ def _(c):
                 (in_chest == 1, f"copper chest has {in_chest} sculk_shrieker (want 1, returned)"),
                 (holding == 0, f"golem holding {holding} items (want 0)")]
     return check
+
+
+@scenario("two-line-sign", "core", 300, "A sign reading [Wool] / [String] takes wool, carpet and string; string skips the nearer [mob drops] chest, a bone doesn't.")
+def _(c):
+    c.chest("copper", 2, 10, [("white_wool", 8), ("red_carpet", 4), ("string", 6), ("bone", 3)], block="waxed_copper_chest")
+    c.chest("mob", 8, 10)
+    c.sign(8, 10, "[mob drops]")
+    c.chest("wool", 14, 10)
+    c.sign(14, 10, ["[Wool]", "[String]"])
+    c.golem(4, 10)
+    return lambda: [expect(c, "wool", "white_wool", 8), expect(c, "wool", "red_carpet", 4),
+                    expect(c, "wool", "string", 6), expect(c, "wool", "bone", 0),
+                    expect(c, "mob", "bone", 3), expect(c, "mob", "string", 0)]
