@@ -5,6 +5,7 @@ the log, then restores the original and reloads again. (The runner also restores
 original if anything goes wrong.)
 """
 import re
+import time
 
 from arena import CONFIG, scenario
 
@@ -31,6 +32,7 @@ def try_config(c, text):
         with open(CONFIG, "w") as f:
             f.write(text)
         reply = re.sub(r"§.", "", c.r.cmd("smartcoppergolems reload"))
+        time.sleep(1.5)  # the server writes its log file asynchronously
         lines = [l for l in c.log.since(start) if "SmartCopperGolems" in l or "Exception" in l]
     finally:
         restored = re.sub(r"§.", "", restore(c))
@@ -118,3 +120,13 @@ def _(c):
     return lambda: [("Only players" in check, f"/scg check -> {check.strip()}"),
                     ("Usage" in usage, f"/scg frobnicate -> {usage.strip()}"),
                     ("Usage" in alias, f"/scg -> {alias.strip()}")]
+
+
+@scenario("config-name-warnings", "config", 30, "A group named 'overflow' and a misspelled disabled world are warned about.", alone=True)
+def _(c):
+    text = original().replace("\ngroups:\n", "\ngroups:\n  overflow:\n    - DIRT\n", 1)
+    text = re.sub(r"(?m)^disabled-worlds: .*$", "disabled-worlds: [no_such_world_xyz]", text)
+    reply, lines, restored = try_config(c, text)
+    return lambda: [(logged(lines, "Group 'overflow' can't be used on signs"), "warned about the 'overflow' group"),
+                    (logged(lines, "no world named 'no_such_world_xyz'"), "warned about the unknown world"),
+                    ("reloaded" in restored, f"restored: {restored.strip()}")]

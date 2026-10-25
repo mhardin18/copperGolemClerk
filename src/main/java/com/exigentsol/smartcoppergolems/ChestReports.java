@@ -188,8 +188,12 @@ final class ChestReports {
             return;
         }
         List<Inventory> overflowChests = new ArrayList<>();
+        List<ChestLabels.Labels> overflowLabels = new ArrayList<>();
         List<Inventory> destinations = new ArrayList<>();
         List<ChestLabels.Labels> destinationLabels = new ArrayList<>();
+        List<Inventory> unusable = new ArrayList<>();
+        List<ChestLabels.Labels> unusableLabels = new ArrayList<>();
+        List<String> unusableWhy = new ArrayList<>();
         Set<HomeFinder.Pos> seen = new HashSet<>();
         for (BlockState state : HomeFinder.containersInRange(center, false, HomeFinder::isDestination)) {
             Inventory inv = ((Container) state).getInventory();
@@ -203,12 +207,21 @@ final class ChestReports {
             ChestLabels.Labels labels = matcher.labelsOf(inv);
             if (labels.overflow()) {
                 overflowChests.add(inv);
+                overflowLabels.add(labels);
             }
-            if ((labels.hasItemRules() || !labels.overflow())
-                    && !HomeFinder.isBlocked(center.getWorld(), halves) && !HomeFinder.isLocked(state)
-                    && !HomeFinder.feedsCopperChest(center.getWorld(), halves)) {
-                destinations.add(inv);
-                destinationLabels.add(labels);
+            if (labels.hasItemRules() || !labels.overflow()) {
+                String why = HomeFinder.isBlocked(center.getWorld(), halves) ? "a block on top"
+                        : HomeFinder.isLocked(state) ? "locked"
+                        : HomeFinder.feedsCopperChest(center.getWorld(), halves) ? "a hopper under it feeds a copper chest"
+                        : null;
+                if (why == null) {
+                    destinations.add(inv);
+                    destinationLabels.add(labels);
+                } else {
+                    unusable.add(inv);
+                    unusableLabels.add(labels);
+                    unusableWhy.add(why);
+                }
             }
         }
         if (overflowChests.isEmpty()) {
@@ -217,9 +230,12 @@ final class ChestReports {
         }
 
         Map<Material, Seen> contents = new LinkedHashMap<>();
-        for (Inventory inv : overflowChests) {
+        for (int c = 0; c < overflowChests.size(); c++) {
+            Inventory inv = overflowChests.get(c);
+            ChestLabels.Labels own = overflowLabels.get(c);
             for (ItemStack s : inv.getStorageContents()) {
-                if (s != null && !s.isEmpty()) {
+                // Items the chest's own labels take (e.g. [logs] + [Overflow]) are home, not overflow.
+                if (s != null && !s.isEmpty() && !(own.hasItemRules() && own.accepts(s.getType()))) {
                     contents.merge(s.getType(), new Seen(s.getType(), s, s.getAmount()),
                             (a, b) -> new Seen(a.type(), a.sample(), a.count() + b.count()));
                 }
@@ -234,6 +250,7 @@ final class ChestReports {
 
         Map<String, List<Seen>> noHome = new LinkedHashMap<>();
         Map<String, List<Seen>> full = new LinkedHashMap<>();
+        Map<String, List<Seen>> blocked = new LinkedHashMap<>();
         List<Seen> moving = new ArrayList<>();
         List<Seen> sorted = new ArrayList<>(contents.values());
         sorted.sort(Comparator.comparingInt(Seen::count).reversed());
@@ -253,6 +270,18 @@ final class ChestReports {
                 if (fullChest == null) {
                     fullChest = describeChest(inv, destinationLabels.get(i));
                 }
+            }
+            String unusableChest = null;
+            if (status == Status.NO_HOME) {
+                for (int i = 0; i < unusable.size() && unusableChest == null; i++) {
+                    if (matcher.classify(item.sample(), unusable.get(i), unusableLabels.get(i)).kind().isHome()) {
+                        unusableChest = describeChest(unusable.get(i), unusableLabels.get(i)) + " (" + unusableWhy.get(i) + ")";
+                    }
+                }
+            }
+            if (unusableChest != null) {
+                blocked.computeIfAbsent(unusableChest, k -> new ArrayList<>()).add(item);
+                continue;
             }
             switch (status) {
                 case NO_HOME -> noHome.computeIfAbsent(suggestedLabel(item.type()), k -> new ArrayList<>()).add(item);
@@ -275,6 +304,12 @@ final class ChestReports {
             if (anyTooLong) {
                 say(player, NamedTextColor.GRAY, "  * too long for one sign line: put one of those items in an empty, "
                         + "unlabelled chest instead, and golems will add the rest of the group.");
+            }
+        }
+        if (!blocked.isEmpty()) {
+            say(player, NamedTextColor.YELLOW, "Their chest can't be used by golems. Fix it:");
+            for (var e : blocked.entrySet()) {
+                say(player, NamedTextColor.AQUA, "  " + e.getKey() + ": " + amounts(e.getValue()));
             }
         }
         if (!full.isEmpty()) {

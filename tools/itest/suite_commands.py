@@ -82,3 +82,33 @@ def _(c):
     c.golem(4, 10)
     return lambda: [expect(c, "empty", "birch_log", 16), expect(c, "logs", "birch_log", 0),
                     has(check_at(c, 16, 10), "off in this world")]
+
+
+@scenario("check-odd-targets", "commands", 30, "/scg check: a barrel is explained as ignored, a trapped chest's label works, bad coordinates and world names get a clear error.")
+def _(c):
+    c.chest("barrel", 6, 10, block="barrel")
+    c.chest("trapped", 10, 10, block="trapped_chest")
+    c.sign(10, 10, "[logs]")
+    return lambda: [has(check_at(c, 6, 10), "they ignore this"),
+                    has(check_at(c, 10, 10), "[logs] = group logs"),
+                    has(say(c, "scg check 1 2 nowhere"), "whole-number"),
+                    has(say(c, "scg check 0 100 0 no_such_world"), "No world named 'no_such_world'"),
+                    has(say(c, "scg check 2000000 100 2000000"), "isn't loaded")]
+
+
+@scenario("overflow-report-unusable", "commands", 30, "/scg overflow: an item whose only chest has a block on top is listed as 'can't be used', not as needing a chest.")
+def _(c):
+    c.chest("overflow", 10, 10, [("birch_log", 7)])
+    c.sign(10, 10, "[Overflow]")
+    c.chest("logs", 14, 10)
+    c.sign(14, 10, "[logs]")
+    c.block(14, 10, "stone", dy=1)
+    x, y, z = c.abs(10, 10)
+
+    def check():
+        reply = say(c, f"scg overflow {x} {y} {z}")
+        part = reply.split("can't be used by golems")[-1]
+        return [has(reply, "can't be used by golems"),
+                ("a block on top" in part and "birch log x7" in part, f"birch logs listed under the blocked [logs] chest: {part.strip()}"),
+                ("No chest for these" not in reply, "not listed as needing a chest")]
+    return check

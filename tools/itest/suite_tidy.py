@@ -4,13 +4,13 @@ Layout: copper chest at (2,10), golem at (4,10), the chest under test further al
 """
 import re
 
-from arena import scenario
+from arena import Trigger, conserved, expect, scenario
 from suite_options import set_options
 
 
-def slots(c, name):
-    """[(slot, id, count, named)] of the first block of a named chest, in list order."""
-    x, y, z = c.chests[name][0]
+def slots(c, name, block=0):
+    """[(slot, id, count, named)] of one block of a named chest (the first by default), in list order."""
+    x, y, z = c.chests[name][block]
     result = []
     for i in range(54):
         base = f"data get block {x} {y} {z} Items[{i}]"
@@ -98,4 +98,75 @@ def _(c):
         waited = delivered and c.elapsed() - state["at"] > 10  # longer than the tidy delay
         return [(delivered, f"birch logs delivered ({show(got)})"), (waited, "waited 10s after delivery"),
                 ([k for _, i, k, _ in got if i == "oak_log"] == [10, 20], "oak logs still split 10 + 20")]
+    return check
+
+
+def stacks(c, name, item):
+    """Stack sizes of an item across every block of a named chest."""
+    return sorted((k for b in range(len(c.chests[name])) for _, i, k, _ in slots(c, name, b) if i == item), reverse=True)
+
+
+@scenario("tidy-double-chest", "tidy", 150, "A double chest with split stacks in both halves is tidied as one: each item ends up in a single stack.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("logs", 12, 10, [("oak_log", 10), ("air", 1), ("oak_log", 5), ("spruce_log", 1)], half="left")
+    c.chest("logs", 11, 10, [("oak_log", 20), ("spruce_log", 2), ("air", 1), ("oak_log", 7)], half="right")
+    c.sign(12, 10, "[logs]")
+    c.golem(4, 10)
+    return lambda: [(stacks(c, "logs", "birch_log") == [16], f"birch: {stacks(c, 'logs', 'birch_log')} (want [16])"),
+                    (stacks(c, "logs", "oak_log") == [42], f"oak: {stacks(c, 'logs', 'oak_log')} (want [42])"),
+                    (stacks(c, "logs", "spruce_log") == [3], f"spruce: {stacks(c, 'logs', 'spruce_log')} (want [3])")]
+
+
+@scenario("tidy-stack-sizes", "tidy", 150, "Merging respects each item's stack size: eggs stack to 16, swords don't stack at all.")
+def _(c):
+    c.chest("copper", 2, 10, [("egg", 16)], block="waxed_copper_chest")
+    c.chest("eggs", 12, 10, [("egg", 10), ("iron_sword", 1), ("egg", 10), ("iron_sword", 1), ("egg", 10)])
+    c.sign(12, 10, "[egg]")
+    c.golem(4, 10)
+    return lambda: [(stacks(c, "eggs", "egg") == [16, 16, 14], f"eggs: {stacks(c, 'eggs', 'egg')} (want [16, 16, 14])"),
+                    (stacks(c, "eggs", "iron_sword") == [1, 1], f"swords: {stacks(c, 'eggs', 'iron_sword')} (want [1, 1])")]
+
+
+@scenario("tidy-keeps-item-data", "tidy", 150, "Tidying an overflow chest keeps a shulker box's contents, enchantments, damage and names intact.")
+def _(c):
+    shulker = 'white_shulker_box[minecraft:container=[{slot:0,item:{id:"minecraft:diamond",count:5}}]]'
+    book = 'enchanted_book[minecraft:stored_enchantments={"minecraft:mending":1}]'
+    sword = 'iron_sword[minecraft:damage=100,minecraft:custom_name="Old Faithful"]'
+    c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
+    c.chest("overflow", 12, 10, [("dirt", 3), (shulker, 1), ("dirt", 3), (book, 1), ("air", 1), (sword, 1), ("dirt", 3)])
+    c.sign(12, 10, "[Overflow]")
+    c.golem(4, 10)
+
+    def inner(path):
+        x, y, z = c.chests["overflow"][0]
+        m = re.search(r"data: (\d+)", c.r.cmd(f"data get block {x} {y} {z} {path}"))
+        return int(m.group(1)) if m else -1
+
+    def check():
+        got = slots(c, "overflow")
+        diamonds = inner('Items[{id:"minecraft:white_shulker_box"}].components."minecraft:container"[0].item.count')
+        mending = inner('Items[{id:"minecraft:enchanted_book"}].components."minecraft:stored_enchantments"."minecraft:mending"')
+        damage = inner('Items[{id:"minecraft:iron_sword"}].components."minecraft:damage"')
+        named = any(i == "iron_sword" and n for _, i, _, n in got)
+        return [(any(i == "sculk_shrieker" for _, i, _, _ in got), "shrieker delivered"),
+                (stacks(c, "overflow", "dirt") == [9], f"dirt merged: {stacks(c, 'overflow', 'dirt')}"),
+                (diamonds == 5, f"shulker box holds {diamonds} diamonds (want 5)"),
+                (mending == 1, f"book still has mending {mending} (want 1)"),
+                (damage == 100 and named, f"sword damage {damage} (want 100), still named: {named}")]
+    return check
+
+
+@scenario("tidy-chest-broken", "tidy", 120, "The chest is broken right after a delivery, before its tidy runs: no errors, nothing else happens.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("logs", 12, 10, [("oak_log", 10), ("air", 1), ("oak_log", 5)])
+    c.sign(12, 10, "[logs]")
+    c.golem(4, 10)
+    t = Trigger()
+
+    def check():
+        t.fire_when(lambda: c.count("logs", "birch_log") > 0, lambda: c.remove(12, 10))
+        return [(t.at is not None, "chest broken right after the delivery"),
+                (t.since() > 10, f"waited {t.since():.0f}s of 10s past the tidy delay")]
     return check

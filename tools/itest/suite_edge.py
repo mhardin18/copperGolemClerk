@@ -426,3 +426,43 @@ def _(c):
     c.chest("logs", 16, 10, [("oak_log", 1)])
     c.golem(3, 12)
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "input", "birch_log", 0), conserved(c, "birch_log", 16)]
+
+
+@scenario("label-overflow-no-loop", "edge", 90, "A chest signed [logs] and [Overflow] holding birch logs: idle golems don't fetch the logs out just to put them back.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    c.chest("both", 12, 10, [("birch_log", 16)])
+    c.sign(12, 10, ["[logs]", "[Overflow]"])
+    c.golem(4, 10)
+
+    def fetches():
+        return sum(1 for l in c.log_lines() if "fetching" in l and "BIRCH_LOG" in l and c.in_cell(l))
+
+    def check():
+        n = fetches()
+        return [(c.elapsed() > 60, f"watched {c.elapsed():.0f}s of 60s"), (n == 0, f"{n} fetches of birch logs (want 0)"),
+                expect(c, "both", "birch_log", 16)]
+    return check
+
+
+@scenario("hanging-sign-above", "edge", 120, "A hanging sign just above a chest (hung from the block over it) labels it.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("logs", 14, 10)
+    c.block(14, 10, "oak_planks", dy=2)
+    x, y, z = c.abs(14, 10, 1)
+    c.run(f'setblock {x} {y} {z} minecraft:oak_hanging_sign{{front_text:{{messages:["[logs]","","",""]}}}}')
+    c.golem(4, 10)
+    return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "empty", "*", 0)]
+
+
+@scenario("two-labels-one-line", "edge", 240, "One sign line can hold several labels: '[stone][logs]' takes granite and birch logs; a dirt block goes elsewhere.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 8), ("granite", 8), ("dirt", 4)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("both", 14, 10)
+    c.sign(14, 10, "[stone][logs]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "both", "birch_log", 8), expect(c, "both", "granite", 8), expect(c, "both", "dirt", 0),
+                    expect(c, "empty", "dirt", 4)]

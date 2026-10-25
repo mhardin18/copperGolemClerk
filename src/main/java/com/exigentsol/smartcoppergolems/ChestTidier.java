@@ -80,7 +80,7 @@ final class ChestTidier {
                 continue;
             }
             it.remove();
-            if (plugin.tidyChests()) {
+            if (plugin.tidyChests() && plugin.enabledIn(world)) {
                 tidy(inventory);
             }
         }
