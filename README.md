@@ -217,6 +217,10 @@ cd smartCopperGolems
 The jar is written to `build/libs/SmartCopperGolems-<version>.jar`. Install it as
 described in [Install](#install).
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+
 ## License
 
 GPL-3.0. See [LICENSE](LICENSE).
