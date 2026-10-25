@@ -10,10 +10,10 @@ from arena import Y, Trigger, _count, conserved, expect, scenario
 from suite_options import set_options
 
 
-def corridor(c, niche=False, floor=None):
+def corridor(c, niche=False, floor=None, width=1, x1=6, x2=14):
     x, z = c.x, c.z
-    for z1, z2 in ((0, 9), (11, 20)):  # solid glass either side of the corridor
-        c.run(f"fill {x + 6} {Y} {z + z1} {x + 14} {Y + 2} {z + z2} minecraft:glass")
+    for z1, z2 in ((0, 9), (10 + width, 20)):  # solid glass either side of the corridor
+        c.run(f"fill {x + x1} {Y} {z + z1} {x + x2} {Y + 2} {z + z2} minecraft:glass")
     if niche:  # a one-block pocket halfway along, where one golem can step aside
         c.run(f"fill {x + 10} {Y} {z + 9} {x + 10} {Y + 2} {z + 9} minecraft:air")
     if floor:
@@ -25,8 +25,8 @@ def corridor(c, niche=False, floor=None):
     c.chest("copperE", 19, 8, [("granite", 16), ("granite", 16)], block="waxed_copper_chest", dy=dy)
     c.chest("logs", 19, 12, dy=dy)
     c.sign(19, 12, "[logs]", dy=dy)
-    c.golem(3, 10)
-    c.golem(17, 10)
+    c.golem(min(3, x1 - 1), 10)
+    c.golem(max(17, x2 + 1), 10)
     return lambda: [expect(c, "logs", "birch_log", 32), expect(c, "stone", "granite", 32),
                     conserved(c, "birch_log", 32), conserved(c, "granite", 32)]
 
@@ -116,3 +116,18 @@ def _(c):
     done = corridor(c)
     c.golem(2, 11)
     return done
+
+
+@scenario("give-way-wide", "traffic", 420, "A corridor two blocks wide: golems meeting head-on get past each other and every item arrives.")
+def _(c):
+    return corridor(c, width=2)
+
+
+@scenario("give-way-doorway", "traffic", 420, "Two rooms joined by a single doorway in a wall: golems meeting in the doorway get through and every item arrives.")
+def _(c):
+    return corridor(c, x1=10, x2=10)
+
+
+@scenario("give-way-long-corridor", "traffic", 480, "A bare 1-wide corridor 15 blocks long between two small rooms: a golem backs all the way out if it has to; every item arrives.")
+def _(c):
+    return corridor(c, x1=3, x2=17)

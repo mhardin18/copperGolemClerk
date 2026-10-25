@@ -34,7 +34,7 @@ import org.bukkit.util.Vector;
  *
  * The golem giving way has its AI paused, slides one block to whichever side is free,
  * and waits there until the other has passed (at most a few seconds). In a corridor
- * with no room to either side, it first backs up (up to 8 blocks) to the nearest spot
+ * with no room to either side, it first backs up (up to 16 blocks) to the nearest spot
  * that has room. Carpet and slab floors count as floor. Vanilla golems
  * re-aim at their chest every tick, so a plain "walk over there" would be undone at once.
  * A golem busy at a chest never moves aside. Paused golems are marked, so one that is
@@ -57,7 +57,7 @@ final class GolemTraffic implements Listener {
     /** Extra waiting time allowed per block a golem backs up. */
     private static final int TICKS_PER_BLOCK_BACK = 10;
     /** With no room to either side, back up at most this many blocks to find some. */
-    private static final int MAX_BACK_UP = 8;
+    private static final int MAX_BACK_UP = 16;
     private static final double SLIDE_SPEED = 0.18;
     /** After giving way, a golem won't be asked to again for this long. */
     private static final int COOLDOWN_TICKS = 40;
