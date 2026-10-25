@@ -33,6 +33,7 @@ import suite_perf  # noqa: E402,F401
 import suite_scenes  # noqa: E402,F401
 import suite_setup  # noqa: E402,F401
 import suite_tidy  # noqa: E402,F401
+import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
 from rcon import from_properties  # noqa: E402
 

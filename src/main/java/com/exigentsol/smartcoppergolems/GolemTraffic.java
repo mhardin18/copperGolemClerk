@@ -33,7 +33,9 @@ import org.bukkit.util.Vector;
  * by are left alone: they usually slip past each other on their own.
  *
  * The golem giving way has its AI paused, slides one block to whichever side is free,
- * and waits there until the other has passed (at most a few seconds). Vanilla golems
+ * and waits there until the other has passed (at most a few seconds). In a corridor
+ * with no room to either side, it first backs up (up to 8 blocks) to the nearest spot
+ * that has room. Carpet and slab floors count as floor. Vanilla golems
  * re-aim at their chest every tick, so a plain "walk over there" would be undone at once.
  * A golem busy at a chest never moves aside. Paused golems are marked, so one that is
  * unloaded mid-sidestep is woken up when it loads again.
@@ -52,12 +54,22 @@ final class GolemTraffic implements Listener {
     private static final double LANE_HALF_WIDTH = 0.8;
     private static final int SCAN_EVERY_TICKS = 4;
     private static final int MAX_YIELD_TICKS = 60;
+    /** Extra waiting time allowed per block a golem backs up. */
+    private static final int TICKS_PER_BLOCK_BACK = 10;
+    /** With no room to either side, back up at most this many blocks to find some. */
+    private static final int MAX_BACK_UP = 8;
     private static final double SLIDE_SPEED = 0.18;
     /** After giving way, a golem won't be asked to again for this long. */
     private static final int COOLDOWN_TICKS = 40;
 
-    /** A golem stepping aside: where to, for whom, and since when. */
-    private record Yield(Location spot, UUID forWhom, int startTick) {
+    /**
+     * A golem stepping aside: the spots it slides through (the last is where it waits),
+     * for whom, since when, and how long it may take.
+     */
+    private record Yield(Deque<Location> route, UUID forWhom, int startTick, int maxTicks) {
+        Location spot() {
+            return route.peekFirst();
+        }
     }
 
     private final SmartCopperGolems plugin;
@@ -122,6 +134,9 @@ final class GolemTraffic implements Listener {
         moveYielding();
         if (tick % SCAN_EVERY_TICKS == 0) {
             for (World world : Bukkit.getWorlds()) {
+                if (!plugin.enabledIn(world)) {
+                    continue; // golems already giving way there are released by the usual timeout
+                }
                 scan(List.copyOf(world.getEntitiesByClass(CopperGolem.class)));
             }
         }
@@ -140,7 +155,7 @@ final class GolemTraffic implements Listener {
             boolean passed = other == null || !other.getWorld().equals(golem.getWorld())
                     || (tick - y.startTick() > 10 && !inWay(other, golem, LOOK_AHEAD + 0.5)
                         && horizontalDistance(other.getLocation(), golem.getLocation()) > 1.2);
-            if (passed || tick - y.startTick() > MAX_YIELD_TICKS) {
+            if (passed || tick - y.startTick() > y.maxTicks()) {
                 release(golem);
                 lastYield.put(golem.getUniqueId(), tick);
                 it.remove();
@@ -149,6 +164,11 @@ final class GolemTraffic implements Listener {
             Location at = golem.getLocation();
             Vector toSpot = y.spot().toVector().subtract(at.toVector()).setY(0);
             double dist = toSpot.length();
+            if (dist < 0.2 && y.route().size() > 1) {
+                y.route().removeFirst(); // reached a point on the way back: on to the next
+                toSpot = y.spot().toVector().subtract(at.toVector()).setY(0);
+                dist = toSpot.length();
+            }
             Vector v = golem.getVelocity();
             if (dist > 0.1) {
                 toSpot.multiply(Math.min(SLIDE_SPEED, dist * 0.5) / dist);
@@ -281,38 +301,111 @@ final class GolemTraffic implements Listener {
         Vector left = new Vector(-dir.getZ(), 0, dir.getX());
         double sideNow = (at.getX() - k.getX()) * left.getX() + (at.getZ() - k.getZ()) * left.getZ();
         Vector first = sideNow >= 0 ? left : left.clone().multiply(-1);
-        for (Vector side : List.of(first, first.clone().multiply(-1))) {
+        List<Vector> sides = List.of(first, first.clone().multiply(-1));
+        Deque<Location> route = new ArrayDeque<>();
+        for (Vector side : sides) {
             Location spot = standable(at, side);
             if (spot != null) {
-                giver.getPathfinder().stopPathfinding();
-                giver.setAware(false);
-                giver.getPersistentDataContainer().set(pausedKey, PersistentDataType.BYTE, (byte) 1);
-                yielding.put(giver.getUniqueId(), new Yield(spot, keeper.getUniqueId(), tick));
-                if (plugin.debug()) {
-                    plugin.getLogger().info("Golem at " + fmt(at) + (carries(giver) ? " (carrying)" : " (empty)")
-                            + " gives way to golem at " + fmt(k) + (carries(keeper) ? " (carrying)" : " (empty)")
-                            + ", stepping to " + fmt(spot));
-                }
-                return;
+                route.add(spot);
+                break;
             }
         }
+        if (route.isEmpty()) {
+            // No room either side (a narrow corridor): back up, the way the keeper is going,
+            // to the first place with room to one side.
+            Vector back = axis(dir);
+            Vector sideAxis = new Vector(-back.getZ(), 0, back.getX());
+            Location from = at.getBlock().getLocation().add(0.5, 0, 0.5);
+            from.setY(at.getY());
+            for (int n = 1; n <= MAX_BACK_UP && route.isEmpty(); n++) {
+                Location next = standable(from, back);
+                if (next == null) {
+                    break; // dead end
+                }
+                next.setY(at.getY());
+                for (Vector side : List.of(sideAxis, sideAxis.clone().multiply(-1))) {
+                    Location spot = standable(next, side);
+                    if (spot != null) {
+                        route.addAll(stepsBack(at, back, n));
+                        route.add(spot);
+                        break;
+                    }
+                }
+                from = next;
+            }
+        }
+        if (route.isEmpty()) {
+            return;
+        }
+        Location spot = route.peekLast();
+        giver.getPathfinder().stopPathfinding();
+        giver.setAware(false);
+        giver.getPersistentDataContainer().set(pausedKey, PersistentDataType.BYTE, (byte) 1);
+        int backed = route.size() - 1;
+        yielding.put(giver.getUniqueId(), new Yield(route, keeper.getUniqueId(), tick,
+                MAX_YIELD_TICKS + backed * TICKS_PER_BLOCK_BACK));
+        if (plugin.debug()) {
+            plugin.getLogger().info("Golem at " + fmt(at) + (carries(giver) ? " (carrying)" : " (empty)")
+                    + " gives way to golem at " + fmt(k) + (carries(keeper) ? " (carrying)" : " (empty)")
+                    + (backed > 0 ? ", backing up " + backed + (backed == 1 ? " block" : " blocks") : "") + ", stepping to " + fmt(spot));
+        }
+    }
+
+    /** The block centres n steps back along this axis from the golem's block. */
+    private static List<Location> stepsBack(Location at, Vector back, int n) {
+        Location base = at.getBlock().getLocation().add(0.5, 0, 0.5);
+        List<Location> steps = new java.util.ArrayList<>();
+        for (int i = 1; i <= n; i++) {
+            Location step = base.clone().add(back.clone().multiply(i));
+            step.setY(at.getY());
+            steps.add(step);
+        }
+        return steps;
+    }
+
+    /** The compass direction (unit x or z) closest to this direction. */
+    private static Vector axis(Vector dir) {
+        return Math.abs(dir.getX()) >= Math.abs(dir.getZ())
+                ? new Vector(Math.signum(dir.getX()), 0, 0)
+                : new Vector(0, 0, Math.signum(dir.getZ()));
     }
 
     /** The centre of the block one step to this side, if a golem can stand there. */
     private static Location standable(Location from, Vector side) {
         Location target = from.clone().add(side.getX(), 0, side.getZ());
         Block feet = target.getBlock();
-        if (!feet.isPassable() || !feet.getRelative(0, 1, 0).isPassable()
-                || !feet.getRelative(0, -1, 0).getType().isSolid()) {
+        if (!canStandIn(feet)) {
             return null;
         }
         // The golem must not cut through a wall corner on its way.
         Block fromBlock = from.getBlock();
-        if (!fromBlock.getRelative(feet.getX() - fromBlock.getX(), 0, 0).isPassable()
-                && !fromBlock.getRelative(0, 0, feet.getZ() - fromBlock.getZ()).isPassable()) {
+        if (!canStandIn(fromBlock.getRelative(feet.getX() - fromBlock.getX(), 0, 0))
+                && !canStandIn(fromBlock.getRelative(0, 0, feet.getZ() - fromBlock.getZ()))) {
             return null;
         }
         return feet.getLocation().add(0.5, 0, 0.5);
+    }
+
+    /**
+     * True if a golem can stand in this block: open with a solid floor, or a low
+     * floor covering (carpet, a bottom slab) to stand on, and headroom above.
+     */
+    static boolean canStandIn(Block feet) {
+        if (!feet.getRelative(0, 1, 0).isPassable()) {
+            return false;
+        }
+        if (feet.isPassable()) {
+            return feet.getRelative(0, -1, 0).getType().isSolid();
+        }
+        var box = feet.getCollisionShape().getBoundingBoxes();
+        if (box.isEmpty()) {
+            return false;
+        }
+        double top = 0;
+        for (var b : box) {
+            top = Math.max(top, b.getMaxY());
+        }
+        return top <= 0.5 + 1e-6;
     }
 
     private void release(CopperGolem golem) {
