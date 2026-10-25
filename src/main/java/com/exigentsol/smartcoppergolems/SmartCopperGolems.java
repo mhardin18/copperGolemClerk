@@ -35,6 +35,8 @@ public final class SmartCopperGolems extends JavaPlugin {
     private volatile int fetchersPerOverflowChest;
     private volatile long homelessRetryMillis;
     private SortListener listener;
+    private GolemTraffic traffic;
+    private volatile boolean giveWay;
     private volatile boolean preferMatchingChests;
     private volatile long matchingChestTimeoutMillis;
 
@@ -44,7 +46,17 @@ public final class SmartCopperGolems extends JavaPlugin {
         loadSettings();
         listener = new SortListener(this);
         getServer().getPluginManager().registerEvents(listener, this);
+        traffic = new GolemTraffic(this);
+        getServer().getPluginManager().registerEvents(traffic, this);
+        traffic.setEnabled(giveWay);
         registerCommand("smartcoppergolems", "Manage smart copper golem sorting", List.of("sg"), new Command());
+    }
+
+    @Override
+    public void onDisable() {
+        if (traffic != null) {
+            traffic.setEnabled(false);
+        }
     }
 
     /**
@@ -85,6 +97,10 @@ public final class SmartCopperGolems extends JavaPlugin {
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
         if (listener != null) {
             listener.clearHomeless();
+        }
+        giveWay = config.getBoolean("golems-give-way", true);
+        if (traffic != null) {
+            traffic.setEnabled(giveWay);
         }
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
         matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;

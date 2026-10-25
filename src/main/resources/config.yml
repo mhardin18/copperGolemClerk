@@ -101,6 +101,14 @@ fetch-from-overflow: true
 # a different item). Higher empties overflow faster but can crowd the chest.
 fetchers-per-overflow-chest: 2
 
+# Golems give way to each other instead of getting stuck nose to nose. When a
+# golem is stuck (trying to walk but barely moving for a second) because another
+# golem is in its way, one of them steps one block aside and waits for the other
+# to pass: a golem with empty hands gives way to one carrying an item. If both
+# carry something (or both are empty), the same golem of the pair always gives
+# way. Golems busy at a chest never step aside.
+golems-give-way: true
+
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false
 

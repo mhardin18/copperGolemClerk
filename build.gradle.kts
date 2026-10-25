@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.exigentsol"
-version = "1.0.0"
+version = "1.1.0"
 
 repositories {
     mavenCentral()
@@ -32,6 +32,8 @@ java {
 }
 
 tasks.processResources {
+    // Rebuild plugin.yml when the version changes (otherwise Gradle reuses the old one).
+    inputs.property("version", project.version)
     filesMatching("plugin.yml") {
         expand("version" to project.version)
     }
@@ -56,6 +58,15 @@ tasks.register("deploy") {
         Files.setPosixFilePermissions(tmp, PosixFilePermissions.fromString("rw-rw-r--"))
         Files.move(tmp, dir.resolve(src.fileName),
             StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        // Remove other versions' jars, or the server would load the plugin twice.
+        Files.newDirectoryStream(dir, "SmartCopperGolems-*.jar").use { jars ->
+            for (old in jars) {
+                if (old.fileName != src.fileName) {
+                    Files.delete(old)
+                    println("Removed old ${old.fileName}")
+                }
+            }
+        }
         println("Deployed ${src.fileName}. Restart with: sudo systemctl restart mcd")
     }
 }
