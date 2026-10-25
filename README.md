@@ -140,6 +140,19 @@ you add a chest for something that was piling up in overflow, golems move it
 over on their own. Items with no home are left in overflow. Golems also no
 longer walk to empty copper chests.
 
+### Golems give way to each other
+
+Golems working in a crowded room or a narrow aisle can end up nose to nose,
+pushing against each other. With `golems-give-way` (on by default), when a golem
+is stuck (trying to walk but barely moving for a second) because another golem
+is in its way, one of them steps one block aside and waits for the other to pass:
+
+- A golem with empty hands gives way to one carrying an item.
+- If both carry something, or both are empty, the same golem of the pair always
+  gives way, so they never both dodge.
+- A golem busy at a chest never steps aside, and golems that are just passing
+  each other are left alone.
+
 Settings:
 
 - `match-mode: all` (default): every item in the chest must share a group with the
@@ -153,6 +166,7 @@ Settings:
 - `overflow-before-empty: true` (default): see above.
 - `allow-empty-chests: true` (default): golems may use empty chests as a last
   resort. Set `false` so golems only fill chests you've labelled.
+- `golems-give-way: true` (default): see above.
 - `debug: true`: logs each sort decision to the console.
 
 ## Commands
