@@ -5,6 +5,7 @@ the log, then restores the original and reloads again. (The runner also restores
 original if anything goes wrong.)
 """
 import re
+import time
 
 from arena import CONFIG, scenario
 
@@ -31,6 +32,7 @@ def try_config(c, text):
         with open(CONFIG, "w") as f:
             f.write(text)
         reply = re.sub(r"§.", "", c.r.cmd("smartcoppergolems reload"))
+        time.sleep(1.5)  # the server writes its log file asynchronously
         lines = [l for l in c.log.since(start) if "SmartCopperGolems" in l or "Exception" in l]
     finally:
         restored = re.sub(r"§.", "", restore(c))
