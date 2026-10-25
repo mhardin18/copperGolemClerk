@@ -153,6 +153,20 @@ is in its way, one of them steps one block aside and waits for the other to pass
 - A golem busy at a chest never steps aside, and golems that are just passing
   each other are left alone.
 
+### Golems tidy the chests they use
+
+With `tidy-chests` (on by default), a few seconds after a golem puts something in a
+chest, the chest is tidied:
+
+- Partial stacks of the same item are merged (two stacks of 20 and 10 oak logs
+  become one stack of 30). Items that differ, such as a renamed or enchanted copy,
+  stay separate.
+- Like items are moved next to each other: by group, in the order the groups are
+  listed in `config.yml`, then by item. Stacks fill the chest from the first slot.
+
+Copper chests are left alone, and so is a chest a player has open (it's tidied
+after they close it).
+
 Settings:
 
 - `match-mode: all` (default): every item in the chest must share a group with the
@@ -167,6 +181,7 @@ Settings:
 - `allow-empty-chests: true` (default): golems may use empty chests as a last
   resort. Set `false` so golems only fill chests you've labelled.
 - `golems-give-way: true` (default): see above.
+- `tidy-chests: true` (default): see above.
 - `debug: true`: logs each sort decision to the console.
 
 ## Commands

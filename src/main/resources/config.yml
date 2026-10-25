@@ -109,6 +109,12 @@ fetchers-per-overflow-chest: 2
 # way. Golems busy at a chest never step aside.
 golems-give-way: true
 
+# Golems tidy a chest after putting something in it: partial stacks of the same
+# item are merged, and like items are moved next to each other (by group, in the
+# order the groups are listed below). Copper chests and chests a player has open
+# are left alone.
+tidy-chests: true
+
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false
 

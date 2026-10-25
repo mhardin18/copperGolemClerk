@@ -29,6 +29,7 @@ error or exception in the server log during a scenario fails it.
 | scenes | whole sorting rooms end to end; a manual 15-minute soak |
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
 | config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands |
+| tidy | golems tidy chests they deliver to: stacks merged, like items together, option off |
 | options | each config switch changes what golems do |
 | lifecycle | reloads mid-task, reload spam; manual server restart |
 | perf | hundreds of chests in range, many golems: tick time stays healthy |

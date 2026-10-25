@@ -41,6 +41,7 @@ public final class SortListener implements Listener {
     private final HomeFinder homes;
     private final Returns returns;
     private final OverflowFetcher fetcher;
+    private final ChestTidier tidier;
 
     public SortListener(SmartCopperGolems plugin) {
         this.plugin = plugin;
@@ -48,6 +49,7 @@ public final class SortListener implements Listener {
         this.homes = new HomeFinder(plugin, matcher);
         this.returns = new Returns(plugin);
         this.fetcher = new OverflowFetcher(plugin, homes, returns);
+        this.tidier = new ChestTidier(plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             homes.prune();
             returns.prune();
@@ -223,6 +225,7 @@ public final class SortListener implements Listener {
                     && (match.kind() == ChestMatcher.Kind.EXACT || match.kind() == ChestMatcher.Kind.EMPTY));
         if (accepted) {
             homes.accepted(event.getEntity().getUniqueId());
+            tidier.delivered(container);
         }
 
         if (plugin.debug()) {
