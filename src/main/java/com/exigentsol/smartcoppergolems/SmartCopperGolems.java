@@ -7,12 +7,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -38,6 +43,8 @@ public final class SmartCopperGolems extends JavaPlugin {
     private GolemTraffic traffic;
     private volatile boolean giveWay;
     private volatile boolean tidyChests;
+    private ChestReports reports;
+    private volatile Set<String> disabledWorlds = Set.of();
     private volatile boolean preferMatchingChests;
     private volatile long matchingChestTimeoutMillis;
 
@@ -46,11 +53,12 @@ public final class SmartCopperGolems extends JavaPlugin {
         saveDefaultConfig();
         loadSettings();
         listener = new SortListener(this);
+        reports = new ChestReports(this);
         getServer().getPluginManager().registerEvents(listener, this);
         traffic = new GolemTraffic(this);
         getServer().getPluginManager().registerEvents(traffic, this);
         traffic.setEnabled(giveWay);
-        registerCommand("smartcoppergolems", "Manage smart copper golem sorting", List.of("sg"), new Command());
+        registerCommand("smartcoppergolems", "Manage smart copper golem sorting", List.of("scg"), new Command());
     }
 
     @Override
@@ -104,6 +112,14 @@ public final class SmartCopperGolems extends JavaPlugin {
             traffic.setEnabled(giveWay);
         }
         tidyChests = config.getBoolean("tidy-chests", true);
+        Set<String> off = new HashSet<>();
+        for (String name : config.getStringList("disabled-worlds")) {
+            off.add(name.trim().toLowerCase(Locale.ROOT));
+            if (getServer().getWorld(name.trim()) == null) {
+                getLogger().warning("disabled-worlds: no world named '" + name.trim() + "' (yet); check the spelling.");
+            }
+        }
+        disabledWorlds = Set.copyOf(off);
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
         matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;
         groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());
@@ -135,6 +151,12 @@ public final class SmartCopperGolems extends JavaPlugin {
 
     boolean matchModeAll() {
         return matchModeAll;
+    }
+
+    /** False in worlds listed under disabled-worlds: golems there behave as in vanilla. */
+    boolean enabledIn(World world) {
+        return world == null || disabledWorlds.isEmpty()
+                || !disabledWorlds.contains(world.getName().toLowerCase(Locale.ROOT));
     }
 
     boolean tidyChests() {
@@ -207,13 +229,25 @@ public final class SmartCopperGolems extends JavaPlugin {
                     }
                 }
                 case "check" -> {
+                    Block at = blockArg(sender, args);
+                    if (at != null) {
+                        reports.checkChest(sender, at, sender instanceof Player p
+                                ? p.getInventory().getItemInMainHand() : ItemStack.empty());
+                        return;
+                    }
                     if (!(sender instanceof Player player)) {
                         sender.sendMessage(Component.text("Only players can use this.", NamedTextColor.RED));
                         return;
                     }
                     ItemStack hand = player.getInventory().getItemInMainHand();
+                    Block target = player.getTargetBlockExact(6);
+                    if (target != null && target.getState(false) instanceof Container) {
+                        reports.checkChest(player, target, hand);
+                        return;
+                    }
                     if (hand.isEmpty()) {
-                        sender.sendMessage(Component.text("Hold an item to see its groups.", NamedTextColor.YELLOW));
+                        sender.sendMessage(Component.text("Look at a chest to see what it takes, or hold an item to see its groups.",
+                                NamedTextColor.YELLOW));
                         return;
                     }
                     List<String> names = groups.namesOf(hand.getType());
@@ -221,8 +255,33 @@ public final class SmartCopperGolems extends JavaPlugin {
                             + (names.isEmpty() ? "no groups (exact-match sorting only)" : String.join(", ", names)),
                             NamedTextColor.AQUA));
                 }
+                case "overflow" -> {
+                    Block at = blockArg(sender, args);
+                    if (at != null) {
+                        reports.overflow(sender, at.getLocation());
+                    } else if (sender instanceof Player player) {
+                        reports.overflow(player, player.getLocation());
+                    } else {
+                        sender.sendMessage(Component.text("From the console: /scg overflow <x> <y> <z> [world]", NamedTextColor.RED));
+                    }
+                }
                 default -> sender.sendMessage(Component.text(
-                        "Usage: /smartcoppergolems <reload|check>", NamedTextColor.YELLOW));
+                        "Usage: /smartcoppergolems <reload|check|overflow>", NamedTextColor.YELLOW));
+            }
+        }
+
+        /** The block at "<x> <y> <z> [world]" after the subcommand, or null if not given. */
+        private Block blockArg(CommandSender sender, String[] args) {
+            if (args.length < 4) {
+                return null;
+            }
+            try {
+                int x = Integer.parseInt(args[1]), y = Integer.parseInt(args[2]), z = Integer.parseInt(args[3]);
+                World world = args.length > 4 ? getServer().getWorld(args[4])
+                        : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
+                return world == null ? null : world.getBlockAt(x, y, z);
+            } catch (NumberFormatException e) {
+                return null;
             }
         }
 
@@ -230,7 +289,7 @@ public final class SmartCopperGolems extends JavaPlugin {
         public Collection<String> suggest(CommandSourceStack source, String[] args) {
             if (args.length <= 1) {
                 String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
-                return List.of("reload", "check").stream().filter(s -> s.startsWith(prefix)).toList();
+                return List.of("reload", "check", "overflow").stream().filter(s -> s.startsWith(prefix)).toList();
             }
             return List.of();
         }

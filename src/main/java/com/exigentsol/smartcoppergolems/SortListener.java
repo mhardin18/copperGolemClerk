@@ -77,7 +77,7 @@ public final class SortListener implements Listener {
                 return;
             }
             ItemStack held = heldItem(golem);
-            if (held.isEmpty() || held.getType() != search.type()) {
+            if (held.isEmpty() || held.getType() != search.type() || !plugin.enabledIn(golem.getWorld())) {
                 homes.forget(id); // its next search starts fresh
                 return;
             }
@@ -101,7 +101,7 @@ public final class SortListener implements Listener {
 
     @EventHandler
     public void onValidateTarget(ItemTransportingEntityValidateTargetEvent event) {
-        if (!event.isAllowed()) {
+        if (!event.isAllowed() || !plugin.enabledIn(event.getEntity().getWorld())) {
             return;
         }
         Entity golem = event.getEntity();
@@ -166,7 +166,7 @@ public final class SortListener implements Listener {
     @EventHandler
     public void onSort(ItemTransportingEntitySortEvent event) {
         // Another plugin already decided; respect it.
-        if (event.getResult() != Event.Result.DEFAULT) {
+        if (event.getResult() != Event.Result.DEFAULT || !plugin.enabledIn(event.getEntity().getWorld())) {
             return;
         }
         ItemStack held = event.getItemStack();

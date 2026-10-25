@@ -69,9 +69,17 @@ final class OverflowFetcher {
         }
         long now = System.currentTimeMillis();
         for (World world : plugin.getServer().getWorlds()) {
+            boolean enabled = plugin.enabledIn(world);
             for (CopperGolem golem : world.getEntitiesByClass(CopperGolem.class)) {
                 UUID id = golem.getUniqueId();
                 Fetch fetch = fetching.get(id);
+                if (!enabled) {
+                    if (fetch != null) { // world turned off by a reload mid-fetch
+                        golem.getPathfinder().stopPathfinding();
+                        fetching.remove(id);
+                    }
+                    continue;
+                }
                 if (fetch != null) {
                     continueFetch(golem, fetch, now);
                 } else if (now >= nextCheck.getOrDefault(id, 0L)) {

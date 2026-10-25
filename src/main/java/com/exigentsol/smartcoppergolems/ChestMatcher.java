@@ -64,7 +64,7 @@ final class ChestMatcher {
         if (plugin.itemFrameLabels() || plugin.signLabels()) {
             return ChestLabels.of(container, plugin.groups(), plugin.itemFrameLabels(), plugin.signLabels());
         }
-        return new ChestLabels.Labels(List.of(), List.of(), false);
+        return new ChestLabels.Labels(List.of(), List.of(), false, List.of());
     }
 
     /** Classify with labels already read, when checking many items against one chest. */

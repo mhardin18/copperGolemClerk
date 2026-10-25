@@ -24,8 +24,11 @@ import org.bukkit.configuration.ConfigurationSection;
  */
 public final class ItemGroups {
 
-    /** A label rule and how many item types it covers (fewer = more specific). */
-    record Rule(Predicate<Material> test, int size) {
+    /**
+     * A label rule and how many item types it covers (fewer = more specific).
+     * meaning says in words what the label was read as, for /scg check.
+     */
+    record Rule(Predicate<Material> test, int size, String meaning) {
     }
 
     private final List<String> groupNames;
@@ -160,27 +163,31 @@ public final class ItemGroups {
             for (int i = 0; i < groupNames.size(); i++) {
                 String[] groupWords = words(groupNames.get(i));
                 if (String.join("-", groupWords).equals(String.join("-", words))) {
-                    return Optional.of(new Rule(inGroup(i), groupSizes[i]));
+                    return Optional.of(new Rule(inGroup(i), groupSizes[i], "group " + groupNames.get(i)));
                 }
                 if (fuzzy < 0 && sameWordsIgnoringPlural(words, groupWords)) {
                     fuzzy = i;
                 }
             }
             if (fuzzy >= 0) {
-                return Optional.of(new Rule(inGroup(fuzzy), groupSizes[fuzzy]));
+                return Optional.of(new Rule(inGroup(fuzzy), groupSizes[fuzzy], "group " + groupNames.get(fuzzy)));
             }
         }
         String entry = key.startsWith("#") ? key.replace(' ', '_') : key.replace(' ', '_').replace('-', '_');
-        Rule rule = ruleFor(parseEntry(entry, "sign", null));
+        String meaning = key.startsWith("#") ? "item tag " + entry
+                : key.startsWith("@") ? "items that are " + entry.substring(1)
+                : key.contains("*") ? "pattern " + entry.toUpperCase(Locale.ROOT)
+                : "item";
+        Rule rule = ruleFor(parseEntry(entry, "sign", null), meaning);
         if (rule == null && plainName) {
             // Last try: items with these words in their name ([stew] = mushroom/rabbit/suspicious stew).
-            rule = ruleFor(m -> containsWords(m.name(), words(key)));
+            rule = ruleFor(m -> containsWords(m.name(), words(key)), "items with \"" + key + "\" in their name");
         }
         return Optional.ofNullable(rule);
     }
 
     /** The rule with its item count, or null if it matches no items. */
-    private Rule ruleFor(Predicate<Material> test) {
+    private Rule ruleFor(Predicate<Material> test, String meaning) {
         if (test == null) {
             return null;
         }
@@ -190,7 +197,27 @@ public final class ItemGroups {
                 size++;
             }
         }
-        return size == 0 ? null : new Rule(test, size);
+        return size == 0 ? null : new Rule(test, size, meaning);
+    }
+
+    /** Every item a rule accepts, in registry order. */
+    List<Material> itemsMatching(Predicate<Material> test) {
+        List<Material> result = new ArrayList<>();
+        for (Material m : items) {
+            if (test.test(m)) {
+                result.add(m);
+            }
+        }
+        return result;
+    }
+
+    /** Index of a group name, or -1. */
+    int groupIndex(String name) {
+        return groupNames.indexOf(name);
+    }
+
+    String groupName(int index) {
+        return groupNames.get(index);
     }
 
     /** True if the item name contains these words in order, each singular or plural. */

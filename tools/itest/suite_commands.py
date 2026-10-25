@@ -1,0 +1,84 @@
+"""commands: /scg check on a chest, /scg overflow, and disabled-worlds.
+
+The commands take coordinates from the console (/scg check <x> <y> <z>), which is
+how these scenarios read their output over RCON.
+"""
+import re
+
+from arena import SERVER, expect, scenario
+from suite_options import set_options
+
+
+def say(c, command):
+    return re.sub(r"§.", "", c.r.cmd(command))
+
+
+def check_at(c, dx, dz):
+    x, y, z = c.abs(dx, dz)
+    return say(c, f"scg check {x} {y} {z}")
+
+
+def has(reply, text):
+    return text in reply, f"says '{text}'" + ("" if text in reply else f"; got: {reply.strip()}")
+
+
+@scenario("check-labels", "commands", 30, "/scg check on a chest explains each sign line: a group, one item, and a line that matches nothing.")
+def _(c):
+    c.chest("wool", 10, 10)
+    c.sign(10, 10, ["[Wool]", "[String]", "[frobnitz]"])
+    c.chest("horse", 14, 10)
+    c.sign(14, 10, "[Horse]")
+    return lambda: [has(check_at(c, 10, 10), "[Wool] = group wool (64 items)"),
+                    has(check_at(c, 10, 10), "[String] = the item string"),
+                    has(check_at(c, 10, 10), "[frobnitz] matches no group or item"),
+                    has(check_at(c, 14, 10), 'items with "horse" in their name')]
+
+
+@scenario("check-contents", "commands", 30, "/scg check on unlabelled chests: shared group, a stray item, empty, blocked, and a copper chest.")
+def _(c):
+    c.chest("logs", 6, 10, [("oak_log", 4), ("birch_log", 2)])
+    c.chest("mixed", 9, 10, [("oak_log", 4), ("dirt", 1)])
+    c.chest("empty", 12, 10)
+    c.chest("blocked", 15, 10, [("oak_log", 1)])
+    c.block(15, 10, "stone", dy=1)
+    c.chest("copper", 18, 10, block="waxed_copper_chest")
+    return lambda: [has(check_at(c, 6, 10), "plus anything in group logs"),
+                    has(check_at(c, 9, 10), "share no group"),
+                    has(check_at(c, 12, 10), "No labels and empty"),
+                    has(check_at(c, 15, 10), "can't open it"),
+                    has(check_at(c, 18, 10), "Copper chest"),
+                    has(check_at(c, 3, 3), "No container")]
+
+
+@scenario("overflow-report", "commands", 30, "/scg overflow sorts overflow contents into: no chest (with a sign label), chest full, and golems will move it.")
+def _(c):
+    c.chest("overflow", 10, 10, [("kelp", 10), ("oak_log", 5), ("granite", 3)])
+    c.sign(10, 10, "[Overflow]")
+    c.chest("stone", 14, 10)
+    c.sign(14, 10, "[stone]")
+    c.chest("logs", 6, 10, [("oak_log", 64)] * 27)
+    c.sign(6, 10, "[logs]")
+    x, y, z = c.abs(10, 10)
+
+    def check():
+        reply = say(c, f"scg overflow {x} {y} {z}")
+        no_home = reply.split("No chest for these")[-1].split("Their chest is full")[0]
+        full = reply.split("Their chest is full")[-1].split("Have a chest with room")[0]
+        moving = reply.split("Have a chest with room")[-1]
+        return [has(reply, "hold 18 items (3 kinds)"),
+                ("[ocean]" in no_home and "kelp x10" in no_home, f"kelp listed under [ocean] with no chest: {no_home.strip()}"),
+                ("[logs]" in full and "oak log x5" in full, f"oak logs listed as chest full: {full.strip()}"),
+                ("granite x3" in moving, f"granite listed as golems will move it: {moving.strip()}")]
+    return check
+
+
+@scenario("disabled-world", "commands", 150, "disabled-worlds lists this world: golems act as in vanilla (nearer empty chest gets the birch logs) and /scg check says it's off.", alone=True)
+def _(c):
+    world = next(l.split("=", 1)[1].strip() for l in open(SERVER + "/server.properties") if l.startswith("level-name="))
+    set_options(c, disabled_worlds=f"[{world}]")
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("logs", 16, 10, [("oak_log", 1)])
+    c.golem(4, 10)
+    return lambda: [expect(c, "empty", "birch_log", 16), expect(c, "logs", "birch_log", 0),
+                    has(check_at(c, 16, 10), "off in this world")]

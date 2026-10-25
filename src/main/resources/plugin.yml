@@ -5,5 +5,5 @@ api-version: '26.3'
 description: Copper golems sort similar items into the same chest.
 permissions:
   smartcoppergolems.admin:
-    description: Use /smartcoppergolems reload and /smartcoppergolems check.
+    description: Use /smartcoppergolems reload, check and overflow.
     default: op

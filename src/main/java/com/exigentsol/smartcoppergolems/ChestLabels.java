@@ -43,8 +43,9 @@ final class ChestLabels {
      *                  each with the number of item types it covers
      * @param names     the label texts, for debug messages
      * @param overflow  an [overflow] sign is present
+     * @param unknown   bracketed sign lines that match no item (ignored), for /scg check
      */
-    record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow) {
+    record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow, List<String> unknown) {
         boolean hasItemRules() {
             return !rules.isEmpty();
         }
@@ -71,6 +72,7 @@ final class ChestLabels {
     static Labels of(Inventory container, ItemGroups groups, boolean frames, boolean signs) {
         List<ItemGroups.Rule> rules = new ArrayList<>();
         List<String> names = new ArrayList<>();
+        List<String> unknown = new ArrayList<>();
         boolean overflow = false;
 
         for (Block block : blocksOf(container)) {
@@ -95,13 +97,15 @@ final class ChestLabels {
                             if (rule != null) {
                                 rules.add(rule);
                                 names.add("[" + inner + "]");
+                            } else {
+                                unknown.add("[" + inner + "]");
                             }
                         }
                     }
                 }
             }
         }
-        return new Labels(rules, names, overflow);
+        return new Labels(rules, names, overflow, unknown);
     }
 
     private static void readFrames(Block block, List<ItemGroups.Rule> rules, List<String> names) {
@@ -115,7 +119,7 @@ final class ChestLabels {
             ItemStack shown = frame.getItem();
             if (!shown.isEmpty()) {
                 Material type = shown.getType();
-                rules.add(new ItemGroups.Rule(m -> m == type, 1)); // one exact item: most specific
+                rules.add(new ItemGroups.Rule(m -> m == type, 1, "framed item")); // one exact item: most specific
                 names.add("frame " + type);
             }
         }
