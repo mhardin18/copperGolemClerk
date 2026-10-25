@@ -30,7 +30,7 @@ error or exception in the server log during a scenario fails it.
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
 | commands | `/scg check` on chests, `/scg overflow`, `disabled-worlds` |
 | config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands |
-| tidy | golems tidy chests they deliver to: stacks merged, like items together, option off |
+| tidy | golems tidy chests they deliver to (while the lid is open): stacks merged, like items together, option off |
 | options | each config switch changes what golems do |
 | lifecycle | reloads mid-task, reload spam; manual server restart |
 | perf | hundreds of chests in range, many golems: tick time stays healthy |

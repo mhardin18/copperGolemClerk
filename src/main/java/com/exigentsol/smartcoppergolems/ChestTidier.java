@@ -4,10 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -18,19 +17,19 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Tidies a chest after a golem puts something in it: partial stacks of the same item
+ * Tidies a chest a golem is putting something in: partial stacks of the same item
  * are merged, and the stacks are reordered so like items sit next to each other
  * (by item group in config order, then by item). Copper chests are left alone, since
  * Returns decides their order.
  *
- * The tidy runs a few seconds after the last golem delivery to that chest, so it
- * happens once after the item is in, not while golems are still queueing. A chest
- * a player has open is skipped (and retried later), so nothing moves under their cursor.
+ * Paper fires the Sort event twice per visit: when the golem opens the lid, and
+ * 3 seconds later, just before the item drops in (vanilla closes the lid and drops
+ * the item in the same tick). Each accepted Sort event tidies the chest on the next
+ * tick: once with the lid open, and once more so the new item sits with its kind.
+ * A chest a player has open is skipped until they close it, so nothing moves under
+ * their cursor.
  */
 final class ChestTidier {
-
-    /** Ticks to wait after the last delivery (Paper fires Sort ~3s apart; the deposit follows). */
-    private static final int DELAY_TICKS = 100;
 
     private record Key(UUID world, int x, int y, int z) {
         static Key of(Block b) {
@@ -39,15 +38,17 @@ final class ChestTidier {
     }
 
     private final SmartCopperGolems plugin;
-    private final Map<Key, Integer> due = new HashMap<>();
-    private int tick;
+    /** Chests to tidy on the next tick. */
+    private final Set<Key> next = new LinkedHashSet<>();
+    /** Chests a player had open; tidied once they close them. */
+    private final Set<Key> waiting = new LinkedHashSet<>();
 
     ChestTidier(SmartCopperGolems plugin) {
         this.plugin = plugin;
-        plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 20, 20);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::retryWaiting, 20, 20);
     }
 
-    /** A golem is delivering into this chest: tidy it once the deliveries settle. */
+    /** A golem is at this chest with an item it accepts: tidy it on the next tick. */
     void delivered(Inventory container) {
         if (!plugin.tidyChests()) {
             return;
@@ -56,33 +57,41 @@ final class ChestTidier {
         if (blocks.isEmpty() || Returns.isCopperChest(blocks.getFirst().getType())) {
             return;
         }
-        due.put(Key.of(blocks.getFirst()), tick + DELAY_TICKS);
+        if (next.isEmpty()) {
+            plugin.getServer().getScheduler().runTask(plugin, this::tidyNext);
+        }
+        next.add(Key.of(blocks.getFirst()));
     }
 
-    private void tick() {
-        tick += 20;
-        Iterator<Map.Entry<Key, Integer>> it = due.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<Key, Integer> entry = it.next();
-            if (entry.getValue() > tick) {
-                continue;
-            }
-            Key key = entry.getKey();
-            World world = Bukkit.getWorld(key.world());
-            if (world == null || !world.isChunkLoaded(key.x() >> 4, key.z() >> 4)
-                    || !(world.getBlockAt(key.x(), key.y(), key.z()).getState(false) instanceof Container c)) {
-                it.remove(); // gone or unloaded: nothing to tidy
-                continue;
-            }
-            Inventory inventory = c.getInventory();
-            if (!inventory.getViewers().isEmpty()) {
-                entry.setValue(tick + DELAY_TICKS); // a player is looking: try again later
-                continue;
-            }
-            it.remove();
-            if (plugin.tidyChests() && plugin.enabledIn(world)) {
-                tidy(inventory);
-            }
+    private void tidyNext() {
+        List<Key> keys = new ArrayList<>(next);
+        next.clear();
+        for (Key key : keys) {
+            tryTidy(key);
+        }
+    }
+
+    private void retryWaiting() {
+        List<Key> keys = new ArrayList<>(waiting);
+        waiting.clear();
+        for (Key key : keys) {
+            tryTidy(key);
+        }
+    }
+
+    private void tryTidy(Key key) {
+        World world = Bukkit.getWorld(key.world());
+        if (world == null || !world.isChunkLoaded(key.x() >> 4, key.z() >> 4)
+                || !(world.getBlockAt(key.x(), key.y(), key.z()).getState(false) instanceof Container c)) {
+            return; // gone or unloaded: nothing to tidy
+        }
+        Inventory inventory = c.getInventory();
+        if (!inventory.getViewers().isEmpty()) {
+            waiting.add(key); // a player is looking: tidy after they close it
+            return;
+        }
+        if (plugin.tidyChests() && plugin.enabledIn(world)) {
+            tidy(inventory);
         }
     }
 

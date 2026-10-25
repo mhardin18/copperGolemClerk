@@ -59,6 +59,27 @@ def _(c):
     return check
 
 
+@scenario("tidy-while-open", "tidy", 150, "The chest is tidied while the golem has the lid open (between the two Sort checks), and again after the item drops in.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("logs", 12, 10, [("oak_log", 10), ("air", 1), ("spruce_log", 5), ("air", 1), ("oak_log", 20), ("birch_log", 3)])
+    c.sign(12, 10, "[logs]")
+    c.golem(4, 10)
+    at = "%d,%d,%d" % c.chests["logs"][0]
+
+    def check():
+        lines = c.log_lines()
+        sorts = [n for n, l in enumerate(lines) if "carrying BIRCH_LOG -> " in l and f"at {at}:" in l]
+        tidied = [n for n, l in enumerate(lines) if f"Tidied chest at {at}:" in l]
+        got = slots(c, "logs")
+        return [(len(sorts) >= 2, f"golem opened the chest and dropped its logs ({len(sorts)} sort checks)"),
+                (bool(tidied) and len(sorts) >= 2 and sorts[0] < tidied[0] < sorts[1],
+                 "first tidy came after the lid opened and before the item dropped in"),
+                ([k for _, i, k, _ in got if i == "birch_log"] == [19], f"new birch logs merged into one stack ({show(got)})"),
+                (packed(got), "no gaps")]
+    return check
+
+
 @scenario("tidy-groups-together", "tidy", 150, "An overflow chest with mixed items is tidied after a delivery: like items sit together, renamed items aren't merged.")
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
