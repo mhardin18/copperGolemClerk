@@ -156,8 +156,9 @@ is in its way, one of them steps one block aside and waits for the other to pass
 
 ### Golems tidy the chests they use
 
-With `tidy-chests` (on by default), a few seconds after a golem puts something in a
-chest, the chest is tidied:
+With `tidy-chests` (on by default), a golem tidies a chest while it has the lid open
+to put something in, and again as the item drops in, so the new item sits with its
+kind:
 
 - Partial stacks of the same item are merged (two stacks of 20 and 10 oak logs
   become one stack of 30). Items that differ, such as a renamed or enchanted copy,
