@@ -35,6 +35,7 @@ import suite_setup  # noqa: E402,F401
 import suite_tidy  # noqa: E402,F401
 import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
+import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the others)
 from rcon import from_properties  # noqa: E402
 
 POLL = 3
@@ -62,7 +63,7 @@ def run_batch(r, log, batch, keep):
     """Build a batch of scenarios, poll until each passes or times out. Returns results."""
     cells, checks, done, last = {}, {}, {}, None
     for i, s in batch:
-        cells[i] = arena.Cell(r, i, log)
+        cells[i] = arena.Cell(r, i, log, s["dimension"])
         cells[i].forceload(True)
     time.sleep(2)
     try:

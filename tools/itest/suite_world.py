@@ -229,3 +229,39 @@ def _(c):
                 (c.holding("sculk_shrieker") == 1, f"golem holding {c.holding('sculk_shrieker')} shrieker (want 1)"),
                 (gave_up_returning(), "log says there was no copper chest to return it to")]
     return check
+
+
+def statue_after_pickup(c, overflow):
+    """A golem picks something up, then (fully oxidized) turns into a statue: what it held
+    must drop on the ground, as vanilla does, not vanish."""
+    if overflow:
+        c.chest("copper", 2, 10, block="waxed_copper_chest")
+        c.chest("overflow", 8, 10, [("granite", 16)])
+        c.sign(8, 10, "[Overflow]")
+    else:
+        c.chest("copper", 2, 10, [("granite", 16)], block="waxed_copper_chest")
+    c.chest("stone", 18, 10, [("andesite", 1)])
+    c.block(16, 10, "glass")  # slows the walk a little so the statue happens mid-trip
+    c.golem(4, 10)
+    t = Trigger()
+    sel = c.selector("copper_golem")
+
+    def check():
+        t.fire_when(lambda: c.holding("granite") > 0,
+                    lambda: c.r.cmd(f'data merge entity {sel[:-1]},limit=1] {{weather_state:"oxidized",next_weather_age:1L}}'))
+        if t.at is None:
+            return [(False, "waiting for the golem to pick up granite")]
+        statue = c.golems() == 0
+        return [(statue, "the golem turned into a statue" if statue else "waiting for the statue"),
+                conserved(c, "granite", 16)]
+    return check
+
+
+@scenario("statue-drops-carried-item", "world", 150, "A golem carrying granite from its copper chest turns into a statue: the granite drops on the ground (vanilla), none lost.")
+def _(c):
+    return statue_after_pickup(c, overflow=False)
+
+
+@scenario("statue-drops-fetched-item", "world", 150, "A golem carrying granite it fetched from [Overflow] turns into a statue: the granite drops, as for a vanilla pickup, none lost.")
+def _(c):
+    return statue_after_pickup(c, overflow=True)

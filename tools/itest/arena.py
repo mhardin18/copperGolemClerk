@@ -16,18 +16,19 @@ class Skip(Exception):
     """Raised by a scenario's setup when something it needs isn't available."""
 
 
-def scenario(name, suite, timeout, description, alone=False, manual=False, allow_errors=()):
+def scenario(name, suite, timeout, description, alone=False, manual=False, allow_errors=(), dimension=None):
     """Register a scenario.
 
     alone: changes something server-wide (config, reload, tick timing), so it runs by
            itself after the parallel ones.
     manual: needs a person (a server restart); runs only when named explicitly.
     allow_errors: server log errors this scenario expects (e.g. a bad config).
+    dimension: build the platform in another dimension ("minecraft:the_nether", "minecraft:the_end").
     The function gets a Cell, builds its setup, and returns check() -> [(ok, text)].
     """
     def wrap(fn):
         SCENARIOS.append(dict(name=name, suite=suite, timeout=timeout, description=description,
-                              alone=alone, manual=manual, allow_errors=allow_errors, build=fn))
+                              alone=alone, manual=manual, allow_errors=allow_errors, dimension=dimension, build=fn))
         return fn
     return wrap
 
@@ -54,11 +55,24 @@ class Log:
             return []
 
 
+class InDimension:
+    """Runs every command in another dimension (execute in <dimension> run ...)."""
+
+    def __init__(self, rcon, dimension):
+        self.rcon, self.dimension = rcon, dimension
+
+    def cmd(self, command):
+        if command.startswith("coppergolemclerk") or command.startswith("cgc"):
+            return self.rcon.cmd(command)  # plugin commands: the world is in the arguments
+        return self.rcon.cmd(f"execute in {self.dimension} run {command}")
+
+
 class Cell:
     """One scenario's platform. Coordinates are relative: (dx, dz) on the floor."""
 
-    def __init__(self, rcon, index, log):
-        self.r = rcon
+    def __init__(self, rcon, index, log, dimension=None):
+        self.dimension = dimension
+        self.r = InDimension(rcon, dimension) if dimension else rcon
         self.log = log
         self.x, self.z = X0, Z0 + index * SPACING
         self.chests = {}
