@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -83,7 +83,7 @@ final class HomeFinder {
 
     private static final int CACHE_TICKS = 20;
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     private final ChestMatcher matcher;
     private final Map<UUID, CacheEntry> cache = new HashMap<>();
     private final Map<UUID, Search> searches = new HashMap<>();
@@ -94,7 +94,7 @@ final class HomeFinder {
     private static final long ACCEPT_GRACE_MILLIS = 15_000;
     private static final double WAITING_DISTANCE = 4.5;
 
-    HomeFinder(SmartCopperGolems plugin, ChestMatcher matcher) {
+    HomeFinder(CopperGolemClerk plugin, ChestMatcher matcher) {
         this.plugin = plugin;
         this.matcher = matcher;
     }
@@ -290,7 +290,7 @@ final class HomeFinder {
         return containersInRange(golem.getLocation(), golem.isInsideVehicle(), types);
     }
 
-    /** Same, around any spot (for /scg overflow). */
+    /** Same, around any spot (for /cgc overflow). */
     static List<BlockState> containersInRange(Location center, boolean riding, Predicate<Material> types) {
         List<BlockState> found = new ArrayList<>();
         World world = center.getWorld();

@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +46,7 @@ final class ChestLabels {
      *                  each with the number of item types it covers
      * @param names     the label texts, for debug messages
      * @param overflow  an [overflow] sign is present
-     * @param unknown   bracketed sign lines that match no item (ignored), for /scg check
+     * @param unknown   bracketed sign lines that match no item (ignored), for /cgc check
      */
     record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow, List<String> unknown) {
         boolean hasItemRules() {

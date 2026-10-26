@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import com.destroystokyo.paper.entity.Pathfinder;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
@@ -72,8 +72,10 @@ final class GolemTraffic implements Listener {
         }
     }
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     private final NamespacedKey pausedKey;
+    /** The same mark saved before the rename to Copper Golem Clerk (SmartCopperGolems 1.x). */
+    private static final NamespacedKey OLD_PAUSED_KEY = new NamespacedKey("smartcoppergolems", "giving-way");
     private final Map<UUID, Yield> yielding = new HashMap<>();
     /** Each golem's recent positions (one per scan, oldest first): which way it's walking, and whether it's stuck. */
     private final Map<UUID, Deque<Location>> history = new HashMap<>();
@@ -82,7 +84,7 @@ final class GolemTraffic implements Listener {
     private BukkitTask task;
     private int tick;
 
-    GolemTraffic(SmartCopperGolems plugin) {
+    GolemTraffic(CopperGolemClerk plugin) {
         this.plugin = plugin;
         this.pausedKey = new NamespacedKey(plugin, "giving-way");
     }
@@ -113,7 +115,9 @@ final class GolemTraffic implements Listener {
     public void onAdd(EntityAddToWorldEvent event) {
         // Unloaded or shut down mid-sidestep: the pause was saved with the golem.
         if (event.getEntity() instanceof CopperGolem golem
-                && golem.getPersistentDataContainer().has(pausedKey) && !yielding.containsKey(golem.getUniqueId())) {
+                && (golem.getPersistentDataContainer().has(pausedKey)
+                    || golem.getPersistentDataContainer().has(OLD_PAUSED_KEY))
+                && !yielding.containsKey(golem.getUniqueId())) {
             release(golem);
         }
     }
@@ -410,6 +414,7 @@ final class GolemTraffic implements Listener {
 
     private void release(CopperGolem golem) {
         golem.getPersistentDataContainer().remove(pausedKey);
+        golem.getPersistentDataContainer().remove(OLD_PAUSED_KEY);
         golem.setAware(true);
     }
 

@@ -1,4 +1,4 @@
-# smartCopperGolems (SmartCopperGolems)
+# Copper Golem Clerk
 
 A Paper plugin (Paper 26.3, Java 25) that makes copper golems sort *similar* items
 together, not just identical ones.
@@ -17,20 +17,30 @@ Spigot and Bukkit aren't supported: the plugin uses Paper-only golem events.
 
 ## Install
 
-1. Download `SmartCopperGolems-<version>.jar` from the
-   [latest release](https://github.com/mhardin18/smartCopperGolems/releases/latest).
+1. Download `CopperGolemClerk-<version>.jar` from the
+   [latest release](https://github.com/mhardin18/copperGolemClerk/releases/latest).
    Release tags name the Paper version they're for (e.g. `v1.0.0-paper26.3`).
 2. Put the jar in your server's `plugins/` folder.
 3. Restart the server (don't use `/reload`).
-4. Check the console for `Enabling SmartCopperGolems`, or run `/plugins` in game.
+4. Check the console for `Enabling CopperGolemClerk`, or run `/plugins` in game.
 
-On first start the plugin creates `plugins/SmartCopperGolems/config.yml`. The
+On first start the plugin creates `plugins/CopperGolemClerk/config.yml`. The
 defaults work as-is: about 50 groups that cover every survival item. After editing
-the file, run `/scg reload` to apply it without a restart.
+the file, run `/cgc reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
-kept. To uninstall, delete the jar (and the `plugins/SmartCopperGolems/` folder if
+kept. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
 you don't want to keep the config).
+
+### Upgrading from SmartCopperGolems
+
+This plugin was called SmartCopperGolems until version 2.0. To upgrade, delete
+`SmartCopperGolems-*.jar` from `plugins/`, add `CopperGolemClerk-<version>.jar` and
+restart. On first start your `config.yml` is copied from `plugins/SmartCopperGolems/`
+to `plugins/CopperGolemClerk/`; after that you can delete the old folder. The
+command is now `/cgc` (or `/coppergolemclerk`), and the permission is
+`coppergolemclerk.admin`: if you granted `smartcoppergolems.admin` to anyone, grant
+the new one instead.
 
 ### Quick start
 
@@ -125,7 +135,7 @@ that, the item is put back into the copper chest it came from (golems can't walk
 copper chests while carrying, so it's moved directly) and marked "no home" there for
 `homeless-retry-minutes` (default 5). Golems take other items first and skip a copper
 chest that has only "no home" items left. Add a home for the item, then
-`/smartcoppergolems reload` to have golems try again right away. Steps count only time the
+`/cgc reload` to have golems try again right away. Steps count only time the
 golem is likely active (walking, or a player within the server's entity activation
 range), so golems that Paper pauses far from players don't run out of time, and a
 golem waiting its turn next to a chest that takes its item is never sent back.
@@ -190,33 +200,33 @@ Settings:
 
 ## Commands
 
-Requires `smartcoppergolems.admin` (op by default). Alias `/scg`.
+Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
 
-- `/scg help`: list the commands. `/scg help <command>` explains one.
-- `/scg reload`: reload `config.yml`.
-- `/scg check` while looking at a chest: what each label on it means (`[Horse]` =
+- `/cgc help`: list the commands. `/cgc help <command>` explains one.
+- `/cgc reload`: reload `config.yml`.
+- `/cgc check` while looking at a chest: what each label on it means (`[Horse]` =
   items with "horse" in their name, 9 items: ...), labels that match nothing, what
   the chest takes, whether it takes the item in your hand, and anything stopping
   golems from using it (a block on top, a lock, a hopper feeding a copper chest, full).
-- `/scg check` while not looking at a chest: which groups the item in your hand belongs to.
-- `/scg overflow`: what's in the `[Overflow]` chests within golem range of you, split into
+- `/cgc check` while not looking at a chest: which groups the item in your hand belongs to.
+- `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
   items with no chest (with a sign label to use for each group), items whose chest is
   full, and items golems will move on their own.
 
-From the console, give a position: `/scg check <x> <y> <z> [world]`,
-`/scg overflow <x> <y> <z> [world]`.
+From the console, give a position: `/cgc check <x> <y> <z> [world]`,
+`/cgc overflow <x> <y> <z> [world]`.
 
 ## Building from source
 
 Needs Java 25 (the Gradle wrapper downloads Gradle itself).
 
 ```
-git clone https://github.com/mhardin18/smartCopperGolems.git
-cd smartCopperGolems
+git clone https://github.com/mhardin18/copperGolemClerk.git
+cd copperGolemClerk
 ./gradlew build
 ```
 
-The jar is written to `build/libs/SmartCopperGolems-<version>.jar`. Install it as
+The jar is written to `build/libs/CopperGolemClerk-<version>.jar`. Install it as
 described in [Install](#install).
 
 ## Changelog

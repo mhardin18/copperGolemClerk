@@ -1,6 +1,6 @@
 # In-game scenario tests
 
-`run.py` tests SmartCopperGolems on the pluginDev server over RCON. Each scenario gets
+`run.py` tests CopperGolemClerk on the pluginDev server over RCON. Each scenario gets
 its own walled, glowstone-lit platform at x=-500, y=150 (80 blocks apart along z, so
 golems in different scenarios can't see each other's chests). Chunks are force-loaded,
 so no player needs to be nearby. The runner places chests, signs, frames and items,
@@ -28,7 +28,7 @@ error or exception in the server log during a scenario fails it.
 | edge | locked chests, hoppers, shulker/bundle contents, odd sign text and placement, range limits, fetch limits |
 | scenes | whole sorting rooms end to end; a manual 15-minute soak |
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
-| commands | `/scg check` on chests, `/scg overflow`, `disabled-worlds` |
+| commands | `/cgc check` on chests, `/cgc overflow`, `disabled-worlds` |
 | config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands |
 | tidy | golems tidy chests they deliver to (while the lid is open): stacks merged, like items together, option off |
 | options | each config switch changes what golems do |

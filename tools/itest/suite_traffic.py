@@ -51,7 +51,7 @@ def _(c):
     return corridor(c, niche=True, floor="smooth_stone_slab")
 
 
-MARKED = '{BukkitValues:{"smartcoppergolems:giving-way":1b}}'
+MARKED = '{BukkitValues:{"coppergolemclerk:giving-way":1b}}'
 UNAWARE = '{"Bukkit.Aware":0b}'
 
 

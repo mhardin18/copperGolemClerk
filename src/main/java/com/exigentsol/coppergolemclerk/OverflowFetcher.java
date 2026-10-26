@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -45,13 +45,13 @@ final class OverflowFetcher {
     private static final int MAX_TAKE = 16; // vanilla's per-trip limit
     private static final double REACH = 2.0;
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     private final HomeFinder homes;
     private final Returns returns;
     private final Map<UUID, Fetch> fetching = new HashMap<>();
     private final Map<UUID, Long> nextCheck = new HashMap<>();
 
-    OverflowFetcher(SmartCopperGolems plugin, HomeFinder homes, Returns returns) {
+    OverflowFetcher(CopperGolemClerk plugin, HomeFinder homes, Returns returns) {
         this.plugin = plugin;
         this.homes = homes;
         this.returns = returns;

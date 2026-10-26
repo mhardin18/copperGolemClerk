@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,10 +19,10 @@ final class GolemTracer {
     private record Snapshot(String line, long at) {
     }
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     private final Map<UUID, Snapshot> last = new HashMap<>();
 
-    GolemTracer(SmartCopperGolems plugin) {
+    GolemTracer(CopperGolemClerk plugin) {
         this.plugin = plugin;
     }
 

@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.BitSet;
 import java.util.List;
@@ -49,9 +49,9 @@ final class ChestMatcher {
         }
     }
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
 
-    ChestMatcher(SmartCopperGolems plugin) {
+    ChestMatcher(CopperGolemClerk plugin) {
         this.plugin = plugin;
     }
 

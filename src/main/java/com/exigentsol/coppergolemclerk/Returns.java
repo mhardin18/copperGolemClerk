@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -30,18 +30,18 @@ import org.bukkit.inventory.ItemStack;
  * Vanilla golems always take from the first filled slot of a copper chest, so
  * homeless items are moved behind the others, and a copper chest holding only
  * homeless items is skipped. Homeless marks expire after homeless-retry-minutes
- * and are cleared on /smartcoppergolems reload.
+ * and are cleared on /coppergolemclerk reload.
  */
 final class Returns {
 
     private record ChestKey(UUID world, HomeFinder.Pos pos) {
     }
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     /** Homeless item types per copper chest block, with expiry time (millis). */
     private final Map<ChestKey, Map<Material, Long>> homeless = new HashMap<>();
 
-    Returns(SmartCopperGolems plugin) {
+    Returns(CopperGolemClerk plugin) {
         this.plugin = plugin;
     }
 

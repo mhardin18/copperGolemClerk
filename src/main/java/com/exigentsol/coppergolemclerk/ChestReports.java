@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -22,9 +22,9 @@ import org.bukkit.inventory.ItemStack;
 
 /**
  * The read-only player commands:
- * - /scg check while looking at a chest: what its labels mean, what it takes, whether it
+ * - /cgc check while looking at a chest: what its labels mean, what it takes, whether it
  *   takes the item in your hand, and anything stopping golems from using it.
- * - /scg overflow: what's in the [Overflow] chests around you, and why it's there: no
+ * - /cgc overflow: what's in the [Overflow] chests around you, and why it's there: no
  *   chest for it (with a suggested sign label), its chest is full, or golems will move it.
  */
 final class ChestReports {
@@ -33,15 +33,15 @@ final class ChestReports {
     /** A sign line is 90 pixels wide. */
     private static final int SIGN_WIDTH = 90;
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     private final ChestMatcher matcher;
 
-    ChestReports(SmartCopperGolems plugin) {
+    ChestReports(CopperGolemClerk plugin) {
         this.plugin = plugin;
         this.matcher = new ChestMatcher(plugin);
     }
 
-    // ---- /scg check (looking at a chest)
+    // ---- /cgc check (looking at a chest)
 
     void checkChest(CommandSender player, Block block, ItemStack hand) {
         if (!(block.getState(false) instanceof Container container)) {
@@ -55,7 +55,7 @@ final class ChestReports {
                 halves.size() > 1 ? " (double)" : "", used(inv), inv.getStorageContents().length));
 
         if (!plugin.enabledIn(block.getWorld())) {
-            say(player, NamedTextColor.YELLOW, "SmartCopperGolems is off in this world (disabled-worlds): golems act as in vanilla here.");
+            say(player, NamedTextColor.YELLOW, "Copper Golem Clerk is off in this world (disabled-worlds): golems act as in vanilla here.");
             return;
         }
         if (Returns.isCopperChest(block.getType())) {
@@ -175,7 +175,7 @@ final class ChestReports {
         return meaning + " (" + items.size() + (items.size() == 1 ? " item" : " items") + "): " + list(items);
     }
 
-    // ---- /scg overflow
+    // ---- /cgc overflow
 
     private enum Status { NO_HOME, HOME_FULL, HAS_HOME }
 
@@ -184,7 +184,7 @@ final class ChestReports {
 
     void overflow(CommandSender player, Location center) {
         if (!plugin.enabledIn(center.getWorld())) {
-            say(player, NamedTextColor.YELLOW, "SmartCopperGolems is off in this world (disabled-worlds).");
+            say(player, NamedTextColor.YELLOW, "Copper Golem Clerk is off in this world (disabled-worlds).");
             return;
         }
         List<Inventory> overflowChests = new ArrayList<>();
