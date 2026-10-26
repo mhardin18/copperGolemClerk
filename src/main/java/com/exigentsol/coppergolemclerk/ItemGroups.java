@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -26,7 +26,7 @@ public final class ItemGroups {
 
     /**
      * A label rule and how many item types it covers (fewer = more specific).
-     * meaning says in words what the label was read as, for /scg check.
+     * meaning says in words what the label was read as, for /cgc check.
      */
     record Rule(Predicate<Material> test, int size, String meaning) {
     }

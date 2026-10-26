@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import io.papermc.paper.event.entity.ItemTransportingEntitySortEvent;
 import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
@@ -36,14 +36,14 @@ import org.bukkit.inventory.ItemStack;
  */
 public final class SortListener implements Listener {
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     private final ChestMatcher matcher;
     private final HomeFinder homes;
     private final Returns returns;
     private final OverflowFetcher fetcher;
     private final ChestTidier tidier;
 
-    public SortListener(SmartCopperGolems plugin) {
+    public SortListener(CopperGolemClerk plugin) {
         this.plugin = plugin;
         this.matcher = new ChestMatcher(plugin);
         this.homes = new HomeFinder(plugin, matcher);
@@ -63,7 +63,7 @@ public final class SortListener implements Listener {
         plugin.getServer().getScheduler().runTaskTimer(plugin, tracer::tick, 20, 20);
     }
 
-    /** Forget which items had no home, so golems try them again (after /smartcoppergolems reload). */
+    /** Forget which items had no home, so golems try them again (after /coppergolemclerk reload). */
     void clearHomeless() {
         returns.clear();
     }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""In-game scenario tests for SmartCopperGolems, run against pluginDev over RCON.
+"""In-game scenario tests for CopperGolemClerk, run against pluginDev over RCON.
 
 Each scenario gets its own walled, lit platform high in the sky at x=-500, 80 blocks
 apart along z (golems search 32 blocks, so platforms can't interfere). Chunks are
@@ -122,7 +122,7 @@ def main(argv):
     r = from_properties(os.path.join(arena.SERVER, "server.properties"))
     log = arena.Log(os.path.join(arena.SERVER, "logs/latest.log"))
     config_before = open(arena.CONFIG).read()
-    r.cmd("smartcoppergolems reload")  # start clean: clears "no home" marks from earlier runs
+    r.cmd("coppergolemclerk reload")  # start clean: clears "no home" marks from earlier runs
 
     parallel = [(i, s) for i, s in chosen if not s["alone"]]
     alone = [(i, s) for i, s in chosen if s["alone"]]
@@ -142,13 +142,13 @@ def main(argv):
                 if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
                     with open(arena.CONFIG, "w") as f:
                         f.write(config_before)
-                    r.cmd("smartcoppergolems reload")
+                    r.cmd("coppergolemclerk reload")
     finally:
         if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
             with open(arena.CONFIG, "w") as f:
                 f.write(config_before)
             print("Restored config.yml.")
-        r.cmd("smartcoppergolems reload")
+        r.cmd("coppergolemclerk reload")
 
     print()
     failed = 0
@@ -162,7 +162,7 @@ def main(argv):
             for ok, text in checks:
                 print(f"        {'ok ' if ok else 'BAD'} {text}")
             near = [l for l in cell.log_lines()
-                    if "SmartCopperGolems" in l and "trace golem" not in l and cell.in_cell(l)]
+                    if "CopperGolemClerk" in l and "trace golem" not in l and cell.in_cell(l)]
             for l in near[-8:]:
                 print("        log:", l[l.find("]: ") + 3:][:170])
     minutes = (time.time() - started) / 60

@@ -1,6 +1,21 @@
 # Changelog
 
-All versions are for **Paper 26.3** (Java 25). To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
+All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
+
+## Unreleased (2.0.0)
+
+### Renamed: SmartCopperGolems is now Copper Golem Clerk
+Another project already uses a similar name.
+- The jar is `CopperGolemClerk-<version>.jar`. Delete the old `SmartCopperGolems-*.jar`, or the plugin warns that both are installed.
+- Settings move to `plugins/CopperGolemClerk/`. On first start, `config.yml` is copied there from `plugins/SmartCopperGolems/`.
+- The command is now `/cgc` (or `/coppergolemclerk`), replacing `/scg`.
+- The permission is now `coppergolemclerk.admin`, replacing `smartcoppergolems.admin`.
+
+### New
+- `/cgc help` lists the commands; `/cgc help <command>` explains one. A bare `/cgc` or a mistyped subcommand shows the list.
+
+### Changed
+- Golems tidy a chest while they have the lid open, and again as the item drops in, instead of a few seconds after they leave.
 
 ## 1.3.0 (2026-10-25)
 

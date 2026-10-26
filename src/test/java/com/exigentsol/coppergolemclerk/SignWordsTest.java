@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +51,7 @@ class SignWordsTest {
     @Test
     void yamlErrorSummaryNamesTheLine() {
         String msg = "while scanning a quoted scalar\n in 'reader', line 4, column 7:\n    - \"#minecraft:logs\n";
-        assertEquals("while scanning a quoted scalar (line 4, column 7)", SmartCopperGolems.firstLine(msg));
-        assertEquals("unknown error", SmartCopperGolems.firstLine(null));
+        assertEquals("while scanning a quoted scalar (line 4, column 7)", CopperGolemClerk.firstLine(msg));
+        assertEquals("unknown error", CopperGolemClerk.firstLine(null));
     }
 }

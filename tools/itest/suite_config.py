@@ -21,7 +21,7 @@ def original():
 def restore(c):
     with open(CONFIG, "w") as f:
         f.write(original())
-    return c.r.cmd("smartcoppergolems reload")
+    return c.r.cmd("coppergolemclerk reload")
 
 
 def try_config(c, text):
@@ -31,9 +31,9 @@ def try_config(c, text):
     try:
         with open(CONFIG, "w") as f:
             f.write(text)
-        reply = re.sub(r"§.", "", c.r.cmd("smartcoppergolems reload"))
+        reply = re.sub(r"§.", "", c.r.cmd("coppergolemclerk reload"))
         time.sleep(1.5)  # the server writes its log file asynchronously
-        lines = [l for l in c.log.since(start) if "SmartCopperGolems" in l or "Exception" in l]
+        lines = [l for l in c.log.since(start) if "CopperGolemClerk" in l or "Exception" in l]
     finally:
         restored = re.sub(r"§.", "", restore(c))
     return reply, lines, restored
@@ -93,7 +93,7 @@ def _(c):
 
 
 @scenario("yaml-syntax-error", "config", 30, "A YAML typo keeps the previous settings and tells you the line, instead of silently loading 0 groups.",
-          alone=True, allow_errors=("config.yml could not be read", "Cannot load plugins/SmartCopperGolems/config.yml"))
+          alone=True, allow_errors=("config.yml could not be read", "Cannot load plugins/CopperGolemClerk/config.yml"))
 def _(c):
     # An unclosed flow list is a hard YAML error (an unclosed quote isn't: quoted strings may span lines).
     text = original().rstrip("\n") + "\n  broken: [unclosed\n"
@@ -112,14 +112,14 @@ def _(c):
                     (not logged(lines, "Exception"), "no exception in the log")]
 
 
-@scenario("console-commands", "config", 30, "From the console: /scg check explains it's for players, an unknown subcommand and bare /scg show the help list.", alone=True)
+@scenario("console-commands", "config", 30, "From the console: /cgc check explains it's for players, an unknown subcommand and bare /cgc show the help list.", alone=True)
 def _(c):
-    check = re.sub(r"§.", "", c.r.cmd("smartcoppergolems check"))
-    usage = re.sub(r"§.", "", c.r.cmd("smartcoppergolems frobnicate"))
-    alias = re.sub(r"§.", "", c.r.cmd("scg"))
-    return lambda: [("Only players" in check, f"/scg check -> {check.strip()}"),
-                    ("Unknown command 'frobnicate'" in usage and "/scg reload" in usage, f"/scg frobnicate -> {usage.strip()}"),
-                    ("SmartCopperGolems commands" in alias, f"/scg -> {alias.strip()}")]
+    check = re.sub(r"§.", "", c.r.cmd("coppergolemclerk check"))
+    usage = re.sub(r"§.", "", c.r.cmd("coppergolemclerk frobnicate"))
+    alias = re.sub(r"§.", "", c.r.cmd("cgc"))
+    return lambda: [("Only players" in check, f"/cgc check -> {check.strip()}"),
+                    ("Unknown command 'frobnicate'" in usage and "/cgc reload" in usage, f"/cgc frobnicate -> {usage.strip()}"),
+                    ("Copper Golem Clerk commands" in alias, f"/cgc -> {alias.strip()}")]
 
 
 @scenario("config-name-warnings", "config", 30, "A group named 'overflow' and a misspelled disabled world are warned about.", alone=True)

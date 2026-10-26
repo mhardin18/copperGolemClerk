@@ -11,12 +11,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Test-only plugin for SmartCopperGolems' in-game tests: pretends to be another
+ * Test-only plugin for CopperGolemClerk's in-game tests: pretends to be another
  * plugin that also decides where golems may put items. Acts only inside the test
  * arena (x < -400, y >= 140), keyed on the block under the chest:
- *   gold block    - forbids the chest, before SmartCopperGolems runs (LOWEST)
- *   diamond block - forces the chest to accept, before SmartCopperGolems runs (LOWEST)
- *   emerald block - forbids the chest, after SmartCopperGolems has decided (HIGHEST)
+ *   gold block    - forbids the chest, before CopperGolemClerk runs (LOWEST)
+ *   diamond block - forces the chest to accept, before CopperGolemClerk runs (LOWEST)
+ *   emerald block - forbids the chest, after CopperGolemClerk has decided (HIGHEST)
  */
 public final class GolemTestHooks extends JavaPlugin implements Listener {
 

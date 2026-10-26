@@ -1,4 +1,4 @@
-# SmartCopperGolems configuration
+# Copper Golem Clerk configuration
 #
 # Vanilla copper golems only put an item into a chest that already holds that
 # exact item, or into an empty chest. This plugin adds "groups": a golem may
@@ -7,7 +7,7 @@
 # Example: with the "logs" group, a golem carrying birch logs will put them in a
 # chest that already has oak logs in it.
 #
-# Use /smartcoppergolems reload after editing this file.
+# Use /cgc reload after editing this file.
 
 # How a chest qualifies for a group match:
 #   all - every item in the chest must share a group with the carried item.
@@ -46,7 +46,7 @@ matching-chest-timeout-seconds: 30
 # chest while carrying something, so the item is moved back directly.
 # Returned items are marked "no home" for that copper chest: golems take other
 # items first, and skip the chest if only "no home" items are left. The mark
-# lasts homeless-retry-minutes, or until /smartcoppergolems reload. Add a home for
+# lasts homeless-retry-minutes, or until /cgc reload. Add a home for
 # the item (a group, a label, an [Overflow] chest), then reload.
 return-unsortable-items: true
 homeless-retry-minutes: 5

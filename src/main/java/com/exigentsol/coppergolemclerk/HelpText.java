@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.List;
 import java.util.Locale;
@@ -9,14 +9,14 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-/** /scg help: a list of the commands, and more detail on one. */
+/** /cgc help: a list of the commands, and more detail on one. */
 final class HelpText {
 
     private record Entry(String name, String usage, String consoleUsage, String summary, List<String> details) {
     }
 
     private static final List<Entry> ENTRIES = List.of(
-            new Entry("check", "/scg check", "/scg check <x> <y> <z> [world]",
+            new Entry("check", "/cgc check", "/cgc check <x> <y> <z> [world]",
                     "Explain the chest you're looking at, or the item in your hand.",
                     List.of("Look at a chest (within 6 blocks) and run it to see:",
                             "- what each sign or item-frame label on it means, and labels that match nothing",
@@ -25,7 +25,7 @@ final class HelpText {
                             "- anything stopping golems from using it: a block on top, a lock, a hopper"
                                     + " under it feeding a copper chest, or no room",
                             "Not looking at a chest: the item groups the item in your hand belongs to.")),
-            new Entry("overflow", "/scg overflow", "/scg overflow <x> <y> <z> [world]",
+            new Entry("overflow", "/cgc overflow", "/cgc overflow <x> <y> <z> [world]",
                     "What's in nearby [Overflow] chests, and what to do about it.",
                     List.of("Looks at the [Overflow] chests within golem range of you (32 blocks across,"
                                     + " 8 up and down) and sorts what's in them into:",
@@ -33,13 +33,13 @@ final class HelpText {
                             "- its chest can't be used by golems: what to fix",
                             "- its chest is full: make room",
                             "- has a chest with room: idle golems will move it on their own")),
-            new Entry("reload", "/scg reload", "/scg reload",
+            new Entry("reload", "/cgc reload", "/cgc reload",
                     "Reload config.yml.",
-                    List.of("Reads plugins/SmartCopperGolems/config.yml again: item groups and settings.",
+                    List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",
                             "If the file has a mistake, nothing changes and you're told which line to fix.")),
-            new Entry("help", "/scg help", "/scg help",
-                    "This list. /scg help <command> explains one command.",
-                    List.of("/scg help lists the commands; /scg help <command> explains one.")));
+            new Entry("help", "/cgc help", "/cgc help",
+                    "This list. /cgc help <command> explains one command.",
+                    List.of("/cgc help lists the commands; /cgc help <command> explains one.")));
 
     static List<String> names() {
         return ENTRIES.stream().map(Entry::name).toList();
@@ -68,14 +68,14 @@ final class HelpText {
                     + String.join(", ", names()) + ".", NamedTextColor.RED));
             return;
         }
-        sender.sendMessage(Component.text("SmartCopperGolems commands (/scg or /smartcoppergolems):",
+        sender.sendMessage(Component.text("Copper Golem Clerk commands (/cgc or /coppergolemclerk):",
                 NamedTextColor.GOLD));
         for (Entry e : ENTRIES) {
             String usage = player ? e.usage() : e.consoleUsage();
             Component name = Component.text(usage, NamedTextColor.AQUA);
             if (player) {
                 name = name.clickEvent(ClickEvent.suggestCommand(e.usage() + (e.name().equals("help") ? " " : "")))
-                        .hoverEvent(HoverEvent.showText(Component.text("Click to type it; /scg help "
+                        .hoverEvent(HoverEvent.showText(Component.text("Click to type it; /cgc help "
                                 + e.name() + " for more")));
             }
             sender.sendMessage(Component.text("  ").append(name)

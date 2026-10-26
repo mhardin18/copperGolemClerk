@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
@@ -25,7 +25,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class SmartCopperGolems extends JavaPlugin {
+public final class CopperGolemClerk extends JavaPlugin {
 
     private volatile ItemGroups groups;
     private volatile boolean matchModeAll;
@@ -50,6 +50,11 @@ public final class SmartCopperGolems extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        carryOverOldSettings();
+        if (getServer().getPluginManager().getPlugin(OLD_NAME) != null) {
+            getLogger().severe(OLD_NAME + " (this plugin's old name) is also installed. Delete its jar from plugins/"
+                    + " and restart, or golems are handled twice.");
+        }
         saveDefaultConfig();
         loadSettings();
         listener = new SortListener(this);
@@ -58,7 +63,28 @@ public final class SmartCopperGolems extends JavaPlugin {
         traffic = new GolemTraffic(this);
         getServer().getPluginManager().registerEvents(traffic, this);
         traffic.setEnabled(giveWay);
-        registerCommand("smartcoppergolems", "Manage smart copper golem sorting", List.of("scg"), new Command());
+        registerCommand("coppergolemclerk", "Copper Golem Clerk: smart copper golem sorting", List.of("cgc"), new Command());
+    }
+
+    /** This plugin's name before 2.0; its settings lived in plugins/SmartCopperGolems/. */
+    private static final String OLD_NAME = "SmartCopperGolems";
+
+    /** First start after the rename: copy config.yml from the old folder, so settings carry over. */
+    private void carryOverOldSettings() {
+        File config = new File(getDataFolder(), "config.yml");
+        File old = new File(getDataFolder().getParentFile(), OLD_NAME + "/config.yml");
+        if (config.exists() || !old.isFile()) {
+            return;
+        }
+        try {
+            java.nio.file.Files.createDirectories(getDataFolder().toPath());
+            java.nio.file.Files.copy(old.toPath(), config.toPath());
+            getLogger().info("Copied your settings from plugins/" + OLD_NAME + "/config.yml (the plugin's old name)."
+                    + " You can delete the plugins/" + OLD_NAME + "/ folder.");
+        } catch (IOException e) {
+            getLogger().warning("Couldn't copy plugins/" + OLD_NAME + "/config.yml: " + e.getMessage()
+                    + ". Copy it to plugins/" + getName() + "/ yourself.");
+        }
     }
 
     @Override
@@ -232,7 +258,7 @@ public final class SmartCopperGolems extends JavaPlugin {
                         sender.sendMessage(Component.text(problem + " Nothing changed; fix the file and reload again.",
                                 NamedTextColor.RED));
                     } else {
-                        sender.sendMessage(Component.text("SmartCopperGolems config reloaded ("
+                        sender.sendMessage(Component.text("Copper Golem Clerk config reloaded ("
                                 + groups.groupCount() + " groups).", NamedTextColor.GREEN));
                     }
                 }
@@ -270,7 +296,7 @@ public final class SmartCopperGolems extends JavaPlugin {
                     } else if (sender instanceof Player player) {
                         reports.overflow(player, player.getLocation());
                     } else {
-                        sender.sendMessage(Component.text("From the console: /scg overflow <x> <y> <z> [world]", NamedTextColor.RED));
+                        sender.sendMessage(Component.text("From the console: /cgc overflow <x> <y> <z> [world]", NamedTextColor.RED));
                     }
                 }
                 case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null);
@@ -320,7 +346,7 @@ public final class SmartCopperGolems extends JavaPlugin {
 
         @Override
         public String permission() {
-            return "smartcoppergolems.admin";
+            return "coppergolemclerk.admin";
         }
     }
 }

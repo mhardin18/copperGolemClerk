@@ -38,8 +38,8 @@ for p in $GAME_PORT $RCON_PORT $QUERY_PORT; do
     fi
 done
 
-PLUGIN_JAR=$(ls "$PROJECT"/build/libs/SmartCopperGolems-*.jar 2>/dev/null | head -1)
-[ -n "$PLUGIN_JAR" ] || die "SmartCopperGolems jar not found; run ./gradlew build first"
+PLUGIN_JAR=$(ls "$PROJECT"/build/libs/CopperGolemClerk-*.jar 2>/dev/null | head -1)
+[ -n "$PLUGIN_JAR" ] || die "CopperGolemClerk jar not found; run ./gradlew build first"
 
 # --- Server directory
 log "creating $DST"
@@ -66,11 +66,11 @@ sed -e "s/^level-name=.*/level-name=$WORLD/" \
     "$SRC/server.properties" > "$DST/server.properties"
 grep -q "^server-port=$GAME_PORT$" "$DST/server.properties" || die "server.properties rewrite failed"
 
-# --- Plugins: every jar survival runs except BlueMap, plus SmartCopperGolems.
+# --- Plugins: every jar survival runs except BlueMap, plus CopperGolemClerk.
 log "copying plugins"
 for jar in "$SRC"/plugins/*.jar; do
     case "$(basename "$jar")" in
-        bluemap*|BlueMap*) echo "    skip $(basename "$jar")" ;;
+        bluemap*|BlueMap*|CopperGolemClerk*|SmartCopperGolems*) echo "    skip $(basename "$jar")" ;;
         *) cp -p "$jar" "$DST/plugins/"; echo "    $(basename "$jar")" ;;
     esac
 done

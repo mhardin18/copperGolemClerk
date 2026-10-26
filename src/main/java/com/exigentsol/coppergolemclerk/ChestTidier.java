@@ -1,4 +1,4 @@
-package com.exigentsol.smartcoppergolems;
+package com.exigentsol.coppergolemclerk;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,13 +37,13 @@ final class ChestTidier {
         }
     }
 
-    private final SmartCopperGolems plugin;
+    private final CopperGolemClerk plugin;
     /** Chests to tidy on the next tick. */
     private final Set<Key> next = new LinkedHashSet<>();
     /** Chests a player had open; tidied once they close them. */
     private final Set<Key> waiting = new LinkedHashSet<>();
 
-    ChestTidier(SmartCopperGolems plugin) {
+    ChestTidier(CopperGolemClerk plugin) {
         this.plugin = plugin;
         plugin.getServer().getScheduler().runTaskTimer(plugin, this::retryWaiting, 20, 20);
     }

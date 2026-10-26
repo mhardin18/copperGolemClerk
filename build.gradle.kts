@@ -59,7 +59,8 @@ tasks.register("deploy") {
         Files.move(tmp, dir.resolve(src.fileName),
             StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
         // Remove other versions' jars, or the server would load the plugin twice.
-        Files.newDirectoryStream(dir, "SmartCopperGolems-*.jar").use { jars ->
+        // SmartCopperGolems-*.jar is this plugin under its old name.
+        Files.newDirectoryStream(dir, "{CopperGolemClerk,SmartCopperGolems}-*.jar").use { jars ->
             for (old in jars) {
                 if (old.fileName != src.fileName) {
                     Files.delete(old)

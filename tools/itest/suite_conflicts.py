@@ -2,9 +2,9 @@
 
 Uses the test-only GolemTestHooks plugin (tools/itest/hooks), which acts only in the
 test arena, keyed on the block under a chest:
-  gold block    - another plugin forbids the chest, before SmartCopperGolems (LOWEST)
-  diamond block - another plugin forces the chest to accept, before SmartCopperGolems
-  emerald block - another plugin forbids the chest after SmartCopperGolems said yes (HIGHEST)
+  gold block    - another plugin forbids the chest, before CopperGolemClerk (LOWEST)
+  diamond block - another plugin forces the chest to accept, before CopperGolemClerk
+  emerald block - another plugin forbids the chest after CopperGolemClerk said yes (HIGHEST)
 Scenarios are skipped when GolemTestHooks isn't loaded.
 """
 import re

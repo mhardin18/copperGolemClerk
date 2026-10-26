@@ -1,6 +1,6 @@
-"""commands: /scg check on a chest, /scg overflow, and disabled-worlds.
+"""commands: /cgc check on a chest, /cgc overflow, and disabled-worlds.
 
-The commands take coordinates from the console (/scg check <x> <y> <z>), which is
+The commands take coordinates from the console (/cgc check <x> <y> <z>), which is
 how these scenarios read their output over RCON.
 """
 import re
@@ -15,14 +15,14 @@ def say(c, command):
 
 def check_at(c, dx, dz):
     x, y, z = c.abs(dx, dz)
-    return say(c, f"scg check {x} {y} {z}")
+    return say(c, f"cgc check {x} {y} {z}")
 
 
 def has(reply, text):
     return text in reply, f"says '{text}'" + ("" if text in reply else f"; got: {reply.strip()}")
 
 
-@scenario("check-labels", "commands", 30, "/scg check on a chest explains each sign line: a group, one item, and a line that matches nothing.")
+@scenario("check-labels", "commands", 30, "/cgc check on a chest explains each sign line: a group, one item, and a line that matches nothing.")
 def _(c):
     c.chest("wool", 10, 10)
     c.sign(10, 10, ["[Wool]", "[String]", "[frobnitz]"])
@@ -34,7 +34,7 @@ def _(c):
                     has(check_at(c, 14, 10), 'items with "horse" in their name')]
 
 
-@scenario("check-contents", "commands", 30, "/scg check on unlabelled chests: shared group, a stray item, empty, blocked, and a copper chest.")
+@scenario("check-contents", "commands", 30, "/cgc check on unlabelled chests: shared group, a stray item, empty, blocked, and a copper chest.")
 def _(c):
     c.chest("logs", 6, 10, [("oak_log", 4), ("birch_log", 2)])
     c.chest("mixed", 9, 10, [("oak_log", 4), ("dirt", 1)])
@@ -50,7 +50,7 @@ def _(c):
                     has(check_at(c, 3, 3), "No container")]
 
 
-@scenario("overflow-report", "commands", 30, "/scg overflow sorts overflow contents into: no chest (with a sign label), chest full, and golems will move it.")
+@scenario("overflow-report", "commands", 30, "/cgc overflow sorts overflow contents into: no chest (with a sign label), chest full, and golems will move it.")
 def _(c):
     c.chest("overflow", 10, 10, [("kelp", 10), ("oak_log", 5), ("granite", 3)])
     c.sign(10, 10, "[Overflow]")
@@ -61,7 +61,7 @@ def _(c):
     x, y, z = c.abs(10, 10)
 
     def check():
-        reply = say(c, f"scg overflow {x} {y} {z}")
+        reply = say(c, f"cgc overflow {x} {y} {z}")
         no_home = reply.split("No chest for these")[-1].split("Their chest is full")[0]
         full = reply.split("Their chest is full")[-1].split("Have a chest with room")[0]
         moving = reply.split("Have a chest with room")[-1]
@@ -72,7 +72,7 @@ def _(c):
     return check
 
 
-@scenario("disabled-world", "commands", 150, "disabled-worlds lists this world: golems act as in vanilla (nearer empty chest gets the birch logs) and /scg check says it's off.", alone=True)
+@scenario("disabled-world", "commands", 150, "disabled-worlds lists this world: golems act as in vanilla (nearer empty chest gets the birch logs) and /cgc check says it's off.", alone=True)
 def _(c):
     world = next(l.split("=", 1)[1].strip() for l in open(SERVER + "/server.properties") if l.startswith("level-name="))
     set_options(c, disabled_worlds=f"[{world}]")
@@ -84,19 +84,19 @@ def _(c):
                     has(check_at(c, 16, 10), "off in this world")]
 
 
-@scenario("check-odd-targets", "commands", 30, "/scg check: a barrel is explained as ignored, a trapped chest's label works, bad coordinates and world names get a clear error.")
+@scenario("check-odd-targets", "commands", 30, "/cgc check: a barrel is explained as ignored, a trapped chest's label works, bad coordinates and world names get a clear error.")
 def _(c):
     c.chest("barrel", 6, 10, block="barrel")
     c.chest("trapped", 10, 10, block="trapped_chest")
     c.sign(10, 10, "[logs]")
     return lambda: [has(check_at(c, 6, 10), "they ignore this"),
                     has(check_at(c, 10, 10), "[logs] = group logs"),
-                    has(say(c, "scg check 1 2 nowhere"), "whole-number"),
-                    has(say(c, "scg check 0 100 0 no_such_world"), "No world named 'no_such_world'"),
-                    has(say(c, "scg check 2000000 100 2000000"), "isn't loaded")]
+                    has(say(c, "cgc check 1 2 nowhere"), "whole-number"),
+                    has(say(c, "cgc check 0 100 0 no_such_world"), "No world named 'no_such_world'"),
+                    has(say(c, "cgc check 2000000 100 2000000"), "isn't loaded")]
 
 
-@scenario("overflow-report-unusable", "commands", 30, "/scg overflow: an item whose only chest has a block on top is listed as 'can't be used', not as needing a chest.")
+@scenario("overflow-report-unusable", "commands", 30, "/cgc overflow: an item whose only chest has a block on top is listed as 'can't be used', not as needing a chest.")
 def _(c):
     c.chest("overflow", 10, 10, [("birch_log", 7)])
     c.sign(10, 10, "[Overflow]")
@@ -106,7 +106,7 @@ def _(c):
     x, y, z = c.abs(10, 10)
 
     def check():
-        reply = say(c, f"scg overflow {x} {y} {z}")
+        reply = say(c, f"cgc overflow {x} {y} {z}")
         part = reply.split("can't be used by golems")[-1]
         return [has(reply, "can't be used by golems"),
                 ("a block on top" in part and "birch log x7" in part, f"birch logs listed under the blocked [logs] chest: {part.strip()}"),
@@ -114,15 +114,15 @@ def _(c):
     return check
 
 
-@scenario("help", "commands", 30, "/scg help lists every command (console forms with coordinates); /scg help <command> explains one; an unknown topic says so.")
+@scenario("help", "commands", 30, "/cgc help lists every command (console forms with coordinates); /cgc help <command> explains one; an unknown topic says so.")
 def _(c):
-    listing = say(c, "scg help")
-    one = say(c, "scg help overflow")
-    bad = say(c, "scg help frob")
-    return lambda: [has(listing, "/scg check <x> <y> <z> [world]"),
-                    has(listing, "/scg overflow <x> <y> <z> [world]"),
-                    has(listing, "/scg reload"),
-                    has(listing, "/scg help"),
+    listing = say(c, "cgc help")
+    one = say(c, "cgc help overflow")
+    bad = say(c, "cgc help frob")
+    return lambda: [has(listing, "/cgc check <x> <y> <z> [world]"),
+                    has(listing, "/cgc overflow <x> <y> <z> [world]"),
+                    has(listing, "/cgc reload"),
+                    has(listing, "/cgc help"),
                     has(one, "idle golems will move it"),
                     has(one, "From the console, give the position"),
                     has(bad, "No command named 'frob'")]

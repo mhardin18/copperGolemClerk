@@ -1,9 +1,9 @@
-name: SmartCopperGolems
+name: CopperGolemClerk
 version: '${version}'
-main: com.exigentsol.smartcoppergolems.SmartCopperGolems
+main: com.exigentsol.coppergolemclerk.CopperGolemClerk
 api-version: '26.3'
 description: Copper golems sort similar items into the same chest.
 permissions:
-  smartcoppergolems.admin:
-    description: Use /smartcoppergolems help, check, overflow and reload.
+  coppergolemclerk.admin:
+    description: Use /cgc help, check, overflow and reload.
     default: op
