@@ -192,6 +192,7 @@ Settings:
 
 Requires `smartcoppergolems.admin` (op by default). Alias `/scg`.
 
+- `/scg help`: list the commands. `/scg help <command>` explains one.
 - `/scg reload`: reload `config.yml`.
 - `/scg check` while looking at a chest: what each label on it means (`[Horse]` =
   items with "horse" in their name, 9 items: ...), labels that match nothing, what

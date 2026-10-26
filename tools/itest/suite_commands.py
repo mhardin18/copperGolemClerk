@@ -112,3 +112,17 @@ def _(c):
                 ("a block on top" in part and "birch log x7" in part, f"birch logs listed under the blocked [logs] chest: {part.strip()}"),
                 ("No chest for these" not in reply, "not listed as needing a chest")]
     return check
+
+
+@scenario("help", "commands", 30, "/scg help lists every command (console forms with coordinates); /scg help <command> explains one; an unknown topic says so.")
+def _(c):
+    listing = say(c, "scg help")
+    one = say(c, "scg help overflow")
+    bad = say(c, "scg help frob")
+    return lambda: [has(listing, "/scg check <x> <y> <z> [world]"),
+                    has(listing, "/scg overflow <x> <y> <z> [world]"),
+                    has(listing, "/scg reload"),
+                    has(listing, "/scg help"),
+                    has(one, "idle golems will move it"),
+                    has(one, "From the console, give the position"),
+                    has(bad, "No command named 'frob'")]
