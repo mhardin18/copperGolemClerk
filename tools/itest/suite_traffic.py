@@ -160,7 +160,8 @@ def hazard_pocket(c, feet, floor=None):
     done = corridor(c, niche=True)
     if floor:
         c.block(10, 9, floor, dy=-1)
-    c.block(10, 9, feet)
+    if feet != "air":
+        c.block(10, 9, feet)
     x, y, z = c.abs(10, 9)
     spot = f"stepping to {x + 0.5:.1f},{y:.1f},{z + 0.5:.1f}"
 
@@ -185,3 +186,11 @@ def _(c):
 @scenario("give-way-cobweb-pocket", "traffic", 420, "The corridor's only side pocket holds a cobweb: golems don't step into it and get stuck.")
 def _(c):
     return hazard_pocket(c, "cobweb")
+
+
+@scenario("give-way-hole-pocket", "traffic", 420, "The corridor's only side pocket has no floor (a 3-deep hole): golems don't step into it, nobody falls in.")
+def _(c):
+    check = hazard_pocket(c, "air")
+    x, y, z = c.abs(10, 9)
+    c.run(f"fill {x} {y - 3} {z} {x} {y - 1} {z} minecraft:air")  # the floor and what's under it
+    return check
