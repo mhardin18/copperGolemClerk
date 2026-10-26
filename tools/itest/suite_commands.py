@@ -126,3 +126,19 @@ def _(c):
                     has(one, "idle golems will move it"),
                     has(one, "From the console, give the position"),
                     has(bad, "No command named 'frob'")]
+
+
+@scenario("check-odd-chests", "commands", 30, "/cgc check flags a waterlogged chest and a locked one; a check far above the world says there's no container; [#] on a sign is listed as matching nothing.")
+def _(c):
+    x, y, z = c.abs(6, 10)
+    c.run(f"setblock {x} {y} {z} minecraft:chest[facing=south,waterlogged=true]")
+    c.chests["wet"] = [(x, y, z)]
+    lx, ly, lz = c.abs(9, 10)
+    c.run(f'setblock {lx} {ly} {lz} minecraft:chest[facing=south]{{lock:{{items:"minecraft:diamond"}}}}')
+    c.chests["locked"] = [(lx, ly, lz)]
+    c.chest("junk", 12, 10)
+    c.sign(12, 10, "[#]")
+    return lambda: [has(check_at(c, 6, 10), "waterlogged"),
+                    has(check_at(c, 9, 10), "locked"),
+                    has(check_at(c, 12, 10), "[#] matches no group or item"),
+                    has(say(c, f"cgc check {x} 9999 {z}"), "No container")]

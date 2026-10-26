@@ -152,3 +152,45 @@ def _(c):
 @scenario("give-way-long-corridor", "traffic", 480, "A bare 1-wide corridor 15 blocks long between two small rooms: a golem backs all the way out if it has to; every item arrives.")
 def _(c):
     return corridor(c, x1=3, x2=17)
+
+
+def hazard_pocket(c, feet, floor=None):
+    """The corridor with its side pocket made dangerous: a golem giving way must back
+    out instead of stepping in, and nobody gets hurt."""
+    done = corridor(c, niche=True)
+    if floor:
+        c.block(10, 9, floor, dy=-1)
+    if feet != "air":
+        c.block(10, 9, feet)
+    x, y, z = c.abs(10, 9)
+    spot = f"stepping to {x + 0.5:.1f},{y:.1f},{z + 0.5:.1f}"
+
+    def check():
+        into = sum(1 for l in c.log_lines() if spot in l)
+        hurt = golems_with(c, "{Health:12.0f}", negate=True)
+        return done() + [(into == 0, f"{into} sidesteps into the {feet} pocket (want 0)"),
+                         (hurt == 0, f"{hurt} golems hurt (want 0)"), (c.golems() == 2, f"{c.golems()} golems alive (want 2)")]
+    return check
+
+
+@scenario("give-way-fire-pocket", "traffic", 420, "The corridor's only side pocket is soul fire: a golem giving way backs out instead of stepping into it; nobody is hurt.")
+def _(c):
+    return hazard_pocket(c, "soul_fire", floor="soul_sand")
+
+
+@scenario("give-way-campfire-pocket", "traffic", 420, "The corridor's only side pocket holds a lit campfire (low enough to stand on): golems don't step onto it.")
+def _(c):
+    return hazard_pocket(c, "campfire[lit=true]")
+
+
+@scenario("give-way-cobweb-pocket", "traffic", 420, "The corridor's only side pocket holds a cobweb: golems don't step into it and get stuck.")
+def _(c):
+    return hazard_pocket(c, "cobweb")
+
+
+@scenario("give-way-hole-pocket", "traffic", 420, "The corridor's only side pocket has no floor (a 3-deep hole): golems don't step into it, nobody falls in.")
+def _(c):
+    check = hazard_pocket(c, "air")
+    x, y, z = c.abs(10, 9)
+    c.run(f"fill {x} {y - 3} {z} {x} {y - 1} {z} minecraft:air")  # the floor and what's under it
+    return check

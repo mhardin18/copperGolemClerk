@@ -44,6 +44,8 @@ final class OverflowFetcher {
     private static final long WAIT_AFTER_GIVING_UP_MILLIS = 60_000;
     private static final int MAX_TAKE = 16; // vanilla's per-trip limit
     private static final double REACH = 2.0;
+    /** Mob.setGuaranteedDrop's value: above 1.0 marks the item as the mob's own, as vanilla golems do on pickup. */
+    private static final float GUARANTEED_DROP = 2.0f;
 
     private final CopperGolemClerk plugin;
     private final HomeFinder homes;
@@ -132,6 +134,10 @@ final class OverflowFetcher {
             if (!labels.overflow() || inventory.isEmpty()) {
                 continue;
             }
+            if (HomeFinder.isLocked(state) || HomeFinder.isBlocked(golem.getWorld(), halves)
+                    || HomeFinder.isWaterlogged(golem.getWorld(), halves)) {
+                continue; // vanilla golems can't open it, so they can't take from it either
+            }
             Material type = itemWithHome(golem, inventory, claimed, labels);
             if (type != null) {
                 Block block = state.getBlock();
@@ -192,7 +198,8 @@ final class OverflowFetcher {
         World world = plugin.getServer().getWorld(fetch.world());
         Block block = world == null ? null : world.getBlockAt(fetch.chest().x(), fetch.chest().y(), fetch.chest().z());
         if (!isIdle(golem) || block == null || !golem.getWorld().equals(world)
-                || !(block.getState(false) instanceof Container container)) {
+                || !(block.getState(false) instanceof Container container)
+                || HomeFinder.isLocked(container)) { // locked while the golem was on its way
             endFetch(golem, now, false);
             return;
         }
@@ -235,7 +242,9 @@ final class OverflowFetcher {
 
             EntityEquipment equipment = golem.getEquipment();
             equipment.setItemInMainHand(taken);
-            equipment.setItemInMainHandDropChance(1.0f); // dropped if the golem dies, like vanilla
+            // Vanilla's "guaranteed drop" (2.0, not 1.0): dropped if the golem dies, and also when
+            // it turns into a statue, which drops only guaranteed items.
+            equipment.setItemInMainHandDropChance(GUARANTEED_DROP);
             homes.startSearch(golem, type, block);
             block.getWorld().playSound(block.getLocation().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
             if (plugin.debug()) {

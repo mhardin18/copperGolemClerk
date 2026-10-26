@@ -196,3 +196,23 @@ def _(c):
         return [(state["phase"] >= 2, "item was returned"), (state["phase"] == 3, "item was picked up again"),
                 (again is not None and 45 <= again <= 150, f"picked up again {again and round(again)}s after the return (want ~60)")]
     return check
+
+
+@scenario("long-search-not-reset", "options", 960, "matching-chest-timeout-seconds: 180: a no-home item is returned after 720 active seconds, even though that is past the 10-minute mark where stale searches are cleaned up. ~13 minutes.", alone=True, manual=True)
+def _(c):
+    set_options(c, matching_chest_timeout_seconds="180")
+    c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
+    c.chest("busy", 14, 10, [("dirt", 64)] * 27)  # no home, no empty chest
+    c.golem(4, 10)
+    picked = []
+
+    def check():
+        in_chest, holding = c.count("copper", "sculk_shrieker"), c.holding()
+        if in_chest == 0 and holding and not picked:
+            picked.append(c.elapsed())
+        returned = bool(picked) and in_chest == 1 and holding == 0
+        took = c.elapsed() - picked[0] if picked else 0
+        return [(bool(picked), "golem picked the item up"),
+                (returned, f"item returned to the copper chest ({took:.0f}s after pickup; it would be ~1300s if the search were reset)"),
+                (not returned or took >= 650, f"returned after {took:.0f}s (want about 720, not early)")]
+    return check

@@ -466,3 +466,104 @@ def _(c):
     c.golem(4, 10)
     return lambda: [expect(c, "both", "birch_log", 8), expect(c, "both", "granite", 8), expect(c, "both", "dirt", 0),
                     expect(c, "empty", "dirt", 4)]
+
+
+@scenario("fetch-skips-locked-overflow", "edge", 50, "A locked [Overflow] chest holds granite that has a home: idle golems leave it alone (vanilla golems can't open locked chests).")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")  # empty: nothing else to do
+    x, y, z = c.abs(8, 10)
+    c.run(f'setblock {x} {y} {z} minecraft:chest[facing=south]{{lock:{{items:"minecraft:diamond"}}}}')
+    c.run(f"item replace block {x} {y} {z} container.0 with minecraft:granite 16")
+    c.chests["overflow"] = [(x, y, z)]
+    c.sign(8, 10, "[Overflow]")
+    c.chest("stone", 14, 10, [("andesite", 1)])
+    c.golem(4, 10)
+    return lambda: [(c.elapsed() >= 40, f"watched {c.elapsed():.0f}s of 40s"),
+                    expect(c, "overflow", "granite", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
+
+
+@scenario("fetch-skips-blocked-overflow", "edge", 50, "An [Overflow] chest with a solid block on top (its lid can't open) holds granite with a home: idle golems leave it alone.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    c.chest("overflow", 8, 10, [("granite", 16)])
+    c.sign(8, 10, "[Overflow]")
+    c.block(8, 10, "stone", dy=1)
+    c.chest("stone", 14, 10, [("andesite", 1)])
+    c.golem(4, 10)
+    return lambda: [(c.elapsed() >= 40, f"watched {c.elapsed():.0f}s of 40s"),
+                    expect(c, "overflow", "granite", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
+
+
+@scenario("stacked-chests", "edge", 150, "A wall of chests stacked two high (a chest doesn't block the lid of the one below): birch logs reach the lower log chest, granite the upper stone chest.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 8), ("granite", 8)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("logs", 14, 10, [("oak_log", 1)])
+    c.chest("stone", 14, 10, [("andesite", 1)], dy=1)
+    c.golem(4, 10)
+    return lambda: [expect(c, "logs", "birch_log", 8), expect(c, "stone", "granite", 8), expect(c, "empty", "*", 0)]
+
+
+@scenario("cat-on-chest", "edge", 150, "A sitting cat on the only log chest (vanilla can't open it): the birch logs go to [Overflow] instead.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("logs", 14, 10, [("oak_log", 1)])
+    c.chest("overflow", 8, 4)
+    c.sign(8, 4, "[Overflow]")
+    x, y, z = c.abs(14, 10, 1)
+    c.run(f"summon minecraft:cat {x + 0.5} {y} {z + 0.5} {{Sitting:1b,NoAI:1b,PersistenceRequired:1b}}")
+    c.golem(4, 10)
+    return lambda: [expect(c, "overflow", "birch_log", 16), expect(c, "logs", "birch_log", 0)]
+
+
+@scenario("waterlogged-chest", "edge", 150, "A waterlogged log chest: vanilla golems walk up to it but never use it (and wait there forever), so it isn't a destination; the birch logs go to the empty chest.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    x, y, z = c.abs(14, 10)
+    c.run(f"setblock {x} {y} {z} minecraft:chest[facing=south,waterlogged=true]")
+    c.run(f"item replace block {x} {y} {z} container.0 with minecraft:oak_log 1")
+    c.chests["logs"] = [(x, y, z)]
+    c.golem(4, 10)
+    return lambda: [expect(c, "empty", "birch_log", 16), expect(c, "logs", "birch_log", 0)]
+
+
+@scenario("oxidized-copper-sources", "edge", 240, "Unwaxed, weathered and oxidized copper chests all work as sources, not just waxed ones.")
+def _(c):
+    c.chest("copper1", 2, 6, [("birch_log", 8)], block="copper_chest")
+    c.chest("copper2", 2, 10, [("granite", 8)], block="weathered_copper_chest")
+    c.chest("copper3", 2, 14, [("spruce_log", 8)], block="oxidized_copper_chest")
+    c.chest("logs", 14, 8, [("oak_log", 1)])
+    c.chest("stone", 14, 12, [("andesite", 1)])
+    c.golem(4, 10)
+    return lambda: [expect(c, "logs", "birch_log", 8), expect(c, "logs", "spruce_log", 8), expect(c, "stone", "granite", 8)]
+
+
+@scenario("junk-tag-signs", "edge", 150, "Signs reading [#], [#minecraft:] and [#a:b:c] cause no errors and are ignored: the chest still takes birch logs by its contents.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("logs", 14, 10, [("oak_log", 1)])
+    c.sign(14, 10, ["[#]", "[#minecraft:]", "[#a:b:c]", "[# ]"])
+    c.golem(4, 10)
+    return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "empty", "*", 0)]
+
+
+@scenario("sealed-home-next-door", "edge", 330, "The only log chest is sealed in glass two blocks from the copper chest: the golem can never reach it, so the logs go back to the copper chest instead of being carried forever.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("logs", 6, 10, [("oak_log", 1)])
+    for dx, dz, dy in ((5, 10, 0), (7, 10, 0), (6, 9, 0), (6, 11, 0), (6, 10, 1),
+                       (5, 10, 1), (7, 10, 1), (6, 9, 1), (6, 11, 1)):
+        c.block(dx, dz, "glass", dy=dy)
+    c.golem(3, 12)
+    picked = []
+
+    def check():
+        in_chest, holding = c.count("copper", "birch_log"), c.holding()
+        if in_chest == 0 and holding and not picked:
+            picked.append(c.elapsed())
+        return [(bool(picked), "golem picked the logs up"),
+                (bool(picked) and in_chest == 16 and holding == 0, f"copper chest has {in_chest} birch logs back (want 16), golem holding {holding}"),
+                expect(c, "logs", "birch_log", 0)]
+    return check

@@ -81,8 +81,10 @@ public final class SortListener implements Listener {
                 homes.forget(id); // its next search starts fresh
                 return;
             }
-            if (homes.waitingNearHome(golem, held)) {
-                return; // waiting in line at a chest that takes the item: check again next second
+            if (!homes.waitedTooLong(id) && homes.waitingNearHome(golem, held)) {
+                // Waiting in line at a chest that takes the item: check again next second.
+                // Not forever, though: a chest vanilla can't use for some reason would hold it there for good.
+                return;
             }
             if (plugin.returnUnsortableItems()
                     && returns.returnItem(golem, Bukkit.getWorld(search.world()), search.source())) {
