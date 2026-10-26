@@ -273,8 +273,11 @@ public final class SmartCopperGolems extends JavaPlugin {
                         sender.sendMessage(Component.text("From the console: /scg overflow <x> <y> <z> [world]", NamedTextColor.RED));
                     }
                 }
-                default -> sender.sendMessage(Component.text(
-                        "Usage: /smartcoppergolems <reload|check|overflow>", NamedTextColor.YELLOW));
+                case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null);
+                default -> {
+                    sender.sendMessage(Component.text("Unknown command '" + args[0] + "'.", NamedTextColor.RED));
+                    HelpText.send(sender, null);
+                }
             }
         }
 
@@ -306,7 +309,11 @@ public final class SmartCopperGolems extends JavaPlugin {
         public Collection<String> suggest(CommandSourceStack source, String[] args) {
             if (args.length <= 1) {
                 String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
-                return List.of("reload", "check", "overflow").stream().filter(s -> s.startsWith(prefix)).toList();
+                return HelpText.names().stream().filter(s -> s.startsWith(prefix)).toList();
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
+                String prefix = args[1].toLowerCase(Locale.ROOT);
+                return HelpText.names().stream().filter(s -> s.startsWith(prefix)).toList();
             }
             return List.of();
         }

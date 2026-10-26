@@ -112,14 +112,14 @@ def _(c):
                     (not logged(lines, "Exception"), "no exception in the log")]
 
 
-@scenario("console-commands", "config", 30, "From the console: /scg check explains it's for players, an unknown subcommand shows usage.", alone=True)
+@scenario("console-commands", "config", 30, "From the console: /scg check explains it's for players, an unknown subcommand and bare /scg show the help list.", alone=True)
 def _(c):
     check = re.sub(r"§.", "", c.r.cmd("smartcoppergolems check"))
     usage = re.sub(r"§.", "", c.r.cmd("smartcoppergolems frobnicate"))
     alias = re.sub(r"§.", "", c.r.cmd("scg"))
     return lambda: [("Only players" in check, f"/scg check -> {check.strip()}"),
-                    ("Usage" in usage, f"/scg frobnicate -> {usage.strip()}"),
-                    ("Usage" in alias, f"/scg -> {alias.strip()}")]
+                    ("Unknown command 'frobnicate'" in usage and "/scg reload" in usage, f"/scg frobnicate -> {usage.strip()}"),
+                    ("SmartCopperGolems commands" in alias, f"/scg -> {alias.strip()}")]
 
 
 @scenario("config-name-warnings", "config", 30, "A group named 'overflow' and a misspelled disabled world are warned about.", alone=True)
