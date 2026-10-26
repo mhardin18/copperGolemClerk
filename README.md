@@ -125,6 +125,12 @@ item or group), then an `[Overflow]` chest, then an empty chest
 (`overflow-before-empty: false` swaps the last two). Overflow chests never count
 as a match for what's already in them.
 
+Golems never use a chest that vanilla golems can't: one with a solid block or a
+sitting cat on top, a locked one, or a waterlogged one (vanilla golems walk up to it
+and wait there for good). They also skip chests that drain through hoppers into a
+copper chest, so items don't go round in circles. `/cgc check` on a chest tells you
+if any of these applies.
+
 ### Items with no home
 
 If a golem can't deliver its item it works through four steps, each lasting
@@ -138,7 +144,8 @@ chest that has only "no home" items left. Add a home for the item, then
 `/cgc reload` to have golems try again right away. Steps count only time the
 golem is likely active (walking, or a player within the server's entity activation
 range), so golems that Paper pauses far from players don't run out of time, and a
-golem waiting its turn next to a chest that takes its item is never sent back.
+golem waiting its turn next to a chest that takes its item isn't sent back (unless it
+is still waiting a minute after the last step, which means it can't use that chest).
 
 ### Re-sorting the overflow chest
 
@@ -148,7 +155,8 @@ chest and takes up to 16 of an item that now has a home, then sorts it. Up to
 `fetchers-per-overflow-chest` golems (default 2) fetch from one overflow chest
 at a time, each a different item, so they don't crowd it. So when
 you add a chest for something that was piling up in overflow, golems move it
-over on their own. Items with no home are left in overflow. Golems also no
+over on their own. Items with no home are left in overflow, and so are items in
+an overflow chest golems can't open (locked, blocked or waterlogged). Golems also no
 longer walk to empty copper chests.
 
 ### Golems give way to each other
@@ -163,6 +171,8 @@ is in its way, one of them steps one block aside and waits for the other to pass
   gives way, so they never both dodge.
 - A golem busy at a chest never steps aside, and golems that are just passing
   each other are left alone.
+- A golem never steps aside into fire, lava, water, a cobweb, powder snow, a
+  berry bush or onto a campfire or magma block; it backs up to a safe spot instead.
 
 ### Golems tidy the chests they use
 

@@ -95,6 +95,9 @@ final class ChestReports {
         if (HomeFinder.isBlocked(block.getWorld(), pos)) {
             say(player, NamedTextColor.RED, "Problem: a solid block or a sitting cat is on top, so golems can't open it.");
         }
+        if (HomeFinder.isWaterlogged(block.getWorld(), pos)) {
+            say(player, NamedTextColor.RED, "Problem: it's waterlogged, so golems can't get close enough to use it. Drain it.");
+        }
         if (HomeFinder.isLocked(state)) {
             say(player, NamedTextColor.RED, "Problem: it's locked, so golems skip it.");
         }
@@ -211,6 +214,7 @@ final class ChestReports {
             }
             if (labels.hasItemRules() || !labels.overflow()) {
                 String why = HomeFinder.isBlocked(center.getWorld(), halves) ? "a block on top"
+                        : HomeFinder.isWaterlogged(center.getWorld(), halves) ? "waterlogged"
                         : HomeFinder.isLocked(state) ? "locked"
                         : HomeFinder.feedsCopperChest(center.getWorld(), halves) ? "a hopper under it feeds a copper chest"
                         : null;

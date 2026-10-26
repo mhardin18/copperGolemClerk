@@ -223,6 +223,15 @@ final class HomeFinder {
         return elapsed < 4 * step ? Step.VANILLA : Step.RETURN;
     }
 
+    /** How long past the return step a golem may wait in line at a chest (vanilla queues can last up to a minute). */
+    private static final long MAX_QUEUE_MILLIS = 60_000;
+
+    /** True once a golem has waited near a chest well past the return step: return its item anyway. */
+    boolean waitedTooLong(UUID id) {
+        long elapsed = activeMillis.getOrDefault(id, 0L);
+        return elapsed >= 4 * plugin.matchingChestTimeoutMillis() + MAX_QUEUE_MILLIS;
+    }
+
     /** Searches that have run through all steps, by golem UUID. */
     Map<UUID, Search> searchesReadyToReturn() {
         Map<UUID, Search> ready = new HashMap<>();
@@ -271,7 +280,9 @@ final class HomeFinder {
     /** Drop state for golems that haven't been seen for a while (died, unloaded). */
     void prune() {
         long cutoff = System.currentTimeMillis() - 10 * 60 * 1000L;
-        searches.values().removeIf(s -> s.startedMillis() < cutoff);
+        // A golem still loaded keeps its search however long it takes: one far from players
+        // gains active time slowly, and restarting its clock could put off a return forever.
+        searches.entrySet().removeIf(e -> e.getValue().startedMillis() < cutoff && Bukkit.getEntity(e.getKey()) == null);
         activeMillis.keySet().retainAll(searches.keySet());
         lastAccepted.values().removeIf(t -> t < cutoff);
         int tick = Bukkit.getCurrentTick();
@@ -334,7 +345,8 @@ final class HomeFinder {
         for (BlockState state : containersInRange(golem, HomeFinder::isDestination)) {
             Inventory inventory = ((Container) state).getInventory();
             Set<Pos> halves = halvesOf(inventory, state.getBlock());
-            if (isBlocked(golem.getWorld(), halves) || isLocked(state) || feedsCopperChest(golem.getWorld(), halves)) {
+            if (isBlocked(golem.getWorld(), halves) || isWaterlogged(golem.getWorld(), halves) || isLocked(state)
+                    || feedsCopperChest(golem.getWorld(), halves)) {
                 continue;
             }
             ChestLabels.Labels labels = matcher.labelsOf(inventory);
@@ -374,7 +386,7 @@ final class HomeFinder {
             Inventory inventory = chest.getInventory();
             Set<Pos> halves = halvesOf(inventory, block);
             seen.addAll(halves);
-            if (isBlocked(world(golem), halves) || isLocked(state)) {
+            if (isBlocked(world(golem), halves) || isWaterlogged(world(golem), halves) || isLocked(state)) {
                 continue; // vanilla won't open it, so it can't be anyone's destination
             }
             if (feedsCopperChest(world(golem), halves)) {
@@ -417,6 +429,20 @@ final class HomeFinder {
                 if (cat.isSitting()) {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * A waterlogged chest: vanilla golems walk towards it but never get close enough to
+     * use it, and then wait there holding their item. A double chest counts if either half is.
+     */
+    static boolean isWaterlogged(World world, Set<Pos> halves) {
+        for (Pos p : halves) {
+            if (world.getBlockAt(p.x(), p.y(), p.z()).getBlockData() instanceof org.bukkit.block.data.Waterlogged w
+                    && w.isWaterlogged()) {
+                return true;
             }
         }
         return false;

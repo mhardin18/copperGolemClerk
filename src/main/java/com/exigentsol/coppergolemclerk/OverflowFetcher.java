@@ -132,6 +132,10 @@ final class OverflowFetcher {
             if (!labels.overflow() || inventory.isEmpty()) {
                 continue;
             }
+            if (HomeFinder.isLocked(state) || HomeFinder.isBlocked(golem.getWorld(), halves)
+                    || HomeFinder.isWaterlogged(golem.getWorld(), halves)) {
+                continue; // vanilla golems can't open it, so they can't take from it either
+            }
             Material type = itemWithHome(golem, inventory, claimed, labels);
             if (type != null) {
                 Block block = state.getBlock();
@@ -192,7 +196,8 @@ final class OverflowFetcher {
         World world = plugin.getServer().getWorld(fetch.world());
         Block block = world == null ? null : world.getBlockAt(fetch.chest().x(), fetch.chest().y(), fetch.chest().z());
         if (!isIdle(golem) || block == null || !golem.getWorld().equals(world)
-                || !(block.getState(false) instanceof Container container)) {
+                || !(block.getState(false) instanceof Container container)
+                || HomeFinder.isLocked(container)) { // locked while the golem was on its way
             endFetch(golem, now, false);
             return;
         }

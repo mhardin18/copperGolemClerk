@@ -105,7 +105,7 @@ public final class ItemGroups {
             return null;
         }
         if (entry.startsWith("#")) {
-            NamespacedKey key = NamespacedKey.fromString(entry.substring(1).toLowerCase(Locale.ROOT));
+            NamespacedKey key = tagKey(entry.substring(1));
             Tag<Material> tag = key == null ? null : Bukkit.getTag(Tag.REGISTRY_ITEMS, key, Material.class);
             if (tag == null) {
                 warn(log, "Group '" + group + "': unknown item tag " + entry);
@@ -136,6 +136,20 @@ public final class ItemGroups {
             return null;
         }
         return m -> m == exact;
+    }
+
+    /** The key of a tag name like "minecraft:logs" or "logs", or null if it isn't one ("", "a:b:c", "Bad Name"). */
+    static NamespacedKey tagKey(String name) {
+        String lower = name.trim().toLowerCase(Locale.ROOT);
+        if (lower.isEmpty()) {
+            return null; // fromString throws on an empty string: a sign reading just [#]
+        }
+        try {
+            NamespacedKey key = NamespacedKey.fromString(lower);
+            return key == null || key.getKey().isEmpty() ? null : key;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static void warn(Logger log, String message) {

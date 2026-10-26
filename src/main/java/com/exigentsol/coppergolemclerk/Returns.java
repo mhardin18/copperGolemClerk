@@ -100,8 +100,8 @@ final class Returns {
         candidates.addAll(copperChestsInRange(golem));
 
         for (Block block : candidates) {
-            if (!(block.getState(false) instanceof Container container)) {
-                continue;
+            if (!(block.getState(false) instanceof Container container) || HomeFinder.isLocked(container)) {
+                continue; // a locked chest is its owner's business, as for vanilla golems
             }
             Inventory inventory = container.getInventory();
             if (!ChestMatcher.hasRoom(held, inventory)) {

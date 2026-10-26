@@ -12,7 +12,9 @@ import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.CopperGolem;
@@ -395,11 +397,13 @@ final class GolemTraffic implements Listener {
      * floor covering (carpet, a bottom slab) to stand on, and headroom above.
      */
     static boolean canStandIn(Block feet) {
-        if (!feet.getRelative(0, 1, 0).isPassable()) {
+        Block head = feet.getRelative(0, 1, 0);
+        if (!head.isPassable() || isHazard(feet.getType()) || isHazard(head.getType())) {
             return false;
         }
         if (feet.isPassable()) {
-            return feet.getRelative(0, -1, 0).getType().isSolid();
+            Block floor = feet.getRelative(0, -1, 0);
+            return floor.getType().isSolid() && !isHazard(floor.getType());
         }
         var box = feet.getCollisionShape().getBoundingBoxes();
         if (box.isEmpty()) {
@@ -410,6 +414,20 @@ final class GolemTraffic implements Listener {
             top = Math.max(top, b.getMaxY());
         }
         return top <= 0.5 + 1e-6;
+    }
+
+    /**
+     * Blocks a golem must not be pushed into or onto: they hurt it (fire, lava, a
+     * campfire, magma, berry bushes, wither roses, dripstone), trap it (cobwebs, powder
+     * snow) or carry it off (water, bubble columns). Vanilla pathfinding avoids them too.
+     */
+    static boolean isHazard(Material type) {
+        return Tag.FIRE.isTagged(type) || Tag.CAMPFIRES.isTagged(type)
+                || switch (type) {
+                    case LAVA, WATER, BUBBLE_COLUMN, MAGMA_BLOCK, COBWEB, POWDER_SNOW, SWEET_BERRY_BUSH,
+                         WITHER_ROSE, POINTED_DRIPSTONE, CACTUS -> true;
+                    default -> false;
+                };
     }
 
     private void release(CopperGolem golem) {
