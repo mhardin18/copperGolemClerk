@@ -2,6 +2,19 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## 2.1.0 (2026-10-26)
+
+### Chests golems can't use
+- Golems skip waterlogged chests. Vanilla golems stop about 4 blocks short of one and hold their item forever. `/cgc check` and `/cgc overflow` now say when a chest is waterlogged.
+- Idle golems no longer take items out of `[Overflow]` chests that are locked or have a block or cat on top, since vanilla golems can't open those. Items are also never returned into a locked chest.
+
+### Fixes
+- A golem stepping aside for another no longer steps into fire, lava, water, cobwebs, powder snow, berry bushes, campfires, magma or cactus. It backs up to a safe spot instead. (One test golem burned to death and lost its 16 items.)
+- Items a golem fetched from an `[Overflow]` chest are no longer lost when the golem turns into a statue.
+- A sign reading `[#]` no longer causes an error each time a golem checks that chest.
+- A golem far from players could hold an item with no home forever: its search restarted every 10 minutes. It now gets the item back to its copper chest as intended.
+- A golem waiting beside a chest it can never reach gives the item back a minute after the normal return time.
+
 ## 2.0.0 (2026-10-25)
 
 ### Renamed: SmartCopperGolems is now Copper Golem Clerk
