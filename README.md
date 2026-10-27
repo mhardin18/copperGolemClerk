@@ -106,6 +106,7 @@ several (`[ice][snow]`), and the chest takes anything any rule matches:
 | `[*_ORE]`   | items matching the pattern       |
 | `[#planks]` | items in that tag                |
 | `[Overflow]`| anything with no other home      |
+| `[No Golems]`| nothing: golems leave it alone  |
 
 Case doesn't matter and spaces count as underscores. A group name wins over an
 item with the same name, and group names work singular or plural (`[Rail]` =
@@ -115,6 +116,11 @@ no group and no item, it matches items with that word in their name (`[carpet]`
 `[Terracotta]`, `[Shulker Box]`, `[Candle]` and `[Bundle]` take the plain item and
 every colour, while `[Red Terracotta]` takes only red. For one exact item that
 shares a group's name, use a framed item instead.
+
+A `[No Golems]` sign (any case, `[no golem]` works too) keeps golems away from a
+chest completely: they never put anything into it, and on a copper chest they never
+take anything out. Other labels on the same chest are ignored. Use it for a copper
+chest you want as plain storage.
 
 When several chests would take an item, golems use the most specific one. Labels
 (frames and signs) come before contents: a framed item first, then the sign label

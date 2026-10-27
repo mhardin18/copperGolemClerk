@@ -23,7 +23,9 @@ final class ChestMatcher {
         /** Holds items from the same group (per match-mode). */
         GROUP,
         /** Holds unrelated items. */
-        NONE;
+        NONE,
+        /** A [No Golems] sign: golems never use it. */
+        NO_GOLEMS;
 
         /** A chest where this item belongs, as opposed to an empty fallback. */
         boolean isHome() {
@@ -64,13 +66,16 @@ final class ChestMatcher {
         if (plugin.itemFrameLabels() || plugin.signLabels()) {
             return ChestLabels.of(container, plugin.groups(), plugin.itemFrameLabels(), plugin.signLabels());
         }
-        return new ChestLabels.Labels(List.of(), List.of(), false, List.of());
+        return ChestLabels.Labels.NONE;
     }
 
     /** Classify with labels already read, when checking many items against one chest. */
     Match classify(ItemStack held, Inventory container, ChestLabels.Labels labels) {
         Material heldType = held.getType();
 
+        if (labels.noGolems()) {
+            return new Match(Kind.NO_GOLEMS, "[No Golems] sign");
+        }
         if (labels.hasItemRules() && labels.accepts(heldType)) {
             return new Match(Kind.LABEL_MATCH, "label matches " + String.join(", ", labels.names()),
                     labels.specificity(heldType));

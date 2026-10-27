@@ -87,6 +87,9 @@ public final class ItemGroups {
             if (groupName.equalsIgnoreCase("overflow")) {
                 log.warning("Group 'overflow' can't be used on signs: [overflow] always means an overflow chest. Rename it.");
             }
+            if (ChestLabels.isNoGolems(groupName)) {
+                log.warning("Group '" + groupName + "' can't be used on signs: [No Golems] always keeps golems away. Rename it.");
+            }
         }
         return new ItemGroups(Collections.unmodifiableList(names), membership, items);
     }

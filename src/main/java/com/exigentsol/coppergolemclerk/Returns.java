@@ -103,6 +103,9 @@ final class Returns {
             if (!(block.getState(false) instanceof Container container) || HomeFinder.isLocked(container)) {
                 continue; // a locked chest is its owner's business, as for vanilla golems
             }
+            if (ChestLabels.noGolems(container.getInventory(), plugin)) {
+                continue; // [No Golems]: hands off
+            }
             Inventory inventory = container.getInventory();
             if (!ChestMatcher.hasRoom(held, inventory)) {
                 continue;
