@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -13,6 +14,7 @@ import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Tag;
@@ -163,6 +165,8 @@ public final class ItemGroups {
      * "#planks". A group name wins over an item of the same name, and group
      * names match singular or plural ("rail" = "rails"). If nothing matches,
      * items with those words in their name are used ("stew" = all *_STEW).
+     * An item that comes in all 16 dye colors also covers them ("terracotta" =
+     * plain + RED_TERRACOTTA etc.); a single color stays just that item.
      * Spaces count as underscores and case is ignored. Returns null if it
      * matches nothing.
      */
@@ -196,11 +200,33 @@ public final class ItemGroups {
                 : key.contains("*") ? "pattern " + entry.toUpperCase(Locale.ROOT)
                 : "item";
         Rule rule = ruleFor(parseEntry(entry, "sign", null), meaning);
+        Material plain = plainName && rule != null ? Material.matchMaterial(entry.toUpperCase(Locale.ROOT)) : null;
+        EnumSet<Material> dyed = plain == null ? null : withDyedVersions(plain, items::contains);
+        if (dyed != null) {
+            rule = ruleFor(dyed::contains, "item and its dyed versions");
+        }
         if (rule == null && plainName) {
             // Last try: items with these words in their name ([stew] = mushroom/rabbit/suspicious stew).
             rule = ruleFor(m -> containsWords(m.name(), words(key)), "items with \"" + key + "\" in their name");
         }
         return Optional.ofNullable(rule);
+    }
+
+    /**
+     * The item plus its dyed versions (TERRACOTTA -> also WHITE_TERRACOTTA ... BLACK_TERRACOTTA),
+     * or null unless all 16 colors exist as items. Needing all 16 keeps out look-alikes such
+     * as RED_SAND or BLUE_ICE.
+     */
+    static EnumSet<Material> withDyedVersions(Material plain, Predicate<Material> isItem) {
+        EnumSet<Material> result = EnumSet.of(plain);
+        for (DyeColor color : DyeColor.values()) {
+            Material dyed = Material.getMaterial(color.name() + "_" + plain.name());
+            if (dyed == null || !isItem.test(dyed)) {
+                return null;
+            }
+            result.add(dyed);
+        }
+        return result;
     }
 
     /** The rule with its item count, or null if it matches no items. */

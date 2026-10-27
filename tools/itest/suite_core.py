@@ -149,3 +149,18 @@ def _(c):
     return lambda: [expect(c, "wool", "white_wool", 8), expect(c, "wool", "red_carpet", 4),
                     expect(c, "wool", "string", 6), expect(c, "wool", "bone", 0),
                     expect(c, "mob", "bone", 3), expect(c, "mob", "string", 0)]
+
+
+@scenario("dyed-sign", "core", 300, "A [Copper] / [Terracotta] sign takes plain and dyed terracotta; [Red Terracotta] still wins red; glazed goes to overflow.")
+def _(c):
+    c.chest("copper", 2, 10, [("lime_terracotta", 8), ("red_terracotta", 6), ("terracotta", 4), ("red_glazed_terracotta", 3)],
+            block="waxed_copper_chest")
+    c.chest("terra", 8, 10)
+    c.sign(8, 10, ["[Copper]", "[Terracotta]"])
+    c.chest("red", 14, 10)
+    c.sign(14, 10, "[Red Terracotta]")
+    c.chest("over", 20, 10)
+    c.sign(20, 10, "[Overflow]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "terra", "lime_terracotta", 8), expect(c, "terra", "terracotta", 4),
+                    expect(c, "red", "red_terracotta", 6), expect(c, "over", "red_glazed_terracotta", 3)]
