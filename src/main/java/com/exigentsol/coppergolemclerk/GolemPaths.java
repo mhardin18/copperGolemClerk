@@ -52,11 +52,16 @@ final class GolemPaths implements Listener {
         }
     }
 
+    /** Set this golem's trapdoor costs again (its mode changed). */
+    void refresh(Entity golem) {
+        apply(golem);
+    }
+
     private void apply(Entity golem) {
         if (failed) {
             return;
         }
-        float cost = avoid && plugin.enabledIn(golem.getWorld()) ? NEVER : VANILLA;
+        float cost = avoid && plugin.manages(golem) ? NEVER : VANILLA;
         try {
             Object handle = golem.getClass().getMethod("getHandle").invoke(golem);
             Class<?> pathType = Class.forName("net.minecraft.world.level.pathfinder.PathType", true,

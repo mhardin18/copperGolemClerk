@@ -15,7 +15,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
@@ -46,6 +48,10 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean avoidTrapdoors;
     private UpdateChecker updates;
     private volatile boolean logGolemDeaths;
+    private GolemModes modes;
+    private volatile Material golemToggleItem = Material.BAMBOO;
+    private volatile boolean modeMarkers = true;
+    private volatile float modeMarkerHeight = 0.3f;
     private volatile boolean updateCheck;
     private volatile String updateCheckUrl;
     private volatile boolean tidyChests;
@@ -73,6 +79,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         getServer().getPluginManager().registerEvents(paths, this);
         paths.setAvoidTrapdoors(avoidTrapdoors);
         getServer().getPluginManager().registerEvents(new GolemDeaths(this), this);
+        modes = new GolemModes(this);
+        getServer().getPluginManager().registerEvents(modes, this);
+        getServer().getScheduler().runTaskTimer(this, modes::syncAll, 40, 40);
         updates = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updates, this);
         updates.configure(updateCheck, updateCheckUrl);
@@ -110,6 +119,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         if (updates != null) {
             updates.stop();
+        }
+        if (modes != null) {
+            modes.removeAll(); // markers aren't saved, but don't leave them behind on a plugin reload
         }
     }
 
@@ -159,6 +171,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         tidyChests = config.getBoolean("tidy-chests", true);
         avoidTrapdoors = config.getBoolean("avoid-trapdoors", true);
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
+        golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
+        modeMarkers = config.getBoolean("mode-markers", true);
+        modeMarkerHeight = (float) config.getDouble("mode-marker-height", 0.3); // not in config.yml: fine-tuning
         updateCheck = config.getBoolean("update-check", true);
         updateCheckUrl = config.getString("update-check-url", UpdateChecker.DEFAULT_URL); // not in config.yml: for tests
         if (updates != null) {
@@ -260,6 +275,39 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    /**
+     * True if the plugin handles this entity: a copper golem (never any other mob, even if Paper
+     * someday fires its sorting events for others), in a world that isn't disabled, that a
+     * player hasn't switched to vanilla.
+     */
+    boolean manages(Entity golem) {
+        return golem instanceof org.bukkit.entity.CopperGolem && enabledIn(golem.getWorld())
+                && (modes == null || !modes.isVanilla(golem));
+    }
+
+    /** A player switched this golem's mode: drop what the plugin was doing with it. */
+    void modeChanged(Entity golem) {
+        if (paths != null) {
+            paths.refresh(golem);
+        }
+        if (listener != null) {
+            listener.golemModeChanged(golem);
+        }
+    }
+
+    /** The item players right-click a golem with to switch its mode, or null if switching is off. */
+    Material golemToggleItem() {
+        return golemToggleItem;
+    }
+
+    boolean modeMarkers() {
+        return modeMarkers;
+    }
+
+    float modeMarkerHeight() {
+        return modeMarkerHeight;
     }
 
     boolean logGolemDeaths() {

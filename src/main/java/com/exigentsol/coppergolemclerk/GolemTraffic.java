@@ -143,7 +143,8 @@ final class GolemTraffic implements Listener {
                 if (!plugin.enabledIn(world)) {
                     continue; // golems already giving way there are released by the usual timeout
                 }
-                scan(List.copyOf(world.getEntitiesByClass(CopperGolem.class)));
+                // Golems switched to vanilla don't give way (and aren't asked to make room).
+                scan(world.getEntitiesByClass(CopperGolem.class).stream().filter(plugin::manages).toList());
             }
         }
     }
