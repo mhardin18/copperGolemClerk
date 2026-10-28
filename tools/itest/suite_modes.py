@@ -49,7 +49,8 @@ def _(c):
         if state["step"] == 1:
             if markers(c) != 0:
                 return [(False, "waiting for the marker to go after switching to vanilla")]
-            c.run(f'data remove entity {sel} BukkitValues."coppergolemclerk:mode"')
+            # /data remove doesn't reach Paper's plugin data; any value but "vanilla" means plugin mode.
+            c.run(f'data merge entity {sel} {{BukkitValues:{{"coppergolemclerk:mode":"plugin"}}}}')
             state["step"] = 2
         if state["step"] == 2:
             if markers(c) != 1:
@@ -102,4 +103,39 @@ def _(c):
         lines = [l for l in c.log_lines() if "[CopperGolemClerk]" in l and c.in_cell(l)]
         return [expect(c, "logs", "birch_log", 8),
                 (not any("IRON_GOLEM" in l for l in lines), "no plugin log line about the iron golem")]
+    return check
+
+
+@scenario("mode-marker-after-unload", "modes", 90, "The chunks unload and load again: the golem has exactly one marker again (markers aren't saved, so none pile up).")
+def _(c):
+    golem(c, 4, 10)
+    state = {"step": 0}
+    def check():
+        if state["step"] == 0:
+            if markers(c) != 1:
+                return [(False, "waiting for the marker")]
+            c.forceload(False)
+            state["step"], state["t"] = 1, c.elapsed()
+        if state["step"] == 1:
+            if c.elapsed() - state["t"] < 15:
+                return [(False, "letting the chunks unload")]
+            c.forceload(True)
+            state["step"], state["t"] = 2, c.elapsed()
+        return [(c.elapsed() - state["t"] > 8, "8 seconds after loading"), (markers(c) == 1, f"one marker (got {markers(c)})"),
+                (c.golems() == 1, f"the golem is back (got {c.golems()})")]
+    return check
+
+
+@scenario("mode-marker-statue", "modes", 60, "A golem turning into a statue loses its marker.")
+def _(c):
+    golem(c, 4, 10)
+    sel = c.selector("copper_golem")[:-1] + ",limit=1]"
+    state = {"step": 0}
+    def check():
+        if state["step"] == 0:
+            if markers(c) != 1:
+                return [(False, "waiting for the marker")]
+            c.run(f'data merge entity {sel} {{weather_state:"oxidized",next_weather_age:1L}}')
+            state["step"] = 1
+        return [(c.golems() == 0, "turned into a statue"), (markers(c) == 0, f"no marker left (got {markers(c)})")]
     return check

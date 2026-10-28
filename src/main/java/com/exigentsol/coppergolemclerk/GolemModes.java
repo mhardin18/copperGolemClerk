@@ -134,9 +134,13 @@ final class GolemModes implements Listener {
     public void onAdd(EntityAddToWorldEvent event) {
         if (event.getEntity() instanceof CopperGolem golem) {
             plugin.getServer().getScheduler().runTask(plugin, () -> sync(golem));
-        } else if (event.getEntity() instanceof ItemDisplay display && isMarker(display)
-                && !(display.getVehicle() instanceof CopperGolem)) {
-            plugin.getServer().getScheduler().runTask(plugin, display::remove); // left over somehow
+        } else if (event.getEntity() instanceof ItemDisplay display && isMarker(display)) {
+            // A new marker is added to the world before it's put on its golem, so look a tick later.
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (display.isValid() && !(display.getVehicle() instanceof CopperGolem)) {
+                    display.remove(); // left over somehow
+                }
+            });
         }
     }
 

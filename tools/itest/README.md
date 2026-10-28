@@ -35,6 +35,7 @@ error or exception in the server log during a scenario fails it.
 | lifecycle | reloads mid-task, reload spam; manual server restart |
 | perf | hundreds of chests in range, many golems: tick time stays healthy |
 | dimensions | sorting, overflow, fetching, returns, giving way and `/cgc check` in the Nether and the End |
+| modes | golems switched to vanilla (sort like vanilla, no marker), antenna markers through switches, unloads and statues; iron and snow golems untouched |
 
 Scenarios that change something server-wide (config, reloads, tick timing) run one at a
 time after the others, and the runner restores `config.yml` after each.
