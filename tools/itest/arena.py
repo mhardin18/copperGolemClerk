@@ -85,7 +85,7 @@ class Cell:
 
     def run(self, command):
         out = self.r.cmd(command)
-        bad = ("Unknown", "Incorrect", "Expected", "Invalid", "not loaded", "Could not", "Failed")
+        bad = ("Unknown", "Incorrect", "Expected", "Invalid", "not loaded", "Could not", "Failed", "Only one")
         if any(b in out for b in bad):
             raise RuntimeError(f"command failed: {command}\n  -> {out}")
         return out
