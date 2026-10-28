@@ -147,3 +147,14 @@ def _(c):
                     (logged(lines, "golem-toggle-item: no item named 'not_an_item'"), "warned about the toggle item"),
                     (not logged(lines, "Exception"), "no exception in the log")]
 
+
+
+@scenario("toggle-item-air-and-none", "config", 30, "golem-toggle-item: air is reported (not an item); none turns switching off quietly.", alone=True)
+def _(c):
+    text = re.sub(r"(?m)^golem-toggle-item: .*$", "golem-toggle-item: air", original())
+    reply, lines, restored = try_config(c, text)
+    text2 = re.sub(r"(?m)^golem-toggle-item: .*$", "golem-toggle-item: none", original())
+    reply2, lines2, _ = try_config(c, text2)
+    return lambda: [(logged(lines, "golem-toggle-item: no item named 'air'"), "warned about air"),
+                    (not logged(lines2, "golem-toggle-item"), "none: no warning"),
+                    (not logged(lines + lines2, "Exception"), "no exception in the log")]

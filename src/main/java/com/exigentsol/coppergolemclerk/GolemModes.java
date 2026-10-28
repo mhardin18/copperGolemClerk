@@ -231,7 +231,7 @@ final class GolemModes implements Listener {
             return null;
         }
         Material m = Material.matchMaterial(name.trim().toLowerCase(Locale.ROOT));
-        if (m == null || !m.isItem()) {
+        if (m == null || !m.isItem() || m.isAir()) { // air would make every empty-handed click switch the golem
             log.warning("golem-toggle-item: no item named '" + name + "'; players can't switch golems' mode.");
             return null;
         }
