@@ -2,6 +2,14 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### New
+- A `[No Golems]` sign (any case) keeps golems away from a chest: they never put items into it, and never take items out of a copper chest that has one. Handy for a copper chest used as plain storage. `/cgc check` shows it.
+
+### Changed
+- A sign naming an item that comes in all 16 dye colours also takes the dyed ones: `[Terracotta]`, `[Shulker Box]`, `[Candle]` and `[Bundle]` now take every colour, not just the plain item. `[Red Terracotta]` still takes only red, and wins over `[Terracotta]` for red. Look-alikes stay separate: `[Sand]` doesn't take red sand, and `[Ice]` doesn't take blue ice.
+
 ## 2.1.0 (2026-10-26)
 
 ### Chests golems can't use

@@ -149,3 +149,38 @@ def _(c):
     return lambda: [expect(c, "wool", "white_wool", 8), expect(c, "wool", "red_carpet", 4),
                     expect(c, "wool", "string", 6), expect(c, "wool", "bone", 0),
                     expect(c, "mob", "bone", 3), expect(c, "mob", "string", 0)]
+
+
+@scenario("dyed-sign", "core", 300, "A [Copper] / [Terracotta] sign takes plain and dyed terracotta; [Red Terracotta] still wins red; glazed goes to overflow.")
+def _(c):
+    c.chest("copper", 2, 10, [("lime_terracotta", 8), ("red_terracotta", 6), ("terracotta", 4), ("red_glazed_terracotta", 3)],
+            block="waxed_copper_chest")
+    c.chest("terra", 8, 10)
+    c.sign(8, 10, ["[Copper]", "[Terracotta]"])
+    c.chest("red", 14, 10)
+    c.sign(14, 10, "[Red Terracotta]")
+    c.chest("over", 20, 10)
+    c.sign(20, 10, "[Overflow]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "terra", "lime_terracotta", 8), expect(c, "terra", "terracotta", 4),
+                    expect(c, "red", "red_terracotta", 6), expect(c, "over", "red_glazed_terracotta", 3)]
+
+
+@scenario("no-golems-copper", "core", 300, "Golems skip a copper chest signed [No Golems] (nearer) and sort from the unsigned one instead.")
+def _(c):
+    c.chest("kept", 4, 10, [("birch_log", 8)], block="waxed_copper_chest")
+    c.sign(4, 10, "[No Golems]")
+    c.chest("copper", 10, 10, [("oak_log", 4)], block="waxed_copper_chest")
+    c.chest("dest", 16, 10)
+    c.golem(6, 10)
+    return lambda: [expect(c, "dest", "oak_log", 4), expect(c, "dest", "birch_log", 0), expect(c, "kept", "birch_log", 8)]
+
+
+@scenario("no-golems-chest", "core", 300, "A nearer chest signed [no golem] / [logs] gets nothing; birch logs go to the farther empty chest.")
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 8)], block="waxed_copper_chest")
+    c.chest("near", 8, 10)
+    c.sign(8, 10, ["[no golem]", "[logs]"])
+    c.chest("far", 16, 10)
+    c.golem(4, 10)
+    return lambda: [expect(c, "far", "birch_log", 8), expect(c, "near", "birch_log", 0)]

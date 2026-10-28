@@ -30,7 +30,8 @@ import org.bukkit.inventory.ItemStack;
  *   above) with lines in
  *   brackets: each [text] is a group name, item name, pattern or #tag.
  *   [overflow] (any case) marks the chest as a catch-all for items with no
- *   other home.
+ *   other home. [No Golems] (any case) keeps golems out of it: they never take
+ *   from it (even a copper chest) or put anything into it.
  *
  * For a double chest, labels on either half count.
  */
@@ -47,8 +48,12 @@ final class ChestLabels {
      * @param names     the label texts, for debug messages
      * @param overflow  an [overflow] sign is present
      * @param unknown   bracketed sign lines that match no item (ignored), for /cgc check
+     * @param noGolems  a [No Golems] sign is present
      */
-    record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow, List<String> unknown) {
+    record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow, List<String> unknown,
+                  boolean noGolems) {
+        static final Labels NONE = new Labels(List.of(), List.of(), false, List.of(), false);
+
         boolean hasItemRules() {
             return !rules.isEmpty();
         }
@@ -77,6 +82,7 @@ final class ChestLabels {
         List<String> names = new ArrayList<>();
         List<String> unknown = new ArrayList<>();
         boolean overflow = false;
+        boolean noGolems = false;
 
         for (Block block : blocksOf(container)) {
             if (frames) {
@@ -100,6 +106,10 @@ final class ChestLabels {
                                     overflow = true;
                                     continue;
                                 }
+                                if (isNoGolems(inner)) {
+                                    noGolems = true;
+                                    continue;
+                                }
                                 ItemGroups.Rule rule = groups.signRule(inner);
                                 if (rule != null) {
                                     rules.add(rule);
@@ -113,7 +123,18 @@ final class ChestLabels {
                 }
             }
         }
-        return new Labels(rules, names, overflow, unknown);
+        return new Labels(rules, names, overflow, unknown, noGolems);
+    }
+
+    /** "No Golems", "no golem", "NO-GOLEMS", "no_golems": any case, singular or plural. */
+    static boolean isNoGolems(String text) {
+        String[] words = ItemGroups.words(text);
+        return words.length == 2 && words[0].equals("no") && ItemGroups.singular(words[1]).equals("golem");
+    }
+
+    /** True if a [No Golems] sign is on this chest (either half). Only signs are read. */
+    static boolean noGolems(Inventory container, CopperGolemClerk plugin) {
+        return plugin.signLabels() && of(container, plugin.groups(), false, true).noGolems();
     }
 
     private static void readFrames(Block block, List<ItemGroups.Rule> rules, List<String> names) {

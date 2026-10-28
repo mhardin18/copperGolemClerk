@@ -131,7 +131,7 @@ final class OverflowFetcher {
             }
             ChestLabels.Labels labels = ChestLabels.of(inventory, plugin.groups(),
                     plugin.itemFrameLabels(), plugin.signLabels());
-            if (!labels.overflow() || inventory.isEmpty()) {
+            if (!labels.overflow() || labels.noGolems() || inventory.isEmpty()) {
                 continue;
             }
             if (HomeFinder.isLocked(state) || HomeFinder.isBlocked(golem.getWorld(), halves)

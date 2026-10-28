@@ -5,6 +5,7 @@ import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
 import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
+import org.bukkit.block.Container;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Event;
@@ -108,10 +109,15 @@ public final class SortListener implements Listener {
         }
         Entity golem = event.getEntity();
         ItemStack held = heldItem(golem);
+        Block block = event.getBlock();
+        boolean noGolems = block.getState(false) instanceof Container container
+                && ChestLabels.noGolems(container.getInventory(), plugin);
         if (held.isEmpty()) {
             // Looking for a copper chest to take from: its next item starts a fresh search.
             homes.forget(golem);
-            if (fetcher.isFetching(golem.getUniqueId())) {
+            if (noGolems) {
+                event.setAllowed(false); // [No Golems]: never take from it
+            } else if (fetcher.isFetching(golem.getUniqueId())) {
                 event.setAllowed(false); // walking to an overflow chest; don't get pulled away
             } else if (!returns.prepareSource(event.getBlock())) {
                 // Empty, or only items with no home: don't walk over for nothing.
@@ -121,10 +127,13 @@ public final class SortListener implements Listener {
         }
         // Note where the item came from and start its timer, even if steering is off.
         homes.track(golem, held.getType());
+        if (noGolems) {
+            event.setAllowed(false); // [No Golems]: never put anything in it, even after the timeouts
+            return;
+        }
         if (!plugin.preferMatchingChests()) {
             return;
         }
-        Block block = event.getBlock();
         if (!HomeFinder.isDestination(block.getType())) {
             return;
         }
@@ -182,7 +191,7 @@ public final class SortListener implements Listener {
         String reason = match.reason();
         switch (match.kind()) {
             case LABEL_MATCH, GROUP -> result = Event.Result.ALLOW;
-            case LABEL_OTHER -> result = Event.Result.DENY;
+            case LABEL_OTHER, NO_GOLEMS -> result = Event.Result.DENY;
             case EXACT, NONE -> result = Event.Result.DEFAULT; // vanilla: yes for exact, no otherwise
             case OVERFLOW -> {
                 // Only for items with no other home. After the timeout, take anything.

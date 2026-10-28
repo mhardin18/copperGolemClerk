@@ -59,7 +59,9 @@ final class ChestReports {
             return;
         }
         if (Returns.isCopperChest(block.getType())) {
-            say(player, NamedTextColor.AQUA, "Copper chest: golems take items out of it to sort them.");
+            say(player, NamedTextColor.AQUA, ChestLabels.noGolems(inv, plugin)
+                    ? "Copper chest with a [No Golems] sign: golems leave it alone."
+                    : "Copper chest: golems take items out of it to sort them.");
             return;
         }
         if (!HomeFinder.isDestination(block.getType())) {
@@ -68,6 +70,10 @@ final class ChestReports {
         }
 
         ChestLabels.Labels labels = matcher.labelsOf(inv);
+        if (labels.noGolems()) {
+            say(player, NamedTextColor.AQUA, "[No Golems] sign: golems never take from or put into this chest. Other labels on it don't count.");
+            return;
+        }
         for (int i = 0; i < labels.rules().size(); i++) {
             ItemGroups.Rule rule = labels.rules().get(i);
             String name = labels.names().get(i);
@@ -166,6 +172,7 @@ final class ChestReports {
             case EXACT -> "yes, it already holds that item" + full;
             case GROUP -> "yes, same group as what's inside" + full;
             case NONE -> "no (" + match.reason().toLowerCase(Locale.ROOT) + ")";
+            case NO_GOLEMS -> "no, it has a [No Golems] sign";
         };
     }
 
@@ -208,6 +215,9 @@ final class ChestReports {
             }
             seen.addAll(halves);
             ChestLabels.Labels labels = matcher.labelsOf(inv);
+            if (labels.noGolems()) {
+                continue; // golems never use it, as overflow or as a destination
+            }
             if (labels.overflow()) {
                 overflowChests.add(inv);
                 overflowLabels.add(labels);
