@@ -2,7 +2,7 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## Unreleased
+## 2.4.0 (2026-10-27)
 
 ### New
 - Update notices: once a week the plugin checks GitHub for a newer release for your Minecraft version. A new one is logged, and admins are told when they join (once per release) with a link. Nothing is downloaded. Turn it off with `update-check: false`.
