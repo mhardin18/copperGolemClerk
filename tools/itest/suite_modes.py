@@ -181,7 +181,8 @@ def _(c):
                     (c.holding("dirt") == 8, f"golem holding {c.holding('dirt')} dirt (want 8)"), conserved(c, "dirt", 8)]
 
 
-@scenario("vanilla-switch-mid-sidestep", "modes", 420, "A golem stepping aside for another is switched to vanilla: it's woken at once, none left frozen.")
+@scenario("vanilla-switch-mid-sidestep", "modes", 420, "A golem stepping aside for another is switched to vanilla: it's woken at once, none left frozen.",
+          alone=True)  # acts during a 1-2 second sidestep: under parallel load the harness polls too slowly
 def _(c):
     from suite_traffic import MARKED, corridor, frozen, wait_for_sidestep
     corridor(c)
