@@ -2,6 +2,16 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### New
+- Switch a single golem back to vanilla: right-click it with bamboo (`golem-toggle-item`), and again to switch it back. Golems using the plugin wear a small green light on their antenna (`mode-markers`). Needs `coppergolemclerk.toggle` (everyone by default) and, with GriefPrevention, permission to build where the golem stands.
+
+- Golems say hello: an idle copper golem walks over to a nearby iron or snow golem, waves, and goes back to its routine, then waits `greet-cooldown-minutes` (default 5) before greeting again (`greet-other-golems`, on by default).
+
+### Changed
+- The plugin checks explicitly that a golem is a copper golem before doing anything with it, so iron and snow golems (or any other mob) are never affected.
+
 ## 2.4.1 (2026-10-28)
 
 ### New
