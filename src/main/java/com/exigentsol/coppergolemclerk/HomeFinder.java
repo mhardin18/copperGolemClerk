@@ -53,8 +53,10 @@ final class HomeFinder {
     /**
      * Chest positions (both halves of double chests) by role: matching chests
      * with room, [overflow] chests with room, and empty unlabelled chests.
+     * high: those among them above vanilla's reach but within deliver-reach; the
+     * plugin delivers to them itself (see ReachDelivery).
      */
-    record Homes(Set<Pos> matching, Set<Pos> allMatching, Set<Pos> overflow, Set<Pos> empty) {
+    record Homes(Set<Pos> matching, Set<Pos> allMatching, Set<Pos> overflow, Set<Pos> empty, Set<Pos> high) {
     }
 
     private record CacheEntry(Material type, UUID world, int tick, Homes homes) {
@@ -123,8 +125,8 @@ final class HomeFinder {
         }
         return switch (step) {
             case ANY -> homes;
-            case ANY_MATCHING -> new Homes(homes.allMatching(), homes.allMatching(), homes.overflow(), homes.empty());
-            default -> new Homes(Set.of(), Set.of(), homes.overflow(), homes.empty());
+            case ANY_MATCHING -> new Homes(homes.allMatching(), homes.allMatching(), homes.overflow(), homes.empty(), homes.high());
+            default -> new Homes(Set.of(), Set.of(), homes.overflow(), homes.empty(), homes.high());
         };
     }
 
@@ -373,6 +375,8 @@ final class HomeFinder {
         Set<Pos> overflow = new HashSet<>();
         Set<Pos> empty = new HashSet<>();
         Set<Pos> seen = new HashSet<>();
+        Set<Pos> high = new HashSet<>();
+        int reach = plugin.deliverReach();
         int bestSpecificity = Integer.MAX_VALUE;
 
         for (BlockState state : containersInRange(golem, HomeFinder::isDestination)) {
@@ -393,6 +397,13 @@ final class HomeFinder {
                 continue; // an input chest for a copper chest: refilling it would loop items forever
             }
 
+            if (reach > Reach.VANILLA) {
+                int row = Reach.rowOf(world(golem), halves);
+                if (row > Reach.VANILLA && row <= reach) {
+                    high.addAll(halves); // out of vanilla's reach, within ours
+                }
+            }
+
             ChestMatcher.Match match = matcher.classify(held, inventory);
             ChestMatcher.Kind kind = match.kind();
             if (kind.isHome() && ChestMatcher.hasRoom(held, inventory)) {
@@ -411,7 +422,7 @@ final class HomeFinder {
                 empty.addAll(halves);
             }
         }
-        return new Homes(matching, allMatching, overflow, empty);
+        return new Homes(matching, allMatching, overflow, empty, high);
     }
 
     /**
@@ -507,7 +518,7 @@ final class HomeFinder {
         return type == Material.CHEST || type == Material.TRAPPED_CHEST;
     }
 
-    private static Set<Pos> halvesOf(Inventory inventory, Block fallback) {
+    static Set<Pos> halvesOf(Inventory inventory, Block fallback) {
         Set<Pos> halves = new HashSet<>(2);
         halves.add(Pos.of(fallback));
         Block other = ChestLabels.connectedHalf(fallback);

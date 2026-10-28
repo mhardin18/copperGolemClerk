@@ -33,10 +33,15 @@ import org.bukkit.inventory.ItemStack;
  *
  * Vanilla only lets an empty-handed golem target copper chests, so the walk uses
  * Paper's pathfinder, and the item is handed over when the golem is within reach.
+ *
+ * take-reach: copper chests stacked above vanilla's reach (rows 3 and up) work the same
+ * way. Vanilla golems can't open them, so an idle golem with no reachable copper chest to
+ * take from is sent to one of those, before any overflow fetching.
  */
 final class OverflowFetcher {
 
-    private record Fetch(UUID world, HomeFinder.Pos chest, Material type, long startedMillis) {
+    private record Fetch(UUID world, HomeFinder.Pos chest, Set<HomeFinder.Pos> halves, Material type,
+                         Location target, boolean copper, long startedMillis) {
     }
 
     private static final long CHECK_EVERY_MILLIS = 5_000;
@@ -65,7 +70,7 @@ final class OverflowFetcher {
 
     /** Runs every second. */
     void tick() {
-        if (!plugin.fetchFromOverflow()) {
+        if (!plugin.fetchFromOverflow() && plugin.takeReach() <= Reach.VANILLA) {
             stopAll();
             return;
         }
@@ -108,11 +113,36 @@ final class OverflowFetcher {
         if (!isIdle(golem)) {
             return;
         }
-        // Anything to take from a copper chest? Then it's not idle.
+        // Anything to take from a copper chest? Then it's not idle. Copper chests above vanilla's
+        // reach (with take-reach raised) don't count: vanilla can't open them, so fetch from those.
+        int takeReach = plugin.takeReach();
+        BlockState high = null;
+        Set<HomeFinder.Pos> highHalves = null;
         for (BlockState state : HomeFinder.containersInRange(golem, Returns::isCopperChest)) {
-            if (returns.hasPickable(((Container) state).getInventory())) {
+            Inventory inventory = ((Container) state).getInventory();
+            if (!returns.hasPickable(inventory) || ChestLabels.noGolems(inventory, plugin)) {
+                continue;
+            }
+            if (takeReach <= Reach.VANILLA) {
                 return;
             }
+            Set<HomeFinder.Pos> halves = HomeFinder.halvesOf(inventory, state.getBlock());
+            int row = Reach.rowOf(golem.getWorld(), halves);
+            if (Reach.vanillaReaches(row) || row == Integer.MAX_VALUE) {
+                return; // vanilla takes from this one (or tries to)
+            }
+            if (high == null && row <= takeReach && !HomeFinder.isLocked(state)
+                    && !HomeFinder.isBlocked(golem.getWorld(), halves)) {
+                high = state;
+                highHalves = halves;
+            }
+        }
+        if (high != null) {
+            startCopperFetch(golem, high, highHalves, now);
+            return;
+        }
+        if (!plugin.fetchFromOverflow()) {
+            return;
         }
         Set<HomeFinder.Pos> seen = new HashSet<>();
         for (BlockState state : HomeFinder.containersInRange(golem, HomeFinder::isDestination)) {
@@ -141,15 +171,51 @@ final class OverflowFetcher {
             Material type = itemWithHome(golem, inventory, claimed, labels);
             if (type != null) {
                 Block block = state.getBlock();
-                fetching.put(golem.getUniqueId(),
-                        new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block), type, now));
-                golem.getPathfinder().moveTo(block.getLocation().add(0.5, 0.0, 0.5), 1.0);
+                Location target = targetFor(golem, block, halves);
+                fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block),
+                        halves, type, target, false, now));
+                golem.getPathfinder().moveTo(target, 1.0);
                 if (plugin.debug()) {
                     plugin.getLogger().info(String.format("%s is idle; fetching %s from overflow chest at %d,%d,%d",
                             golem.getType(), type, block.getX(), block.getY(), block.getZ()));
                 }
                 return;
             }
+        }
+    }
+
+    /** Where to walk to take from this chest: the spot below it when it's above vanilla's reach. */
+    private Location targetFor(CopperGolem golem, Block chest, Set<HomeFinder.Pos> halves) {
+        if (plugin.takeReach() > Reach.VANILLA) {
+            Reach.Spot spot = Reach.spotFor(golem.getWorld(), halves);
+            if (spot != null && !Reach.vanillaReaches(spot.row()) && spot.row() <= plugin.takeReach()) {
+                return spot.target();
+            }
+        }
+        return chest.getLocation().add(0.5, 0.0, 0.5);
+    }
+
+    /** Send an idle golem to a copper chest above vanilla's reach, for its first item with a chance of a home. */
+    private void startCopperFetch(CopperGolem golem, BlockState state, Set<HomeFinder.Pos> halves, long now) {
+        Inventory inventory = ((Container) state).getInventory();
+        Material type = null;
+        for (ItemStack stack : inventory.getStorageContents()) {
+            if (stack != null && !stack.isEmpty() && !returns.isHomeless(inventory, stack.getType())) {
+                type = stack.getType();
+                break;
+            }
+        }
+        if (type == null) {
+            return;
+        }
+        Block block = state.getBlock();
+        Location target = targetFor(golem, block, halves);
+        fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block), halves,
+                type, target, true, now));
+        golem.getPathfinder().moveTo(target, 1.0);
+        if (plugin.debug()) {
+            plugin.getLogger().info(String.format("%s is idle; taking %s from the copper chest at %d,%d,%d (above vanilla's reach)",
+                    golem.getType(), type, block.getX(), block.getY(), block.getZ()));
         }
     }
 
@@ -209,25 +275,27 @@ final class OverflowFetcher {
             return;
         }
         Location center = block.getLocation().add(0.5, 0.5, 0.5);
-        if (golem.getLocation().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH + 0.5) {
-            takeItem(golem, block, inventory, fetch.type());
+        if (golem.getLocation().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH + 0.5
+                || (plugin.takeReach() > Reach.VANILLA
+                    && Reach.within(golem.getLocation(), world, fetch.halves(), plugin.takeReach()))) {
+            takeItem(golem, block, inventory, fetch.type(), fetch.copper() ? "copper chest" : "overflow chest");
             fetching.remove(id);
             golem.getPathfinder().stopPathfinding();
             return;
         }
         if (now - fetch.startedMillis() > GIVE_UP_AFTER_MILLIS) {
             if (plugin.debug()) {
-                plugin.getLogger().info(golem.getType() + " couldn't reach the overflow chest for "
-                        + fetch.type() + "; trying again later");
+                plugin.getLogger().info(golem.getType() + " couldn't reach the " + (fetch.copper() ? "copper" : "overflow")
+                        + " chest for " + fetch.type() + "; trying again later");
             }
             endFetch(golem, now, true);
             return;
         }
         // Vanilla AI may have redirected it; keep it heading to the chest.
-        golem.getPathfinder().moveTo(block.getLocation().add(0.5, 0.0, 0.5), 1.0);
+        golem.getPathfinder().moveTo(fetch.target(), 1.0);
     }
 
-    private void takeItem(CopperGolem golem, Block block, Inventory inventory, Material type) {
+    private void takeItem(CopperGolem golem, Block block, Inventory inventory, Material type, String what) {
         ItemStack[] contents = inventory.getStorageContents();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack stack = contents[slot];
@@ -248,8 +316,8 @@ final class OverflowFetcher {
             homes.startSearch(golem, type, block);
             block.getWorld().playSound(block.getLocation().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
             if (plugin.debug()) {
-                plugin.getLogger().info(String.format("%s took %d %s from overflow chest at %d,%d,%d",
-                        golem.getType(), take, type, block.getX(), block.getY(), block.getZ()));
+                plugin.getLogger().info(String.format("%s took %d %s from %s at %d,%d,%d",
+                        golem.getType(), take, type, what, block.getX(), block.getY(), block.getZ()));
             }
             return;
         }

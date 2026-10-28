@@ -43,6 +43,7 @@ public final class SortListener implements Listener {
     private final Returns returns;
     private final OverflowFetcher fetcher;
     private final ChestTidier tidier;
+    private final ReachDelivery reach;
 
     public SortListener(CopperGolemClerk plugin) {
         this.plugin = plugin;
@@ -51,6 +52,8 @@ public final class SortListener implements Listener {
         this.returns = new Returns(plugin);
         this.fetcher = new OverflowFetcher(plugin, homes, returns);
         this.tidier = new ChestTidier(plugin);
+        this.reach = new ReachDelivery(plugin, matcher, homes, tidier);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, reach::tick, 10, 10);
         plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             homes.prune();
             returns.prune();
@@ -133,6 +136,9 @@ public final class SortListener implements Listener {
             homes.forget(golem);
             if (noGolems) {
                 event.setAllowed(false); // [No Golems]: never take from it
+            } else if (plugin.takeReach() > Reach.VANILLA && Returns.isCopperChest(block.getType())
+                    && !Reach.vanillaReaches(rowOf(block))) {
+                event.setAllowed(false); // too high for vanilla; idle golems fetch from it (OverflowFetcher)
             } else if (fetcher.isFetching(golem.getUniqueId())) {
                 event.setAllowed(false); // walking to an overflow chest; don't get pulled away
             } else if (!returns.prepareSource(event.getBlock())) {
@@ -143,8 +149,10 @@ public final class SortListener implements Listener {
         }
         // Note where the item came from and start its timer, even if steering is off.
         homes.track(golem, held.getType());
-        if (noGolems) {
-            event.setAllowed(false); // [No Golems]: never put anything in it, even after the timeouts
+        if (noGolems || reach.isDelivering(golem.getUniqueId())) {
+            // [No Golems]: never put anything in it, even after the timeouts.
+            // Delivering to a high chest: keep vanilla from pulling it elsewhere.
+            event.setAllowed(false);
             return;
         }
         if (!plugin.preferMatchingChests()) {
@@ -161,26 +169,49 @@ public final class SortListener implements Listener {
         HomeFinder.Pos pos = HomeFinder.Pos.of(block);
         boolean allowed;
         String why;
+        Set<HomeFinder.Pos> pick;
+        String kind;
         if (!found.matching().isEmpty()) {
-            allowed = found.matching().contains(pos);
-            why = allowed ? "matching chest" : "a matching chest is in range";
+            pick = found.matching();
+            kind = "matching chest";
         } else {
             // No matching chest has room: overflow and empty chests, in the configured order.
             Set<HomeFinder.Pos> empty = plugin.allowEmptyChests() ? found.empty() : Set.of();
             boolean overflowFirst = plugin.overflowBeforeEmpty();
             Set<HomeFinder.Pos> first = overflowFirst ? found.overflow() : empty;
             Set<HomeFinder.Pos> second = overflowFirst ? empty : found.overflow();
-            Set<HomeFinder.Pos> pick = !first.isEmpty() ? first : second;
-            if (pick.isEmpty()) {
-                // Nothing qualifies, so don't steer: let vanilla pick chests and decide on arrival.
-                // (Another plugin may accept the item somewhere we wouldn't.)
+            pick = !first.isEmpty() ? first : second;
+            kind = pick == found.overflow() ? "overflow chest" : "empty chest";
+        }
+        // Chests above vanilla's reach (deliver-reach): vanilla can't open them, so the plugin
+        // delivers there itself, but only when no chest of the same kind is within vanilla's reach.
+        Set<HomeFinder.Pos> high = found.high();
+        if (!high.isEmpty()) {
+            Set<HomeFinder.Pos> usable = new java.util.HashSet<>();
+            for (HomeFinder.Pos p : pick) {
+                if (!reach.recentlyFailed(golem.getUniqueId(), p)) {
+                    usable.add(p);
+                }
+            }
+            Set<HomeFinder.Pos> low = new java.util.HashSet<>(usable);
+            low.removeAll(high);
+            if (low.isEmpty() && !usable.isEmpty() && startHighDelivery(golem, held, usable)) {
+                event.setAllowed(false);
                 return;
             }
-            String kind = pick == found.overflow() ? "overflow chest" : "empty chest";
-            allowed = pick.contains(pos);
-            why = pick.isEmpty() ? "no chest has room for it"
-                    : allowed ? "no matching chest; " + kind : "no matching chest; going to an " + kind;
+            pick = low;
         }
+        if (pick.isEmpty()) {
+            // Nothing qualifies, so don't steer: let vanilla pick chests and decide on arrival.
+            // (Another plugin may accept the item somewhere we wouldn't.) Vanilla can't open high chests.
+            if (high.contains(pos)) {
+                event.setAllowed(false);
+            }
+            return;
+        }
+        allowed = pick.contains(pos);
+        why = kind.equals("matching chest") ? (allowed ? "matching chest" : "a matching chest is in range")
+                : allowed ? "no matching chest; " + kind : "no matching chest; going to an " + kind;
         event.setAllowed(allowed);
 
         if (plugin.debug()) {
@@ -260,6 +291,32 @@ public final class SortListener implements Listener {
                     event.getEntityType(), held.getType(), container.getType(),
                     formatLocation(container), result, reason));
         }
+    }
+
+    /** Send the golem to the nearest of these high chests. */
+    private boolean startHighDelivery(Entity golem, ItemStack held, Set<HomeFinder.Pos> chests) {
+        org.bukkit.Location at = golem.getLocation();
+        HomeFinder.Pos nearest = null;
+        double best = Double.MAX_VALUE;
+        for (HomeFinder.Pos p : chests) {
+            double d = at.distanceSquared(new org.bukkit.Location(at.getWorld(), p.x() + 0.5, p.y() + 0.5, p.z() + 0.5));
+            if (d < best) {
+                best = d;
+                nearest = p;
+            }
+        }
+        Block chest = at.getWorld().getBlockAt(nearest.x(), nearest.y(), nearest.z());
+        if (!(chest.getState(false) instanceof Container container)) {
+            return false;
+        }
+        return reach.start(golem, HomeFinder.halvesOf(container.getInventory(), chest), held.getType());
+    }
+
+    /** A chest's row above where a golem can stand beside it (Integer.MAX_VALUE if nowhere). */
+    private static int rowOf(Block block) {
+        Set<HomeFinder.Pos> halves = block.getState(false) instanceof Container c
+                ? HomeFinder.halvesOf(c.getInventory(), block) : Set.of(HomeFinder.Pos.of(block));
+        return Reach.rowOf(block.getWorld(), halves);
     }
 
     /** True if the golem's current item was fetched from (one half of) this chest. */
