@@ -67,6 +67,22 @@ public final class SortListener implements Listener {
         plugin.getServer().getScheduler().runTaskTimer(plugin, tracer::tick, 20, 20);
     }
 
+    OverflowFetcher fetcher() {
+        return fetcher;
+    }
+
+    Returns returns() {
+        return returns;
+    }
+
+    /** A golem switched to (or from) vanilla mode: forget its search; fetching stops on its next tick. */
+    void golemModeChanged(Entity golem) {
+        homes.forget(golem);
+        if (golem instanceof org.bukkit.entity.Mob mob) {
+            mob.getPathfinder().stopPathfinding();
+        }
+    }
+
     /** Forget which items had no home, so golems try them again (after /coppergolemclerk reload). */
     void clearHomeless() {
         returns.clear();
@@ -81,7 +97,7 @@ public final class SortListener implements Listener {
                 return;
             }
             ItemStack held = heldItem(golem);
-            if (held.isEmpty() || held.getType() != search.type() || !plugin.enabledIn(golem.getWorld())) {
+            if (held.isEmpty() || held.getType() != search.type() || !plugin.manages(golem)) {
                 homes.forget(id); // its next search starts fresh
                 return;
             }
@@ -107,7 +123,7 @@ public final class SortListener implements Listener {
 
     @EventHandler
     public void onValidateTarget(ItemTransportingEntityValidateTargetEvent event) {
-        if (!event.isAllowed() || !plugin.enabledIn(event.getEntity().getWorld())) {
+        if (!event.isAllowed() || !plugin.manages(event.getEntity())) {
             return;
         }
         Entity golem = event.getEntity();
@@ -208,7 +224,7 @@ public final class SortListener implements Listener {
     @EventHandler
     public void onSort(ItemTransportingEntitySortEvent event) {
         // Another plugin already decided; respect it.
-        if (event.getResult() != Event.Result.DEFAULT || !plugin.enabledIn(event.getEntity().getWorld())) {
+        if (event.getResult() != Event.Result.DEFAULT || !plugin.manages(event.getEntity())) {
             return;
         }
         ItemStack held = event.getItemStack();

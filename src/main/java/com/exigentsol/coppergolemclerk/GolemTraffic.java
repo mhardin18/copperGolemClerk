@@ -102,6 +102,11 @@ final class GolemTraffic implements Listener {
     }
 
     /** Wake every golem that is currently giving way (also used on shutdown). */
+    /** True while this golem is stepping aside for another. */
+    boolean isYielding(UUID golem) {
+        return yielding.containsKey(golem);
+    }
+
     void releaseAll() {
         for (UUID id : List.copyOf(yielding.keySet())) {
             if (Bukkit.getEntity(id) instanceof CopperGolem golem) {
@@ -143,7 +148,8 @@ final class GolemTraffic implements Listener {
                 if (!plugin.enabledIn(world)) {
                     continue; // golems already giving way there are released by the usual timeout
                 }
-                scan(List.copyOf(world.getEntitiesByClass(CopperGolem.class)));
+                // Golems switched to vanilla don't give way (and aren't asked to make room).
+                scan(world.getEntitiesByClass(CopperGolem.class).stream().filter(plugin::manages).toList());
             }
         }
     }
@@ -154,6 +160,11 @@ final class GolemTraffic implements Listener {
             Map.Entry<UUID, Yield> entry = it.next();
             Yield y = entry.getValue();
             if (!(Bukkit.getEntity(entry.getKey()) instanceof CopperGolem golem) || !golem.isValid()) {
+                it.remove();
+                continue;
+            }
+            if (!plugin.manages(golem)) { // switched to vanilla (or its world turned off) mid-sidestep
+                release(golem);
                 it.remove();
                 continue;
             }

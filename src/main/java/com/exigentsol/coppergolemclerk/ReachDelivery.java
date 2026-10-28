@@ -90,7 +90,7 @@ final class ReachDelivery {
             Job job = entry.getValue();
             Entity entity = plugin.getServer().getEntity(entry.getKey());
             if (!(entity instanceof CopperGolem golem) || !golem.isValid()
-                    || !golem.getWorld().getUID().equals(job.world()) || !plugin.enabledIn(golem.getWorld())) {
+                    || !golem.getWorld().getUID().equals(job.world()) || !plugin.manages(golem)) {
                 it.remove();
                 continue;
             }

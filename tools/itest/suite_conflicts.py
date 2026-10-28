@@ -18,7 +18,7 @@ def require_hooks(c):
         raise Skip("GolemTestHooks isn't loaded (copy tools/itest/hooks' jar to pluginDev and restart)")
 
 
-@scenario("other-plugin-forbids-first", "conflicts", 150, "Another plugin forbids the perfect log chest before us: we never override it; the logs go to [Overflow].")
+@scenario("other-plugin-forbids-first", "conflicts", 150, "Another plugin forbids the perfect log chest before us: we never override it; the logs go to [Overflow].", alone=True)
 def _(c):
     require_hooks(c)
     c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
@@ -41,7 +41,7 @@ def _(c):
     return lambda: [expect(c, "forced", "birch_log", 16), conserved(c, "birch_log", 16)]
 
 
-@scenario("other-plugin-forbids-last", "conflicts", 150, "Another plugin forbids the log chest after we approved it: the logs still end up in [Overflow], none lost.")
+@scenario("other-plugin-forbids-last", "conflicts", 150, "Another plugin forbids the log chest after we approved it: the logs still end up in [Overflow], none lost.", alone=True)
 def _(c):
     require_hooks(c)
     c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")

@@ -76,12 +76,12 @@ final class OverflowFetcher {
         }
         long now = System.currentTimeMillis();
         for (World world : plugin.getServer().getWorlds()) {
-            boolean enabled = plugin.enabledIn(world);
             for (CopperGolem golem : world.getEntitiesByClass(CopperGolem.class)) {
+                boolean enabled = plugin.manages(golem);
                 UUID id = golem.getUniqueId();
                 Fetch fetch = fetching.get(id);
                 if (!enabled) {
-                    if (fetch != null) { // world turned off by a reload mid-fetch
+                    if (fetch != null) { // world turned off by a reload, or golem switched to vanilla, mid-fetch
                         golem.getPathfinder().stopPathfinding();
                         fetching.remove(id);
                     }

@@ -131,6 +131,22 @@ update-check: true
 deliver-reach: 2
 take-reach: 2
 
+# Players can switch a single copper golem back to plain vanilla behavior (and back
+# again) by right-clicking it with this item. Golems using this plugin wear a small
+# green light on their antenna; vanilla golems don't. Where GriefPrevention is
+# installed, only players allowed to build where the golem stands can switch it.
+# Needs the coppergolemclerk.toggle permission (everyone has it by default).
+# Set to none to turn switching off.
+golem-toggle-item: bamboo
+# Show the green light on golems that use this plugin.
+mode-markers: true
+
+# A copper golem with nothing to do walks over to say hello to an iron or snow
+# golem within 16 blocks, then goes back to its routine. It doesn't follow them,
+# and waits greet-cooldown-minutes before greeting again.
+greet-other-golems: true
+greet-cooldown-minutes: 5
+
 # Write a line in the server log when a copper golem dies (with the cause, e.g.
 # lava, fall or a mob, and what it was holding) or is removed another way (turned
 # into a statue, /kill, another plugin). Golems never despawn, so this explains

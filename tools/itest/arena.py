@@ -129,7 +129,7 @@ class Cell:
             for bx, by, bz in blocks:
                 self.r.cmd(f"setblock {bx} {by} {bz} minecraft:air")
                 self.r.cmd(f"setblock {bx} {by - 1} {bz} minecraft:air")
-        for kind in ("copper_golem", "item_frame", "glow_item_frame", "item", "oak_boat", "cat", "leash_knot"):
+        for kind in ("copper_golem", "item_frame", "glow_item_frame", "item", "oak_boat", "cat", "leash_knot", "item_display", "iron_golem", "snow_golem"):
             self.r.cmd(f"kill {self.selector(kind)}")
         self.r.cmd(f"fill {x - 1} {Y - 3} {z - 1} {x + s} {Y + 8} {z + s} minecraft:air")
 

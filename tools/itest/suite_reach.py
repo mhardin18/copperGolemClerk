@@ -176,3 +176,29 @@ def _(c):
         return [(len(returned) >= 1, "the dirt was returned"), (c.elapsed() > 150, "waited 150 seconds"),
                 (len(takes) <= 2, f"taken at most twice (got {len(takes)})"), conserved(c, "dirt", 8)]
     return check
+
+
+@scenario("deliver-high-switched-to-vanilla", "reach", 240, "deliver-reach: 4: a golem walking to the top chest is switched to vanilla: it stops delivering there (vanilla can't), nothing lost.", alone=True)
+def _(c):
+    set_options(c, deliver_reach="4")
+    deliver_scene(c)
+    t = Trigger()
+    def switch():
+        sel = c.selector("copper_golem")[:-1] + ",limit=1]"
+        c.r.cmd(f'data merge entity {sel} {{BukkitValues:{{"coppergolemclerk:mode":"vanilla"}}}}')
+    def check():
+        t.fire_when(lambda: heading_high(c), switch)
+        return [(t.at is not None and t.since() > 40, "switched mid-walk, 40 seconds ago"),
+                expect(c, "top", "birch_log", 0), conserved(c, "birch_log", 8)]
+    return check
+
+
+@scenario("vanilla-mode-ignores-reach", "reach", 120, "deliver-reach: 4, but the golem is in vanilla mode: the top chest is never used; vanilla puts the logs in the nearer empty chest.", alone=True)
+def _(c):
+    set_options(c, deliver_reach="4")
+    c.chest("copper", 2, 10, [("birch_log", 8)], block="waxed_copper_chest")
+    tower(c, 14, 10, "[logs]")
+    c.chest("empty", 6, 16)
+    from suite_modes import golem as mode_golem
+    mode_golem(c, 4, 10, vanilla=True)
+    return lambda: [expect(c, "empty", "birch_log", 8), expect(c, "top", "birch_log", 0)]

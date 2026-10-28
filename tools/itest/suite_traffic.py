@@ -95,7 +95,7 @@ def _(c):
     return check
 
 
-@scenario("give-way-unload", "traffic", 420, "The chunks unload while a golem is stepping aside, then load again: it's woken up and sorting carries on.")
+@scenario("give-way-unload", "traffic", 420, "The chunks unload while a golem is stepping aside, then load again: it's woken up and sorting carries on.", alone=True)
 def _(c):
     corridor(c)
     unload, reload = Trigger(), Trigger()
@@ -116,7 +116,7 @@ def _(c):
     return check
 
 
-@scenario("give-way-other-killed", "traffic", 420, "The golem being made way for is killed mid-sidestep: the one stepping aside is woken, no errors.")
+@scenario("give-way-other-killed", "traffic", 420, "The golem being made way for is killed mid-sidestep: the one stepping aside is woken, no errors.", alone=True)
 def _(c):
     corridor(c)
     t = Trigger()

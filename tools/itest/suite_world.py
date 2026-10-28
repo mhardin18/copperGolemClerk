@@ -48,6 +48,11 @@ def _(c):
     c.chest("overflow", 18, 4, [("granite", 16)])
     c.sign(18, 4, "[Overflow]")
     c.chest("stone", 10, 16, [("andesite", 1)])
+    # A wall with a gap at the far end makes the walk to the overflow chest about 30 blocks,
+    # so even a busy test run destroys the chest before the golem gets there.
+    x, y, z = c.abs(12, 0)
+    _, _, z2 = c.abs(12, 17)
+    c.run(f"fill {x} {y} {z} {x} {y + 2} {z2} minecraft:glass")
     c.golem(4, 10)
     t = Trigger()
 
@@ -210,7 +215,7 @@ def _(c):
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "logs", "spruce_log", 16)]
 
 
-@scenario("nowhere-to-return", "world", 300, "No home and the only copper chest destroyed: the golem keeps the item (nothing lost, no errors) and keeps trying.")
+@scenario("nowhere-to-return", "world", 300, "No home and the only copper chest destroyed: the golem keeps the item (nothing lost, no errors) and keeps trying.", alone=True)
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)
