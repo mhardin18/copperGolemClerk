@@ -95,7 +95,8 @@ final class ReachDelivery {
                 continue;
             }
             ItemStack held = golem.getEquipment().getItemInMainHand();
-            if (held.isEmpty() || held.getType() != job.type()) {
+            if (held.isEmpty() || held.getType() != job.type() || plugin.deliverReach() <= Reach.VANILLA) {
+                // Delivered or dropped some other way, or deliver-reach was lowered by a reload.
                 golem.getPathfinder().stopPathfinding();
                 it.remove();
                 continue;
