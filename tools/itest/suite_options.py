@@ -216,3 +216,16 @@ def _(c):
                 (returned, f"item returned to the copper chest ({took:.0f}s after pickup; it would be ~1300s if the search were reset)"),
                 (not returned or took >= 650, f"returned after {took:.0f}s (want about 720, not early)")]
     return check
+
+
+@scenario("option-avoid-trapdoors-off", "options", 420, "avoid-trapdoors: false: vanilla paths, so the golem either falls through the open trapdoors or gets stuck at them and returns the logs; it never delivers (shows trapdoor-holes tests something).", alone=True)
+def _(c):
+    from suite_setup import OPEN_TRAPDOOR, fell_in_holes, trapdoor_holes, trapdoor_scene
+    set_options(c, avoid_trapdoors="false")
+    trapdoor_holes(c, OPEN_TRAPDOOR)
+    trapdoor_scene(c)
+    def check():
+        returned = any("returned BIRCH_LOG" in line for line in c.log_lines())
+        return [(fell_in_holes(c) or returned, "the golem fell through a trapdoor, or got stuck and returned the logs"),
+                expect(c, "logs", "birch_log", 0)]
+    return check

@@ -2,6 +2,11 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### New
+- Golems keep off trapdoors (`avoid-trapdoors`, on by default). Vanilla golems walk onto an open trapdoor as if it were floor and fall into the hole below; now they walk around trapdoors, open or closed. Golems stepping aside for each other avoid them too.
+
 ## 2.2.0 (2026-10-27)
 
 ### New

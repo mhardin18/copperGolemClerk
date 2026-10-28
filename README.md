@@ -180,7 +180,16 @@ is in its way, one of them steps one block aside and waits for the other to pass
 - A golem busy at a chest never steps aside, and golems that are just passing
   each other are left alone.
 - A golem never steps aside into fire, lava, water, a cobweb, powder snow, a
-  berry bush or onto a campfire or magma block; it backs up to a safe spot instead.
+  berry bush or a trapdoor, or onto a campfire, magma block or trapdoor; it backs up
+  to a safe spot instead.
+
+### Golems keep off trapdoors
+
+Vanilla golems treat an open trapdoor as floor, so a trapdoor over a hole (a ladder
+shaft, a drop into a farm) catches them: they walk onto it and fall in. With
+`avoid-trapdoors` (on by default), golems plan their paths around trapdoors, open or
+closed, and never stand on one. A golem whose only way to a chest is across a
+trapdoor won't reach it, and its item goes elsewhere as usual.
 
 ### Golems tidy the chests they use
 
@@ -211,6 +220,7 @@ Settings:
 - `allow-empty-chests: true` (default): golems may use empty chests as a last
   resort. Set `false` so golems only fill chests you've labelled.
 - `golems-give-way: true` (default): see above.
+- `avoid-trapdoors: true` (default): see above.
 - `tidy-chests: true` (default): see above.
 - `disabled-worlds: []`: worlds where the plugin does nothing and golems behave as in
   vanilla, e.g. `[world_nether, world_the_end]`.

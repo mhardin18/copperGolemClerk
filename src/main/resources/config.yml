@@ -109,6 +109,11 @@ fetchers-per-overflow-chest: 2
 # way. Golems busy at a chest never step aside.
 golems-give-way: true
 
+# Golems never walk onto or through a trapdoor, open or closed. Vanilla golems
+# treat an open trapdoor as floor and fall through it into the hole below.
+# Golems stepping aside for each other (golems-give-way) avoid trapdoors too.
+avoid-trapdoors: true
+
 # Golems tidy a chest while putting something in it: partial stacks of the same
 # item are merged, and like items are moved next to each other (by group, in the
 # order the groups are listed below). Copper chests and chests a player has open
