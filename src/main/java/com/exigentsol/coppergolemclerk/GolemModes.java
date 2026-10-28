@@ -16,7 +16,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -33,8 +32,10 @@ import org.joml.Vector3f;
  * switch it. Only players allowed to build where the golem stands may do it (checked with
  * GriefPrevention when it's installed; anyone elsewhere), with coppergolemclerk.toggle.
  * The mode is stored on the golem. Golems using the plugin wear a small green light on
- * their antenna: an item display riding the golem, not saved with the world and put back
- * whenever the golem loads (and checked every two seconds).
+ * their antenna: an item display that follows the golem (moved every tick, smoothed by the
+ * client), not saved with the world and put back whenever the golem loads (and checked every
+ * two seconds). It isn't a passenger: a golem carrying a passenger stops colliding with other
+ * golems, and they'd walk through each other.
  */
 final class GolemModes implements Listener {
 
@@ -44,6 +45,8 @@ final class GolemModes implements Listener {
     private final CopperGolemClerk plugin;
     private final NamespacedKey modeKey;
     private final NamespacedKey markerKey;
+    /** Each golem's marker. */
+    private final java.util.Map<java.util.UUID, ItemDisplay> markers = new java.util.HashMap<>();
     private Method allowBuild;   // GriefPrevention.allowBuild(Player, Location), if installed
     private Object griefPrevention;
     private boolean lookedForGriefPrevention;
@@ -135,21 +138,33 @@ final class GolemModes implements Listener {
         if (event.getEntity() instanceof CopperGolem golem) {
             plugin.getServer().getScheduler().runTask(plugin, () -> sync(golem));
         } else if (event.getEntity() instanceof ItemDisplay display && isMarker(display)) {
-            // A new marker is added to the world before it's put on its golem, so look a tick later.
+            // A marker we didn't just make (left over somehow): look a tick later, once ours is registered.
             plugin.getServer().getScheduler().runTask(plugin, () -> {
-                if (display.isValid() && !(display.getVehicle() instanceof CopperGolem)) {
-                    display.remove(); // left over somehow
+                if (display.isValid() && !markers.containsValue(display)) {
+                    display.remove();
                 }
             });
         }
     }
 
-    /** A marker falls off (the golem died, turned into a statue, changed worlds): remove it. */
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onDismount(EntityDismountEvent event) {
-        if (event.getEntity() instanceof ItemDisplay display && isMarker(display)) {
-            plugin.getServer().getScheduler().runTask(plugin, display::remove);
+    /** Runs every tick: each marker follows its golem; markers of golems that are gone go too. */
+    void follow() {
+        for (var it = markers.entrySet().iterator(); it.hasNext(); ) {
+            var entry = it.next();
+            ItemDisplay marker = entry.getValue();
+            Entity golem = plugin.getServer().getEntity(entry.getKey());
+            if (!(golem instanceof CopperGolem g) || !g.isValid() || !marker.isValid()
+                    || !g.getWorld().equals(marker.getWorld())) {
+                marker.remove();
+                it.remove();
+                continue;
+            }
+            marker.teleport(markerSpot(g));
         }
+    }
+
+    private org.bukkit.Location markerSpot(CopperGolem golem) {
+        return golem.getLocation().add(0, golem.getHeight() + plugin.modeMarkerHeight(), 0);
     }
 
     /** Runs every two seconds, and after a reload: each golem's marker matches its mode. */
@@ -163,6 +178,8 @@ final class GolemModes implements Listener {
 
     /** Remove every marker (plugin disabled). */
     void removeAll() {
+        markers.values().forEach(Entity::remove);
+        markers.clear();
         for (World world : plugin.getServer().getWorlds()) {
             for (ItemDisplay display : world.getEntitiesByClass(ItemDisplay.class)) {
                 if (isMarker(display)) {
@@ -177,33 +194,30 @@ final class GolemModes implements Listener {
             return;
         }
         boolean want = plugin.modeMarkers() && plugin.enabledIn(golem.getWorld()) && !isVanilla(golem);
-        ItemDisplay have = null;
-        for (Entity passenger : golem.getPassengers()) {
-            if (passenger instanceof ItemDisplay d && isMarker(d)) {
-                if (have == null && want) {
-                    have = d;
-                } else {
-                    d.remove(); // extra, or not wanted
-                }
-            }
+        ItemDisplay have = markers.get(golem.getUniqueId());
+        if (have != null && !have.isValid()) {
+            markers.remove(golem.getUniqueId());
+            have = null;
         }
-        if (want && have == null) {
-            ItemDisplay marker = golem.getWorld().spawn(golem.getLocation(), ItemDisplay.class, d -> {
+        if (!want) {
+            if (have != null) {
+                have.remove();
+                markers.remove(golem.getUniqueId());
+            }
+            return;
+        }
+        if (have == null) {
+            ItemDisplay marker = golem.getWorld().spawn(markerSpot(golem), ItemDisplay.class, d -> {
                 d.setItemStack(ItemStack.of(Material.LIME_CONCRETE));
                 d.setPersistent(false);
                 d.setBrightness(new Display.Brightness(15, 15));
                 d.setBillboard(Display.Billboard.CENTER);
-                d.setTransformation(new Transformation(new Vector3f(0, plugin.modeMarkerHeight(), 0),
-                        new AxisAngle4f(), new Vector3f(MARKER_SCALE), new AxisAngle4f()));
+                d.setTeleportDuration(2); // the client glides between the positions we send
+                d.setTransformation(new Transformation(new Vector3f(), new AxisAngle4f(),
+                        new Vector3f(MARKER_SCALE), new AxisAngle4f()));
                 d.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, (byte) 1);
             });
-            golem.addPassenger(marker);
-        } else if (have != null) {
-            Transformation t = have.getTransformation();
-            if (Math.abs(t.getTranslation().y() - plugin.modeMarkerHeight()) > 1e-4) { // height changed by a reload
-                have.setTransformation(new Transformation(new Vector3f(0, plugin.modeMarkerHeight(), 0),
-                        new AxisAngle4f(), new Vector3f(MARKER_SCALE), new AxisAngle4f()));
-            }
+            markers.put(golem.getUniqueId(), marker);
         }
     }
 
