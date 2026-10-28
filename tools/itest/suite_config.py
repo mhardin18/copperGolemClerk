@@ -132,6 +132,23 @@ def _(c):
                     ("reloaded" in restored, f"restored: {restored.strip()}")]
 
 
+@scenario("bad-mode-and-greet-settings", "config", 30, "Bad values for golem-toggle-item, mode-markers and greet-cooldown-minutes load without errors; an unknown toggle item is reported.", alone=True)
+def _(c):
+    text = original()
+    for key, value in (("golem-toggle-item", "not_an_item"), ("mode-markers", "maybe"),
+                       ("greet-other-golems", "yes please"), ("greet-cooldown-minutes", "-3")):
+        if re.search(rf"(?m)^{key}: ", text):
+            text = re.sub(rf"(?m)^{key}: .*$", f"{key}: {value}", text)
+        else:
+            text += f"\n{key}: {value}\n"
+    text += "\nmode-marker-height: banana\n"
+    reply, lines, restored = try_config(c, text)
+    return lambda: [("reloaded" in reply, f"reply: {reply.strip()}"),
+                    (logged(lines, "golem-toggle-item: no item named 'not_an_item'"), "warned about the toggle item"),
+                    (not logged(lines, "Exception"), "no exception in the log")]
+
+
+
 @scenario("toggle-item-air-and-none", "config", 30, "golem-toggle-item: air is reported (not an item); none turns switching off quietly.", alone=True)
 def _(c):
     text = re.sub(r"(?m)^golem-toggle-item: .*$", "golem-toggle-item: air", original())
