@@ -106,21 +106,31 @@ final class GolemModes implements Listener {
         }
     }
 
+    /**
+     * Find GriefPrevention's build check, if it's installed (called once the server has started,
+     * so it's loaded either way). Logs which check switching uses.
+     */
+    void findProtection() {
+        lookedForGriefPrevention = true;
+        Plugin gp = plugin.getServer().getPluginManager().getPlugin("GriefPrevention");
+        if (gp == null || !gp.isEnabled()) {
+            return;
+        }
+        try {
+            Class<?> type = gp.getClass();
+            griefPrevention = type.getField("instance").get(null);
+            allowBuild = type.getMethod("allowBuild", Player.class, org.bukkit.Location.class);
+            plugin.getLogger().info("Using GriefPrevention: only players who may build where a golem stands can switch it.");
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            plugin.getLogger().warning("Couldn't use GriefPrevention to check who may switch golems ("
+                    + e + "); anyone with coppergolemclerk.toggle may.");
+        }
+    }
+
     /** GriefPrevention's refusal message if the player may not build at the golem, else null. */
     private String buildDenied(Player player, Entity golem) {
         if (!lookedForGriefPrevention) {
-            lookedForGriefPrevention = true;
-            Plugin gp = plugin.getServer().getPluginManager().getPlugin("GriefPrevention");
-            if (gp != null && gp.isEnabled()) {
-                try {
-                    Class<?> type = gp.getClass();
-                    griefPrevention = type.getField("instance").get(null);
-                    allowBuild = type.getMethod("allowBuild", Player.class, org.bukkit.Location.class);
-                } catch (ReflectiveOperationException | RuntimeException e) {
-                    plugin.getLogger().warning("Couldn't use GriefPrevention to check who may switch golems ("
-                            + e + "); anyone with coppergolemclerk.toggle may.");
-                }
-            }
+            findProtection();
         }
         if (allowBuild == null) {
             return null;

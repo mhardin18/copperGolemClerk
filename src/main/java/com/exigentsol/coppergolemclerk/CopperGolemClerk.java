@@ -86,6 +86,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         modes = new GolemModes(this);
         getServer().getPluginManager().registerEvents(modes, this);
         getServer().getScheduler().runTaskTimer(this, modes::syncAll, 40, 40);
+        getServer().getScheduler().runTask(this, modes::findProtection); // after every plugin has enabled
         getServer().getScheduler().runTaskTimer(this, modes::follow, 1, 1);
         updates = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updates, this);
