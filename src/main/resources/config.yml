@@ -120,6 +120,12 @@ avoid-trapdoors: true
 # downloaded or sent besides the request itself. /cgc version checks right away.
 update-check: true
 
+# Write a line in the server log when a copper golem dies (with the cause, e.g.
+# lava, fall or a mob, and what it was holding) or is removed another way (turned
+# into a statue, /kill, another plugin). Golems never despawn, so this explains
+# every golem that goes missing.
+log-golem-deaths: true
+
 # Golems tidy a chest while putting something in it: partial stacks of the same
 # item are merged, and like items are moved next to each other (by group, in the
 # order the groups are listed below). Copper chests and chests a player has open

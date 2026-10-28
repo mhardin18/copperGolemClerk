@@ -45,6 +45,7 @@ public final class CopperGolemClerk extends JavaPlugin {
     private GolemPaths paths;
     private volatile boolean avoidTrapdoors;
     private UpdateChecker updates;
+    private volatile boolean logGolemDeaths;
     private volatile boolean updateCheck;
     private volatile String updateCheckUrl;
     private volatile boolean tidyChests;
@@ -71,6 +72,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);
         paths.setAvoidTrapdoors(avoidTrapdoors);
+        getServer().getPluginManager().registerEvents(new GolemDeaths(this), this);
         updates = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updates, this);
         updates.configure(updateCheck, updateCheckUrl);
@@ -156,6 +158,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         tidyChests = config.getBoolean("tidy-chests", true);
         avoidTrapdoors = config.getBoolean("avoid-trapdoors", true);
+        logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         updateCheck = config.getBoolean("update-check", true);
         updateCheckUrl = config.getString("update-check-url", UpdateChecker.DEFAULT_URL); // not in config.yml: for tests
         if (updates != null) {
@@ -257,6 +260,10 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    boolean logGolemDeaths() {
+        return logGolemDeaths;
     }
 
     boolean debug() {

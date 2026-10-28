@@ -222,6 +222,9 @@ Settings:
 - `golems-give-way: true` (default): see above.
 - `avoid-trapdoors: true` (default): see above.
 - `update-check: true` (default): see "Update notices" below.
+- `log-golem-deaths: true` (default): write a line in the server log when a copper
+  golem dies (where, the cause such as lava, a fall or a mob, and what it was holding)
+  or turns into a statue. Golems never despawn, so a golem that goes missing shows up here.
 - `tidy-chests: true` (default): see above.
 - `disabled-worlds: []`: worlds where the plugin does nothing and golems behave as in
   vanilla, e.g. `[world_nether, world_the_end]`.

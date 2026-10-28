@@ -265,3 +265,47 @@ def _(c):
 @scenario("statue-drops-fetched-item", "world", 150, "A golem carrying granite it fetched from [Overflow] turns into a statue: the granite drops, as for a vanilla pickup, none lost.")
 def _(c):
     return statue_after_pickup(c, overflow=True)
+
+
+# ---- log-golem-deaths: every golem that dies or is removed is accounted for in the log
+
+def golem_log(c, text):
+    lines = [l for l in c.log_lines() if text in l and c.in_cell(l)]
+    return bool(lines), f"logged '{text}'" + ("" if lines else "")
+
+
+@scenario("death-log-lava", "world", 60, "A golem carrying 4 birch logs dies in lava: the log says where, that it was lava, and what it held.")
+def _(c):
+    c.golem(4, 10)
+    sel = c.selector("copper_golem")[:-1] + ",limit=1]"  # damage and data take one entity
+    c.run(f"item replace entity {sel} weapon.mainhand with minecraft:birch_log 4")
+    c.run(f"damage {sel} 100 minecraft:lava")
+    return lambda: [golem_log(c, "died at"), golem_log(c, ": lava, holding 4 birch_log")]
+
+
+@scenario("death-log-mob", "world", 60, "A golem killed by a zombie: the log names the zombie.")
+def _(c):
+    x, y, z = c.abs(8, 10)
+    c.run(f"summon minecraft:zombie {x} {y} {z} {{NoAI:1b,Tags:[\"itest_killer\"]}}")
+    c.golem(4, 10)
+    c.run(f"damage {c.selector('copper_golem')[:-1]},limit=1] 100 minecraft:mob_attack by @e[tag=itest_killer,limit=1]")
+    def check():
+        result = [golem_log(c, "died at"), golem_log(c, "by zombie")]
+        if all(ok for ok, _ in result):
+            c.r.cmd("kill @e[tag=itest_killer]")
+        return result
+    return check
+
+
+@scenario("death-log-statue", "world", 120, "A fully oxidized golem turns into a statue: the log says so.")
+def _(c):
+    c.golem(4, 10)
+    c.run(f'data merge entity {c.selector("copper_golem")[:-1]},limit=1] {{weather_state:"oxidized",next_weather_age:1L}}')
+    return lambda: [golem_log(c, "statue")]
+
+
+@scenario("death-log-kill", "world", 60, "/kill on a golem is logged; a golem unloading with its chunk is not.")
+def _(c):
+    c.golem(4, 10)
+    c.run(f"kill {c.selector('copper_golem')}")
+    return lambda: [golem_log(c, "died at")]

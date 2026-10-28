@@ -2,6 +2,11 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### New
+- Golem deaths are logged (`log-golem-deaths`, on by default): when a copper golem dies, the server log says where, why (lava, a fall, a mob and which one, `/kill`...) and what it was holding. A golem turning into a statue, or removed by a plugin or command, is logged too.
+
 ## 2.4.0 (2026-10-27)
 
 ### New
