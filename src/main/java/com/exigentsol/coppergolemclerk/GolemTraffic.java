@@ -102,6 +102,11 @@ final class GolemTraffic implements Listener {
     }
 
     /** Wake every golem that is currently giving way (also used on shutdown). */
+    /** True while this golem is stepping aside for another. */
+    boolean isYielding(UUID golem) {
+        return yielding.containsKey(golem);
+    }
+
     void releaseAll() {
         for (UUID id : List.copyOf(yielding.keySet())) {
             if (Bukkit.getEntity(id) instanceof CopperGolem golem) {

@@ -64,6 +64,14 @@ public final class SortListener implements Listener {
         plugin.getServer().getScheduler().runTaskTimer(plugin, tracer::tick, 20, 20);
     }
 
+    OverflowFetcher fetcher() {
+        return fetcher;
+    }
+
+    Returns returns() {
+        return returns;
+    }
+
     /** A golem switched to (or from) vanilla mode: forget its search; fetching stops on its next tick. */
     void golemModeChanged(Entity golem) {
         homes.forget(golem);

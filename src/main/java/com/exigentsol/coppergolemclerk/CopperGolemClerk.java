@@ -49,6 +49,8 @@ public final class CopperGolemClerk extends JavaPlugin {
     private UpdateChecker updates;
     private volatile boolean logGolemDeaths;
     private GolemModes modes;
+    private volatile boolean greetOtherGolems = true;
+    private volatile long greetCooldownMillis = 5 * 60_000L;
     private volatile Material golemToggleItem = Material.BAMBOO;
     private volatile boolean modeMarkers = true;
     private volatile float modeMarkerHeight = 0.3f;
@@ -75,6 +77,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         traffic = new GolemTraffic(this);
         getServer().getPluginManager().registerEvents(traffic, this);
         traffic.setEnabled(giveWay);
+        GolemGreetings greetings = new GolemGreetings(this, listener.fetcher(), listener.returns(), traffic);
+        getServer().getScheduler().runTaskTimer(this, greetings::tick, 10, 10);
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);
         paths.setAvoidTrapdoors(avoidTrapdoors);
@@ -174,6 +178,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
+        greetOtherGolems = config.getBoolean("greet-other-golems", true);
+        greetCooldownMillis = (long) (Math.max(0.1, config.getDouble("greet-cooldown-minutes", 5)) * 60_000L);
         modeMarkerHeight = (float) config.getDouble("mode-marker-height", 0.3); // not in config.yml: fine-tuning
         updateCheck = config.getBoolean("update-check", true);
         updateCheckUrl = config.getString("update-check-url", UpdateChecker.DEFAULT_URL); // not in config.yml: for tests
@@ -301,6 +307,14 @@ public final class CopperGolemClerk extends JavaPlugin {
     /** The item players right-click a golem with to switch its mode, or null if switching is off. */
     Material golemToggleItem() {
         return golemToggleItem;
+    }
+
+    boolean greetOtherGolems() {
+        return greetOtherGolems;
+    }
+
+    long greetCooldownMillis() {
+        return greetCooldownMillis;
     }
 
     boolean modeMarkers() {

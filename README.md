@@ -207,6 +207,15 @@ the lights.
 
 The plugin only ever changes copper golems: iron and snow golems are never affected.
 
+### Golems say hello
+
+A copper golem with nothing to do (empty hands, nothing to fetch, no copper chest in
+range with anything to sort) walks over to an iron or snow golem within 16 blocks and
+says hello: they face each other, it waves, and hearts float up. Then it goes back to
+its routine and doesn't greet again for `greet-cooldown-minutes` (default 5). It
+never follows: if it can't get there in 20 seconds it gives up, and any work turning
+up ends the visit at once. Turn it off with `greet-other-golems: false`.
+
 ### Golems tidy the chests they use
 
 With `tidy-chests` (on by default), a golem tidies a chest while it has the lid open
@@ -239,6 +248,7 @@ Settings:
 - `avoid-trapdoors: true` (default): see above.
 - `update-check: true` (default): see "Update notices" below.
 - `golem-toggle-item: bamboo`, `mode-markers: true` (default): see "Switching a golem back to vanilla" above.
+- `greet-other-golems: true`, `greet-cooldown-minutes: 5` (default): see "Golems say hello" above.
 - `log-golem-deaths: true` (default): write a line in the server log when a copper
   golem dies (where, the cause such as lava, a fall or a mob, and what it was holding)
   or turns into a statue. Golems never despawn, so a golem that goes missing shows up here.
