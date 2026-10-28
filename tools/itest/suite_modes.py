@@ -82,7 +82,8 @@ def _(c):
 def _(c):
     other_golems(c)
     golem(c, 16, 4)
-    c.run("kill @e[tag=itest_other]")
+    c.run(f"kill {c.selector('iron_golem')}")  # this platform's only
+    c.run(f"kill {c.selector('snow_golem')}")
     c.run(f"kill {c.selector('copper_golem')}")
     def check():
         lines = [l for l in c.log_lines() if "[CopperGolemClerk]" in l and c.in_cell(l)]
