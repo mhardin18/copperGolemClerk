@@ -278,7 +278,7 @@ final class OverflowFetcher {
         if (golem.getLocation().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH + 0.5
                 || (plugin.takeReach() > Reach.VANILLA
                     && Reach.within(golem.getLocation(), world, fetch.halves(), plugin.takeReach()))) {
-            takeItem(golem, block, inventory, fetch.type());
+            takeItem(golem, block, inventory, fetch.type(), fetch.copper() ? "copper chest" : "overflow chest");
             fetching.remove(id);
             golem.getPathfinder().stopPathfinding();
             return;
@@ -295,7 +295,7 @@ final class OverflowFetcher {
         golem.getPathfinder().moveTo(fetch.target(), 1.0);
     }
 
-    private void takeItem(CopperGolem golem, Block block, Inventory inventory, Material type) {
+    private void takeItem(CopperGolem golem, Block block, Inventory inventory, Material type, String what) {
         ItemStack[] contents = inventory.getStorageContents();
         for (int slot = 0; slot < contents.length; slot++) {
             ItemStack stack = contents[slot];
@@ -317,7 +317,7 @@ final class OverflowFetcher {
             block.getWorld().playSound(block.getLocation().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
             if (plugin.debug()) {
                 plugin.getLogger().info(String.format("%s took %d %s from %s at %d,%d,%d",
-                        golem.getType(), take, type, block.getType(), block.getX(), block.getY(), block.getZ()));
+                        golem.getType(), take, type, what, block.getX(), block.getY(), block.getZ()));
             }
             return;
         }
