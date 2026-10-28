@@ -132,13 +132,14 @@ deliver-reach: 2
 take-reach: 2
 
 # Players can switch a single copper golem back to plain vanilla behavior (and back
-# again) by right-clicking it with this item. Golems using this plugin wear a small
-# green light on their antenna; vanilla golems don't. Where GriefPrevention is
+# again) by right-clicking it with this item. While a player holds it, golems using
+# this plugin show that player a small green light on their antenna; vanilla golems
+# don't. Where GriefPrevention is
 # installed, only players allowed to build where the golem stands can switch it.
 # Needs the coppergolemclerk.toggle permission (everyone has it by default).
 # Set to none to turn switching off.
 golem-toggle-item: bamboo
-# Show the green light on golems that use this plugin.
+# Show the green light (to players holding the toggle item) on golems that use this plugin.
 mode-markers: true
 
 # A copper golem with nothing to do walks over to say hello to an iron or snow

@@ -210,8 +210,9 @@ within vanilla's reach is still preferred over an equally good one higher up.
 ### Switching a golem back to vanilla
 
 Right-click a copper golem with bamboo (`golem-toggle-item`) to switch that golem to
-plain vanilla behavior, and again to switch it back. A golem using this plugin has a
-small green light on its antenna; a vanilla golem doesn't. A vanilla golem gets none
+plain vanilla behavior, and again to switch it back. While you hold bamboo, golems
+using this plugin show a small green light on their antenna; vanilla golems don't.
+Golems look normal to everyone else. A vanilla golem gets none
 of the plugin's features: no smart sorting or labels, no overflow, returns, fetching,
 trapdoor avoidance, taller reach, giving way or tidying. The mode is saved on the
 golem.

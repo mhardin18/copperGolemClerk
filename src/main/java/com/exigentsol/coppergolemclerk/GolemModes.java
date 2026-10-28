@@ -32,7 +32,7 @@ import org.joml.Vector3f;
  * switch it. Only players allowed to build where the golem stands may do it (checked with
  * GriefPrevention when it's installed; anyone elsewhere), with coppergolemclerk.toggle.
  * The mode is stored on the golem. Golems using the plugin wear a small green light on
- * their antenna: an item display that follows the golem (moved every tick, smoothed by the
+ * their antenna, seen only by players holding the toggle item: an item display that follows the golem (moved every tick, smoothed by the
  * client), not saved with the world and put back whenever the golem loads (and checked every
  * two seconds). It isn't a passenger: a golem carrying a passenger stops colliding with other
  * golems, and they'd walk through each other.
@@ -157,8 +157,20 @@ final class GolemModes implements Listener {
         }
     }
 
-    /** Runs every tick: each marker follows its golem; markers of golems that are gone go too. */
+    /**
+     * Runs every tick: each marker follows its golem and is shown only to players holding the
+     * toggle item; markers of golems that are gone go too.
+     */
     void follow() {
+        Material toggle = plugin.golemToggleItem();
+        java.util.List<Player> players = java.util.List.copyOf(plugin.getServer().getOnlinePlayers());
+        java.util.Set<Player> holding = new java.util.HashSet<>();
+        for (Player p : players) {
+            if (toggle != null && (p.getInventory().getItemInMainHand().getType() == toggle
+                    || p.getInventory().getItemInOffHand().getType() == toggle)) {
+                holding.add(p);
+            }
+        }
         for (var it = markers.entrySet().iterator(); it.hasNext(); ) {
             var entry = it.next();
             ItemDisplay marker = entry.getValue();
@@ -170,6 +182,16 @@ final class GolemModes implements Listener {
                 continue;
             }
             marker.teleport(markerSpot(g));
+            for (Player p : players) {
+                boolean show = holding.contains(p);
+                if (show != p.canSee(marker)) {
+                    if (show) {
+                        p.showEntity(plugin, marker);
+                    } else {
+                        p.hideEntity(plugin, marker);
+                    }
+                }
+            }
         }
     }
 
@@ -220,6 +242,7 @@ final class GolemModes implements Listener {
             ItemDisplay marker = golem.getWorld().spawn(markerSpot(golem), ItemDisplay.class, d -> {
                 d.setItemStack(ItemStack.of(Material.LIME_CONCRETE));
                 d.setPersistent(false);
+                d.setVisibleByDefault(false); // follow() shows it to players holding the toggle item
                 d.setBrightness(new Display.Brightness(15, 15));
                 d.setBillboard(Display.Billboard.CENTER);
                 d.setTeleportDuration(2); // the client glides between the positions we send
