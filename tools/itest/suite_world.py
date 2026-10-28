@@ -210,7 +210,7 @@ def _(c):
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "logs", "spruce_log", 16)]
 
 
-@scenario("nowhere-to-return", "world", 300, "No home and the only copper chest destroyed: the golem keeps the item (nothing lost, no errors) and keeps trying.")
+@scenario("nowhere-to-return", "world", 300, "No home and the only copper chest destroyed: the golem keeps the item (nothing lost, no errors) and keeps trying.", alone=True)
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)
