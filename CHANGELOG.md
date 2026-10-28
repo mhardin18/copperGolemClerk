@@ -2,7 +2,7 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## Unreleased
+## 2.2.0 (2026-10-27)
 
 ### New
 - A `[No Golems]` sign (any case) keeps golems away from a chest: they never put items into it, and never take items out of a copper chest that has one. Handy for a copper chest used as plain storage. `/cgc check` shows it.
