@@ -37,6 +37,12 @@ final class HelpText {
                     "Reload config.yml.",
                     List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",
                             "If the file has a mistake, nothing changes and you're told which line to fix.")),
+            new Entry("version", "/cgc version", "/cgc version",
+                    "The installed version, and whether a newer release is out.",
+                    List.of("Shows the installed version and checks GitHub for a newer release for this server.",
+                            "Admins are also told about a new release when they join, once per release,",
+                            "and it's logged. The check runs weekly; turn it off with update-check: false.",
+                            "Nothing is downloaded: install a new version yourself.")),
             new Entry("help", "/cgc help", "/cgc help",
                     "This list. /cgc help <command> explains one command.",
                     List.of("/cgc help lists the commands; /cgc help <command> explains one.")));

@@ -114,6 +114,12 @@ golems-give-way: true
 # Golems stepping aside for each other (golems-give-way) avoid trapdoors too.
 avoid-trapdoors: true
 
+# Once a week (and a minute after the server starts), check GitHub for a newer
+# release of this plugin. If there is one, it's logged and admins (op, or the
+# coppergolemclerk.admin permission) are told once when they join. Nothing is
+# downloaded or sent besides the request itself. /cgc version checks right away.
+update-check: true
+
 # Golems tidy a chest while putting something in it: partial stacks of the same
 # item are merged, and like items are moved next to each other (by group, in the
 # order the groups are listed below). Copper chests and chests a player has open

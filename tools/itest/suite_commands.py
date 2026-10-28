@@ -142,3 +142,75 @@ def _(c):
                     has(check_at(c, 9, 10), "locked"),
                     has(check_at(c, 12, 10), "[#] matches no group or item"),
                     has(say(c, f"cgc check {x} 9999 {z}"), "No container")]
+
+
+# ---- update check: a stand-in for GitHub's release list, served from this machine
+
+def fake_releases(releases):
+    """Serve a GitHub-style release list on 127.0.0.1; returns its URL. releases: (tag, draft, prerelease)."""
+    import json
+    import threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    body = json.dumps([{"tag_name": tag, "draft": draft, "prerelease": pre,
+                        "html_url": f"https://example.invalid/releases/{tag}"}
+                       for tag, draft, pre in releases]).encode()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{server.server_address[1]}/releases"
+
+
+def version_check(c, url):
+    """Point the update check at url, ask for /cgc version (starts a check), and return a check
+    function that asks again once the result has had time to arrive."""
+    set_options(c, update_check="true", update_check_url=f'"{url}"')
+    first = say(c, "cgc version")
+    if "Checking GitHub" not in first:
+        raise RuntimeError(f"/cgc version didn't start a check: {first}")
+    return lambda: say(c, "cgc version") if c.elapsed() > 3 else ""
+
+
+@scenario("update-available", "commands", 60, "/cgc version finds a newer release (skipping drafts and pre-releases), logs it once, and notes one that needs a newer Minecraft.", alone=True)
+def _(c):
+    url = fake_releases([("v1.0.0-paper26.3", False, False), ("v9.9.0-paper26.3", False, False),
+                         ("v50.0.0-paper26.3", True, False), ("v60.0.0-paper26.3", False, True),
+                         ("v99.0.0-paper99.0", False, False), ("nightly", False, False)])
+    again = version_check(c, url)
+    def check():
+        reply = again()
+        log = "\n".join(c.log_lines())
+        return [has(reply, "Version 9.9.0 is available"),
+                has(reply, "Version 99.0.0 is out for Minecraft 99.0"),
+                (log.count("Copper Golem Clerk 9.9.0 is available") == 1, "logged 9.9.0 once"),
+                ("50.0.0" not in log and "60.0.0" not in log, "draft and pre-release ignored")]
+    return check
+
+
+@scenario("update-none", "commands", 60, "/cgc version with only older releases out: no update is offered or logged.", alone=True)
+def _(c):
+    url = fake_releases([("v1.0.0-paper26.3", False, False), ("v2.0.0-paper26.3", False, False)])
+    again = version_check(c, url)
+    def check():
+        reply = again()
+        log = "\n".join(c.log_lines())
+        return [(c.elapsed() > 5 and "is available" not in reply and "Not checked yet" not in reply
+                 and "failed" not in reply, f"no update offered; got: {reply.strip()}"),
+                ("is available" not in log, "nothing logged")]
+    return check
+
+
+@scenario("update-unreachable", "commands", 60, "/cgc version when the release list can't be reached: says the check failed, nothing else breaks.", alone=True,
+          allow_errors=("Update check failed",))
+def _(c):
+    again = version_check(c, "http://127.0.0.1:9/releases")  # port 9: nothing listens
+    return lambda: [has(again(), "The last check failed")]

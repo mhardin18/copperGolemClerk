@@ -221,10 +221,22 @@ Settings:
   resort. Set `false` so golems only fill chests you've labelled.
 - `golems-give-way: true` (default): see above.
 - `avoid-trapdoors: true` (default): see above.
+- `update-check: true` (default): see "Update notices" below.
 - `tidy-chests: true` (default): see above.
 - `disabled-worlds: []`: worlds where the plugin does nothing and golems behave as in
   vanilla, e.g. `[world_nether, world_the_end]`.
 - `debug: true`: logs each sort decision to the console.
+
+## Update notices
+
+Once a week, and a minute after the server starts, the plugin asks GitHub for its
+list of releases. If there's a newer version built for your server's Minecraft
+version, it's written to the server log, and players with `coppergolemclerk.admin`
+are told when they join (once per release), with a link to the release page. A
+release that needs a newer Minecraft version is mentioned in the log only.
+
+Nothing is downloaded or installed, and nothing is sent besides the request for the
+release list. `/cgc version` checks right away. Turn it off with `update-check: false`.
 
 ## Commands
 
@@ -240,6 +252,7 @@ Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
 - `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
   items with no chest (with a sign label to use for each group), items whose chest is
   full, and items golems will move on their own.
+- `/cgc version`: the installed version, and whether a newer release is out (checks now).
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,
 `/cgc overflow <x> <y> <z> [world]`.
