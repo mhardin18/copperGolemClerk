@@ -140,3 +140,79 @@ def _(c):
             state["step"] = 1
         return [(c.golems() == 0, "turned into a statue"), (markers(c) == 0, f"no marker left (got {markers(c)})")]
     return check
+
+
+# ---- switching mid-task, and vanilla golems keeping vanilla's limits
+
+from arena import Trigger, conserved  # noqa: E402
+from suite_options import set_options  # noqa: E402
+
+
+def make_vanilla(c):
+    sel = c.selector("copper_golem")[:-1] + ",limit=1]"
+    c.r.cmd(f"data merge entity {sel} {{{VANILLA}}}")
+
+
+@scenario("vanilla-switch-mid-fetch", "modes", 90, "A golem fetching from [Overflow] is switched to vanilla on the way: it stops, and the granite stays in the overflow chest.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    c.chest("overflow", 18, 4, [("granite", 16)])
+    c.sign(18, 4, "[Overflow]")
+    c.chest("stone", 10, 16, [("andesite", 1)])
+    x, y, z = c.abs(12, 0)
+    _, _, z2 = c.abs(12, 17)
+    c.run(f"fill {x} {y} {z} {x} {y + 2} {z2} minecraft:glass")  # a long walk, so the switch comes first
+    golem(c, 4, 10)
+    t = Trigger()
+    def check():
+        t.fire_when(lambda: any("fetching GRANITE" in l and c.in_cell(l) for l in c.log_lines()), lambda: make_vanilla(c))
+        return [(t.at is not None and t.since() > 30, "switched mid-fetch, 30 seconds ago"),
+                expect(c, "overflow", "granite", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
+    return check
+
+
+@scenario("vanilla-keeps-homeless-item", "modes", 150, "A vanilla-mode golem holding dirt with nowhere to put it keeps holding it, as in vanilla: the plugin doesn't return it.", alone=True)
+def _(c):
+    set_options(c, matching_chest_timeout_seconds="10")
+    c.chest("copper", 2, 10, [("dirt", 8)], block="waxed_copper_chest")
+    c.chest("logs", 14, 10, [("oak_log", 1)])
+    golem(c, 4, 10, vanilla=True)
+    return lambda: [(c.elapsed() > 100, "waited 100 seconds (a plugin golem returns it after about 40)"),
+                    (c.holding("dirt") == 8, f"golem holding {c.holding('dirt')} dirt (want 8)"), conserved(c, "dirt", 8)]
+
+
+@scenario("vanilla-switch-mid-sidestep", "modes", 420, "A golem stepping aside for another is switched to vanilla: it's woken at once, none left frozen.")
+def _(c):
+    from suite_traffic import MARKED, corridor, frozen, wait_for_sidestep
+    corridor(c)
+    t = Trigger()
+    def switch():
+        sel = c.selector("copper_golem")[:-1] + f",nbt={MARKED},limit=1]"
+        c.r.cmd(f"data merge entity {sel} {{{VANILLA}}}")
+    def check():
+        t.fire_when(lambda: wait_for_sidestep(c), switch)
+        if t.at is None:
+            return [(False, "waiting for a golem to start giving way")]
+        return [(t.since() > 3, "3 seconds after the switch"), (frozen(c) == 0, f"{frozen(c)} golems still paused (want 0)")]
+    return check
+
+
+@scenario("mode-marker-nether", "modes", 30, "In the Nether, a golem gets its marker too.", dimension="the_nether")
+def _(c):
+    golem(c, 4, 10)
+    return lambda: [(markers(c) == 1, f"one marker (got {markers(c)})")]
+
+
+@scenario("markers-many-golems", "modes", 120, "40 golems with markers (each moved every tick): ticks stay under 40 ms and within 10 ms of the baseline.", alone=True)
+def _(c):
+    from suite_perf import mspt
+    baseline = mspt(c)
+    for dx in range(1, 21, 3):
+        for dz in range(1, 21, 4):
+            golem(c, dx, dz)
+    def check():
+        now = mspt(c)
+        return [(c.elapsed() > 60, "a minute with 40 golems"), (markers(c) >= 35, f"{markers(c)} markers"),
+                (now is not None and now < 40 and (baseline is None or now - baseline < 10),
+                 f"{now} ms per tick (baseline {baseline})")]
+    return check
