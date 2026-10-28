@@ -163,6 +163,11 @@ final class GolemTraffic implements Listener {
                 it.remove();
                 continue;
             }
+            if (!plugin.manages(golem)) { // switched to vanilla (or its world turned off) mid-sidestep
+                release(golem);
+                it.remove();
+                continue;
+            }
             CopperGolem other = Bukkit.getEntity(y.forWhom()) instanceof CopperGolem g && g.isValid() ? g : null;
             boolean passed = other == null || !other.getWorld().equals(golem.getWorld())
                     || (tick - y.startTick() > 10 && !inWay(other, golem, LOOK_AHEAD + 0.5)
