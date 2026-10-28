@@ -1,5 +1,5 @@
 """setup: unusual chests, items and crowds."""
-from arena import conserved, expect, scenario
+from arena import SIZE, Y, Trigger, _count, conserved, expect, scenario
 
 
 @scenario("blocked-chest", "setup", 150, "The only log chest has a block on top (vanilla can't open it); the logs end up in [Overflow].")
@@ -50,3 +50,60 @@ def _(c):
     for dz in (6, 8, 12, 14):
         c.golem(4, dz)
     return lambda: [expect(c, "logs", "birch_log", 64), conserved(c, "birch_log", 64)]
+
+
+# ---- trapdoors (avoid-trapdoors)
+# Vanilla golems path onto open trapdoors as if they were floor: with three trapdoor-covered
+# holes across their path (like a ladder shaft), they fall in (see option-avoid-trapdoors-off).
+
+OPEN_TRAPDOOR = "oak_trapdoor[half=top,open=true,facing=east]"
+
+
+def trapdoor_holes(c, block, dzs=(9, 10, 11)):
+    """Holes 2 deep at dx=8 across the line from the copper chest (dx=2) to the log chest (dx=14),
+    each covered by a trapdoor in the floor. Floor elsewhere: a golem can walk around."""
+    for dz in dzs:
+        x, y, z = c.abs(8, dz)
+        c.run(f"setblock {x} {y - 3} {z} minecraft:glass")
+        c.run(f"setblock {x} {y - 1} {z} minecraft:{block}")
+
+
+def trapdoor_scene(c):
+    c.chest("copper", 2, 10, [("birch_log", 8)], block="waxed_copper_chest")
+    c.chest("logs", 14, 10, [("oak_log", 1)])
+    c.golem(4, 10)
+
+
+def golems_in(c, dx, y, dy, dz_from, dz_to):
+    """Golems whose hitbox reaches into the column at dx between dz_from and dz_to, from y to y + dy + 1."""
+    x, _, z = c.abs(dx, dz_from)
+    return _count(c.r.cmd(f"execute if entity @e[type=minecraft:copper_golem,x={x},y={y},z={z},"
+                          f"dx=0,dy={dy},dz={dz_to - dz_from}]"))
+
+
+def fell_in_holes(c):
+    return golems_in(c, 8, Y - 2, 0, 9, 11) > 0
+
+
+@scenario("trapdoor-holes", "setup", 300, "Three holes covered by open trapdoors lie across the golem's path: it walks around and delivers the birch logs without falling in.")
+def _(c):
+    trapdoor_holes(c, OPEN_TRAPDOOR)
+    trapdoor_scene(c)
+    fell = Trigger()
+    def check():
+        fell.fire_when(lambda: fell_in_holes(c), lambda: None)
+        return [expect(c, "logs", "birch_log", 8), (fell.at is None, "no golem fell through a trapdoor")]
+    return check
+
+
+@scenario("trapdoor-closed", "setup", 300, "A strip of closed trapdoors lies across the golem's path: it walks around them, never on them.")
+def _(c):
+    x, y, z = c.abs(8, 3)
+    _, _, z2 = c.abs(8, SIZE - 1)
+    c.run(f"fill {x} {y} {z} {x} {y} {z2} minecraft:spruce_trapdoor[half=bottom,open=false]")
+    trapdoor_scene(c)
+    stepped = Trigger()
+    def check():
+        stepped.fire_when(lambda: golems_in(c, 8, Y, 0, 3, SIZE - 1) > 0, lambda: None)
+        return [expect(c, "logs", "birch_log", 8), (stepped.at is None, "no golem stood on a trapdoor")]
+    return check

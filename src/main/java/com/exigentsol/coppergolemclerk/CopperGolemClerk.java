@@ -42,6 +42,8 @@ public final class CopperGolemClerk extends JavaPlugin {
     private SortListener listener;
     private GolemTraffic traffic;
     private volatile boolean giveWay;
+    private GolemPaths paths;
+    private volatile boolean avoidTrapdoors;
     private volatile boolean tidyChests;
     private ChestReports reports;
     private volatile Set<String> disabledWorlds = Set.of();
@@ -63,6 +65,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         traffic = new GolemTraffic(this);
         getServer().getPluginManager().registerEvents(traffic, this);
         traffic.setEnabled(giveWay);
+        paths = new GolemPaths(this);
+        getServer().getPluginManager().registerEvents(paths, this);
+        paths.setAvoidTrapdoors(avoidTrapdoors);
         registerCommand("coppergolemclerk", "Copper Golem Clerk: smart copper golem sorting", List.of("cgc"), new Command());
     }
 
@@ -91,6 +96,9 @@ public final class CopperGolemClerk extends JavaPlugin {
     public void onDisable() {
         if (traffic != null) {
             traffic.setEnabled(false);
+        }
+        if (paths != null) {
+            paths.setAvoidTrapdoors(false); // a reloaded plugin starts from vanilla costs
         }
     }
 
@@ -138,6 +146,7 @@ public final class CopperGolemClerk extends JavaPlugin {
             traffic.setEnabled(giveWay);
         }
         tidyChests = config.getBoolean("tidy-chests", true);
+        avoidTrapdoors = config.getBoolean("avoid-trapdoors", true);
         Set<String> off = new HashSet<>();
         for (String name : config.getStringList("disabled-worlds")) {
             off.add(name.trim().toLowerCase(Locale.ROOT));
@@ -146,6 +155,9 @@ public final class CopperGolemClerk extends JavaPlugin {
             }
         }
         disabledWorlds = Set.copyOf(off);
+        if (paths != null) {
+            paths.setAvoidTrapdoors(avoidTrapdoors); // after disabled-worlds: golems there keep vanilla paths
+        }
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
         matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;
         groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());

@@ -420,9 +420,10 @@ final class GolemTraffic implements Listener {
      * Blocks a golem must not be pushed into or onto: they hurt it (fire, lava, a
      * campfire, magma, berry bushes, wither roses, dripstone), trap it (cobwebs, powder
      * snow) or carry it off (water, bubble columns). Vanilla pathfinding avoids them too.
+     * Trapdoors too: an open one may cover a hole (see avoid-trapdoors).
      */
     static boolean isHazard(Material type) {
-        return Tag.FIRE.isTagged(type) || Tag.CAMPFIRES.isTagged(type)
+        return Tag.FIRE.isTagged(type) || Tag.CAMPFIRES.isTagged(type) || Tag.TRAPDOORS.isTagged(type)
                 || switch (type) {
                     case LAVA, WATER, BUBBLE_COLUMN, MAGMA_BLOCK, COBWEB, POWDER_SNOW, SWEET_BERRY_BUSH,
                          WITHER_ROSE, POINTED_DRIPSTONE, CACTUS -> true;
