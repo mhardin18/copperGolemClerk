@@ -62,6 +62,7 @@ final class ChestReports {
             say(player, NamedTextColor.AQUA, ChestLabels.noGolems(inv, plugin)
                     ? "Copper chest with a [No Golems] sign: golems leave it alone."
                     : "Copper chest: golems take items out of it to sort them.");
+            reachNote(player, block, inv, "take-reach", plugin.takeReach());
             return;
         }
         if (!HomeFinder.isDestination(block.getType())) {
@@ -110,6 +111,7 @@ final class ChestReports {
         if (HomeFinder.feedsCopperChest(block.getWorld(), pos)) {
             say(player, NamedTextColor.RED, "Problem: a hopper under it feeds a copper chest, so golems treat it as an input, not storage.");
         }
+        reachNote(player, block, inv, "deliver-reach", plugin.deliverReach());
         if (used(inv) == inv.getStorageContents().length) {
             say(player, NamedTextColor.YELLOW, "It's full: golems can only top up stacks that aren't full.");
         }
@@ -158,6 +160,20 @@ final class ChestReports {
         } else {
             say(player, NamedTextColor.WHITE, "Takes more of those, plus anything in group " + String.join(", ", names)
                     + (plugin.matchModeAll() ? " (shared by everything inside)." : "."));
+        }
+    }
+
+    /** Whether golems can reach this chest's height (only said when it's above vanilla's 2 rows). */
+    private void reachNote(CommandSender player, Block block, Inventory inv, String setting, int reach) {
+        int row = Reach.rowOf(block.getWorld(), HomeFinder.halvesOf(inv, block));
+        if (row == Integer.MAX_VALUE) {
+            say(player, NamedTextColor.YELLOW, "No floor for a golem to stand on beside it within "
+                    + Reach.MAX + " rows; golems use it only if vanilla can reach it some other way.");
+        } else if (!Reach.vanillaReaches(row)) {
+            say(player, row <= reach ? NamedTextColor.WHITE : NamedTextColor.RED, "It's " + row
+                    + " chest rows up from the floor beside it: " + (row <= reach
+                    ? "within " + setting + " (" + reach + "), so golems use it."
+                    : "out of reach. Golems reach " + reach + " (" + setting + "); raise it to " + row + " or more."));
         }
     }
 

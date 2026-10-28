@@ -120,6 +120,17 @@ avoid-trapdoors: true
 # downloaded or sent besides the request itself. /cgc version checks right away.
 update-check: true
 
+# How high golems reach, in chest rows counted up from the floor they stand on:
+# 1 is the chest at their feet, 2 the one on top of it. Vanilla golems reach 2.
+# Raise these (up to 6) for taller stacks of chests: golems walk to the foot of the
+# stack and the plugin moves the items for them. They need floor to stand on in
+# front of the chest.
+#   deliver-reach: chests golems put items into (labelled, matching, [Overflow], empty)
+#   take-reach:    copper chests golems take items from, and [Overflow] chests that
+#                  idle golems fetch from
+deliver-reach: 2
+take-reach: 2
+
 # Write a line in the server log when a copper golem dies (with the cause, e.g.
 # lava, fall or a mob, and what it was holding) or is removed another way (turned
 # into a statue, /kill, another plugin). Golems never despawn, so this explains

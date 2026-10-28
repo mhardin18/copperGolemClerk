@@ -2,6 +2,11 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### New
+- Taller stacks of chests: `deliver-reach` and `take-reach` (default 2, vanilla's limit; up to 6) set how many chest rows up golems put items in and take items out. For chests above row 2 the golem walks to the foot of the stack and the plugin moves the items. `/cgc check` says how high a chest is and whether golems reach it.
+
 ## 2.4.1 (2026-10-28)
 
 ### New

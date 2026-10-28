@@ -46,6 +46,8 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean avoidTrapdoors;
     private UpdateChecker updates;
     private volatile boolean logGolemDeaths;
+    private volatile int deliverReach = Reach.VANILLA;
+    private volatile int takeReach = Reach.VANILLA;
     private volatile boolean updateCheck;
     private volatile String updateCheckUrl;
     private volatile boolean tidyChests;
@@ -159,6 +161,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         tidyChests = config.getBoolean("tidy-chests", true);
         avoidTrapdoors = config.getBoolean("avoid-trapdoors", true);
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
+        deliverReach = reachSetting(config, "deliver-reach");
+        takeReach = reachSetting(config, "take-reach");
         updateCheck = config.getBoolean("update-check", true);
         updateCheckUrl = config.getString("update-check-url", UpdateChecker.DEFAULT_URL); // not in config.yml: for tests
         if (updates != null) {
@@ -260,6 +264,26 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    /** A reach setting in chest rows, kept within what golems can do (2, vanilla, up to Reach.MAX). */
+    private int reachSetting(YamlConfiguration config, String key) {
+        int value = config.getInt(key, Reach.VANILLA);
+        if (value < Reach.VANILLA || value > Reach.MAX) {
+            getLogger().warning(key + " must be " + Reach.VANILLA + " to " + Reach.MAX + " (chest rows); using "
+                    + Math.clamp(value, Reach.VANILLA, Reach.MAX) + ".");
+        }
+        return Math.clamp(value, Reach.VANILLA, Reach.MAX);
+    }
+
+    /** How many chest rows up golems deliver to (2 = vanilla). */
+    int deliverReach() {
+        return deliverReach;
+    }
+
+    /** How many chest rows up golems take from copper and [Overflow] chests (2 = vanilla). */
+    int takeReach() {
+        return takeReach;
     }
 
     boolean logGolemDeaths() {

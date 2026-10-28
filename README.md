@@ -191,6 +191,22 @@ shaft, a drop into a farm) catches them: they walk onto it and fall in. With
 closed, and never stand on one. A golem whose only way to a chest is across a
 trapdoor won't reach it, and its item goes elsewhere as usual.
 
+### Taller stacks of chests
+
+Vanilla golems only open chests up to 2 rows above the floor they stand on: the
+chest at their feet and the one on top of it. Two settings raise that, up to 6 rows:
+
+- `deliver-reach` (default 2): how high golems put items into chests (labelled,
+  matching, `[Overflow]` and empty chests).
+- `take-reach` (default 2): how high golems take from copper chests, and from
+  `[Overflow]` chests when fetching.
+
+For a chest above row 2, the golem walks to the floor in front of the stack and the
+plugin opens the chest and moves the items, as the golem would. It needs floor to
+stand on beside the stack (standing on top of other chests doesn't count). A chest
+within vanilla's reach is still preferred over an equally good one higher up.
+`/cgc check` on a high chest says how many rows up it is and whether golems reach it.
+
 ### Golems tidy the chests they use
 
 With `tidy-chests` (on by default), a golem tidies a chest while it has the lid open
@@ -222,6 +238,7 @@ Settings:
 - `golems-give-way: true` (default): see above.
 - `avoid-trapdoors: true` (default): see above.
 - `update-check: true` (default): see "Update notices" below.
+- `deliver-reach: 2`, `take-reach: 2` (default): see "Taller stacks of chests" above.
 - `log-golem-deaths: true` (default): write a line in the server log when a copper
   golem dies (where, the cause such as lava, a fall or a mob, and what it was holding)
   or turns into a statue. Golems never despawn, so a golem that goes missing shows up here.
