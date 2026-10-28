@@ -44,6 +44,9 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean giveWay;
     private GolemPaths paths;
     private volatile boolean avoidTrapdoors;
+    private UpdateChecker updates;
+    private volatile boolean updateCheck;
+    private volatile String updateCheckUrl;
     private volatile boolean tidyChests;
     private ChestReports reports;
     private volatile Set<String> disabledWorlds = Set.of();
@@ -68,6 +71,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);
         paths.setAvoidTrapdoors(avoidTrapdoors);
+        updates = new UpdateChecker(this);
+        getServer().getPluginManager().registerEvents(updates, this);
+        updates.configure(updateCheck, updateCheckUrl);
         registerCommand("coppergolemclerk", "Copper Golem Clerk: smart copper golem sorting", List.of("cgc"), new Command());
     }
 
@@ -99,6 +105,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         if (paths != null) {
             paths.setAvoidTrapdoors(false); // a reloaded plugin starts from vanilla costs
+        }
+        if (updates != null) {
+            updates.stop();
         }
     }
 
@@ -147,6 +156,11 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         tidyChests = config.getBoolean("tidy-chests", true);
         avoidTrapdoors = config.getBoolean("avoid-trapdoors", true);
+        updateCheck = config.getBoolean("update-check", true);
+        updateCheckUrl = config.getString("update-check-url", UpdateChecker.DEFAULT_URL); // not in config.yml: for tests
+        if (updates != null) {
+            updates.configure(updateCheck, updateCheckUrl);
+        }
         Set<String> off = new HashSet<>();
         for (String name : config.getStringList("disabled-worlds")) {
             off.add(name.trim().toLowerCase(Locale.ROOT));
@@ -311,6 +325,7 @@ public final class CopperGolemClerk extends JavaPlugin {
                         sender.sendMessage(Component.text("From the console: /cgc overflow <x> <y> <z> [world]", NamedTextColor.RED));
                     }
                 }
+                case "version" -> updates.report(sender);
                 case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null);
                 default -> {
                     sender.sendMessage(Component.text("Unknown command '" + args[0] + "'.", NamedTextColor.RED));

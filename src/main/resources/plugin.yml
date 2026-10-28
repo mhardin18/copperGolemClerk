@@ -5,5 +5,5 @@ api-version: '26.3'
 description: Copper golems sort similar items into the same chest.
 permissions:
   coppergolemclerk.admin:
-    description: Use /cgc help, check, overflow and reload.
+    description: Use /cgc help, check, overflow, reload and version; hear about new releases.
     default: op
