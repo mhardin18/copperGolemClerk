@@ -155,6 +155,9 @@ final class ReachDelivery {
             homes.forget(golem);
         }
         tidier.delivered(inventory);
+        if (plugin.stats() != null) {
+            plugin.stats().delivered(golem, block.getLocation(), held.getType(), before - rest.getAmount(), false);
+        }
         if (plugin.debug()) {
             plugin.getLogger().info(String.format("%s put %d %s into %s at %d,%d,%d (above vanilla's reach)",
                     golem.getType(), before - rest.getAmount(), held.getType(), block.getType(), p.x(), p.y(), p.z()));

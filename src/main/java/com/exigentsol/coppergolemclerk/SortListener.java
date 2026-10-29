@@ -284,6 +284,9 @@ public final class SortListener implements Listener {
         if (accepted) {
             homes.accepted(event.getEntity().getUniqueId());
             tidier.delivered(container);
+            if (plugin.stats() != null) {
+                plugin.stats().delivered(event.getEntity(), container.getLocation(), held.getType(), held.getAmount(), true);
+            }
         }
 
         if (plugin.debug()) {

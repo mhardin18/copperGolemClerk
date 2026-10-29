@@ -10,6 +10,11 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - Full-chest alerts: when a golem finds the chest labelled for its item full, or an `[Overflow]` chest is full or 90% full (`overflow-alert-percent`), the owner of the GriefPrevention claim is told (when they join, if they're offline); elsewhere, players with `coppergolemclerk.alerts` (ops by default). Alerts are logged and not repeated for `alert-cooldown-minutes` (30). Turn them off with `full-chest-alerts: false`.
 - Golems stay out of portals (`avoid-portals`, on by default): a copper golem never goes through a Nether portal, End portal or End gateway, so one that wanders into a portal stays in its own world. Golems on a lead or riding go through as usual.
 
+## Unreleased
+
+### New
+- `/cgc stats`: how many items golems have sorted today, this week and all time, the most-sorted items and the busiest claims. Players are told when they join what golems sorted in their claims while they were away, and how many of their chests filled up (`join-summary`).
+
 ## 2.5.1 (2026-10-28)
 
 ### Changed

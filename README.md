@@ -307,6 +307,7 @@ Settings:
 - `golem-toggle-item: bamboo`, `mode-markers: true` (default): see "Switching a golem back to vanilla" above.
 - `greet-other-golems: true`, `greet-cooldown-minutes: 5` (default): see "Golems say hello" above.
 - `rescue-lost-golems: true`, `lost-golem-teleport-home: false` (default): see "Lost golems find their way home" above.
+- `join-summary: true` (default): see `/cgc stats` under Commands.
 - `full-chest-alerts: true`, `overflow-alert-percent: 90`, `alert-cooldown-minutes: 30` (default): see "Full-chest alerts" above.
 - `log-golem-deaths: true` (default): write a line in the server log when a copper
   golem dies (where, the cause such as lava, a fall or a mob, and what it was holding)
@@ -346,6 +347,11 @@ Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
   `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
   listed where they were last seen (the plugin keeps every golem's last spot in
   `golems.yml`).
+- `/cgc stats`: how many items golems have put into chests today, in the last 7 days
+  and all time, the most-sorted items and the busiest claims; players also see their
+  own claims' numbers. With `join-summary` (on by default) players are told when they
+  join what golems sorted in their claims while they were away and how many of their
+  chests filled up. Numbers are kept in `stats.yml`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,

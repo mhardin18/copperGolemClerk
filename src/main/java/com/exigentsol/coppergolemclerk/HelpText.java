@@ -43,6 +43,12 @@ final class HelpText {
                                     + " remembers every golem's last spot in golems.yml.",
                             "Give a position (/cgc golems <x> <y> <z> [world]) for the 10 nearest to it;"
                                     + " from the console without one, every golem in every world.")),
+            new Entry("stats", "/cgc stats", "/cgc stats",
+                    "How much golems have sorted: today, this week, all time.",
+                    List.of("Items golems have put into chests: today, the last 7 days and all time, the most-sorted"
+                                    + " items and, with GriefPrevention, the busiest claims.",
+                            "Players also see the numbers for their own claims, and are told what golems sorted"
+                                    + " while they were away when they join (join-summary).")),
             new Entry("reload", "/cgc reload", "/cgc reload",
                     "Reload config.yml.",
                     List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",

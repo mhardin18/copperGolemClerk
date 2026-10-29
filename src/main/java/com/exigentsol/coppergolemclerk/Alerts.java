@@ -60,6 +60,9 @@ final class Alerts implements Listener {
         }
 
         UUID owner = claimOwner(place);
+        if (plugin.stats() != null && (key.startsWith("full:") || key.startsWith("overflow-full:"))) {
+            plugin.stats().noteFull(owner, key);
+        }
         List<String> told = new ArrayList<>();
         if (owner != null) {
             Player player = plugin.getServer().getPlayer(owner);
@@ -114,7 +117,7 @@ final class Alerts implements Listener {
     }
 
     /** The owner of the GriefPrevention claim here, or null (no claim, an admin claim, or no GriefPrevention). */
-    private UUID claimOwner(Location place) {
+    UUID claimOwner(Location place) {
         if (!looked) {
             findProtection();
         }

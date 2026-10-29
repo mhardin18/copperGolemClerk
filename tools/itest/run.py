@@ -39,6 +39,7 @@ import suite_scenes  # noqa: E402,F401
 import suite_reach  # noqa: E402,F401
 import suite_rescue  # noqa: E402,F401
 import suite_setup  # noqa: E402,F401
+import suite_stats  # noqa: E402,F401
 import suite_tidy  # noqa: E402,F401
 import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
