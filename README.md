@@ -315,10 +315,15 @@ Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
 - `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
   items with no chest (with a sign label to use for each group), items whose chest is
   full, and items golems will move on their own.
+- `/cgc golems`: the 10 copper golems nearest you, with their position (click to
+  teleport there), distance and direction, what they carry, their copper and their mode.
+  `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
+  listed where they were last seen (the plugin keeps every golem's last spot in
+  `golems.yml`).
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,
-`/cgc overflow <x> <y> <z> [world]`.
+`/cgc overflow <x> <y> <z> [world]`. `/cgc golems` from the console lists every golem.
 
 ## Building from source
 
