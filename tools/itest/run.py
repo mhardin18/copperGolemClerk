@@ -30,6 +30,7 @@ import suite_core  # noqa: E402,F401
 import suite_edge  # noqa: E402,F401
 import suite_finder  # noqa: E402,F401
 import suite_greet  # noqa: E402,F401
+import suite_labels  # noqa: E402,F401
 import suite_lifecycle  # noqa: E402,F401
 import suite_modes  # noqa: E402,F401
 import suite_options  # noqa: E402,F401

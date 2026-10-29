@@ -68,6 +68,12 @@ final class OverflowFetcher {
         return fetching.containsKey(golem);
     }
 
+    /** What this golem is on its way to fetch, or null. */
+    Material fetchingType(UUID golem) {
+        Fetch fetch = fetching.get(golem);
+        return fetch == null ? null : fetch.type();
+    }
+
     /** Runs every second. */
     void tick() {
         if (!plugin.fetchFromOverflow() && plugin.takeReach() <= Reach.VANILLA) {
