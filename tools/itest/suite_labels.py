@@ -14,10 +14,11 @@ def golem_at(c, dx, dz, extra=""):
     c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} {{NoAI:1b,active_effects:[{LUCK}]{extra}}}")
 
 
-def label_text(c, dx, dz):
+def label_text(c, dx, dz, path="text"):
+    """The label's text (path "text.extra[1].text" for its second line: the game shortens nested text to "...")."""
     x, y, z = c.abs(dx, dz)
     return c.r.cmd(f"data get entity @e[type=minecraft:text_display,x={x + 0.5},y={y + 1.8},z={z + 0.5},"
-                   f"distance=..1.5,limit=1,sort=nearest] text")
+                   f"distance=..1.5,limit=1,sort=nearest] {path}")
 
 
 def labels(c):
@@ -33,7 +34,8 @@ def _(c):
     golem_at(c, 16, 10, ',weather_state:"weathered"')
 
     def check():
-        a, b, v, w = (label_text(c, dx, 10) for dx in (4, 8, 12, 16))
+        a, b, v = (label_text(c, dx, 10) for dx in (4, 8, 12))
+        w = label_text(c, 16, 10, "text.extra[1].text")
         return [("carrying 5 birch log" in a, f"carrier: {a[-80:]!r}"), ("idle" in b, f"empty: {b[-60:]!r}"),
                 ("vanilla mode" in v, f"vanilla: {v[-60:]!r}"), ("weathered copper" in w, f"weathered: {w[-120:]!r}")]
     return check
