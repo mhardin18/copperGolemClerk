@@ -8,6 +8,8 @@ StartLimitIntervalSec=600
 StartLimitBurst=3
 
 [Service]
+# Whole process (heap + JVM overhead) capped at 4G; the 3G heap leaves room for the overhead.
+MemoryMax=4G
 User=minecraft
 Group=minecraft
 WorkingDirectory=/opt/minecraft/pluginDev
@@ -19,7 +21,7 @@ UMask=0002
 # Process tag, so ps/top can tell the servers apart
 Environment="JVM_ID=-DXX=PluginDev"
 # Smaller fixed heap than survival (8G): it's a test server.
-Environment="JVM_HEAP=-Xms4G -Xmx4G -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages"
+Environment="JVM_HEAP=-Xms3G -Xmx3G -XX:+AlwaysPreTouch -XX:+UseTransparentHugePages"
 # JDK 25 compact object headers (JEP 519)
 Environment="JVM_JDK25=-XX:+UseCompactObjectHeaders"
 # G1 collector, 200ms pause target. GC threads capped at 2: three JVMs now share 8 hardware threads.
