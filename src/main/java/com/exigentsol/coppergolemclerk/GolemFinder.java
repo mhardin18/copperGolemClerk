@@ -34,7 +34,7 @@ import org.bukkit.inventory.ItemStack;
  * Loaded golems are read live. The plugin also remembers where every copper golem was
  * last seen (golems.yml, updated every 30 seconds and when a golem's chunk unloads), so
  * golems in unloaded chunks are listed too, with their last known spot. A golem that
- * dies, turns into a statue or is removed is forgotten.
+ * dies, turns into a statue or is removed is forgotten, and so is one not seen for 30 days.
  */
 final class GolemFinder implements Listener {
 
@@ -113,12 +113,19 @@ final class GolemFinder implements Listener {
         }
     }
 
-    /** Runs every 30 seconds: note where each loaded golem is, then save. */
+    /** Golems not seen for this long are forgotten (gone some way the plugin didn't see, e.g. a reset chunk). */
+    static final long FORGET_AFTER_MILLIS = 30L * 24 * 3_600_000;
+
+    /** Runs every 30 seconds: note where each loaded golem is, forget long-unseen ones, then save. */
     void tick() {
         for (World world : plugin.getServer().getWorlds()) {
             for (CopperGolem golem : world.getEntitiesByClass(CopperGolem.class)) {
                 note(golem);
             }
+        }
+        long cutoff = System.currentTimeMillis() - FORGET_AFTER_MILLIS;
+        if (seen.values().removeIf(s -> s.millis() < cutoff)) {
+            dirty = true;
         }
         save();
     }

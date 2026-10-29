@@ -117,3 +117,12 @@ def _(c):
         text = open(GOLEMS_FILE).read() if os.path.isfile(GOLEMS_FILE) else ""
         return [("itest-fs-saved" in text, "golems.yml has the golem")]
     return check
+
+
+@scenario("golems-bad-position", "finder", 30, "/cgc golems with half a position or a bad world says what's wrong.")
+def _(c):
+    def say(cmd):
+        return re.sub(r"§.", "", c.r.cmd(cmd))
+    return lambda: [("Give a whole position" in say("cgc golems 10 64"), "half a position is reported"),
+                    ("whole-number" in say("cgc golems a b c"), "letters are reported"),
+                    ("No world named 'nowhere'" in say("cgc golems 0 64 0 nowhere"), "a bad world is reported")]

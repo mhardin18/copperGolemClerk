@@ -382,7 +382,7 @@ Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
   teleport there), distance and direction, what they carry, their copper and their mode.
   `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
   listed where they were last seen (the plugin keeps every golem's last spot in
-  `golems.yml`).
+  `golems.yml`, and forgets golems not seen for 30 days).
 - `/cgc stats`: how many items golems have put into chests today, in the last 7 days
   and all time, the most-sorted items and the busiest claims; players also see their
   own claims' numbers. With `join-summary` (on by default) players are told when they
