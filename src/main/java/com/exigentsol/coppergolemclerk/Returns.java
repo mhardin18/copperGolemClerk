@@ -91,10 +91,12 @@ final class Returns {
             return true;
         }
         List<Block> candidates = new ArrayList<>();
+        boolean sourceListed = false;
         if (source != null && sourceWorld != null && sourceWorld.equals(golem.getWorld())) {
             Block b = sourceWorld.getBlockAt(source.x(), source.y(), source.z());
             if (isCopperChest(b.getType()) || HomeFinder.isDestination(b.getType())) {
                 candidates.add(b); // its copper chest, or the overflow chest it was fetched from
+                sourceListed = true;
             }
         }
         candidates.addAll(copperChestsInRange(golem));
@@ -107,6 +109,11 @@ final class Returns {
                 continue; // [No Golems]: hands off
             }
             Inventory inventory = container.getInventory();
+            if (block != candidates.getFirst() || !sourceListed) {
+                if (isCopperChest(block.getType()) && !ChestLabels.filterOf(inventory, plugin).mayTake(held.getType())) {
+                    continue; // another copper chest whose [Only ...] filter would keep the item there for good
+                }
+            }
             if (!ChestMatcher.hasRoom(held, inventory)) {
                 continue;
             }
@@ -148,8 +155,9 @@ final class Returns {
 
     /**
      * Called while a golem with an empty hand considers a copper chest. Moves
-     * homeless items behind the others so they aren't taken first. Returns
-     * false if the chest holds only homeless items (skip it).
+     * items it shouldn't take (homeless, or left out by an [Only ...] filter) behind the
+     * others, since vanilla takes from the first filled slot. Returns false if the chest
+     * holds nothing it should take (skip it).
      */
     boolean prepareSource(Block block) {
         if (!isCopperChest(block.getType()) || !(block.getState(false) instanceof Container container)) {
@@ -160,7 +168,8 @@ final class Returns {
             return false; // nothing to take: don't walk over to find that out
         }
         Map<Material, Long> marks = marksFor(inventory);
-        if (marks.isEmpty()) {
+        ChestLabels.Labels filter = ChestLabels.filterOf(inventory, plugin);
+        if (marks.isEmpty() && filter.only().isEmpty()) {
             return true;
         }
 
@@ -174,7 +183,7 @@ final class Returns {
             if (stack == null || stack.isEmpty()) {
                 continue;
             }
-            boolean isHomeless = marks.containsKey(stack.getType());
+            boolean isHomeless = marks.containsKey(stack.getType()) || !filter.mayTake(stack.getType());
             if (firstFilled == null) {
                 firstFilled = i;
                 firstIsHomeless = isHomeless;
@@ -204,12 +213,19 @@ final class Returns {
             return false;
         }
         Map<Material, Long> marks = marksFor(inventory);
+        ChestLabels.Labels filter = ChestLabels.filterOf(inventory, plugin);
         for (ItemStack stack : inventory.getStorageContents()) {
-            if (stack != null && !stack.isEmpty() && !marks.containsKey(stack.getType())) {
+            if (stack != null && !stack.isEmpty() && !marks.containsKey(stack.getType())
+                    && filter.mayTake(stack.getType())) {
                 return true;
             }
         }
         return false;
+    }
+
+    /** True if a golem may take this item from this copper chest: not homeless, and allowed by any [Only ...] filter. */
+    boolean mayTake(Inventory inventory, Material type) {
+        return !isHomeless(inventory, type) && ChestLabels.filterOf(inventory, plugin).mayTake(type);
     }
 
     /** True if this item type was returned to this chest as homeless (and the mark hasn't expired). */
