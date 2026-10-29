@@ -340,7 +340,8 @@ Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,
-`/cgc overflow <x> <y> <z> [world]`. `/cgc golems` from the console lists every golem.
+`/cgc overflow <x> <y> <z> [world]`, `/cgc golems <x> <y> <z> [world]` (the 10 golems
+nearest that spot; without a position the console lists every golem).
 
 ## Building from source
 
