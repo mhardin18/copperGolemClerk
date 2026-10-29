@@ -107,6 +107,7 @@ several (`[ice][snow]`), and the chest takes anything any rule matches:
 | `[#planks]` | items in that tag                |
 | `[Overflow]`| anything with no other home      |
 | `[No Golems]`| nothing: golems leave it alone  |
+| `[Only Logs]`| on a copper chest: golems take only logs out |
 
 Case doesn't matter and spaces count as underscores. A group name wins over an
 item with the same name, and group names work singular or plural (`[Rail]` =
@@ -121,6 +122,13 @@ A `[No Golems]` sign (any case, `[no golem]` works too) keeps golems away from a
 chest completely: they never put anything into it, and on a copper chest they never
 take anything out. Other labels on the same chest are ignored. Use it for a copper
 chest you want as plain storage.
+
+An `[Only ...]` sign on a copper chest is a filter: golems take only those items out
+of it and leave the rest. After `Only` comes any label from the table above, so
+`[Only Logs]`, `[Only Oak Log]`, `[Only *_ORE]` and `[Only #planks]` all work, and
+several `[Only ...]` lines add up. Handy for a shared input chest where you keep a few
+things you don't want sorted. `/cgc check` on the copper chest shows the filter and
+how many items it's leaving behind. On a chest that isn't a copper chest it does nothing.
 
 When several chests would take an item, golems use the most specific one. Labels
 (frames and signs) come before contents: a framed item first, then the sign label

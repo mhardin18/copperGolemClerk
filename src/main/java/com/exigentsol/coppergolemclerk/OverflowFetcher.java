@@ -206,7 +206,7 @@ final class OverflowFetcher {
         Inventory inventory = ((Container) state).getInventory();
         Material type = null;
         for (ItemStack stack : inventory.getStorageContents()) {
-            if (stack != null && !stack.isEmpty() && !returns.isHomeless(inventory, stack.getType())) {
+            if (stack != null && !stack.isEmpty() && returns.mayTake(inventory, stack.getType())) {
                 type = stack.getType();
                 break;
             }

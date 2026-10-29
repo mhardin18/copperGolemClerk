@@ -9,10 +9,7 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - Lost golems find their way home: a golem remembers the copper chest it last took items from, and if it ends up far from any copper chest (more than 40 blocks, or 12 up or down) it walks back. A golem that can't, or is stuck in a pit, is reported to its owner with an alert; `lost-golem-teleport-home: true` teleports it back instead. `/cgc golems` shows lost golems. Turn it off with `rescue-lost-golems: false`.
 - Full-chest alerts: when a golem finds the chest labelled for its item full, or an `[Overflow]` chest is full or 90% full (`overflow-alert-percent`), the owner of the GriefPrevention claim is told (when they join, if they're offline); elsewhere, players with `coppergolemclerk.alerts` (ops by default). Alerts are logged and not repeated for `alert-cooldown-minutes` (30). Turn them off with `full-chest-alerts: false`.
 - Golems stay out of portals (`avoid-portals`, on by default): a copper golem never goes through a Nether portal, End portal or End gateway, so one that wanders into a portal stays in its own world. Golems on a lead or riding go through as usual.
-
-## Unreleased
-
-### New
+- Copper chest filters: an `[Only ...]` sign on a copper chest (`[Only Logs]`, `[Only Oak Log]`, `[Only #planks]`) makes golems take only those items out of it and leave the rest. Several `[Only ...]` lines add up. `/cgc check` shows the filter.
 - Status labels: while you hold bamboo, copper golems near you show what they're doing (`carrying 12 birch log`, `fetching granite`, `lost, walking home`, `idle`...) and how weathered their copper is. Only players holding bamboo see them. Turn them off with `status-labels: false`.
 
 ## 2.5.1 (2026-10-28)
