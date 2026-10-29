@@ -37,8 +37,14 @@ class Rcon:
 
     def _send(self, kind, body):
         self._id += 1
+        self._write(self._id, kind, body)
+        return self._packet()
+
+    def _write(self, req_id, kind, body):
         data = body.encode("utf-8")
-        self.sock.sendall(struct.pack("<iii", len(data) + 10, self._id, kind) + data + b"\0\0")
+        self.sock.sendall(struct.pack("<iii", len(data) + 10, req_id, kind) + data + b"\0\0")
+
+    def _packet(self):
         size = struct.unpack("<i", self._read(4))[0]
         req_id, _ = struct.unpack("<ii", self._read(8))
         payload = self._read(size - 8)[:-2]
@@ -54,7 +60,24 @@ class Rcon:
         return buf
 
     def cmd(self, command):
-        return self._send(2, command)[1]
+        """Run a command. Long replies arrive in several packets (about 4 KB each), so once
+        the first has arrived a marker packet is sent, and everything up to the marker's reply
+        is joined. (The server reads one packet per network read and drops the connection if
+        two arrive together, so the marker mustn't be sent with the command.)"""
+        self._id += 1
+        command_id = self._id
+        self._write(command_id, 2, command)
+        req_id, first = self._packet()
+        parts = [first] if req_id == command_id else []
+        self._id += 1
+        marker = self._id
+        self._write(marker, 0, "")  # an unknown request type: answered after the rest of the reply
+        while True:
+            req_id, payload = self._packet()
+            if req_id == marker:
+                return "".join(parts)
+            if req_id == command_id:
+                parts.append(payload)
 
     def close(self):
         self.sock.close()

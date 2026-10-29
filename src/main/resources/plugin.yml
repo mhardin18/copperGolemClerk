@@ -9,5 +9,5 @@ permissions:
     description: Switch a copper golem between this plugin's sorting and vanilla (right-click with golem-toggle-item).
     default: true
   coppergolemclerk.admin:
-    description: Use /cgc help, check, overflow, reload and version; hear about new releases.
+    description: Use /cgc help, check, golems, overflow, reload and version; hear about new releases.
     default: op
