@@ -2,6 +2,11 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### New
+- Full-chest alerts: when a golem finds the chest labelled for its item full, or an `[Overflow]` chest is full or 90% full (`overflow-alert-percent`), the owner of the GriefPrevention claim is told (when they join, if they're offline); elsewhere, players with `coppergolemclerk.alerts` (ops by default). Alerts are logged and not repeated for `alert-cooldown-minutes` (30). Turn them off with `full-chest-alerts: false`.
+
 ## 2.5.1 (2026-10-28)
 
 ### Changed

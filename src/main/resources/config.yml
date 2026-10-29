@@ -148,6 +148,18 @@ mode-markers: true
 greet-other-golems: true
 greet-cooldown-minutes: 5
 
+# Alerts: players are told when a golem finds a labelled chest full, or an [Overflow]
+# chest is filling up. An alert goes to the owner of the GriefPrevention claim where it
+# happens (an owner who's offline is told when they join); outside claims, or without
+# GriefPrevention, to online players with coppergolemclerk.alerts (ops by default).
+# Every alert is also written to the server log.
+full-chest-alerts: true
+# Warn when an [Overflow] chest has at least this many of its slots in use (percent).
+# 0: only when it's completely full.
+overflow-alert-percent: 90
+# Don't repeat an alert about the same chest more often than this.
+alert-cooldown-minutes: 30
+
 # Write a line in the server log when a copper golem dies (with the cause, e.g.
 # lava, fall or a mob, and what it was holding) or is removed another way (turned
 # into a statue, /kill, another plugin). Golems never despawn, so this explains
