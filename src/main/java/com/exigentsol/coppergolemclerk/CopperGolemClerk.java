@@ -54,6 +54,10 @@ public final class CopperGolemClerk extends JavaPlugin {
     private GolemModes modes;
     private GolemStats stats;
     private volatile boolean joinSummary = true;
+    private GolemGreetings greetings;
+    private GolemLabels labels;
+    private volatile boolean statusLabels = true;
+    private volatile boolean statusLabelsEverywhere;
     private GolemFinder finder;
     private GolemRescue rescue;
     private volatile boolean rescueLostGolems = true;
@@ -98,7 +102,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         traffic = new GolemTraffic(this);
         getServer().getPluginManager().registerEvents(traffic, this);
         traffic.setEnabled(giveWay);
-        GolemGreetings greetings = new GolemGreetings(this, listener.fetcher(), listener.returns(), traffic);
+        greetings = new GolemGreetings(this, listener.fetcher(), listener.returns(), traffic);
         getServer().getScheduler().runTaskTimer(this, greetings::tick, 10, 10);
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);
@@ -110,6 +114,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, modes::syncAll, 40, 40);
         getServer().getScheduler().runTask(this, modes::findProtection); // after every plugin has enabled
         getServer().getScheduler().runTaskTimer(this, modes::follow, 1, 1);
+        labels = new GolemLabels(this);
+        getServer().getPluginManager().registerEvents(labels, this);
+        getServer().getScheduler().runTaskTimer(this, labels::tick, 1, 1);
         finder = new GolemFinder(this);
         getServer().getPluginManager().registerEvents(finder, this);
         getServer().getScheduler().runTaskTimer(this, finder::tick, 20 * 30, 20 * 30);
@@ -156,6 +163,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         if (stats != null) {
             stats.save();
+        }
+        if (labels != null) {
+            labels.removeAll();
         }
         if (modes != null) {
             modes.removeAll(); // markers aren't saved, but don't leave them behind on a plugin reload
@@ -213,6 +223,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         takeReach = reachSetting(config, "take-reach");
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
+        statusLabels = config.getBoolean("status-labels", true);
+        statusLabelsEverywhere = config.getBoolean("status-labels-everywhere", false); // not in config.yml: for tests
         greetOtherGolems = config.getBoolean("greet-other-golems", true);
         greetCooldownMillis = (long) (Math.max(0.1, config.getDouble("greet-cooldown-minutes", 5)) * 60_000L);
         rescueLostGolems = config.getBoolean("rescue-lost-golems", true);
@@ -379,6 +391,30 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     long greetCooldownMillis() {
         return greetCooldownMillis;
+    }
+
+    boolean statusLabels() {
+        return statusLabels;
+    }
+
+    boolean statusLabelsEverywhere() {
+        return statusLabelsEverywhere;
+    }
+
+    SortListener sortListener() {
+        return listener;
+    }
+
+    GolemGreetings greetings() {
+        return greetings;
+    }
+
+    GolemTraffic traffic() {
+        return traffic;
+    }
+
+    GolemModes modes() {
+        return modes;
     }
 
     boolean modeMarkers() {
