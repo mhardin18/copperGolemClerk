@@ -32,6 +32,8 @@ import org.bukkit.inventory.ItemStack;
  *   [overflow] (any case) marks the chest as a catch-all for items with no
  *   other home. [No Golems] (any case) keeps golems out of it: they never take
  *   from it (even a copper chest) or put anything into it.
+ *   [Only <label>] on a copper chest (e.g. [Only Logs]) is a filter: golems take
+ *   only those items from it and leave the rest. Several [Only ...] lines add up.
  *
  * For a double chest, labels on either half count.
  */
@@ -49,10 +51,25 @@ final class ChestLabels {
      * @param overflow  an [overflow] sign is present
      * @param unknown   bracketed sign lines that match no item (ignored), for /cgc check
      * @param noGolems  a [No Golems] sign is present
+     * @param only      [Only ...] rules: what golems may take from a copper chest (empty = anything)
+     * @param onlyNames the [Only ...] label texts, for /cgc check
      */
     record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow, List<String> unknown,
-                  boolean noGolems) {
-        static final Labels NONE = new Labels(List.of(), List.of(), false, List.of(), false);
+                  boolean noGolems, List<ItemGroups.Rule> only, List<String> onlyNames) {
+        static final Labels NONE = new Labels(List.of(), List.of(), false, List.of(), false, List.of(), List.of());
+
+        /** True if golems may take this item (no [Only ...] filter, or the filter covers it). */
+        boolean mayTake(Material type) {
+            if (only.isEmpty()) {
+                return true;
+            }
+            for (ItemGroups.Rule rule : only) {
+                if (rule.test().test(type)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         boolean hasItemRules() {
             return !rules.isEmpty();
@@ -83,6 +100,8 @@ final class ChestLabels {
         List<String> unknown = new ArrayList<>();
         boolean overflow = false;
         boolean noGolems = false;
+        List<ItemGroups.Rule> only = new ArrayList<>();
+        List<String> onlyNames = new ArrayList<>();
 
         for (Block block : blocksOf(container)) {
             if (frames) {
@@ -110,6 +129,17 @@ final class ChestLabels {
                                     noGolems = true;
                                     continue;
                                 }
+                                String filter = onlyLabel(inner);
+                                if (filter != null) {
+                                    ItemGroups.Rule rule = groups.signRule(filter);
+                                    if (rule != null) {
+                                        only.add(rule);
+                                        onlyNames.add("[" + inner + "]");
+                                    } else {
+                                        unknown.add("[" + inner + "]");
+                                    }
+                                    continue;
+                                }
                                 ItemGroups.Rule rule = groups.signRule(inner);
                                 if (rule != null) {
                                     rules.add(rule);
@@ -123,7 +153,20 @@ final class ChestLabels {
                 }
             }
         }
-        return new Labels(rules, names, overflow, unknown, noGolems);
+        return new Labels(rules, names, overflow, unknown, noGolems, only, onlyNames);
+    }
+
+    /** "Only Logs" -> "Logs" (any case, one or more spaces); null if the text isn't an [Only ...] label. */
+    static String onlyLabel(String text) {
+        Matcher m = ONLY.matcher(text);
+        return m.matches() ? m.group(1).trim() : null;
+    }
+
+    private static final Pattern ONLY = Pattern.compile("(?i)only\\s+(.+)");
+
+    /** The [Only ...] filter on this copper chest (NONE-like if there's none). Only signs are read. */
+    static Labels filterOf(Inventory container, CopperGolemClerk plugin) {
+        return plugin.signLabels() ? of(container, plugin.groups(), false, true) : Labels.NONE;
     }
 
     /** "No Golems", "no golem", "NO-GOLEMS", "no_golems": any case, singular or plural. */
