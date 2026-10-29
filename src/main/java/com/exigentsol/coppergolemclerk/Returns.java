@@ -91,10 +91,12 @@ final class Returns {
             return true;
         }
         List<Block> candidates = new ArrayList<>();
+        boolean sourceListed = false;
         if (source != null && sourceWorld != null && sourceWorld.equals(golem.getWorld())) {
             Block b = sourceWorld.getBlockAt(source.x(), source.y(), source.z());
             if (isCopperChest(b.getType()) || HomeFinder.isDestination(b.getType())) {
                 candidates.add(b); // its copper chest, or the overflow chest it was fetched from
+                sourceListed = true;
             }
         }
         candidates.addAll(copperChestsInRange(golem));
@@ -107,6 +109,11 @@ final class Returns {
                 continue; // [No Golems]: hands off
             }
             Inventory inventory = container.getInventory();
+            if (block != candidates.getFirst() || !sourceListed) {
+                if (isCopperChest(block.getType()) && !ChestLabels.filterOf(inventory, plugin).mayTake(held.getType())) {
+                    continue; // another copper chest whose [Only ...] filter would keep the item there for good
+                }
+            }
             if (!ChestMatcher.hasRoom(held, inventory)) {
                 continue;
             }

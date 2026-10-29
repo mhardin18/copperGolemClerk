@@ -71,3 +71,17 @@ def _(c):
                 ("5 items in it don't match" in copper, "says 5 items are left behind"),
                 ("does nothing on this chest" in plain, f"plain chest: says it does nothing: {plain[:160]!r}")]
     return check
+
+
+@scenario("filter-return-skips-filtered", "filters", 120, "A no-home item is returned to the unfiltered copper chest, not the nearer one signed [Only Logs] (where it would be stuck).", alone=True)
+def _(c):
+    from suite_options import set_options
+    set_options(c, matching_chest_timeout_seconds="5")
+    c.chest("near", 6, 10, block="waxed_copper_chest")
+    c.sign(6, 10, "[Only Logs]")
+    c.chest("far", 16, 10, block="waxed_copper_chest")
+    x, y, z = c.abs(10, 10)
+    c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} "
+          '{active_effects:[{id:"minecraft:luck",duration:-1,show_particles:0b}],'
+          'equipment:{mainhand:{id:"minecraft:sculk_shrieker",count:1}}}')
+    return lambda: [expect(c, "far", "sculk_shrieker", 1), expect(c, "near", "*", 0)]
