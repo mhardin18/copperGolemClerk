@@ -46,6 +46,7 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean giveWay;
     private GolemPaths paths;
     private volatile boolean avoidTrapdoors;
+    private volatile boolean avoidPortals = true;
     private UpdateChecker updates;
     private volatile boolean logGolemDeaths;
     private volatile int deliverReach = Reach.VANILLA;
@@ -98,6 +99,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         getServer().getPluginManager().registerEvents(paths, this);
         paths.setAvoidTrapdoors(avoidTrapdoors);
         getServer().getPluginManager().registerEvents(new GolemDeaths(this), this);
+        getServer().getPluginManager().registerEvents(new GolemPortals(this), this);
         modes = new GolemModes(this);
         getServer().getPluginManager().registerEvents(modes, this);
         getServer().getScheduler().runTaskTimer(this, modes::syncAll, 40, 40);
@@ -197,6 +199,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         tidyChests = config.getBoolean("tidy-chests", true);
         avoidTrapdoors = config.getBoolean("avoid-trapdoors", true);
+        avoidPortals = config.getBoolean("avoid-portals", true);
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         deliverReach = reachSetting(config, "deliver-reach");
         takeReach = reachSetting(config, "take-reach");
@@ -403,6 +406,10 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     long alertCooldownMillis() {
         return alertCooldownMillis;
+    }
+
+    boolean avoidPortals() {
+        return avoidPortals;
     }
 
     boolean logGolemDeaths() {

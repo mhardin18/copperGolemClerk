@@ -34,6 +34,7 @@ import suite_lifecycle  # noqa: E402,F401
 import suite_modes  # noqa: E402,F401
 import suite_options  # noqa: E402,F401
 import suite_perf  # noqa: E402,F401
+import suite_portals  # noqa: E402,F401
 import suite_scenes  # noqa: E402,F401
 import suite_reach  # noqa: E402,F401
 import suite_rescue  # noqa: E402,F401
