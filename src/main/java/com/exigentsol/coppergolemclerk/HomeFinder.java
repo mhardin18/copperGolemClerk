@@ -132,6 +132,7 @@ final class HomeFinder {
 
     /** Start a search for an item the plugin just handed the golem, from a known chest. */
     void startSearch(Entity golem, Material type, Block source) {
+        plugin.rescue().noteHome(golem, source); // only if it's a copper chest
         searches.put(golem.getUniqueId(), new Search(type, System.currentTimeMillis(),
                 golem.getWorld().getUID(), Pos.of(source)));
         activeMillis.put(golem.getUniqueId(), 0L);
@@ -202,6 +203,7 @@ final class HomeFinder {
         Search search = searches.get(golem.getUniqueId());
         if (search == null || search.type() != type) {
             Block source = Returns.sourceChestNear(golem);
+            plugin.rescue().noteHome(golem, source);
             search = new Search(type, System.currentTimeMillis(), golem.getWorld().getUID(),
                     source == null ? null : Pos.of(source));
             searches.put(golem.getUniqueId(), search);

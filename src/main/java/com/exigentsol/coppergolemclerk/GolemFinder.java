@@ -256,6 +256,10 @@ final class GolemFinder implements Listener {
         if (!plugin.manages(golem)) {
             notes.add(plugin.enabledIn(golem.getWorld()) ? "vanilla mode" : "plugin off in this world");
         }
+        String rescue = plugin.rescue() == null ? null : plugin.rescue().note(golem);
+        if (rescue != null) {
+            notes.add(rescue);
+        }
         if (golem.isLeashed()) {
             notes.add("on a lead");
         }

@@ -148,8 +148,19 @@ mode-markers: true
 greet-other-golems: true
 greet-cooldown-minutes: 5
 
-# Alerts: players are told when a golem finds a labelled chest full, or an [Overflow]
-# chest is filling up. An alert goes to the owner of the GriefPrevention claim where it
+# Lost golems: each golem remembers the copper chest it last took items from. If it ends
+# up far from any copper chest (more than 40 blocks from its own, or 12 up or down, e.g.
+# after falling down a shaft), it walks back. If it can't get any closer, or it's stuck
+# where it can't walk to a copper chest (a pit, walled in), its owner gets an alert
+# (see below) saying where it is, and it tries again every 5 minutes. A golem moved to a
+# place with its own copper chest just adopts that one. Golems on a lead are left alone.
+rescue-lost-golems: true
+# Teleport a golem that can't walk back to its copper chest, instead of only telling
+# the owner.
+lost-golem-teleport-home: false
+
+# Alerts: players are told when a golem is lost (above), finds a labelled chest full, or
+# an [Overflow] chest is filling up. An alert goes to the owner of the GriefPrevention claim where it
 # happens (an owner who's offline is told when they join); outside claims, or without
 # GriefPrevention, to online players with coppergolemclerk.alerts (ops by default).
 # Every alert is also written to the server log.
