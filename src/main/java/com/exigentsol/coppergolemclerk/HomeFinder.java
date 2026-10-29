@@ -443,7 +443,7 @@ final class HomeFinder {
         boolean room = ChestMatcher.hasRoom(held, inventory);
         if (kind == ChestMatcher.Kind.LABEL_MATCH) {
             if (!room) {
-                String label = "[" + String.join("][", matcher.labelsOf(inventory).names()) + "]";
+                String label = String.join("", matcher.labelsOf(inventory).names());
                 plugin.alerts().send("full:" + id, place, "The " + label + " chest at " + where
                         + " is full: golems can't put " + held.getType().getKey().getKey().replace('_', ' ') + " in it.");
             }
