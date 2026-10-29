@@ -79,7 +79,7 @@ def _(c):
 
     def check():
         alerts = [l for l in c.log_lines() if "Alert" in l and "itest-rescue-boxed" in l]
-        listed = re.sub(r"§.", "", c.r.cmd("cgc golems"))
+        listed = re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z}"))
         line = next((l for l in re.split(r"(?=\d+\. )", listed) if "itest-rescue-boxed" in l), "")
         return [(bool(alerts), "an alert names the golem"),
                 (any("can't find a way back" in l for l in alerts), "says it can't find a way back"),
@@ -133,7 +133,7 @@ def _(c):
 @scenario("rescue-home-chest-gone", "rescue", 45, "A golem whose copper chest was broken forgets its home instead of trying to walk to it.")
 def _(c):
     walkway(c)
-    lost_golem(c, FAR, 10)
+    lost_golem(c, FAR, 10, extra=",NoAI:1b")  # no wandering off the walkway
 
     def check():
         x, y, z = c.abs(0, 10)
