@@ -11,6 +11,7 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - Golems stay out of portals (`avoid-portals`, on by default): a copper golem never goes through a Nether portal, End portal or End gateway, so one that wanders into a portal stays in its own world. Golems on a lead or riding go through as usual.
 - Copper chest filters: an `[Only ...]` sign on a copper chest (`[Only Logs]`, `[Only Oak Log]`, `[Only #planks]`) makes golems take only those items out of it and leave the rest. Several `[Only ...]` lines add up. `/cgc check` shows the filter.
 - Status labels: while you hold bamboo, copper golems near you show what they're doing (`carrying 12 birch log`, `fetching granite`, `lost, walking home`, `idle`...) and how weathered their copper is. Only players holding bamboo see them. Turn them off with `status-labels: false`.
+- `/cgc stats`: how many items golems have sorted today, this week and all time, the most-sorted items and the busiest claims. Players are told when they join what golems sorted in their claims while they were away, and how many of their chests filled up (`join-summary`).
 
 ## 2.5.1 (2026-10-28)
 
