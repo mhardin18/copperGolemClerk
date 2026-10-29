@@ -428,13 +428,37 @@ public final class CopperGolemClerk extends JavaPlugin {
                     }
                 }
                 case "version" -> updates.report(sender);
-                case "golems" -> finder.report(sender, args.length > 1 && args[1].equalsIgnoreCase("all"));
+                case "golems" -> {
+                    boolean all = args.length > 1 && args[1].equalsIgnoreCase("all");
+                    finder.report(sender, all, all ? null : spotArg(sender, args));
+                }
                 case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null);
                 default -> {
                     sender.sendMessage(Component.text("Unknown command '" + args[0] + "'.", NamedTextColor.RED));
                     HelpText.send(sender, null);
                 }
             }
+        }
+
+        /** "<x> <y> <z> [world]" after the subcommand as a location (loaded or not), or null if not given. */
+        private org.bukkit.Location spotArg(CommandSender sender, String[] args) {
+            if (args.length < 4) {
+                return null;
+            }
+            double x, y, z;
+            try {
+                x = Integer.parseInt(args[1]) + 0.5;
+                y = Integer.parseInt(args[2]);
+                z = Integer.parseInt(args[3]) + 0.5;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Give whole-number coordinates: <x> <y> <z> [world]");
+            }
+            World world = args.length > 4 ? getServer().getWorld(args[4])
+                    : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
+            if (world == null) {
+                throw new IllegalArgumentException("No world named '" + args[4] + "'.");
+            }
+            return new org.bukkit.Location(world, x, y, z);
         }
 
         /** The block at "<x> <y> <z> [world]" after the subcommand, or null if not given. */

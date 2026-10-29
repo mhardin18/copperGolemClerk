@@ -1,7 +1,8 @@
 """finder: /cgc golems lists copper golems, loaded or not (where they were last seen).
 
-From the console the command lists every golem on the server, so each scenario names its
-golems ("itest-<scenario>-...") and looks for its own lines.
+From the console, /cgc golems <x> <y> <z> lists the 10 golems nearest that spot; each
+scenario asks about its own platform, names its golems ("itest-<scenario>-...") and looks
+for its own lines.
 """
 import os
 import re
@@ -20,7 +21,8 @@ def named(c, dx, dz, name, extra=""):
 
 
 def golems_reply(c):
-    return re.sub(r"§.", "", c.r.cmd("cgc golems"))
+    x, y, z = c.abs(10, 10)
+    return re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z}"))
 
 
 def line_of(reply, name):
@@ -46,6 +48,21 @@ def _(c):
                 ("unaffected" in a, "says its copper is unaffected"),
                 ("vanilla mode" in b, f"the vanilla golem says vanilla mode: {b!r}"),
                 ("vanilla mode" not in a, "the plugin golem doesn't")]
+    return check
+
+
+@scenario("golems-near-a-spot", "finder", 30, "/cgc golems <x> <y> <z> from the console: the golems nearest that spot, nearest first, with distance and direction.")
+def _(c):
+    named(c, 12, 10, "itest-fn-near", ",NoAI:1b")
+    named(c, 18, 10, "itest-fn-far", ",NoAI:1b")
+
+    def check():
+        reply = golems_reply(c)
+        near, far = reply.find("itest-fn-near"), reply.find("itest-fn-far")
+        line = line_of(reply, "itest-fn-near") or ""
+        return [(near >= 0 and far > near, "lists both, the nearer first"),
+                ("(2 blocks E)" in line, f"says it's 2 blocks east: {line!r}"),
+                ("near " in reply.splitlines()[0] if reply else False, "the heading names the spot")]
     return check
 
 

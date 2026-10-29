@@ -151,13 +151,13 @@ final class GolemFinder implements Listener {
     }
 
     /**
-     * List golems: a player sees the nearest in their world (all of them with "all"); the
-     * console sees every golem in every world.
+     * List golems: the nearest to a spot (the player, or a position given), or with "all"
+     * (and from the console without a position) every golem in every world.
      */
-    void report(CommandSender sender, boolean all) {
+    void report(CommandSender sender, boolean all, Location spot) {
         Player player = sender instanceof Player p ? p : null;
-        boolean everywhere = player == null || all;
-        Location here = player == null ? null : player.getLocation();
+        Location here = spot != null ? spot : player == null ? null : player.getLocation();
+        boolean everywhere = here == null || all;
 
         List<Row> rows = new ArrayList<>();
         Map<UUID, Boolean> listed = new HashMap<>();
@@ -189,7 +189,9 @@ final class GolemFinder implements Listener {
                 .thenComparingInt(r -> r.seen() == null ? 0 : r.seen().x()));
 
         long loaded = rows.stream().filter(r -> r.live() != null).count();
-        String scope = everywhere ? "on the server" : "in " + here.getWorld().getName();
+        String scope = everywhere ? "on the server"
+                : spot != null ? "near " + spot.getBlockX() + " " + spot.getBlockY() + " " + spot.getBlockZ() + " in " + here.getWorld().getName()
+                : "in " + here.getWorld().getName();
         if (rows.isEmpty()) {
             sender.sendMessage(Component.text("No copper golems " + scope + " that the plugin knows of.", NamedTextColor.YELLOW));
             return;
@@ -199,7 +201,7 @@ final class GolemFinder implements Listener {
                 + (everywhere ? "" : ", nearest first") + ":", NamedTextColor.GOLD));
         int max = everywhere ? MAX_ALL : MAX_NEAR;
         for (int i = 0; i < rows.size() && i < max; i++) {
-            sender.sendMessage(line(i + 1, rows.get(i), player, everywhere));
+            sender.sendMessage(line(i + 1, rows.get(i), player, everywhere, here));
         }
         if (rows.size() > max) {
             sender.sendMessage(Component.text("...and " + (rows.size() - max) + " more"
@@ -207,7 +209,7 @@ final class GolemFinder implements Listener {
         }
     }
 
-    private Component line(int n, Row row, Player player, boolean showWorld) {
+    private Component line(int n, Row row, Player player, boolean showWorld, Location here) {
         Seen s = row.seen();
         String world = row.live() != null ? row.live().getWorld().getName() : s.world();
         int x, y, z;
@@ -234,9 +236,9 @@ final class GolemFinder implements Listener {
                     .hoverEvent(HoverEvent.showText(Component.text("Click to teleport there")));
         }
         out = out.append(where);
-        if (row.distance() != Double.MAX_VALUE && player != null && player.getWorld().getName().equals(world)) {
+        if (row.distance() != Double.MAX_VALUE && here != null && here.getWorld().getName().equals(world)) {
             out = out.append(Component.text(String.format(" (%d blocks %s)", Math.round(row.distance()),
-                    direction(player.getLocation(), x, z)), NamedTextColor.GRAY));
+                    direction(here, x, z)), NamedTextColor.GRAY));
         }
         List<String> notes = row.live() != null ? describe(row.live()) : List.of("not loaded, last seen " + ago(s.millis()));
         if (!notes.isEmpty()) {

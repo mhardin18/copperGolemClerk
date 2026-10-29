@@ -33,7 +33,7 @@ final class HelpText {
                             "- its chest can't be used by golems: what to fix",
                             "- its chest is full: make room",
                             "- has a chest with room: idle golems will move it on their own")),
-            new Entry("golems", "/cgc golems [all]", "/cgc golems",
+            new Entry("golems", "/cgc golems [all]", "/cgc golems [<x> <y> <z> [world]]",
                     "Where the copper golems are, nearest first.",
                     List.of("Lists the copper golems in your world, nearest first (the 10 nearest;"
                                     + " /cgc golems all lists every golem in every world).",
@@ -41,7 +41,8 @@ final class HelpText {
                                     + " what it's carrying, its copper and its mode.",
                             "Golems in unloaded chunks are listed where they were last seen: the plugin"
                                     + " remembers every golem's last spot in golems.yml.",
-                            "From the console it lists every golem in every world.")),
+                            "Give a position (/cgc golems <x> <y> <z> [world]) for the 10 nearest to it;"
+                                    + " from the console without one, every golem in every world.")),
             new Entry("reload", "/cgc reload", "/cgc reload",
                     "Reload config.yml.",
                     List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",
