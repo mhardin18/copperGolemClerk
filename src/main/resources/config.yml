@@ -114,6 +114,11 @@ golems-give-way: true
 # Golems stepping aside for each other (golems-give-way) avoid trapdoors too.
 avoid-trapdoors: true
 
+# Golems never go through a Nether portal, End portal or End gateway, so one that
+# wanders into a portal stays in its own world near its copper chest. Golems on a
+# lead or riding something go through as usual (a player is taking them).
+avoid-portals: true
+
 # Once a week (and a minute after the server starts), check GitHub for a newer
 # release of this plugin. If there is one, it's logged and admins (op, or the
 # coppergolemclerk.admin permission) are told once when they join. Nothing is

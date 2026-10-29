@@ -191,6 +191,14 @@ shaft, a drop into a farm) catches them: they walk onto it and fall in. With
 closed, and never stand on one. A golem whose only way to a chest is across a
 trapdoor won't reach it, and its item goes elsewhere as usual.
 
+### Golems stay out of portals
+
+A golem that wanders into a Nether portal ends up in the Nether, far from its copper
+chest and unable to get back. With `avoid-portals` (on by default), golems never go
+through a Nether portal, End portal or End gateway; one that steps into a portal just
+stays in its own world. A golem on a lead or riding a boat or minecart goes through
+as usual, so you can still take golems to another dimension.
+
 ### Taller stacks of chests
 
 Vanilla golems only open chests up to 2 rows above the floor they stand on: the
@@ -263,6 +271,7 @@ Settings:
   resort. Set `false` so golems only fill chests you've labelled.
 - `golems-give-way: true` (default): see above.
 - `avoid-trapdoors: true` (default): see above.
+- `avoid-portals: true` (default): see "Golems stay out of portals" above.
 - `update-check: true` (default): see "Update notices" below.
 - `deliver-reach: 2`, `take-reach: 2` (default): see "Taller stacks of chests" above.
 - `golem-toggle-item: bamboo`, `mode-markers: true` (default): see "Switching a golem back to vanilla" above.
