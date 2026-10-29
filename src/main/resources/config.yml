@@ -188,6 +188,12 @@ overflow-alert-percent: 90
 # Don't repeat an alert about the same chest more often than this.
 alert-cooldown-minutes: 30
 
+# When a player joins, tell them how many items golems sorted in their claims while
+# they were away, and how many of their chests filled up (without GriefPrevention:
+# server-wide numbers, for players with coppergolemclerk.alerts). /cgc stats shows
+# the numbers any time.
+join-summary: true
+
 # Write a line in the server log when a copper golem dies (with the cause, e.g.
 # lava, fall or a mob, and what it was holding) or is removed another way (turned
 # into a statue, /kill, another plugin). Golems never despawn, so this explains
