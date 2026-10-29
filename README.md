@@ -241,6 +241,20 @@ its routine and doesn't greet again for `greet-cooldown-minutes` (default 5). It
 never follows: if it can't get there in 20 seconds it gives up, and any work turning
 up ends the visit at once. Turn it off with `greet-other-golems: false`.
 
+### Full-chest alerts
+
+When a golem can't put an item in the chest labelled for it because the chest is full,
+or an `[Overflow]` chest is full or nearly (`overflow-alert-percent`, default 90% of its
+slots), the plugin says so:
+
+> [Golem Clerk] The [logs] chest at 120, 64, -40 is full: golems can't put birch log in it.
+
+The alert goes to the owner of the GriefPrevention claim the chest is in; an owner
+who's offline is told when they next join. Outside claims, or without GriefPrevention,
+it goes to online players with `coppergolemclerk.alerts` (ops by default). Every alert
+is also logged, and the same chest isn't mentioned again for `alert-cooldown-minutes`
+(default 30). Turn them off with `full-chest-alerts: false`.
+
 ### Golems tidy the chests they use
 
 With `tidy-chests` (on by default), a golem tidies a chest while it has the lid open
@@ -276,6 +290,7 @@ Settings:
 - `deliver-reach: 2`, `take-reach: 2` (default): see "Taller stacks of chests" above.
 - `golem-toggle-item: bamboo`, `mode-markers: true` (default): see "Switching a golem back to vanilla" above.
 - `greet-other-golems: true`, `greet-cooldown-minutes: 5` (default): see "Golems say hello" above.
+- `full-chest-alerts: true`, `overflow-alert-percent: 90`, `alert-cooldown-minutes: 30` (default): see "Full-chest alerts" above.
 - `log-golem-deaths: true` (default): write a line in the server log when a copper
   golem dies (where, the cause such as lava, a fall or a mob, and what it was holding)
   or turns into a statue. Golems never despawn, so a golem that goes missing shows up here.
@@ -309,10 +324,16 @@ Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
 - `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
   items with no chest (with a sign label to use for each group), items whose chest is
   full, and items golems will move on their own.
+- `/cgc golems`: the 10 copper golems nearest you, with their position (click to
+  teleport there), distance and direction, what they carry, their copper and their mode.
+  `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
+  listed where they were last seen (the plugin keeps every golem's last spot in
+  `golems.yml`).
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,
-`/cgc overflow <x> <y> <z> [world]`.
+`/cgc overflow <x> <y> <z> [world]`, `/cgc golems <x> <y> <z> [world]` (the 10 golems
+nearest that spot; without a position the console lists every golem).
 
 ## Building from source
 

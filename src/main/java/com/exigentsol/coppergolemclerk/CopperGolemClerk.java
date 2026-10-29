@@ -52,6 +52,11 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile int deliverReach = Reach.VANILLA;
     private volatile int takeReach = Reach.VANILLA;
     private GolemModes modes;
+    private GolemFinder finder;
+    private Alerts alerts;
+    private volatile boolean fullChestAlerts = true;
+    private volatile int overflowAlertPercent = 90;
+    private volatile long alertCooldownMillis = 30 * 60_000L;
     private volatile boolean greetOtherGolems = true;
     private volatile long greetCooldownMillis = 5 * 60_000L;
     private volatile Material golemToggleItem = Material.BAMBOO;
@@ -74,6 +79,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         saveDefaultConfig();
         loadSettings();
+        alerts = new Alerts(this);
+        getServer().getPluginManager().registerEvents(alerts, this);
+        getServer().getScheduler().runTask(this, alerts::findProtection); // after every plugin has enabled
         listener = new SortListener(this);
         reports = new ChestReports(this);
         getServer().getPluginManager().registerEvents(listener, this);
@@ -92,6 +100,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, modes::syncAll, 40, 40);
         getServer().getScheduler().runTask(this, modes::findProtection); // after every plugin has enabled
         getServer().getScheduler().runTaskTimer(this, modes::follow, 1, 1);
+        finder = new GolemFinder(this);
+        getServer().getPluginManager().registerEvents(finder, this);
+        getServer().getScheduler().runTaskTimer(this, finder::tick, 20 * 30, 20 * 30);
         updates = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updates, this);
         updates.configure(updateCheck, updateCheckUrl);
@@ -129,6 +140,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         if (updates != null) {
             updates.stop();
+        }
+        if (finder != null) {
+            finder.save();
         }
         if (modes != null) {
             modes.removeAll(); // markers aren't saved, but don't leave them behind on a plugin reload
@@ -188,6 +202,12 @@ public final class CopperGolemClerk extends JavaPlugin {
         modeMarkers = config.getBoolean("mode-markers", true);
         greetOtherGolems = config.getBoolean("greet-other-golems", true);
         greetCooldownMillis = (long) (Math.max(0.1, config.getDouble("greet-cooldown-minutes", 5)) * 60_000L);
+        fullChestAlerts = config.getBoolean("full-chest-alerts", true);
+        overflowAlertPercent = Math.clamp(config.getInt("overflow-alert-percent", 90), 0, 100);
+        alertCooldownMillis = (long) (Math.max(0.1, config.getDouble("alert-cooldown-minutes", 30)) * 60_000L);
+        if (alerts != null) {
+            alerts.clearCooldowns();
+        }
         modeMarkerHeight = (float) config.getDouble("mode-marker-height", 0.3); // not in config.yml: fine-tuning
         updateCheck = config.getBoolean("update-check", true);
         updateCheckUrl = config.getString("update-check-url", UpdateChecker.DEFAULT_URL); // not in config.yml: for tests
@@ -353,6 +373,22 @@ public final class CopperGolemClerk extends JavaPlugin {
         return modeMarkerHeight;
     }
 
+    Alerts alerts() {
+        return alerts;
+    }
+
+    boolean fullChestAlerts() {
+        return fullChestAlerts;
+    }
+
+    int overflowAlertPercent() {
+        return overflowAlertPercent;
+    }
+
+    long alertCooldownMillis() {
+        return alertCooldownMillis;
+    }
+
     boolean avoidPortals() {
         return avoidPortals;
     }
@@ -428,12 +464,37 @@ public final class CopperGolemClerk extends JavaPlugin {
                     }
                 }
                 case "version" -> updates.report(sender);
+                case "golems" -> {
+                    boolean all = args.length > 1 && args[1].equalsIgnoreCase("all");
+                    finder.report(sender, all, all ? null : spotArg(sender, args));
+                }
                 case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null);
                 default -> {
                     sender.sendMessage(Component.text("Unknown command '" + args[0] + "'.", NamedTextColor.RED));
                     HelpText.send(sender, null);
                 }
             }
+        }
+
+        /** "<x> <y> <z> [world]" after the subcommand as a location (loaded or not), or null if not given. */
+        private org.bukkit.Location spotArg(CommandSender sender, String[] args) {
+            if (args.length < 4) {
+                return null;
+            }
+            double x, y, z;
+            try {
+                x = Integer.parseInt(args[1]) + 0.5;
+                y = Integer.parseInt(args[2]);
+                z = Integer.parseInt(args[3]) + 0.5;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Give whole-number coordinates: <x> <y> <z> [world]");
+            }
+            World world = args.length > 4 ? getServer().getWorld(args[4])
+                    : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
+            if (world == null) {
+                throw new IllegalArgumentException("No world named '" + args[4] + "'.");
+            }
+            return new org.bukkit.Location(world, x, y, z);
         }
 
         /** The block at "<x> <y> <z> [world]" after the subcommand, or null if not given. */
@@ -465,6 +526,9 @@ public final class CopperGolemClerk extends JavaPlugin {
             if (args.length <= 1) {
                 String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
                 return HelpText.names().stream().filter(s -> s.startsWith(prefix)).toList();
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("golems")) {
+                return "all".startsWith(args[1].toLowerCase(Locale.ROOT)) ? List.of("all") : List.of();
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
                 String prefix = args[1].toLowerCase(Locale.ROOT);

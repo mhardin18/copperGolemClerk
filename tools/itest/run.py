@@ -22,11 +22,13 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arena  # noqa: E402
+import suite_alerts  # noqa: E402,F401
 import suite_commands  # noqa: E402,F401
 import suite_config  # noqa: E402
 import suite_conflicts  # noqa: E402,F401
 import suite_core  # noqa: E402,F401
 import suite_edge  # noqa: E402,F401
+import suite_finder  # noqa: E402,F401
 import suite_greet  # noqa: E402,F401
 import suite_lifecycle  # noqa: E402,F401
 import suite_modes  # noqa: E402,F401

@@ -5,6 +5,8 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 ## Unreleased
 
 ### New
+- `/cgc golems` finds your copper golems: the 10 nearest (or every one with `all`), each with its position (click to teleport), distance and direction, what it's carrying, its copper and its mode. Golems in unloaded chunks are listed where they were last seen.
+- Full-chest alerts: when a golem finds the chest labelled for its item full, or an `[Overflow]` chest is full or 90% full (`overflow-alert-percent`), the owner of the GriefPrevention claim is told (when they join, if they're offline); elsewhere, players with `coppergolemclerk.alerts` (ops by default). Alerts are logged and not repeated for `alert-cooldown-minutes` (30). Turn them off with `full-chest-alerts: false`.
 - Golems stay out of portals (`avoid-portals`, on by default): a copper golem never goes through a Nether portal, End portal or End gateway, so one that wanders into a portal stays in its own world. Golems on a lead or riding go through as usual.
 
 ## 2.5.1 (2026-10-28)
