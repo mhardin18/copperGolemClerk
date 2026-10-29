@@ -110,3 +110,43 @@ def _(c):
             return [(False, "waiting for the golem to pick up the logs")]
         return [(t.since() > 30, "waited 30s after taking chests out"), expect(c, "logs", "*", 0)]
     return check
+
+
+@scenario("dest-fetch-from-overflow-barrel", "destinations", 150, "Barrels allowed: an idle golem fetches granite out of an [Overflow] barrel into the [stone] chest.", alone=True)
+def _(c):
+    set_options(c, destination_containers=ALL)
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    c.chest("overflow", 8, 10, [("granite", 8)], block="barrel")
+    c.sign(8, 10, "[Overflow]")
+    c.chest("stone", 14, 10)
+    c.sign(14, 10, "[stone]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "stone", "granite", 8), expect(c, "overflow", "*", 0)]
+
+
+@scenario("dest-barrel-out-of-reach", "destinations", 120, "Barrels allowed, deliver-reach 2: a [logs] barrel 3 rows up (on two blocks) is out of reach; the logs go to [Overflow].", alone=True)
+def _(c):
+    set_options(c, destination_containers=ALL)
+    logs_copper(c)
+    c.block(12, 10, "stone")
+    c.block(12, 10, "stone", dy=1)
+    c.block(12, 10, "stone", dy=2)
+    c.chest("barrel", 12, 10, block="barrel", dy=3)
+    c.sign(12, 10, "[logs]", dy=3)
+    c.chest("overflow", 16, 10)
+    c.sign(16, 10, "[Overflow]")
+    return lambda: [expect(c, "overflow", "birch_log", 16), expect(c, "barrel", "*", 0)]
+
+
+@scenario("dest-full-barrel-alert", "destinations", 150, "Barrels allowed: a full [logs] barrel gets a full-chest alert naming it, and the logs go to [Overflow].", alone=True)
+def _(c):
+    set_options(c, destination_containers=ALL)
+    logs_copper(c)
+    c.chest("barrel", 10, 10, [("oak_log", 64)] * 27, block="barrel")
+    c.sign(10, 10, "[logs]")
+    c.chest("overflow", 16, 10)
+    c.sign(16, 10, "[Overflow]")
+    x, y, z = c.abs(10, 10)
+    return lambda: [expect(c, "overflow", "birch_log", 16),
+                    (any("Alert" in l and f"[logs] chest at {x}, {y}, {z} is full" in l for l in c.log_lines()),
+                     "alert about the full barrel")]
