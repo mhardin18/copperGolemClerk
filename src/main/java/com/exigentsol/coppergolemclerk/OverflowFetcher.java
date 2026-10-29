@@ -110,7 +110,7 @@ final class OverflowFetcher {
     }
 
     private void maybeStartFetch(CopperGolem golem, long now) {
-        if (!isIdle(golem)) {
+        if (!isIdle(golem) || plugin.rescue().isRescuing(golem.getUniqueId())) {
             return;
         }
         // Anything to take from a copper chest? Then it's not idle. Copper chests above vanilla's

@@ -76,6 +76,7 @@ class Cell:
         self.log = log
         self.x, self.z = X0, Z0 + index * SPACING
         self.chests = {}
+        self.cleanup = []  # extra commands for clear(): blocks a scenario put outside its platform
         self.started = time.time()
         self.log_start = log.size()
 
@@ -125,6 +126,8 @@ class Cell:
 
     def clear(self):
         x, z, s = self.x, self.z, SIZE
+        for command in self.cleanup:
+            self.r.cmd(command)
         for name, blocks in self.chests.items():  # including any placed off the platform
             for bx, by, bz in blocks:
                 self.r.cmd(f"setblock {bx} {by} {bz} minecraft:air")

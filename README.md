@@ -233,6 +233,22 @@ its routine and doesn't greet again for `greet-cooldown-minutes` (default 5). It
 never follows: if it can't get there in 20 seconds it gives up, and any work turning
 up ends the visit at once. Turn it off with `greet-other-golems: false`.
 
+### Lost golems find their way home
+
+Each golem remembers the copper chest it last took items from. If it ends up far from
+any copper chest (more than 40 blocks from its own, or 12 up or down, say after falling
+down a shaft), it walks back. If it gets no closer for 20 seconds, or it's stuck where
+it can't walk to a copper chest (in a pit, walled in), its owner gets an alert (see
+"Full-chest alerts" below for who that is) saying where it is:
+
+> [Golem Clerk] A copper golem is lost at -757, -55, 102, 118 blocks from its copper chest at -760, 63, 98, and can't find a way back.
+
+It tries again every 5 minutes. Set `lost-golem-teleport-home: true` to have such golems
+teleported back to their copper chest instead. A golem moved somewhere with its own
+copper chest (on a lead, say) adopts that chest as its new home; golems on a lead are
+left alone. `/cgc golems` shows which golems are lost. Turn it off with
+`rescue-lost-golems: false`.
+
 ### Full-chest alerts
 
 When a golem can't put an item in the chest labelled for it because the chest is full,
@@ -281,6 +297,7 @@ Settings:
 - `deliver-reach: 2`, `take-reach: 2` (default): see "Taller stacks of chests" above.
 - `golem-toggle-item: bamboo`, `mode-markers: true` (default): see "Switching a golem back to vanilla" above.
 - `greet-other-golems: true`, `greet-cooldown-minutes: 5` (default): see "Golems say hello" above.
+- `rescue-lost-golems: true`, `lost-golem-teleport-home: false` (default): see "Lost golems find their way home" above.
 - `full-chest-alerts: true`, `overflow-alert-percent: 90`, `alert-cooldown-minutes: 30` (default): see "Full-chest alerts" above.
 - `log-golem-deaths: true` (default): write a line in the server log when a copper
   golem dies (where, the cause such as lava, a fall or a mob, and what it was holding)

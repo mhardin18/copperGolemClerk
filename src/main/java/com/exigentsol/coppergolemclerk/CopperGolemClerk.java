@@ -52,6 +52,9 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile int takeReach = Reach.VANILLA;
     private GolemModes modes;
     private GolemFinder finder;
+    private GolemRescue rescue;
+    private volatile boolean rescueLostGolems = true;
+    private volatile boolean lostGolemTeleportHome;
     private Alerts alerts;
     private volatile boolean fullChestAlerts = true;
     private volatile int overflowAlertPercent = 90;
@@ -81,6 +84,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         alerts = new Alerts(this);
         getServer().getPluginManager().registerEvents(alerts, this);
         getServer().getScheduler().runTask(this, alerts::findProtection); // after every plugin has enabled
+        rescue = new GolemRescue(this);
+        getServer().getScheduler().runTaskTimer(this, rescue::tick, 20, 20);
         listener = new SortListener(this);
         reports = new ChestReports(this);
         getServer().getPluginManager().registerEvents(listener, this);
@@ -199,6 +204,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         modeMarkers = config.getBoolean("mode-markers", true);
         greetOtherGolems = config.getBoolean("greet-other-golems", true);
         greetCooldownMillis = (long) (Math.max(0.1, config.getDouble("greet-cooldown-minutes", 5)) * 60_000L);
+        rescueLostGolems = config.getBoolean("rescue-lost-golems", true);
+        lostGolemTeleportHome = config.getBoolean("lost-golem-teleport-home", false);
         fullChestAlerts = config.getBoolean("full-chest-alerts", true);
         overflowAlertPercent = Math.clamp(config.getInt("overflow-alert-percent", 90), 0, 100);
         alertCooldownMillis = (long) (Math.max(0.1, config.getDouble("alert-cooldown-minutes", 30)) * 60_000L);
@@ -368,6 +375,18 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     float modeMarkerHeight() {
         return modeMarkerHeight;
+    }
+
+    GolemRescue rescue() {
+        return rescue;
+    }
+
+    boolean rescueLostGolems() {
+        return rescueLostGolems;
+    }
+
+    boolean lostGolemTeleportHome() {
+        return lostGolemTeleportHome;
     }
 
     Alerts alerts() {

@@ -6,6 +6,7 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 
 ### New
 - `/cgc golems` finds your copper golems: the 10 nearest (or every one with `all`), each with its position (click to teleport), distance and direction, what it's carrying, its copper and its mode. Golems in unloaded chunks are listed where they were last seen.
+- Lost golems find their way home: a golem remembers the copper chest it last took items from, and if it ends up far from any copper chest (more than 40 blocks, or 12 up or down) it walks back. A golem that can't, or is stuck in a pit, is reported to its owner with an alert; `lost-golem-teleport-home: true` teleports it back instead. `/cgc golems` shows lost golems. Turn it off with `rescue-lost-golems: false`.
 - Full-chest alerts: when a golem finds the chest labelled for its item full, or an `[Overflow]` chest is full or 90% full (`overflow-alert-percent`), the owner of the GriefPrevention claim is told (when they join, if they're offline); elsewhere, players with `coppergolemclerk.alerts` (ops by default). Alerts are logged and not repeated for `alert-cooldown-minutes` (30). Turn them off with `full-chest-alerts: false`.
 
 ## 2.5.1 (2026-10-28)
