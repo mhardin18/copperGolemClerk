@@ -59,9 +59,30 @@ final class ChestReports {
             return;
         }
         if (Returns.isCopperChest(block.getType())) {
-            say(player, NamedTextColor.AQUA, ChestLabels.noGolems(inv, plugin)
-                    ? "Copper chest with a [No Golems] sign: golems leave it alone."
-                    : "Copper chest: golems take items out of it to sort them.");
+            ChestLabels.Labels filter = ChestLabels.filterOf(inv, plugin);
+            if (ChestLabels.noGolems(inv, plugin)) {
+                say(player, NamedTextColor.AQUA, "Copper chest with a [No Golems] sign: golems leave it alone.");
+            } else if (!filter.only().isEmpty()) {
+                say(player, NamedTextColor.AQUA, "Copper chest with a filter: golems take only these items out of it"
+                        + " and leave the rest:");
+                for (int i = 0; i < filter.only().size(); i++) {
+                    say(player, NamedTextColor.AQUA, "  " + filter.onlyNames().get(i) + " = " + describe(filter.only().get(i)));
+                }
+                int left = 0;
+                for (ItemStack s : inv.getStorageContents()) {
+                    if (s != null && !s.isEmpty() && !filter.mayTake(s.getType())) {
+                        left += s.getAmount();
+                    }
+                }
+                if (left > 0) {
+                    say(player, NamedTextColor.WHITE, left + " item" + (left == 1 ? "" : "s") + " in it don't match, so golems leave them.");
+                }
+            } else {
+                say(player, NamedTextColor.AQUA, "Copper chest: golems take items out of it to sort them.");
+            }
+            for (String unknown : filter.unknown()) {
+                say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+            }
             reachNote(player, block, inv, "take-reach", plugin.takeReach());
             return;
         }
@@ -86,6 +107,10 @@ final class ChestReports {
         }
         for (String unknown : labels.unknown()) {
             say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+        }
+        for (String only : labels.onlyNames()) {
+            say(player, NamedTextColor.YELLOW, "  " + only + " is a filter for copper chests (what golems take out);"
+                    + " it does nothing on this chest");
         }
 
         if (labels.hasItemRules()) {
