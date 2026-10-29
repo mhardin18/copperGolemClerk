@@ -52,6 +52,8 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile int deliverReach = Reach.VANILLA;
     private volatile int takeReach = Reach.VANILLA;
     private GolemModes modes;
+    private GolemStats stats;
+    private volatile boolean joinSummary = true;
     private GolemGreetings greetings;
     private GolemLabels labels;
     private volatile boolean statusLabels = true;
@@ -86,6 +88,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         saveDefaultConfig();
         loadSettings();
+        stats = new GolemStats(this);
+        getServer().getPluginManager().registerEvents(stats, this);
+        getServer().getScheduler().runTaskTimer(this, stats::save, 20 * 300, 20 * 300);
         alerts = new Alerts(this);
         getServer().getPluginManager().registerEvents(alerts, this);
         getServer().getScheduler().runTask(this, alerts::findProtection); // after every plugin has enabled
@@ -156,6 +161,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         if (finder != null) {
             finder.save();
         }
+        if (stats != null) {
+            stats.save();
+        }
         if (labels != null) {
             labels.removeAll();
         }
@@ -222,6 +230,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         rescueLostGolems = config.getBoolean("rescue-lost-golems", true);
         lostGolemTeleportHome = config.getBoolean("lost-golem-teleport-home", false);
         fullChestAlerts = config.getBoolean("full-chest-alerts", true);
+        joinSummary = config.getBoolean("join-summary", true);
         overflowAlertPercent = Math.clamp(config.getInt("overflow-alert-percent", 90), 0, 100);
         alertCooldownMillis = (long) (Math.max(0.1, config.getDouble("alert-cooldown-minutes", 30)) * 60_000L);
         if (alerts != null) {
@@ -428,6 +437,14 @@ public final class CopperGolemClerk extends JavaPlugin {
         return lostGolemTeleportHome;
     }
 
+    GolemStats stats() {
+        return stats;
+    }
+
+    boolean joinSummary() {
+        return joinSummary;
+    }
+
     Alerts alerts() {
         return alerts;
     }
@@ -519,6 +536,7 @@ public final class CopperGolemClerk extends JavaPlugin {
                     }
                 }
                 case "version" -> updates.report(sender);
+                case "stats" -> stats.report(sender);
                 case "golems" -> {
                     boolean all = args.length > 1 && args[1].equalsIgnoreCase("all");
                     finder.report(sender, all, all ? null : spotArg(sender, args));
