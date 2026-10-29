@@ -94,3 +94,19 @@ def _(c):
     c.sign(10, 10, "[logs]")
     return lambda: [expect(c, "logs", "birch_log", 16),
                     (any("frobnitz" in l and "destination-containers" in l for l in c.log_lines()), "warning logged")]
+
+
+@scenario("dest-chest-dropped-mid-walk", "destinations", 150, "destination-containers loses chest while a golem walks to the [logs] chest: it doesn't put the logs there.", alone=True)
+def _(c):
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("logs", 18, 10)
+    c.sign(18, 10, "[logs]")
+    c.golem(4, 10)
+    t = Trigger()
+
+    def check():
+        t.fire_when(lambda: c.holding("birch_log") > 0, lambda: set_options(c, destination_containers="[barrel]"))
+        if t.at is None:
+            return [(False, "waiting for the golem to pick up the logs")]
+        return [(t.since() > 30, "waited 30s after taking chests out"), expect(c, "logs", "*", 0)]
+    return check

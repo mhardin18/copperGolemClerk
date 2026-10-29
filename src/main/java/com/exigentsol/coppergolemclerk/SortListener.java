@@ -236,6 +236,12 @@ public final class SortListener implements Listener {
             return;
         }
         Inventory container = event.getContainerInventory();
+        if (container.getLocation() != null
+                && !HomeFinder.isDestination(container.getLocation().getBlock().getType())) {
+            // Left out of destination-containers (a reload while the golem was on its way).
+            event.setResult(Event.Result.DENY);
+            return;
+        }
         ChestMatcher.Match match = matcher.classify(held, container);
 
         Event.Result result;
