@@ -150,3 +150,36 @@ def _(c):
     return lambda: [expect(c, "overflow", "birch_log", 16),
                     (any("Alert" in l and f"[logs] chest at {x}, {y}, {z} is full" in l for l in c.log_lines()),
                      "alert about the full barrel")]
+
+
+@scenario("dest-many-barrels-tick-time", "destinations", 240, "Barrels allowed, 363 barrels (90 labelled) in range, 20 golems each carrying an item with no home: the 2-second delivery checks keep ticks under 40 ms and within 20 ms of the baseline.", alone=True)
+def _(c):
+    from suite_perf import LABELS, mspt
+    baseline = mspt(c)
+    set_options(c, destination_containers=ALL)
+    shelf = 0
+    for dy in (3, 5, 7):
+        for dx in range(0, 21, 2):
+            for dz in range(0, 21, 2):
+                c.chest("shelf", dx, dz, [("stone", 1)], block="barrel", dy=dy)
+                if shelf % 4 == 0:
+                    c.sign(dx, dz, LABELS[(shelf // 4) % len(LABELS)], dy=dy)
+                shelf += 1
+    for n in range(20):
+        x, y, z = c.abs(3 + (n % 10), 8 + (n // 10) * 4)
+        c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} "
+              f'{{active_effects:[{{id:"minecraft:luck",duration:-1,show_particles:0b}}],'
+              f'equipment:{{mainhand:{{id:"minecraft:sculk_shrieker",count:1}}}}}}')
+    samples = []
+
+    def check():
+        if c.elapsed() >= 15 and len(samples) < 8 and int(c.elapsed()) % 6 < 3:
+            value = mspt(c)
+            if value is not None:
+                samples.append(value)
+        worst = max(samples) if samples else None
+        return [(len(samples) >= 5, f"tick time samples: {samples} ms (baseline {baseline} ms)"),
+                (worst is not None and worst < 40, f"worst 5-second average {worst} ms (want under 40)"),
+                (worst is not None and baseline is not None and worst - baseline < 20,
+                 f"slowdown {None if worst is None or baseline is None else round(worst - baseline, 1)} ms (want under 20)")]
+    return check
