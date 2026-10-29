@@ -497,6 +497,9 @@ public final class CopperGolemClerk extends JavaPlugin {
 
         /** "<x> <y> <z> [world]" after the subcommand as a location (loaded or not), or null if not given. */
         private org.bukkit.Location spotArg(CommandSender sender, String[] args) {
+            if (args.length == 2 || args.length == 3) {
+                throw new IllegalArgumentException("Give a whole position: <x> <y> <z> [world] (or 'all').");
+            }
             if (args.length < 4) {
                 return null;
             }
