@@ -231,6 +231,10 @@ item in (as for chests above vanilla's reach). A shulker box needs open space in
 of its lid, and never takes a shulker box. Leave `chest` out of the list to keep golems
 away from plain chests.
 
+An empty barrel or shulker box counts as an empty chest: with `allow-empty-chests` on,
+items with no other home can end up in one. Put a `[No Golems]` sign on barrels you
+use for something else.
+
 ### Switching a golem back to vanilla
 
 Right-click a copper golem with bamboo (`golem-toggle-item`) to switch that golem to
