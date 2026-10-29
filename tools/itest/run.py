@@ -42,6 +42,7 @@ import suite_setup  # noqa: E402,F401
 import suite_tidy  # noqa: E402,F401
 import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
+import suite_destinations  # noqa: E402,F401
 import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the others)
 from rcon import from_properties  # noqa: E402
 

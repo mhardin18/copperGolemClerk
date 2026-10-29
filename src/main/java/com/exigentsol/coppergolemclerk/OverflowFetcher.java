@@ -164,7 +164,7 @@ final class OverflowFetcher {
             if (!labels.overflow() || labels.noGolems() || inventory.isEmpty()) {
                 continue;
             }
-            if (HomeFinder.isLocked(state) || HomeFinder.isBlocked(golem.getWorld(), halves)
+            if (HomeFinder.isLocked(state) || HomeFinder.cannotOpen(golem.getWorld(), state, halves)
                     || HomeFinder.isWaterlogged(golem.getWorld(), halves)) {
                 continue; // vanilla golems can't open it, so they can't take from it either
             }

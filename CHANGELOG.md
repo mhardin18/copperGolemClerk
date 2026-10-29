@@ -10,6 +10,11 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - Full-chest alerts: when a golem finds the chest labelled for its item full, or an `[Overflow]` chest is full or 90% full (`overflow-alert-percent`), the owner of the GriefPrevention claim is told (when they join, if they're offline); elsewhere, players with `coppergolemclerk.alerts` (ops by default). Alerts are logged and not repeated for `alert-cooldown-minutes` (30). Turn them off with `full-chest-alerts: false`.
 - Golems stay out of portals (`avoid-portals`, on by default): a copper golem never goes through a Nether portal, End portal or End gateway, so one that wanders into a portal stays in its own world. Golems on a lead or riding go through as usual.
 
+## Unreleased
+
+### New
+- Barrels and shulker boxes: `destination-containers` (default `[chest, trapped_chest]`, as in vanilla) can add `barrel` and `shulker_box`. Golems then use them like chests (labels, contents, `[Overflow]`); the golem walks up and the plugin puts the item in. Leaving `chest` out keeps golems away from plain chests.
+
 ## 2.5.1 (2026-10-28)
 
 ### Changed

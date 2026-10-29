@@ -215,6 +215,22 @@ stand on beside the stack (standing on top of other chests doesn't count). A che
 within vanilla's reach is still preferred over an equally good one higher up.
 `/cgc check` on a high chest says how many rows up it is and whether golems reach it.
 
+### Barrels and shulker boxes
+
+Vanilla golems only put items into chests and trapped chests. List more containers in
+`destination-containers` and golems use those as well:
+
+```yaml
+destination-containers: [chest, trapped_chest, barrel, shulker_box]
+```
+
+`shulker_box` covers every colour. Barrels and shulker boxes work like chests: sign
+and frame labels, matching by contents, `[Overflow]` and `[No Golems]` all apply.
+Vanilla golems can't open them, so the golem walks up to one and the plugin puts the
+item in (as for chests above vanilla's reach). A shulker box needs open space in front
+of its lid, and never takes a shulker box. Leave `chest` out of the list to keep golems
+away from plain chests.
+
 ### Switching a golem back to vanilla
 
 Right-click a copper golem with bamboo (`golem-toggle-item`) to switch that golem to
@@ -304,6 +320,7 @@ Settings:
 - `avoid-portals: true` (default): see "Golems stay out of portals" above.
 - `update-check: true` (default): see "Update notices" below.
 - `deliver-reach: 2`, `take-reach: 2` (default): see "Taller stacks of chests" above.
+- `destination-containers: [chest, trapped_chest]` (default): see "Barrels and shulker boxes" above.
 - `golem-toggle-item: bamboo`, `mode-markers: true` (default): see "Switching a golem back to vanilla" above.
 - `greet-other-golems: true`, `greet-cooldown-minutes: 5` (default): see "Golems say hello" above.
 - `rescue-lost-golems: true`, `lost-golem-teleport-home: false` (default): see "Lost golems find their way home" above.

@@ -89,7 +89,7 @@ def _(c):
     c.chest("barrel", 6, 10, block="barrel")
     c.chest("trapped", 10, 10, block="trapped_chest")
     c.sign(10, 10, "[logs]")
-    return lambda: [has(check_at(c, 6, 10), "they ignore this"),
+    return lambda: [has(check_at(c, 6, 10), "so they ignore it"),
                     has(check_at(c, 10, 10), "[logs] = group logs"),
                     has(say(c, "cgc check 1 2 nowhere"), "whole-number"),
                     has(say(c, "cgc check 0 100 0 no_such_world"), "No world named 'no_such_world'"),
