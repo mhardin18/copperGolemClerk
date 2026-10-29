@@ -220,6 +220,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         avoidPortals = config.getBoolean("avoid-portals", true);
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         deliverReach = reachSetting(config, "deliver-reach");
+        HomeFinder.setDestinations(destinationSetting(config));
         takeReach = reachSetting(config, "take-reach");
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
@@ -338,6 +339,28 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    /** destination-containers: chest, trapped_chest, barrel, shulker_box (every colour). */
+    private Set<Material> destinationSetting(YamlConfiguration config) {
+        List<String> names = config.isList("destination-containers") ? config.getStringList("destination-containers")
+                : List.of("chest", "trapped_chest");
+        Set<Material> types = java.util.EnumSet.noneOf(Material.class);
+        for (String raw : names) {
+            String name = raw.trim().toLowerCase(Locale.ROOT).replace("minecraft:", "").replace(' ', '_');
+            switch (name) {
+                case "chest" -> types.add(Material.CHEST);
+                case "trapped_chest" -> types.add(Material.TRAPPED_CHEST);
+                case "barrel" -> types.add(Material.BARREL);
+                case "shulker_box", "shulker_boxes" -> types.addAll(org.bukkit.Tag.SHULKER_BOXES.getValues());
+                default -> getLogger().warning("destination-containers: '" + raw
+                        + "' isn't one of chest, trapped_chest, barrel, shulker_box; ignored.");
+            }
+        }
+        if (types.isEmpty()) {
+            getLogger().warning("destination-containers is empty: golems won't put items anywhere.");
+        }
+        return types;
     }
 
     /** A reach setting in chest rows, kept within what golems can do (2, vanilla, up to Reach.MAX). */

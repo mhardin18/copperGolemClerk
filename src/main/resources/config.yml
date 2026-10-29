@@ -136,6 +136,13 @@ update-check: true
 deliver-reach: 2
 take-reach: 2
 
+# Which containers golems put items into. Vanilla golems only use chests and trapped
+# chests. Add barrel and/or shulker_box (every colour) and golems use those too: the
+# golem walks up to it and the plugin puts the item in, with labels, contents matching
+# and [Overflow] working as for chests. Take chest out to keep golems away from plain
+# chests. (Golems always take items from copper chests.)
+destination-containers: [chest, trapped_chest]
+
 # Players can switch a single copper golem back to plain vanilla behavior (and back
 # again) by right-clicking it with this item. While a player holds it, golems using
 # this plugin show that player a small green light on their antenna; vanilla golems

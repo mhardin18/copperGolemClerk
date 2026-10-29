@@ -87,7 +87,8 @@ final class ChestReports {
             return;
         }
         if (!HomeFinder.isDestination(block.getType())) {
-            say(player, NamedTextColor.YELLOW, "Golems only put items in chests and trapped chests, so they ignore this.");
+            say(player, NamedTextColor.YELLOW, "Golems don't put items in this kind of container"
+                    + " (destination-containers in the config), so they ignore it.");
             return;
         }
 
@@ -124,8 +125,8 @@ final class ChestReports {
         Set<HomeFinder.Pos> pos = new HashSet<>();
         halves.forEach(b -> pos.add(HomeFinder.Pos.of(b)));
         pos.add(HomeFinder.Pos.of(block));
-        if (HomeFinder.isBlocked(block.getWorld(), pos)) {
-            say(player, NamedTextColor.RED, "Problem: a solid block or a sitting cat is on top, so golems can't open it.");
+        if (HomeFinder.cannotOpen(block.getWorld(), state, pos)) {
+            say(player, NamedTextColor.RED, "Problem: a solid block (or a sitting cat) is in the way of its lid, so golems can't open it.");
         }
         if (HomeFinder.isWaterlogged(block.getWorld(), pos)) {
             say(player, NamedTextColor.RED, "Problem: it's waterlogged, so golems can't get close enough to use it. Drain it.");

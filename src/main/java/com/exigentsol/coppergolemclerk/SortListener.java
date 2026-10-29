@@ -63,6 +63,7 @@ public final class SortListener implements Listener {
             returnHomelessItems();
         }, 20, 20);
         plugin.getServer().getScheduler().runTaskTimer(plugin, fetcher::tick, 40, 20);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::startPluginDeliveries, 40, 40);
         GolemTracer tracer = new GolemTracer(plugin);
         plugin.getServer().getScheduler().runTaskTimer(plugin, tracer::tick, 20, 20);
     }
@@ -163,10 +164,13 @@ public final class SortListener implements Listener {
             event.setAllowed(false);
             return;
         }
-        if (!plugin.preferMatchingChests()) {
+        if (!HomeFinder.isDestination(block.getType())) {
+            if (HomeFinder.isVanillaTarget(block.getType())) {
+                event.setAllowed(false); // chests left out of destination-containers
+            }
             return;
         }
-        if (!HomeFinder.isDestination(block.getType())) {
+        if (!plugin.preferMatchingChests()) {
             return;
         }
 
@@ -240,6 +244,12 @@ public final class SortListener implements Listener {
             return;
         }
         Inventory container = event.getContainerInventory();
+        if (container.getLocation() != null
+                && !HomeFinder.isDestination(container.getLocation().getBlock().getType())) {
+            // Left out of destination-containers (a reload while the golem was on its way).
+            event.setResult(Event.Result.DENY);
+            return;
+        }
         ChestMatcher.Match match = matcher.classify(held, container);
 
         Event.Result result;
@@ -302,6 +312,52 @@ public final class SortListener implements Listener {
                     event.getEntityType(), held.getType(), container.getType(),
                     formatLocation(container), result, reason));
         }
+    }
+
+    /**
+     * Runs every two seconds. Vanilla only asks us about chests, so a golem whose only home is
+     * one the plugin delivers to (a barrel, a shulker box, a chest above vanilla's reach) with
+     * no chest it could use in range would never be asked: send it there.
+     */
+    private void startPluginDeliveries() {
+        for (org.bukkit.World world : plugin.getServer().getWorlds()) {
+            for (org.bukkit.entity.CopperGolem golem : world.getEntitiesByClass(org.bukkit.entity.CopperGolem.class)) {
+                if (!plugin.manages(golem) || reach.isDelivering(golem.getUniqueId()) || golem.isLeashed()
+                        || golem.isInsideVehicle()) {
+                    continue;
+                }
+                ItemStack held = heldItem(golem);
+                if (held.isEmpty() || !plugin.preferMatchingChests()) {
+                    continue;
+                }
+                homes.track(golem, held.getType());
+                HomeFinder.Homes found = homes.homesFor(golem, held);
+                if (found == null || found.high().isEmpty()) {
+                    continue;
+                }
+                Set<HomeFinder.Pos> pick = pickFor(found);
+                Set<HomeFinder.Pos> usable = new java.util.HashSet<>();
+                for (HomeFinder.Pos p : pick) {
+                    if (!reach.recentlyFailed(golem.getUniqueId(), p)) {
+                        usable.add(p);
+                    }
+                }
+                if (!usable.isEmpty() && found.high().containsAll(usable)) {
+                    startHighDelivery(golem, held, usable);
+                }
+            }
+        }
+    }
+
+    /** The chests a golem with these homes should use: matching ones, else overflow/empty in the configured order. */
+    private Set<HomeFinder.Pos> pickFor(HomeFinder.Homes found) {
+        if (!found.matching().isEmpty()) {
+            return found.matching();
+        }
+        Set<HomeFinder.Pos> empty = plugin.allowEmptyChests() ? found.empty() : Set.of();
+        Set<HomeFinder.Pos> first = plugin.overflowBeforeEmpty() ? found.overflow() : empty;
+        Set<HomeFinder.Pos> second = plugin.overflowBeforeEmpty() ? empty : found.overflow();
+        return !first.isEmpty() ? first : second;
     }
 
     /** Send the golem to the nearest of these high chests. */
