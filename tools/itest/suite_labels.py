@@ -78,3 +78,26 @@ def _(c):
         t.fire_when(lambda: True, lambda: None)
         return [(t.since() > 5, "waited 5s"), (labels(c) == 0, f"{labels(c)} labels (want 0)")]
     return check
+
+
+@scenario("labels-many-golems-tick-time", "labels", 120, "60 golems all labelled (each label moved every tick, text every half second): ticks stay under 40 ms and within 10 ms of the baseline.", alone=True)
+def _(c):
+    from suite_perf import mspt
+    baseline = mspt(c)
+    set_options(c, status_labels_everywhere="true")
+    for n in range(60):
+        golem_at(c, 1 + (n % 20), 4 + (n // 20) * 5)
+    samples = []
+
+    def check():
+        if c.elapsed() >= 12 and len(samples) < 6 and int(c.elapsed()) % 6 < 3:
+            value = mspt(c)
+            if value is not None:
+                samples.append(value)
+        worst = max(samples) if samples else None
+        return [(labels(c) >= 60, f"{labels(c)} labels (want 60)"),
+                (len(samples) >= 4, f"tick time samples: {samples} ms (baseline {baseline} ms)"),
+                (worst is not None and worst < 40, f"worst 5-second average {worst} ms (want under 40)"),
+                (worst is not None and baseline is not None and worst - baseline < 10,
+                 f"slowdown {None if worst is None or baseline is None else round(worst - baseline, 1)} ms (want under 10)")]
+    return check
