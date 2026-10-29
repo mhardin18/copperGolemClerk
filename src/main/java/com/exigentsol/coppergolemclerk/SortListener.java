@@ -76,6 +76,14 @@ public final class SortListener implements Listener {
         return returns;
     }
 
+    HomeFinder homes() {
+        return homes;
+    }
+
+    ReachDelivery reach() {
+        return reach;
+    }
+
     /** A golem switched to (or from) vanilla mode: forget its search; fetching stops on its next tick. */
     void golemModeChanged(Entity golem) {
         homes.forget(golem);

@@ -153,6 +153,11 @@ destination-containers: [chest, trapped_chest]
 golem-toggle-item: bamboo
 # Show the green light (to players holding the toggle item) on golems that use this plugin.
 mode-markers: true
+# While a player holds the toggle item, golems near them also show a small label
+# saying what they're doing ("carrying 12 birch log", "fetching granite", "lost,
+# walking home", "idle") and how weathered their copper is. Only players holding the
+# item see them.
+status-labels: true
 
 # A copper golem with nothing to do walks over to say hello to an iron or snow
 # golem within 16 blocks, then goes back to its routine. It doesn't follow them,

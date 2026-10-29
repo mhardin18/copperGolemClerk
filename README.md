@@ -253,6 +253,13 @@ of the plugin's features: no smart sorting or labels, no overflow, returns, fetc
 trapdoor avoidance, taller reach, giving way or tidying. The mode is saved on the
 golem.
 
+While you hold bamboo, every copper golem within 48 blocks also shows a small label
+saying what it's doing: `carrying 12 birch log`, `fetching granite`, `no chest for 3
+kelp`, `taking 5 kelp back`, `giving way`, `saying hello`, `lost, walking home`,
+`vanilla mode` or `idle`. Once its copper starts to weather, a second line says how far
+along it is (`oxidized: may turn into a statue` in red). Nobody else sees the labels.
+Turn them off with `status-labels: false`.
+
 Anyone with `coppergolemclerk.toggle` (everyone, by default) can switch golems; where
 GriefPrevention is installed, only players allowed to build where the golem stands.
 Set `golem-toggle-item: none` to turn switching off, and `mode-markers: false` to hide
@@ -333,7 +340,7 @@ Settings:
 - `update-check: true` (default): see "Update notices" below.
 - `deliver-reach: 2`, `take-reach: 2` (default): see "Taller stacks of chests" above.
 - `destination-containers: [chest, trapped_chest]` (default): see "Barrels and shulker boxes" above.
-- `golem-toggle-item: bamboo`, `mode-markers: true` (default): see "Switching a golem back to vanilla" above.
+- `golem-toggle-item: bamboo`, `mode-markers: true`, `status-labels: true` (default): see "Switching a golem back to vanilla" above.
 - `greet-other-golems: true`, `greet-cooldown-minutes: 5` (default): see "Golems say hello" above.
 - `rescue-lost-golems: true`, `lost-golem-teleport-home: false` (default): see "Lost golems find their way home" above.
 - `full-chest-alerts: true`, `overflow-alert-percent: 90`, `alert-cooldown-minutes: 30` (default): see "Full-chest alerts" above.
