@@ -406,6 +406,9 @@ final class HomeFinder {
 
             ChestMatcher.Match match = matcher.classify(held, inventory);
             ChestMatcher.Kind kind = match.kind();
+            if (plugin.fullChestAlerts()) {
+                alertIfFull(block, halves, inventory, kind, held);
+            }
             if (kind.isHome() && ChestMatcher.hasRoom(held, inventory)) {
                 allMatching.addAll(halves);
                 // Keep only the most specific homes: [stews] beats [food] for a stew.
@@ -423,6 +426,49 @@ final class HomeFinder {
             }
         }
         return new Homes(matching, allMatching, overflow, empty, high);
+    }
+
+    /**
+     * full-chest-alerts: a labelled chest with no room for an item it's labelled for, or an
+     * [Overflow] chest that's full or nearly (overflow-alert-percent of its slots in use).
+     */
+    private void alertIfFull(Block block, Set<Pos> halves, Inventory inventory, ChestMatcher.Kind kind, ItemStack held) {
+        if (kind != ChestMatcher.Kind.LABEL_MATCH && kind != ChestMatcher.Kind.OVERFLOW) {
+            return;
+        }
+        Pos first = halves.stream().min(Comparator.comparingInt(Pos::x).thenComparingInt(Pos::z)).orElse(Pos.of(block));
+        Location place = new Location(block.getWorld(), first.x(), first.y(), first.z());
+        String where = Alerts.at(place);
+        String id = block.getWorld().getName() + ":" + first;
+        boolean room = ChestMatcher.hasRoom(held, inventory);
+        if (kind == ChestMatcher.Kind.LABEL_MATCH) {
+            if (!room) {
+                String label = String.join("", matcher.labelsOf(inventory).names());
+                plugin.alerts().send("full:" + id, place, "The " + label + " chest at " + where
+                        + " is full: golems can't put " + held.getType().getKey().getKey().replace('_', ' ') + " in it.");
+            }
+            return;
+        }
+        if (!room) {
+            plugin.alerts().send("overflow-full:" + id, place, "The [Overflow] chest at " + where + " is full.");
+            return;
+        }
+        int percent = plugin.overflowAlertPercent();
+        if (percent <= 0 || percent >= 100) {
+            return;
+        }
+        ItemStack[] slots = inventory.getStorageContents();
+        int used = 0;
+        for (ItemStack s : slots) {
+            if (s != null && !s.isEmpty()) {
+                used++;
+            }
+        }
+        int filled = (int) Math.floor(100.0 * used / slots.length);
+        if (filled >= percent) {
+            plugin.alerts().send("overflow-filling:" + id, place, "The [Overflow] chest at " + where + " is "
+                    + filled + "% full (" + used + " of " + slots.length + " slots).");
+        }
     }
 
     /**

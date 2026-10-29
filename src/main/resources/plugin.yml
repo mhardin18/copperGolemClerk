@@ -8,6 +8,9 @@ permissions:
   coppergolemclerk.toggle:
     description: Switch a copper golem between this plugin's sorting and vanilla (right-click with golem-toggle-item).
     default: true
+  coppergolemclerk.alerts:
+    description: Hear alerts (full chests, lost golems) about places outside anyone's GriefPrevention claim.
+    default: op
   coppergolemclerk.admin:
     description: Use /cgc help, check, golems, overflow, reload and version; hear about new releases.
     default: op

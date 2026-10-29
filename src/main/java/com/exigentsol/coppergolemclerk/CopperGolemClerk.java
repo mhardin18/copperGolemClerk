@@ -52,6 +52,10 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile int takeReach = Reach.VANILLA;
     private GolemModes modes;
     private GolemFinder finder;
+    private Alerts alerts;
+    private volatile boolean fullChestAlerts = true;
+    private volatile int overflowAlertPercent = 90;
+    private volatile long alertCooldownMillis = 30 * 60_000L;
     private volatile boolean greetOtherGolems = true;
     private volatile long greetCooldownMillis = 5 * 60_000L;
     private volatile Material golemToggleItem = Material.BAMBOO;
@@ -74,6 +78,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
         saveDefaultConfig();
         loadSettings();
+        alerts = new Alerts(this);
+        getServer().getPluginManager().registerEvents(alerts, this);
+        getServer().getScheduler().runTask(this, alerts::findProtection); // after every plugin has enabled
         listener = new SortListener(this);
         reports = new ChestReports(this);
         getServer().getPluginManager().registerEvents(listener, this);
@@ -192,6 +199,12 @@ public final class CopperGolemClerk extends JavaPlugin {
         modeMarkers = config.getBoolean("mode-markers", true);
         greetOtherGolems = config.getBoolean("greet-other-golems", true);
         greetCooldownMillis = (long) (Math.max(0.1, config.getDouble("greet-cooldown-minutes", 5)) * 60_000L);
+        fullChestAlerts = config.getBoolean("full-chest-alerts", true);
+        overflowAlertPercent = Math.clamp(config.getInt("overflow-alert-percent", 90), 0, 100);
+        alertCooldownMillis = (long) (Math.max(0.1, config.getDouble("alert-cooldown-minutes", 30)) * 60_000L);
+        if (alerts != null) {
+            alerts.clearCooldowns();
+        }
         modeMarkerHeight = (float) config.getDouble("mode-marker-height", 0.3); // not in config.yml: fine-tuning
         updateCheck = config.getBoolean("update-check", true);
         updateCheckUrl = config.getString("update-check-url", UpdateChecker.DEFAULT_URL); // not in config.yml: for tests
@@ -355,6 +368,22 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     float modeMarkerHeight() {
         return modeMarkerHeight;
+    }
+
+    Alerts alerts() {
+        return alerts;
+    }
+
+    boolean fullChestAlerts() {
+        return fullChestAlerts;
+    }
+
+    int overflowAlertPercent() {
+        return overflowAlertPercent;
+    }
+
+    long alertCooldownMillis() {
+        return alertCooldownMillis;
     }
 
     boolean logGolemDeaths() {
