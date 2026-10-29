@@ -2,6 +2,11 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### Changed
+- The green antenna light shows only to players holding the toggle item (bamboo). Golems look normal the rest of the time.
+
 ## 2.5.0 (2026-10-28)
 
 ### New
