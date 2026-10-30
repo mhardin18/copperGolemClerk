@@ -14,6 +14,9 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - `/cgc stats`: how many items golems have sorted today, this week and all time, the most-sorted items and the busiest claims. Players are told when they join what golems sorted in their claims while they were away, and how many of their chests filled up (`join-summary`).
 - Barrels and shulker boxes: `destination-containers` (default `[chest, trapped_chest]`, as in vanilla) can add `barrel` and `shulker_box`. Golems then use them like chests (labels, contents, `[Overflow]`); the golem walks up and the plugin puts the item in. Leaving `chest` out keeps golems away from plain chests.
 
+### Fixed
+- Golems on the floor above an `[Overflow]` chest never fetched from it: they were sent to the chest block itself, and the pathfinder stopped them on the floor right above the chest instead of finding the way round by the stairs. Golems now walk to a spot beside the chest they have a whole path to, and skip an overflow chest they can't get to.
+
 ## 2.5.1 (2026-10-28)
 
 ### Changed

@@ -177,7 +177,14 @@ final class OverflowFetcher {
             Material type = itemWithHome(golem, inventory, claimed, labels);
             if (type != null) {
                 Block block = state.getBlock();
-                Location target = targetFor(golem, block, halves);
+                Location target = targetFor(golem, halves);
+                if (target == null) {
+                    if (plugin.debug()) {
+                        plugin.getLogger().info(String.format("%s has no path to the overflow chest at %d,%d,%d; skipping it",
+                                golem.getType(), block.getX(), block.getY(), block.getZ()));
+                    }
+                    continue; // no way to walk there from here: try the next overflow chest
+                }
                 fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block),
                         halves, type, target, false, now));
                 golem.getPathfinder().moveTo(target, 1.0);
@@ -190,15 +197,14 @@ final class OverflowFetcher {
         }
     }
 
-    /** Where to walk to take from this chest: the spot below it when it's above vanilla's reach. */
-    private Location targetFor(CopperGolem golem, Block chest, Set<HomeFinder.Pos> halves) {
-        if (plugin.takeReach() > Reach.VANILLA) {
-            Reach.Spot spot = Reach.spotFor(golem.getWorld(), halves);
-            if (spot != null && !Reach.vanillaReaches(spot.row()) && spot.row() <= plugin.takeReach()) {
-                return spot.target();
-            }
-        }
-        return chest.getLocation().add(0.5, 0.0, 0.5);
+    /**
+     * Where to walk to take from this chest: a spot beside it (below it, for a chest above
+     * vanilla's reach) that the golem has a whole path to. Null if there's none.
+     */
+    private Location targetFor(CopperGolem golem, Set<HomeFinder.Pos> halves) {
+        Reach.Spot spot = Reach.reachableSpot(golem, golem.getWorld(), halves,
+                Math.max(Reach.VANILLA, plugin.takeReach()));
+        return spot == null ? null : spot.target();
     }
 
     /** Send an idle golem to a copper chest above vanilla's reach, for its first item with a chance of a home. */
@@ -215,7 +221,10 @@ final class OverflowFetcher {
             return;
         }
         Block block = state.getBlock();
-        Location target = targetFor(golem, block, halves);
+        Location target = targetFor(golem, halves);
+        if (target == null) {
+            return; // no way to walk there from here
+        }
         fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block), halves,
                 type, target, true, now));
         golem.getPathfinder().moveTo(target, 1.0);

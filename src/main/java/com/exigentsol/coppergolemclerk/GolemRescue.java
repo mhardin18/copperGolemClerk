@@ -284,10 +284,8 @@ final class GolemRescue {
     }
 
     private static boolean canReach(CopperGolem golem, Block chest) {
-        Reach.Spot spot = Reach.spotFor(chest.getWorld(), HomeFinder.halvesOf(((Container) chest.getState(false)).getInventory(), chest));
-        Location target = spot != null ? spot.target() : chest.getLocation().add(0.5, 1, 0.5);
-        var path = golem.getPathfinder().findPath(target);
-        return path != null && path.canReachFinalPoint();
+        return Reach.reachableSpot(golem, chest.getWorld(),
+                HomeFinder.halvesOf(((Container) chest.getState(false)).getInventory(), chest), Reach.MAX) != null;
     }
 
     /** True if the golem is within vanilla's search range of its home (32 sideways, 8 up/down). */
