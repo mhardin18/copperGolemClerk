@@ -48,6 +48,7 @@ import suite_world  # noqa: E402,F401
 import suite_destinations  # noqa: E402,F401
 import suite_carry  # noqa: E402,F401
 import suite_find  # noqa: E402,F401
+import suite_edge26  # noqa: E402,F401
 import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the others)
 from rcon import from_properties  # noqa: E402
 
