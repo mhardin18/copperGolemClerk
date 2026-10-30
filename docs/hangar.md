@@ -56,7 +56,7 @@ golems carry them over by themselves.
 ## For players
 
 - **`/cgc find diamond`:** lists the chests in your claims that hold diamonds, nearest
-  first (including diamonds inside shulker boxes), and makes them glow for a few seconds.
+  first (including diamonds inside shulker boxes), and makes the nearest few glow for a few seconds.
   **It only looks in your own GriefPrevention claims**, so nobody can use it to snoop.
 - **`/cgc check`** explains a chest you can open, **`/cgc overflow`** shows what's piling
   up in your overflow chests, and **`/cgc stats`** shows what your golems have sorted.

@@ -161,7 +161,7 @@ final class ReachDelivery {
         Map<Integer, ItemStack> leftover = inventory.addItem(held.clone());
         ItemStack rest = leftover.isEmpty() ? ItemStack.empty() : leftover.values().iterator().next();
         equipment.setItemInMainHand(rest);
-        world.playSound(block.getLocation().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
+        world.playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
         homes.accepted(golem.getUniqueId());
         if (rest.isEmpty()) {
             homes.forget(golem);

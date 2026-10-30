@@ -115,10 +115,12 @@ carry-amount: 16
 # there are no claims, so players find nothing unless this is true.
 # coppergolemclerk.allclaims (ops) sees everything. find-enabled: false turns the command
 # off. find-radius: how far it looks (1 to 64 blocks, sideways and up/down).
-# find-highlight-seconds: how long the containers glow for the player who asked (0 = no glow).
+# find-highlight-count: how many of the containers it finds glow for the player who asked,
+# nearest first (0 to 30; 0 = no glow). find-highlight-seconds: how long they glow (0 = no glow).
 find-enabled: true
 find-outside-own-claims: false
 find-radius: 32
+find-highlight-count: 5
 find-highlight-seconds: 10
 
 # Golems give way to each other instead of getting stuck nose to nose. When a
@@ -235,7 +237,8 @@ tidy-chests: true
 disabled-worlds: []
 
 # Let players use /cgc golems to list their own golems (in claims they own, or whose
-# copper chest is in one). Off by default: only admins can use it.
+# copper chest is in one; without GriefPrevention, the golems within 48 blocks of them).
+# Off by default: only admins can use it.
 golems-command-for-players: false
 
 # Log every sort decision to the console. Useful while setting up groups.
