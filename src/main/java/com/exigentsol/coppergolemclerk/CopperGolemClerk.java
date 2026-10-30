@@ -28,7 +28,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class CopperGolemClerk extends JavaPlugin {
+public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subclasses it in unit tests
 
     private volatile ItemGroups groups;
     private volatile boolean matchModeAll;
@@ -70,6 +70,7 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean findEnabled = true;
     private volatile int findRadius = 32;
     private volatile int findHighlightSeconds = 10;
+    private volatile int findHighlightCount = 5;
     private GolemRescue rescue;
     private volatile boolean rescueLostGolems = true;
     private volatile boolean lostGolemTeleportHome;
@@ -198,7 +199,7 @@ public final class CopperGolemClerk extends JavaPlugin {
      *
      * @return null on success, otherwise a short description of the problem
      */
-    private String loadSettings() {
+    String loadSettings() { // package-private: unit tests reload settings
         YamlConfiguration config = new YamlConfiguration();
         try {
             config.load(new File(getDataFolder(), "config.yml"));
@@ -235,8 +236,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         findEnabled = config.getBoolean("find-enabled", true);
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
-        findRadius = Math.max(1, Math.min(64, config.getInt("find-radius", 32)));
-        findHighlightSeconds = Math.max(0, Math.min(120, config.getInt("find-highlight-seconds", 10)));
+        findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
+        findHighlightSeconds = rangeSetting(config, "find-highlight-seconds", 10, 0, 120);
+        findHighlightCount = rangeSetting(config, "find-highlight-count", 5, 0, 30);
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
         if (listener != null) {
             listener.clearHomeless();
@@ -367,6 +369,15 @@ public final class CopperGolemClerk extends JavaPlugin {
         return golemsCommandForPlayers;
     }
 
+    /** /cgc find (also used by unit tests). */
+    void findItems(CommandSender sender, String text, org.bukkit.Location around) {
+        itemFinder.find(sender, text, around);
+    }
+
+    GolemLabels labels() {
+        return labels;
+    }
+
     /** GriefPrevention claims and LuckPerms permissions. */
     Claims claims() {
         return claims;
@@ -379,6 +390,11 @@ public final class CopperGolemClerk extends JavaPlugin {
     /** find-radius: how far /cgc find looks (1-64). */
     int findRadius() {
         return findRadius;
+    }
+
+    /** find-highlight-count: how many of the nearest containers /cgc find makes glow (0-30). */
+    int findHighlightCount() {
+        return findHighlightCount;
     }
 
     /** find-highlight-seconds: how long /cgc find makes containers glow (0 = not at all). */
@@ -408,6 +424,17 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    /** A whole-number setting kept within min..max; out-of-range values are warned about and clamped. */
+    private int rangeSetting(YamlConfiguration config, String key, int def, int min, int max) {
+        int value = config.getInt(key, def);
+        if (value < min || value > max) {
+            int used = Math.clamp(value, min, max);
+            getLogger().warning(key + " must be " + min + " to " + max + " (it's " + value + "); using " + used + ".");
+            return used;
+        }
+        return value;
     }
 
     /** destination-containers: chest, trapped_chest, barrel, shulker_box (every colour). */
@@ -833,7 +860,7 @@ public final class CopperGolemClerk extends JavaPlugin {
                 }
                 for (Material m : Material.values()) {
                     String key = m.getKey().getKey();
-                    if (m.isItem() && !m.isLegacy() && key.startsWith(prefix) && out.size() < 100) {
+                    if (!m.isLegacy() && m.isItem() && key.startsWith(prefix) && out.size() < 100) {
                         out.add(key);
                     }
                 }

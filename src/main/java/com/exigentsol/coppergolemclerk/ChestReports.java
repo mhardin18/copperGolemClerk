@@ -392,7 +392,7 @@ final class ChestReports {
     }
 
     private String describeChest(Inventory inv, ChestLabels.Labels labels) {
-        var loc = inv.getLocation();
+        var loc = ChestLabels.locationOf.apply(inv);
         String at = loc == null ? "?" : loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
         return (labels.names().isEmpty() ? "chest" : String.join(" ", labels.names())) + " at " + at;
     }

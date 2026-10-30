@@ -63,7 +63,7 @@ final class Returns {
                 for (int dz = -2; dz <= 2; dz++) {
                     Block b = at.getRelative(dx, dy, dz);
                     if (isCopperChest(b.getType())) {
-                        double d = b.getLocation().add(0.5, 0.5, 0.5).distanceSquared(golem.getLocation());
+                        double d = b.getLocation().clone().add(0.5, 0.5, 0.5).distanceSquared(golem.getLocation());
                         if (d < bestDist) {
                             bestDist = d;
                             best = b;
@@ -123,7 +123,7 @@ final class Returns {
             equipment.setItemInMainHand(rest);
 
             markHomeless(inventory, type);
-            Location at = block.getLocation().add(0.5, 0.5, 0.5);
+            Location at = block.getLocation().clone().add(0.5, 0.5, 0.5);
             block.getWorld().playSound(at, Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
             if (plugin.debug()) {
                 plugin.getLogger().info(String.format("%s returned %s to %s at %d,%d,%d (no home found)",

@@ -185,7 +185,9 @@ final class Claims {
                     }
                 }
                 boolean done = result;
-                plugin.getServer().getScheduler().runTask(plugin, () -> answer.accept(done));
+                if (plugin.isEnabled()) { // the server may be shutting down by now
+                    plugin.getServer().getScheduler().runTask(plugin, () -> answer.accept(done));
+                }
             });
         } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
             answer.accept(false);
