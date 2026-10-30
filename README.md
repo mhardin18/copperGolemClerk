@@ -46,7 +46,7 @@ that cover nearly every survival item; everything else is optional.
   **`/cgc check`** to explain any chest; admins also get **`/cgc golems`** to find every golem.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
 - **Golem limits** (optional, off by default): cap how many golems in one claim use the
-  plugin, so one huge golem farm can't lag the server.
+  plugin.
 
 Every feature has a setting; see [Settings reference](#settings-reference).
 
@@ -384,8 +384,7 @@ after they close it).
 
 ### Golem limits
 
-On a busy server one player's huge golem farm can cost a lot of tick time. Two settings cap
-how many copper golems use this plugin (both 0, no limit, by default):
+Two settings cap how many copper golems use this plugin (both 0, no limit, by default):
 
 - `max-golems-per-claim`: golems in one GriefPrevention claim.
 - `max-golems-outside-claims`: golems on unclaimed land, per world (without
@@ -394,6 +393,23 @@ how many copper golems use this plugin (both 0, no limit, by default):
 The golems are recounted every few seconds. The oldest keep the plugin; the newest ones over
 the limit sort like vanilla, and the claim's owner (or, outside claims, players with
 `coppergolemclerk.alerts`) is told. Golems a player switched to vanilla don't count.
+
+**Tick cost.** A working copper golem costs about 0.1 ms per tick, whether it uses this plugin
+or sorts like vanilla: the cost is the golem's own AI and pathfinding, and the plugin adds
+nothing measurable on top. Measured on Paper 26.3 with 0 to 200 golems all sorting at once:
+
+| Golems | With the plugin | Vanilla |
+|---|---|---|
+| 20 | 3.9 ms | 3.5 ms |
+| 50 | 5.3 ms | 6.4 ms |
+| 100 | 12.2 ms | 10.5 ms |
+| 150 | 17.0 ms | 17.9 ms |
+| 200 | 21.4 ms | 19.4 ms |
+
+(1.7 ms with no golems; a server starts to lag at 50 ms per tick. Your numbers depend on your
+hardware.) Golems over the limit keep sorting like vanilla, so the limits don't lower tick
+time: they cap how many golems get this plugin's sorting. To limit the tick cost itself, limit
+the number of golems.
 
 Every setting is listed in [Settings reference](#settings-reference) below.
 
@@ -505,7 +521,7 @@ with its line number and the old settings are kept.
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its copper chest, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
-| `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit). The oldest keep it; the newest over the limit sort like vanilla, and the claim owner is told. Keeps one big golem farm from lagging the server. |
+| `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit). The oldest keep it; the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
 | `max-golems-outside-claims` | `0` | The same for unclaimed land, per world (without GriefPrevention: every golem in the world). |
 | `log-golem-deaths` | `true` | Log every copper golem death (cause, place, what it held) and every other removal (statue, `/kill`). |
 
