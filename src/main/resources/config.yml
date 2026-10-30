@@ -101,6 +101,12 @@ fetch-from-overflow: true
 # a different item). Higher empties overflow faster but can crowd the chest.
 fetchers-per-overflow-chest: 2
 
+# How many items a golem carries per trip (1 to 64; vanilla is 16). Right after a golem
+# takes items out of a copper chest, it takes more of the same from that chest (or puts
+# some back, below 16). Items that stack to 16 or 1 (ender pearls, tools) are carried
+# that many at most. Higher means fewer trips for big sorting jobs.
+carry-amount: 16
+
 # /cgc find <item>: which containers near a player hold an item. Players only see
 # containers they could open themselves (not locked; with GriefPrevention, unclaimed or
 # where they have container trust), unless they have coppergolemclerk.find.allclaims.

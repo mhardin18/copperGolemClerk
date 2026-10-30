@@ -167,13 +167,22 @@ is still waiting a minute after the last step, which means it can't use that che
 
 With `fetch-from-overflow` (on by default), a golem with nothing to do (empty
 hand, nothing to take from any copper chest in range) walks to an `[Overflow]`
-chest and takes up to 16 of an item that now has a home, then sorts it. Up to
+chest and takes up to `carry-amount` (16) of an item that now has a home, then sorts it. Up to
 `fetchers-per-overflow-chest` golems (default 2) fetch from one overflow chest
 at a time, each a different item, so they don't crowd it. So when
 you add a chest for something that was piling up in overflow, golems move it
 over on their own. Items with no home are left in overflow, and so are items in
 an overflow chest golems can't open (locked, blocked or waterlogged). Golems also no
 longer walk to empty copper chests.
+
+### Bigger loads
+
+Vanilla golems carry 16 items per trip. `carry-amount` (1 to 64, default 16) changes
+that: right after a golem takes items out of a copper chest, it takes more of the same
+item from that chest, or puts the extra back if the setting is under 16. An item that
+stacks to less (16 ender pearls, one tool) is carried that many at most. At 64 a big
+sorting job needs a quarter of the trips. Items held back by `[Only ...]` or returned as
+homeless aren't added.
 
 ### Golems give way to each other
 
@@ -330,6 +339,7 @@ Settings:
 - `matching-chest-timeout-seconds: 30`: length of each step above.
 - `return-unsortable-items: true`, `homeless-retry-minutes: 5`: see above.
 - `fetch-from-overflow: true`, `fetchers-per-overflow-chest: 2`: see above.
+- `carry-amount: 16`: see "Bigger loads" above.
 - `find-enabled: true`, `find-radius: 32`, `find-highlight-seconds: 10`: see `/cgc find` under Commands.
 - `sign-labels: true` (default): sign labels and `[Overflow]` chests.
 - `overflow-before-empty: true` (default): see above.

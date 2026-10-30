@@ -41,6 +41,8 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean returnUnsortableItems;
     private volatile boolean fetchFromOverflow;
     private volatile int fetchersPerOverflowChest;
+    private volatile int carryAmount = GolemCarry.VANILLA;
+    private GolemCarry carry;
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -104,6 +106,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         listener = new SortListener(this);
         reports = new ChestReports(this);
         getServer().getPluginManager().registerEvents(listener, this);
+        carry = new GolemCarry(this, listener.returns());
+        getServer().getPluginManager().registerEvents(carry, this);
         traffic = new GolemTraffic(this);
         getServer().getPluginManager().registerEvents(traffic, this);
         traffic.setEnabled(giveWay);
@@ -217,6 +221,12 @@ public final class CopperGolemClerk extends JavaPlugin {
         returnUnsortableItems = config.getBoolean("return-unsortable-items", true);
         fetchFromOverflow = config.getBoolean("fetch-from-overflow", true);
         fetchersPerOverflowChest = Math.max(1, config.getInt("fetchers-per-overflow-chest", 2));
+        carryAmount = config.getInt("carry-amount", GolemCarry.VANILLA);
+        if (carryAmount < 1 || carryAmount > 64) {
+            getLogger().warning("carry-amount must be 1 to 64 (it's " + carryAmount + "); using "
+                    + Math.max(1, Math.min(64, carryAmount)) + ".");
+            carryAmount = Math.max(1, Math.min(64, carryAmount));
+        }
         findEnabled = config.getBoolean("find-enabled", true);
         findRadius = Math.max(1, Math.min(64, config.getInt("find-radius", 32)));
         findHighlightSeconds = Math.max(0, Math.min(120, config.getInt("find-highlight-seconds", 10)));
@@ -328,6 +338,15 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     int fetchersPerOverflowChest() {
         return fetchersPerOverflowChest;
+    }
+
+    /** carry-amount: items a golem carries per trip (vanilla 16). */
+    int carryAmount() {
+        return carryAmount;
+    }
+
+    GolemCarry carry() {
+        return carry;
     }
 
     /** find-enabled: /cgc find is available. */
