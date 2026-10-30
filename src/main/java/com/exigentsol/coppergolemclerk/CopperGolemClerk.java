@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -59,6 +60,10 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean statusLabels = true;
     private volatile boolean statusLabelsEverywhere;
     private GolemFinder finder;
+    private ItemFinder itemFinder;
+    private volatile boolean findEnabled = true;
+    private volatile int findRadius = 32;
+    private volatile int findHighlightSeconds = 10;
     private GolemRescue rescue;
     private volatile boolean rescueLostGolems = true;
     private volatile boolean lostGolemTeleportHome;
@@ -120,6 +125,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         finder = new GolemFinder(this);
         getServer().getPluginManager().registerEvents(finder, this);
         getServer().getScheduler().runTaskTimer(this, finder::tick, 20 * 30, 20 * 30);
+        itemFinder = new ItemFinder(this);
+        getServer().getPluginManager().registerEvents(itemFinder, this);
         updates = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updates, this);
         updates.configure(updateCheck, updateCheckUrl);
@@ -149,6 +156,9 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (itemFinder != null) {
+            itemFinder.removeAll();
+        }
         if (traffic != null) {
             traffic.setEnabled(false);
         }
@@ -207,6 +217,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         returnUnsortableItems = config.getBoolean("return-unsortable-items", true);
         fetchFromOverflow = config.getBoolean("fetch-from-overflow", true);
         fetchersPerOverflowChest = Math.max(1, config.getInt("fetchers-per-overflow-chest", 2));
+        findEnabled = config.getBoolean("find-enabled", true);
+        findRadius = Math.max(1, Math.min(64, config.getInt("find-radius", 32)));
+        findHighlightSeconds = Math.max(0, Math.min(120, config.getInt("find-highlight-seconds", 10)));
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
         if (listener != null) {
             listener.clearHomeless();
@@ -315,6 +328,21 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     int fetchersPerOverflowChest() {
         return fetchersPerOverflowChest;
+    }
+
+    /** find-enabled: /cgc find is available. */
+    boolean findEnabled() {
+        return findEnabled;
+    }
+
+    /** find-radius: how far /cgc find looks (1-64). */
+    int findRadius() {
+        return findRadius;
+    }
+
+    /** find-highlight-seconds: how long /cgc find makes containers glow (0 = not at all). */
+    int findHighlightSeconds() {
+        return findHighlightSeconds;
     }
 
     boolean fetchFromOverflow() {
@@ -496,6 +524,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         return debug;
     }
 
+    /** Subcommands for players without coppergolemclerk.admin (with coppergolemclerk.find). */
+    private static final Set<String> PLAYER_COMMANDS = Set.of("find", "help", "?", "");
+
     private final class Command implements BasicCommand {
 
         @Override
@@ -510,7 +541,25 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
 
         private void run(CommandSender sender, String sub, String[] args) {
+            boolean admin = sender.hasPermission("coppergolemclerk.admin");
+            if (!admin && (!PLAYER_COMMANDS.contains(sub) || (sub.equals("find") && !findEnabled))) {
+                sender.sendMessage(Component.text(sub.isEmpty() || sub.equals("help") || sub.equals("?")
+                        ? "" : "You need coppergolemclerk.admin for /cgc " + sub + ".", NamedTextColor.RED));
+                HelpText.send(sender, null, false);
+                return;
+            }
             switch (sub) {
+                case "find" -> {
+                    if (!findEnabled) {
+                        throw new IllegalArgumentException("/cgc find is turned off on this server (find-enabled: false).");
+                    }
+                    if (args.length < 2) {
+                        throw new IllegalArgumentException(sender instanceof Player
+                                ? "Usage: /cgc find <item, group, pattern or #tag>"
+                                : "Usage: /cgc find <item> <x> <y> <z> [world]");
+                    }
+                    findCommand(sender, args);
+                }
                 case "reload" -> {
                     String problem = loadSettings();
                     if (problem != null) {
@@ -564,11 +613,53 @@ public final class CopperGolemClerk extends JavaPlugin {
                     boolean all = args.length > 1 && args[1].equalsIgnoreCase("all");
                     finder.report(sender, all, all ? null : spotArg(sender, args));
                 }
-                case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null);
+                case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null, admin);
                 default -> {
                     sender.sendMessage(Component.text("Unknown command '" + args[0] + "'.", NamedTextColor.RED));
-                    HelpText.send(sender, null);
+                    HelpText.send(sender, null, admin);
                 }
+            }
+        }
+
+        /**
+         * /cgc find <item...> for players (around them), or /cgc find <item> <x> <y> <z> [world]
+         * (also from the console). The item may be several words: "birch log".
+         */
+        private void findCommand(CommandSender sender, String[] args) {
+            List<String> words = new ArrayList<>(List.of(args).subList(1, args.length));
+            org.bukkit.Location around = null;
+            int n = words.size();
+            if (n >= 5 && isInt(words.get(n - 4)) && isInt(words.get(n - 3)) && isInt(words.get(n - 2)) && !isInt(words.get(n - 1))) {
+                World world = getServer().getWorld(words.get(n - 1));
+                if (world == null) {
+                    throw new IllegalArgumentException("No world named '" + words.get(n - 1) + "'.");
+                }
+                around = new org.bukkit.Location(world, Integer.parseInt(words.get(n - 4)) + 0.5,
+                        Integer.parseInt(words.get(n - 3)), Integer.parseInt(words.get(n - 2)) + 0.5);
+                words = words.subList(0, n - 4);
+            } else if (n >= 4 && isInt(words.get(n - 3)) && isInt(words.get(n - 2)) && isInt(words.get(n - 1))) {
+                World world = sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
+                around = new org.bukkit.Location(world, Integer.parseInt(words.get(n - 3)) + 0.5,
+                        Integer.parseInt(words.get(n - 2)), Integer.parseInt(words.get(n - 1)) + 0.5);
+                words = words.subList(0, n - 3);
+            }
+            if (around == null) {
+                if (!(sender instanceof Player player)) {
+                    throw new IllegalArgumentException("From the console: /cgc find <item> <x> <y> <z> [world]");
+                }
+                around = player.getLocation();
+            } else if (!sender.hasPermission("coppergolemclerk.admin")) {
+                throw new IllegalArgumentException("Only admins can search around another spot.");
+            }
+            itemFinder.find(sender, String.join(" ", words), around);
+        }
+
+        private static boolean isInt(String s) {
+            try {
+                Integer.parseInt(s);
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
             }
         }
 
@@ -622,9 +713,27 @@ public final class CopperGolemClerk extends JavaPlugin {
 
         @Override
         public Collection<String> suggest(CommandSourceStack source, String[] args) {
+            boolean admin = source.getSender().hasPermission("coppergolemclerk.admin");
             if (args.length <= 1) {
                 String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
-                return HelpText.names().stream().filter(s -> s.startsWith(prefix)).toList();
+                return HelpText.names().stream().filter(s -> s.startsWith(prefix))
+                        .filter(s -> admin || PLAYER_COMMANDS.contains(s)).toList();
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
+                String prefix = args[1].toLowerCase(Locale.ROOT);
+                List<String> out = new ArrayList<>();
+                for (String group : groups.groupNames()) {
+                    if (group.startsWith(prefix)) {
+                        out.add(group);
+                    }
+                }
+                for (Material m : Material.values()) {
+                    String key = m.getKey().getKey();
+                    if (m.isItem() && !m.isLegacy() && key.startsWith(prefix) && out.size() < 100) {
+                        out.add(key);
+                    }
+                }
+                return out;
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("golems")) {
                 return "all".startsWith(args[1].toLowerCase(Locale.ROOT)) ? List.of("all") : List.of();
@@ -637,8 +746,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         }
 
         @Override
-        public String permission() {
-            return "coppergolemclerk.admin";
+        public boolean canUse(CommandSender sender) {
+            return sender.hasPermission("coppergolemclerk.admin")
+                    || (findEnabled && sender.hasPermission("coppergolemclerk.find"));
         }
     }
 }

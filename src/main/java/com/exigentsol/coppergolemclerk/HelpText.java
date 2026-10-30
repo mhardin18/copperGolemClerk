@@ -43,6 +43,15 @@ final class HelpText {
                                     + " remembers every golem's last spot in golems.yml.",
                             "Give a position (/cgc golems <x> <y> <z> [world]) for the 10 nearest to it;"
                                     + " from the console without one, every golem in every world.")),
+            new Entry("find", "/cgc find <item>", "/cgc find <item> <x> <y> <z> [world]",
+                    "Which containers near you hold an item; they glow for a few seconds.",
+                    List.of("Lists the containers within find-radius blocks (default 32) holding an item, nearest first,"
+                                    + " counting items inside shulker boxes too. They glow for you for"
+                                    + " find-highlight-seconds (default 10).",
+                            "Search for anything a sign label takes: an item (birch log), a group (logs), a pattern"
+                                    + " (*_log) or a tag (#minecraft:logs).",
+                            "You only see containers you could open yourself: not locked, and with GriefPrevention,"
+                                    + " unclaimed or where you have container trust.")),
             new Entry("stats", "/cgc stats", "/cgc stats",
                     "How much golems have sorted: today, this week, all time.",
                     List.of("Items golems have put into chests: today, the last 7 days and all time, the most-sorted"
@@ -67,13 +76,16 @@ final class HelpText {
         return ENTRIES.stream().map(Entry::name).toList();
     }
 
-    /** The command list, or one command's details when topic names one. */
-    static void send(CommandSender sender, String topic) {
+    /** Commands everyone with coppergolemclerk.find may use. */
+    private static final java.util.Set<String> FOR_EVERYONE = java.util.Set.of("find", "help");
+
+    /** The command list, or one command's details when topic names one. Non-admins see only theirs. */
+    static void send(CommandSender sender, String topic, boolean admin) {
         boolean player = sender instanceof Player;
         if (topic != null) {
             String wanted = topic.toLowerCase(Locale.ROOT);
             for (Entry e : ENTRIES) {
-                if (e.name().equals(wanted)) {
+                if (e.name().equals(wanted) && (admin || FOR_EVERYONE.contains(e.name()))) {
                     sender.sendMessage(Component.text(player ? e.usage() : e.consoleUsage(), NamedTextColor.GOLD)
                             .append(Component.text(": " + e.summary(), NamedTextColor.WHITE)));
                     for (String line : e.details()) {
@@ -93,6 +105,9 @@ final class HelpText {
         sender.sendMessage(Component.text("Copper Golem Clerk commands (/cgc or /coppergolemclerk):",
                 NamedTextColor.GOLD));
         for (Entry e : ENTRIES) {
+            if (!admin && !FOR_EVERYONE.contains(e.name())) {
+                continue;
+            }
             String usage = player ? e.usage() : e.consoleUsage();
             Component name = Component.text(usage, NamedTextColor.AQUA);
             if (player) {
