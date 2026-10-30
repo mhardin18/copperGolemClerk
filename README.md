@@ -38,12 +38,12 @@ that cover every survival item; everything else is optional.
 - Every golem death is logged with its cause, so none go missing unexplained.
 
 **Tools for players and admins**
-- **`/cgc find <item>`:** which chests near you hold something, and they glow for you.
-  Players only see chests they could open (GriefPrevention claims respected).
+- **`/cgc find <item>`:** which chests near you hold something, and the nearest glow for you.
+  By default players only search their own GriefPrevention claims.
 - **Full-chest alerts** to the claim owner, even if they're offline.
 - **Status labels:** hold bamboo to see what each golem is doing.
-- **`/cgc stats`**, a join summary of what golems sorted while you were away,
-  **`/cgc check`** to explain any chest, **`/cgc golems`** to find your golems.
+- **`/cgc stats`**, a join summary of what golems sorted while you were away, and
+  **`/cgc check`** to explain any chest; admins also get **`/cgc golems`** to find every golem.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
 
 Every feature has a setting; see [Settings reference](#settings-reference).
@@ -116,16 +116,16 @@ Groups are defined in `config.yml` (and you can edit them) using:
 
 Vanilla golems walk to the nearest chest they haven't tried and drop their item
 into the first empty chest they reach, often before finding the chest where it
-belongs. They also give up after trying 10 chests, so far-away chests never get
-used.
+belongs. After trying 10 chests they pause and start over from the nearest, so
+far-away chests seldom get used.
 
 With `prefer-matching-chests` (on by default), a golem carrying an item first
 looks over every chest in its range: 32 blocks sideways and 8 up or down, in
-loaded chunks. If any chest matches the item (frame label, same item, or same
-group) and has room, the golem walks straight to it. Empty chests are used only
-when no matching chest has room. If the golem hasn't delivered within
+loaded chunks. If any chest matches the item (a sign or frame label, the same item,
+or the same group) and has room, the golem walks straight to it. Empty chests are
+used only when no matching chest has room. If the golem hasn't delivered within
 `matching-chest-timeout-seconds` (default 30), for example because the chest is
-walled off, it falls back to vanilla behavior for that item.
+walled off, it works through the fallback steps in "Items with no home" below.
 
 ### Item frame labels
 
@@ -194,7 +194,7 @@ If a golem can't deliver its item it works through four steps, each lasting
 `matching-chest-timeout-seconds` (default 30): steer to the most specific matching
 chest, overflow or empty chest; then any matching chest (the most specific one may be
 unreachable); then only overflow or empty chests; then plain vanilla wandering. After
-that, the item is put back into the copper chest it came from (golems can't walk to
+that (with `return-unsortable-items`, on by default), the item is put back into the copper chest it came from (golems can't walk to
 copper chests while carrying, so it's moved directly) and marked "no home" there for
 `homeless-retry-minutes` (default 5). Golems take other items first and skip a copper
 chest that has only "no home" items left. Add a home for the item, then
@@ -213,8 +213,8 @@ chest and takes up to `carry-amount` (16) of an item that now has a home, then s
 at a time, each a different item, so they don't crowd it. So when
 you add a chest for something that was piling up in overflow, golems move it
 over on their own. Items with no home are left in overflow, and so are items in
-an overflow chest golems can't open (locked, blocked or waterlogged). Golems also no
-longer walk to empty copper chests.
+an overflow chest golems can't open (locked, blocked or waterlogged). Golems never walk
+to an empty copper chest.
 
 ### Bigger loads
 
@@ -237,9 +237,9 @@ is in its way, one of them steps one block aside and waits for the other to pass
   gives way, so they never both dodge.
 - A golem busy at a chest never steps aside, and golems that are just passing
   each other are left alone.
-- A golem never steps aside into fire, lava, water, a cobweb, powder snow, a
-  berry bush or a trapdoor, or onto a campfire, magma block or trapdoor; it backs up
-  to a safe spot instead.
+- A golem never steps aside into fire, lava, water, a bubble column, a cobweb, powder
+  snow, a berry bush, a wither rose, pointed dripstone, a cactus or a trapdoor, or onto
+  a campfire, magma block or trapdoor; it backs up to a safe spot instead.
 
 ### Golems keep off trapdoors
 
@@ -362,9 +362,8 @@ Who hears it:
   tell, so it goes to the players online with `coppergolemclerk.alerts` (ops by default),
   typically the server's staff.
 
-Every alert
-is also logged, and the same chest isn't mentioned again for `alert-cooldown-minutes`
-(default 30). Turn them off with `full-chest-alerts: false`.
+Every alert is also logged, and the same chest isn't mentioned again for
+`alert-cooldown-minutes` (default 30). Turn them off with `full-chest-alerts: false`.
 
 ### Golems tidy the chests they use
 
@@ -424,15 +423,16 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
 - `/cgc stats`: how many items golems have put into chests in your claims today, in the
   last 7 days and all time. Admins (`coppergolemclerk.allclaims`) also see the whole
   server's numbers, the most-sorted items and the busiest claims. Without GriefPrevention
-  there are no claims, so everyone sees the server's numbers. With `join-summary` (on by default) players are told when they
-  join what golems sorted in their claims while they were away and how many of their
-  chests filled up. Numbers are kept in `stats.yml`.
+  there are no claims, so everyone sees the server's numbers. With `join-summary` (on by
+  default) players are told when they join what golems sorted in their claims while they
+  were away and how many of their chests filled up. Numbers are kept in `stats.yml`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 - `/cgc find <item>`: which containers near you hold an item, nearest first, with how
   many in each (items inside shulker boxes count too), and the nearest
-  `find-highlight-count` (5) glow for you for `find-highlight-seconds` (10). Players can search once every 2 seconds. Search for anything a sign label takes: an item
+  `find-highlight-count` (5) glow for you for `find-highlight-seconds` (10). Players can
+  search once every 2 seconds. Search for anything a sign label takes: an item
   (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). It
-  looks `find-radius` blocks (32) around you. **By default it only looks in GriefPrevention
+  looks `find-radius` blocks (32) around you, sideways and up or down. **By default it only looks in GriefPrevention
   claims you own** (never in locked containers); nothing hints at anything else.
   `find-outside-own-claims: true` also lets players find things in unclaimed containers
   and in claims where they have container trust; other players' claims stay hidden
