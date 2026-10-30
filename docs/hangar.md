@@ -1,15 +1,14 @@
 # Copper Golem Clerk
 
-**Your copper golems, promoted to storage clerks.**
+**Now hiring: storage clerks.** Must be small, shiny and good with chests. Pay is one copper
+block and a pumpkin. Your new clerks sort the way you would: birch logs in with the oak logs,
+pickaxes with the tools, whatever your signs say where they say it, and every chest they touch
+left tidy. About 50 ready-made item groups mean they start work the moment you drop the plugin in.
 
-Throw your loot into a copper chest and let your golems file it: birch logs in with the
-oak logs, the diamond pickaxe with the tools, and the mixed loot from your last mining trip
-into the right chests. They pick the best chest in range, walk straight to it, keep it tidy,
-and let you know when it's full.
-
-It works with the defaults: about 50 item groups cover nearly every survival item, so a chest
-with one log in it already collects every kind of log. Add a sign to a chest when you want
-more control.
+For server owners, the clerks come with good manners: commands that respect GriefPrevention
+claims, full-chest alerts for claim owners, optional golem limits for busy servers, and nearly
+every feature tunable in one config file. They never ask for a raise and never complain about the
+cobblestone.
 
 I'm always open to new ideas for this plugin. Open an enhancement request on GitHub:
 https://github.com/mhardin18/copperGolemClerk/issues
@@ -109,6 +108,8 @@ golems carry them over by themselves.
   admin allows it.
 
 ## Permissions
+
+All permissions are standard nodes, so they work with LuckPerms or any other permissions plugin.
 
 | Permission | Default | Allows |
 |---|---|---|
