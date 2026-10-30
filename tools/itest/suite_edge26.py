@@ -81,16 +81,16 @@ def _(c):
                     (c.holding("birch_log") == 0, "golem's hands empty")]
 
 
-@scenario("carry64-little-room", "edge26", 240, "carry-amount 64 but the log chest has room for only 10: 10 go in, the rest goes to the overflow chest; none lost.", alone=True)
+@scenario("carry64-little-room", "edge26", 240, "carry-amount 64 but the log chest has room for only 10 more birch logs: 10 go in, the other 54 go to the overflow chest; none lost.", alone=True)
 def _(c):
     set_options(c, carry_amount="64")
     c.chest("copper", 2, 10, [("birch_log", 64)], block="waxed_copper_chest")
-    c.chest("logs", 10, 10, [("oak_log", 64)] * 26 + [("oak_log", 54)])
+    c.chest("logs", 10, 10, [("oak_log", 64)] * 26 + [("birch_log", 54)])
     c.chest("overflow", 14, 10)
     c.sign(14, 10, "[Overflow]")
     c.golem(4, 10)
-    return lambda: [expect(c, "logs", "birch_log", 10), expect(c, "overflow", "birch_log", 54),
-                    conserved(c, "birch_log", 64)]
+    return lambda: [expect(c, "logs", "birch_log", 64), expect(c, "overflow", "birch_log", 54),
+                    conserved(c, "birch_log", 118)]
 
 
 @scenario("carry64-into-barrel", "edge26", 180, "carry-amount 64 with barrels as destinations: the plugin puts all 64 granite into the labelled barrel.", alone=True)
@@ -138,14 +138,20 @@ def _(c):
 @scenario("carry64-stats-count", "edge26", 150, "carry-amount 64: /cgc stats counts all 64 of a delivery, not 16.", alone=True)
 def _(c):
     set_options(c, carry_amount="64")
+    def today():
+        m = re.search(r"today ([\d,]+)", say(c, "cgc stats"))
+        return int(m.group(1).replace(",", "")) if m else -1
+    before = today()
     c.chest("copper", 2, 10, [("cherry_log", 64)], block="waxed_copper_chest")
     c.chest("logs", 10, 10, [("oak_log", 1)])
     c.golem(4, 10)
+    t = Trigger()
 
     def check():
-        reply = say(c, "cgc stats")
-        line = next((l for l in reply.splitlines() if "cherry log" in l), "")
-        return [expect(c, "logs", "cherry_log", 64), ("64" in line, f"stats line for cherry log: '{line.strip()}'")]
+        t.fire_when(lambda: c.count("logs", "cherry_log") == 64, lambda: None)
+        after = today()
+        return [expect(c, "logs", "cherry_log", 64), (t.at is not None and t.since() > 5, "delivered, then waited 5s"),
+                (after - before == 64, f"today's total went from {before} to {after} (want +64)")]
     return check
 
 
@@ -186,7 +192,7 @@ def _(c):
 def _(c):
     full = 'shulker_box[minecraft:container=[{slot:0,item:{id:"minecraft:emerald",count:9}}]]'
     c.chest("a", 12, 10, [(full, 1), ("shulker_box", 1)])
-    return lambda: [has(find_at(c, "emerald"), "9 emerald in 1 container"), has(find_at(c, "shulker_box"), "2 shulker box in 1 container")]
+    return lambda: [has(find_at(c, "emerald"), "9 emerald in 1 container"), has(find_at(c, "shulker_box"), "2 shulker_box (item and its dyed versions) in 1 container")]
 
 
 # ---- an old config.yml (like survival's) without the 2.6.0 settings
@@ -208,5 +214,5 @@ def _(c):
         warnings = [l for l in c.log_lines() if "WARN" in l and "CopperGolemClerk" in l]
         return [has(reply, "reloaded"), (not warnings, f"no plugin warnings ({warnings[:2]})"),
                 (most[0] == 16, f"most held at once: {most[0]} (want 16)"),
-                expect(c, "logs", "birch_log", 32), has(find_at(c, "birch_log", 14, 10), "33 birch log")]
+                expect(c, "logs", "birch_log", 32), has(find_at(c, "birch_log", 14, 10), "32 birch log in 1 container")]
     return check
