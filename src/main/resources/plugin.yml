@@ -2,7 +2,7 @@ name: CopperGolemClerk
 version: '${version}'
 main: com.exigentsol.coppergolemclerk.CopperGolemClerk
 api-version: '26.3'
-description: Copper golems sort similar items into the same chest.
+description: Copper golems file your items properly - by group, by sign label, into overflow chests and furnaces - and look after themselves.
 softdepend: [GriefPrevention]
 permissions:
   coppergolemclerk.toggle:

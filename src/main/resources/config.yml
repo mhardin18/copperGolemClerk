@@ -1,13 +1,14 @@
 # Copper Golem Clerk configuration
 #
-# Vanilla copper golems only put an item into a chest that already holds that
-# exact item, or into an empty chest. This plugin adds "groups": a golem may
-# also put an item into a chest that holds other items from the same group.
+# Copper golems take items out of copper chests and put them away. With this plugin
+# they file them properly: by group (birch logs go in with the oak logs), by label
+# (a sign like [logs] or an item in a frame on the chest), into [Overflow] chests
+# when nothing else fits, and into labelled furnaces to be smelted.
 #
-# Example: with the "logs" group, a golem carrying birch logs will put them in a
-# chest that already has oak logs in it.
+# Every setting below has a default, so a setting missing from this file still
+# works. The README lists them all: https://github.com/mhardin18/copperGolemClerk
 #
-# Use /cgc reload after editing this file.
+# Use /cgc reload after editing this file (no restart needed).
 
 # How a chest qualifies for a group match:
 #   all - every item in the chest must share a group with the carried item.
@@ -91,8 +92,8 @@ overflow-before-empty: true
 
 # When a golem has nothing to do (empty hand, and no copper chest in range has
 # anything it would take), send it to an [Overflow] chest to fetch an item that
-# now has a home, e.g. ores after you add an [ores] chest. It takes up to 16, like
-# a normal pickup, and sorts them. Items that would just go back to overflow are
+# now has a home, e.g. ores after you add an [ores] chest. It takes up to
+# carry-amount (16 by default), like a normal pickup, and sorts them. Items that would just go back to overflow are
 # left alone. If it can't reach the overflow chest within 30 seconds it gives
 # up and waits a minute. Items it can't deliver go back to that chest.
 fetch-from-overflow: true
@@ -109,7 +110,7 @@ carry-amount: 16
 
 # Golems run furnaces, smokers and blast furnaces that have a label (a sign or item
 # frame, like a chest's), which says what to smelt there: [raw iron], [Sand],
-# [raw ores]... Unlabelled furnaces are left alone. A golem carrying something a
+# [ores]... Unlabelled furnaces are left alone. A golem carrying something a
 # labelled furnace can cook takes it there before looking for a chest; idle golems
 # take out what's done (and sort it) and top up the fuel from a chest in range when
 # it runs low (under 8), using the items in furnace-fuel. Things taken out of a

@@ -1,12 +1,54 @@
 # Copper Golem Clerk
 
-A Paper plugin (Paper 26.3, Java 25) that makes copper golems sort *similar* items
-together, not just identical ones.
+**Turn copper golems into a storage staff that actually keeps your base in order.**
 
-Vanilla golems only put an item into a chest that already holds that exact item,
-or into an empty chest. With this plugin, a golem carrying birch logs will also
-use a chest that holds oak logs. A golem carrying a diamond pickaxe will use a
-chest of tools, and so on.
+Drop anything into a copper chest and your golems file it away: birch logs go in with the
+oak logs, a diamond pickaxe goes to the tools, raw iron goes into the blast furnace and the
+ingots come back out to the iron chest. Label chests with a sign like `[logs]` or `[Ores]`,
+or just put one item in a chest to say what it's for. Golems pick the right chest, walk
+straight to it, keep the chests tidy, and tell you when one is full.
+
+A Paper plugin for **Paper 26.3** (Java 25). Works out of the box with about 50 item groups
+that cover every survival item; everything else is optional.
+
+## Features
+
+**Sorting that understands your storage**
+- **Groups:** a golem carrying birch logs uses the chest of oak logs, a stew goes with the
+  food, a pickaxe with the tools. About 50 groups ship ready to use; edit or add your own.
+- **Sign and item frame labels:** `[logs]`, `[oak log]`, `[*_ORE]`, `[#planks]`, or an item
+  in a frame. The most specific chest wins: `[stews]` beats `[food]` for a stew.
+- **`[Overflow]` chests** catch anything without a home, and idle golems move items back out
+  once you add a chest for them.
+- **`[No Golems]`** keeps golems out of a chest; **`[Only ...]`** on a copper chest makes
+  golems take only some items out of it.
+- Golems **walk straight to the right chest** instead of dropping things in the first
+  empty one, and **put back** what they can't place.
+- **Tidy chests:** partial stacks merged and like items kept together.
+
+**Bigger, faster storage rooms**
+- **Taller stacks:** golems reach chests up to 6 rows high (vanilla: 2).
+- **Barrels and shulker boxes** as destinations, if you want them.
+- **Bigger loads:** carry up to 64 items a trip instead of 16.
+- **Golems run your furnaces:** label a furnace `[raw iron]` and golems feed it, keep it
+  fuelled and sort what comes out.
+- **Golems give way** to each other in narrow aisles instead of getting stuck.
+
+**Golems that look after themselves**
+- **Lost golems walk home** (or are teleported back), and you're told if one is stuck.
+- Golems **keep off trapdoors** and **stay out of portals**.
+- Every golem death is logged with its cause, so none go missing unexplained.
+
+**Tools for players and admins**
+- **`/cgc find <item>`:** which chests near you hold something, and they glow for you.
+  Players only see chests they could open (GriefPrevention claims respected).
+- **Full-chest alerts** to the claim owner, even if they're offline.
+- **Status labels:** hold bamboo to see what each golem is doing.
+- **`/cgc stats`**, a join summary of what golems sorted while you were away,
+  **`/cgc check`** to explain any chest, **`/cgc golems`** to find your golems.
+- Right-click a golem with bamboo to switch it **back to vanilla**.
+
+Every feature has a setting; see [Settings reference](#settings-reference).
 
 ## Requirements
 
@@ -58,11 +100,12 @@ tools chest, and so on.
 
 ## How it works
 
-Paper fires `ItemTransportingEntitySortEvent` whenever a golem checks whether
-its item belongs in a chest. The plugin answers "yes" when the chest's items
-share a **group** with the carried item. Otherwise vanilla rules apply.
+A copper golem takes items out of a copper chest and looks for a chest to put them in.
+On its own it only uses a chest that already holds that exact item, or an empty one.
+With this plugin it also uses a chest whose items share a **group** with what it
+carries, or a chest labelled for it, and it chooses the best of those in range.
 
-Groups are defined in `config.yml` using:
+Groups are defined in `config.yml` (and you can edit them) using:
 
 | Entry           | Meaning                                    |
 |-----------------|--------------------------------------------|
@@ -191,7 +234,7 @@ or an item frame), and golems keep it going:
 
 - **Feeding:** a golem carrying something the furnace's label covers, and the furnace
   can cook, takes it to the furnace before looking for a chest. `[raw iron]` on a blast
-  furnace, `[Sand]` on a furnace, `[raw meat]` on a smoker...
+  furnace, `[Sand]` on a furnace, `[food]` on a smoker (it only gets the raw food a smoker can cook)...
 - **Emptying:** an idle golem takes out what the furnace has made and sorts it like
   anything else (iron ingots to your `[Iron]` chest).
 - **Fuel:** when a labelled furnace has something to cook and fewer than 8 fuel items,
@@ -349,40 +392,7 @@ kind:
 Copper chests are left alone, and so is a chest a player has open (it's tidied
 after they close it).
 
-Settings:
-
-- `match-mode: all` (default): every item in the chest must share a group with the
-  carried item. A stray item in a chest stops group matching, which keeps
-  chests tidy. `any`: one item from the group is enough.
-- `prefer-matching-chests: true` (default): see above.
-- `matching-chest-timeout-seconds: 30`: length of each step above.
-- `return-unsortable-items: true`, `homeless-retry-minutes: 5`: see above.
-- `fetch-from-overflow: true`, `fetchers-per-overflow-chest: 2`: see above.
-- `carry-amount: 16`: see "Bigger loads" above.
-- `furnace-feeding: true`, `furnace-fuel: [coal, charcoal]`: see "Golems run your furnaces" above.
-- `find-enabled: true`, `find-radius: 32`, `find-highlight-seconds: 10`: see `/cgc find` under Commands.
-- `sign-labels: true` (default): sign labels and `[Overflow]` chests.
-- `overflow-before-empty: true` (default): see above.
-- `allow-empty-chests: true` (default): golems may use empty chests as a last
-  resort. Set `false` so golems only fill chests you've labelled.
-- `golems-give-way: true` (default): see above.
-- `avoid-trapdoors: true` (default): see above.
-- `avoid-portals: true` (default): see "Golems stay out of portals" above.
-- `update-check: true` (default): see "Update notices" below.
-- `deliver-reach: 2`, `take-reach: 2` (default): see "Taller stacks of chests" above.
-- `destination-containers: [chest, trapped_chest]` (default): see "Barrels and shulker boxes" above.
-- `golem-toggle-item: bamboo`, `mode-markers: true`, `status-labels: true` (default): see "Switching a golem back to vanilla" above.
-- `greet-other-golems: true`, `greet-cooldown-minutes: 5` (default): see "Golems say hello" above.
-- `rescue-lost-golems: true`, `lost-golem-teleport-home: false` (default): see "Lost golems find their way home" above.
-- `join-summary: true` (default): see `/cgc stats` under Commands.
-- `full-chest-alerts: true`, `overflow-alert-percent: 90`, `alert-cooldown-minutes: 30` (default): see "Full-chest alerts" above.
-- `log-golem-deaths: true` (default): write a line in the server log when a copper
-  golem dies (where, the cause such as lava, a fall or a mob, and what it was holding)
-  or turns into a statue. Golems never despawn, so a golem that goes missing shows up here.
-- `tidy-chests: true` (default): see above.
-- `disabled-worlds: []`: worlds where the plugin does nothing and golems behave as in
-  vanilla, e.g. `[world_nether, world_the_end]`.
-- `debug: true`: logs each sort decision to the console.
+Every setting is listed in [Settings reference](#settings-reference) below.
 
 ## Update notices
 
@@ -416,7 +426,7 @@ everyone has (`coppergolemclerk.find`). Alias `/cgc`.
   listed where they were last seen (the plugin keeps every golem's last spot in
   `golems.yml`, and forgets golems not seen for 30 days).
 - `/cgc stats`: how many items golems have put into chests today, in the last 7 days
-  and all time, the most-sorted items and the busiest claims; players also see their
+  and all time, the most-sorted items and the busiest claims; in game you also see your
   own claims' numbers. With `join-summary` (on by default) players are told when they
   join what golems sorted in their claims while they were away and how many of their
   chests filled up. Numbers are kept in `stats.yml`.
@@ -434,6 +444,89 @@ From the console, give a position: `/cgc check <x> <y> <z> [world]`,
 `/cgc overflow <x> <y> <z> [world]`, `/cgc golems <x> <y> <z> [world]` (the 10 golems
 nearest that spot; without a position the console lists every golem),
 `/cgc find <item> <x> <y> <z> [world]`.
+
+## Settings reference
+
+All settings live in `plugins/CopperGolemClerk/config.yml`. After editing it, run
+`/cgc reload` (no restart needed). A setting missing from the file uses its default, so
+an older `config.yml` keeps working after an update. A mistake in the file is reported
+with its line number and the old settings are kept.
+
+### Sorting
+
+| Setting | Default | What it does |
+|---|---|---|
+| `match-mode` | `all` | When a chest counts as a group match by its contents. `all`: every item in the chest must share a group with the carried item, so one stray item stops group matching and chests stay tidy. `any`: one item from the group is enough. |
+| `prefer-matching-chests` | `true` | A golem first looks over every chest in range (32 blocks sideways, 8 up or down) and walks straight to the best one that has room, instead of trying the nearest chests one by one and dropping its item in the first empty one. |
+| `matching-chest-timeout-seconds` | `30` | How long each fallback step lasts when a golem can't deliver: best chest → any matching chest → `[Overflow]` or empty chests → vanilla behaviour → put it back. Only time when the golem is likely active counts. |
+| `return-unsortable-items` | `true` | After the last step, put the item back into the copper chest it came from (or the nearest one with room), instead of carrying it around for ever. |
+| `homeless-retry-minutes` | `5` | Items put back are marked "no home" in that copper chest for this long: golems take other items first and skip a chest with only those left. `/cgc reload` clears the marks. |
+| `allow-empty-chests` | `true` | Golems may use an empty chest as a last resort. `false`: only labelled chests, chests already holding the item or its group, and `[Overflow]` chests. |
+| `overflow-before-empty` | `true` | When no matching chest has room, try `[Overflow]` chests before empty ones. `false` fills empty chests first. |
+| `item-frame-labels` | `true` | An item in a frame on a chest means "only this item goes here". |
+| `sign-labels` | `true` | Sign labels (`[logs]`, `[Overflow]`, `[No Golems]`, `[Only ...]`). |
+| `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use. Copper chests and chests a player has open are left alone. |
+| `destination-containers` | `[chest, trapped_chest]` | What golems put items into. Add `barrel` and/or `shulker_box` (every colour). Leave `chest` out to keep golems away from plain chests. Golems always take from copper chests. |
+| `groups` | 50 groups | The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
+
+### Busier golems
+
+| Setting | Default | What it does |
+|---|---|---|
+| `fetch-from-overflow` | `true` | A golem with nothing to do takes items that now have a home out of an `[Overflow]` chest and sorts them. |
+| `fetchers-per-overflow-chest` | `2` | How many golems may fetch from one overflow chest at a time (each a different item). |
+| `carry-amount` | `16` | Items a golem carries per trip, 1 to 64 (vanilla: 16). Items that stack to less (ender pearls 16, tools 1) are carried that many at most. |
+| `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
+| `take-reach` | `2` | How many rows up golems take from copper chests and fetch from `[Overflow]` chests, 2 to 6. |
+| `furnace-feeding` | `true` | Golems feed, empty and fuel furnaces, smokers and blast furnaces that have a label. Unlabelled furnaces are never touched. |
+| `furnace-fuel` | `[coal, charcoal]` | What golems put into furnaces as fuel, taken from containers in range when a labelled furnace has fewer than 8. Unknown names and items that don't burn are reported. |
+
+### Looking after golems
+
+| Setting | Default | What it does |
+|---|---|---|
+| `golems-give-way` | `true` | A golem stuck nose to nose with another steps aside (backing up in a one-wide corridor). Empty hands give way to full ones. |
+| `avoid-trapdoors` | `true` | Golems never walk onto or through trapdoors (vanilla golems fall through open ones). |
+| `avoid-portals` | `true` | Golems never go through Nether portals, End portals or End gateways, unless on a lead or riding something. |
+| `rescue-lost-golems` | `true` | A golem far from any copper chest (40 blocks from its own, or 12 up or down) walks back; one that can't, or is stuck where it can't reach a copper chest, triggers an alert. |
+| `lost-golem-teleport-home` | `false` | Teleport such a golem back to its copper chest instead of only alerting. |
+| `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
+| `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
+| `log-golem-deaths` | `true` | Log every copper golem death (cause, place, what it held) and every other removal (statue, `/kill`). |
+
+### Players, alerts and tools
+
+| Setting | Default | What it does |
+|---|---|---|
+| `golem-toggle-item` | `bamboo` | Right-clicking a golem with this item switches it between this plugin and plain vanilla. `none` turns switching off. |
+| `mode-markers` | `true` | While a player holds the toggle item, golems using the plugin show them a small green light. |
+| `status-labels` | `true` | While a player holds the toggle item, golems within 48 blocks show them what they're doing and how weathered they are. |
+| `full-chest-alerts` | `true` | Tell the claim owner (or players with `coppergolemclerk.alerts`) when a labelled chest is full or an `[Overflow]` chest fills up. Offline owners are told when they join. |
+| `overflow-alert-percent` | `90` | Warn when an `[Overflow]` chest has this share of its slots in use. `0`: only when completely full. |
+| `alert-cooldown-minutes` | `30` | Don't repeat an alert about the same chest more often than this. |
+| `join-summary` | `true` | On join, tell players what golems sorted in their claims while they were away and how many of their chests filled up. |
+| `find-enabled` | `true` | `/cgc find`. `false` turns the command off for everyone. |
+| `find-radius` | `32` | How far `/cgc find` looks, 1 to 64 blocks sideways and up or down. |
+| `find-highlight-seconds` | `10` | How long the containers `/cgc find` lists glow for the player, 0 to 120 (0: no glow). |
+
+### Server
+
+| Setting | Default | What it does |
+|---|---|---|
+| `disabled-worlds` | `[]` | Worlds (by folder name) where the plugin does nothing and golems behave as in vanilla, e.g. `[world_nether, world_the_end]`. |
+| `update-check` | `true` | Check GitHub weekly for a newer release; log it and tell admins on join. Nothing is downloaded. |
+| `debug` | `false` | Log every sorting decision. Useful while setting up groups and labels. |
+| `trace-golems` | `false` | Log each golem's state, position and held item whenever they change. Very chatty. |
+
+## Permissions
+
+| Permission | Default | Allows |
+|---|---|---|
+| `coppergolemclerk.admin` | op | Every `/cgc` command (`check`, `overflow`, `golems`, `stats`, `reload`, `version`, and `find` around any spot); being told about new releases. |
+| `coppergolemclerk.find` | everyone | `/cgc find` and `/cgc help`. |
+| `coppergolemclerk.find.allclaims` | op | `/cgc find` also looks into other players' claims and locked containers. |
+| `coppergolemclerk.toggle` | everyone | Switching golems between the plugin and vanilla with the toggle item (with GriefPrevention, only where you may build). |
+| `coppergolemclerk.alerts` | op | Hearing alerts about places outside anyone's claim (or every alert, without GriefPrevention). |
 
 ## Building from source
 
