@@ -53,6 +53,30 @@ final class Claims {
         }
     }
 
+    /**
+     * Which claim a spot is in, as "claim:<id>" for the top-level claim (a subdivision counts as
+     * its parent), or null (unclaimed, or no GriefPrevention).
+     */
+    String claimKeyAt(Location place) {
+        Object claim = claimAt(place);
+        if (claim == null) {
+            return null;
+        }
+        try {
+            for (int depth = 0; depth < 8; depth++) {
+                Object parent = claim.getClass().getField("parent").get(claim);
+                if (parent == null) {
+                    break;
+                }
+                claim = parent;
+            }
+            Object id = claim.getClass().getMethod("getID").invoke(claim);
+            return "claim:" + (id != null ? id : "@" + System.identityHashCode(claim));
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return "claim:@" + System.identityHashCode(claim);
+        }
+    }
+
     /** True if there's a claim here. */
     boolean claimed(Location place) {
         return broken || claimAt(place) != null;

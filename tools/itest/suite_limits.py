@@ -14,7 +14,7 @@ import re
 import time
 
 from arena import conserved, expect, scenario
-from suite_claims import OWNER_A, PLACE_A, need_fixture
+from suite_claims import OWNER_A, PLACE_A, PLACE_C, PLACE_D, need_fixture
 from suite_options import set_options
 
 BIRCH = 64  # four trips of 16
@@ -79,6 +79,44 @@ def _(c):
     old_and_new_golem(c)
     return lambda: [(not limit_alerts(c), f"no golem limit alert; got: {limit_alerts(c)[:1]}"),
                     expect(c, "logs", "birch_log", BIRCH), expect(c, "empty", "birch_log", 0)] + all_sorted(c)
+
+
+@scenario("limit-each-claim-own-limit", "limits", 180, "max-golems-per-claim: 1 is per claim, not per owner: a golem in claim C and one in claim A (same owner) each use the plugin, no alert.", alone=True, place=PLACE_C)
+def _(c):
+    need_fixture()
+    set_options(c, max_golems_per_claim="1")
+    # An older golem standing in claim A (owner A's other claim), outside this platform.
+    x, z = PLACE_A[0] + 30, PLACE_A[1] + 10
+    y = 150
+    c.r.cmd(f"forceload add {x} {z}")
+    c.r.cmd(f"setblock {x} {y - 1} {z} minecraft:stone")
+    c.r.cmd(f'summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} {{Tags:["limit_other_claim"],NoAI:1b}}')
+    c.cleanup += ["kill @e[type=minecraft:copper_golem,tag=limit_other_claim]",
+                  f"setblock {x} {y - 1} {z} minecraft:air", f"forceload remove {x} {z}"]
+    time.sleep(3)
+    sorting_room(c)
+    c.golem(4, 10)
+
+    def check():
+        return [(c.elapsed() >= 15, f"watched {c.elapsed():.0f}s of 15s (three recounts)"),
+                (not limit_alerts(c), f"no golem limit alert; got: {limit_alerts(c)[:1]}"),
+                expect(c, "logs", "birch_log", BIRCH), expect(c, "empty", "birch_log", 0)] + all_sorted(c)
+    return check
+
+
+@scenario("limit-admin-claim", "limits", 240, "max-golems-per-claim: 1 in an admin claim (no owner) with two golems: it has its own limit, players with coppergolemclerk.alerts are told about 'the admin claim', and the newer golem sorts like vanilla.", alone=True, place=PLACE_D)
+def _(c):
+    need_fixture()
+    set_options(c, max_golems_per_claim="1")
+    sorting_room(c)
+    old_and_new_golem(c)
+
+    def check():
+        got = limit_alerts(c, "2 copper golems in the admin claim at")
+        return [(bool(got), f"alert about 2 golems in the admin claim; got: {limit_alerts(c)[:1]}"),
+                (c.count("logs", "birch_log") > 0, f"logs has {c.count('logs', 'birch_log')} birch logs (want some)"),
+                (c.count("empty", "birch_log") > 0, f"empty has {c.count('empty', 'birch_log')} birch logs (want some)")] + all_sorted(c)
+    return check
 
 
 @scenario("limit-outside-claims", "limits", 240, "max-golems-outside-claims set to the number of golems already on unclaimed land plus one, then two more golems: an alert names the world and the count, and the newer test golem sorts like vanilla; none lost.", alone=True)

@@ -1,6 +1,7 @@
 """Set up the test claims for suite_claims on pluginDev (idempotent).
 
-Writes two GriefPrevention claim files owned by made-up players, and grants one of them
+Writes GriefPrevention claim files (claims A and C owned by one made-up player, B by another,
+D an admin claim), and grants owner A
 coppergolemclerk.teleport in LuckPerms over RCON. GriefPrevention reads claims only at
 start-up: restart pluginDev afterwards (sudo -n systemctl restart mcd).
 
@@ -17,6 +18,8 @@ WORLD = "pluginDev_world"
 CLAIMS = {
     "9001.yml": ("00000000-0000-4000-8000-0000000000a1", (-1100, -1100), (-1000, -1050)),
     "9002.yml": ("00000000-0000-4000-8000-0000000000b2", (-1100, -1040), (-1000, -990)),
+    "9003.yml": ("00000000-0000-4000-8000-0000000000a1", (-1100, -980), (-1000, -930)),  # claim C: owner A's second claim
+    "9004.yml": ("", (-1100, -920), (-1000, -870)),  # claim D: an admin claim (no owner)
 }
 DIR = SERVER + "/plugins/GriefPreventionData/ClaimData"
 
@@ -32,12 +35,12 @@ def main(argv):
         with open(path, "w") as f:
             f.write(f"Lesser Boundary Corner: {WORLD};{x1};-64;{z1}\n"
                     f"Greater Boundary Corner: {WORLD};{x2};319;{z2}\n"
-                    f"Owner: {owner}\nBuilders: []\nContainers: []\nAccessors: []\nManagers: []\n"
+                    f"Owner: '{owner}'\nBuilders: []\nContainers: []\nAccessors: []\nManagers: []\n"
                     f"Parent Claim ID: -1\ninheritNothing: false\n")
     next_id = os.path.join(DIR, "_nextClaimID")
-    if not remove and os.path.exists(next_id) and int(open(next_id).read().strip() or 0) <= 9002:
+    if not remove and os.path.exists(next_id) and int(open(next_id).read().strip() or 0) <= 9004:
         with open(next_id, "w") as f:
-            f.write("9003")
+            f.write("9005")
     try:
         r = from_properties(SERVER + "/server.properties")
         owner_a = CLAIMS["9001.yml"][0]
