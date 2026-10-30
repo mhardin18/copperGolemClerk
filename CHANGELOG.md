@@ -17,6 +17,9 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - Golems run your furnaces: label a furnace, smoker or blast furnace like a chest (`[raw iron]`) and golems bring it what the label covers, take out what's done and sort it, and top up its fuel from a chest in range (`furnace-fuel`, coal and charcoal by default). Unlabelled furnaces are left alone; `furnace-feeding: false` turns it off.
 - `/cgc find <item>`: which containers near you hold an item (or a group, pattern or tag), nearest first, counting items in shulker boxes; they glow for you for 10 seconds. Everyone can use it, but players only see containers they could open themselves (not locked; with GriefPrevention, unclaimed or where they have container trust). `find-enabled`, `find-radius`, `find-highlight-seconds`; ops see every claim (`coppergolemclerk.find.allclaims`).
 
+### Changed
+- Documentation: the README now starts with what the plugin does, has a feature overview, a full settings reference (every setting with its default and what it does) and a permissions table; `docs/hangar.md` is the plugin page text for Hangar; the `config.yml` header and `plugin.yml` description describe the plugin instead of vanilla golems.
+
 ### Fixed
 - Golems on the floor above an `[Overflow]` chest never fetched from it: they were sent to the chest block itself, and the pathfinder stopped them on the floor right above the chest instead of finding the way round by the stairs. Golems now walk to a spot beside the chest they have a whole path to, and skip an overflow chest they can't get to.
 
