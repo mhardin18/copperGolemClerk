@@ -2,7 +2,12 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## Unreleased
+## 2.7.0 (in progress)
+
+### New
+- Golem limits: `max-golems-per-claim` and `max-golems-outside-claims` (per world) cap how many copper golems use the plugin; the oldest keep it, the newest over the limit sort like vanilla, and the claim owner is told. Off (0) by default until load testing settles a sensible default.
+
+## 2.6.0 (unreleased)
 
 ### New
 - `/cgc golems` finds your copper golems: the 10 nearest (or every one with `all`), each with its position (admins can click to teleport), distance and direction, what it's carrying, its copper and its mode. Golems in unloaded chunks are listed where they were last seen.
