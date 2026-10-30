@@ -17,11 +17,13 @@ from suite_alerts import alerts, full_logs_chest
 
 OWNER_A = "00000000-0000-4000-8000-0000000000a1"
 OWNER_B = "00000000-0000-4000-8000-0000000000b2"
-# Claim A: x -1100..-1000, z -1100..-1050; claim B: x -1100..-1000, z -1040..-990 (all heights).
+# All x -1100..-1000, all heights. Claim A: z -1100..-1050; B: z -1040..-990; C (owner A's
+# second claim): z -980..-930; D (an admin claim): z -920..-870.
 PLACE_A = (-1090, -1090)
 PLACE_B = (-1090, -1030)
-CLAIM_FILES = (SERVER + "/plugins/GriefPreventionData/ClaimData/9001.yml",
-               SERVER + "/plugins/GriefPreventionData/ClaimData/9002.yml")
+PLACE_C = (-1090, -970)
+PLACE_D = (-1090, -910)
+CLAIM_FILES = tuple(SERVER + f"/plugins/GriefPreventionData/ClaimData/{n}.yml" for n in (9001, 9002, 9003, 9004))
 
 
 def need_fixture():

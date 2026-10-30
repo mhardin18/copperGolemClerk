@@ -236,8 +236,8 @@ tidy-chests: true
 # folder name, e.g. [world_nether, world_the_end].
 disabled-worlds: []
 
-# Golem limits: how many copper golems in
-# one GriefPrevention claim (max-golems-per-claim), or on unclaimed land in one world
+# Golem limits: how many copper golems in one GriefPrevention claim (max-golems-per-claim;
+# each claim on its own, admin claims too), or on unclaimed land in one world
 # (max-golems-outside-claims; without GriefPrevention that's every golem in the world), use
 # this plugin. The oldest golems keep it; the newest over the limit sort like vanilla, and the
 # claim owner (or players with coppergolemclerk.alerts) is told. 0 = no limit.

@@ -2,6 +2,12 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## Unreleased
+
+### Fixed
+- `max-golems-per-claim` is now counted for each claim on its own, as documented. It used to add up all the claims of one owner, and golems in admin claims counted as unclaimed land (`max-golems-outside-claims`); admin claims now have their own limit too.
+- `/cgc golems` no longer lists a golem that was killed just before its chunk unloaded (for example `/kill` and then everyone leaving) as "not loaded". It used to stay in the list, and in `golems.yml`, for 30 days.
+
 ## 2.6.1 (2026-10-30)
 
 ### Fixed
