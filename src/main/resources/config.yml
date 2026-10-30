@@ -107,6 +107,16 @@ fetchers-per-overflow-chest: 2
 # that many at most. Higher means fewer trips for big sorting jobs.
 carry-amount: 16
 
+# Golems run furnaces, smokers and blast furnaces that have a label (a sign or item
+# frame, like a chest's), which says what to smelt there: [raw iron], [Sand],
+# [raw ores]... Unlabelled furnaces are left alone. A golem carrying something a
+# labelled furnace can cook takes it there before looking for a chest; idle golems
+# take out what's done (and sort it) and top up the fuel from a chest in range when
+# it runs low (under 8), using the items in furnace-fuel. Things taken out of a
+# furnace are never put back into one.
+furnace-feeding: true
+furnace-fuel: [coal, charcoal]
+
 # Golems give way to each other instead of getting stuck nose to nose. When a
 # golem is stuck (trying to walk but barely moving for a second) because another
 # golem is in its way, one of them steps one block aside and waits for the other

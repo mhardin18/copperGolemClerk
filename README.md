@@ -184,6 +184,25 @@ stacks to less (16 ender pearls, one tool) is carried that many at most. At 64 a
 sorting job needs a quarter of the trips. Items held back by `[Only ...]` or returned as
 homeless aren't added.
 
+### Golems run your furnaces
+
+Put a label on a furnace, smoker or blast furnace, the same way as on a chest (a sign
+or an item frame), and golems keep it going:
+
+- **Feeding:** a golem carrying something the furnace's label covers, and the furnace
+  can cook, takes it to the furnace before looking for a chest. `[raw iron]` on a blast
+  furnace, `[Sand]` on a furnace, `[raw meat]` on a smoker...
+- **Emptying:** an idle golem takes out what the furnace has made and sorts it like
+  anything else (iron ingots to your `[Iron]` chest).
+- **Fuel:** when a labelled furnace has something to cook and fewer than 8 fuel items,
+  an idle golem brings fuel from a container in range: the items listed in
+  `furnace-fuel` (coal and charcoal by default). It tops up the same fuel already in it.
+
+Unlabelled furnaces are never touched, so your own furnaces stay yours. Items a golem
+takes out of a furnace are never put back into one, so `[stone]` can't turn into an
+endless cobblestone → stone → smooth stone loop. `[No Golems]` and locked furnaces
+are left alone too. Turn it all off with `furnace-feeding: false`.
+
 ### Golems give way to each other
 
 Golems working in a crowded room or a narrow aisle can end up nose to nose,
@@ -340,6 +359,7 @@ Settings:
 - `return-unsortable-items: true`, `homeless-retry-minutes: 5`: see above.
 - `fetch-from-overflow: true`, `fetchers-per-overflow-chest: 2`: see above.
 - `carry-amount: 16`: see "Bigger loads" above.
+- `furnace-feeding: true`, `furnace-fuel: [coal, charcoal]`: see "Golems run your furnaces" above.
 - `sign-labels: true` (default): sign labels and `[Overflow]` chests.
 - `overflow-before-empty: true` (default): see above.
 - `allow-empty-chests: true` (default): golems may use empty chests as a last
