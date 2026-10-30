@@ -236,6 +236,16 @@ tidy-chests: true
 # folder name, e.g. [world_nether, world_the_end].
 disabled-worlds: []
 
+# Golem limits: how many copper golems in
+# one GriefPrevention claim (max-golems-per-claim), or on unclaimed land in one world
+# (max-golems-outside-claims; without GriefPrevention that's every golem in the world), use
+# this plugin. The oldest golems keep it; the newest over the limit sort like vanilla, and the
+# claim owner (or players with coppergolemclerk.alerts) is told. 0 = no limit.
+# Each working golem costs about 0.1 ms per tick with or without this plugin, so golems over
+# the limit still cost the same tick time (see the README).
+max-golems-per-claim: 0
+max-golems-outside-claims: 0
+
 # Let players use /cgc golems to list their own golems (in claims they own, or whose
 # copper chest is in one; without GriefPrevention, the golems within 48 blocks of them).
 # Off by default: only admins can use it.

@@ -2,7 +2,7 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## Unreleased
+## 2.6.0 (2026-10-30)
 
 ### New
 - `/cgc golems` finds your copper golems: the 10 nearest (or every one with `all`), each with its position (admins can click to teleport), distance and direction, what it's carrying, its copper and its mode. Golems in unloaded chunks are listed where they were last seen.
@@ -11,14 +11,15 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - Golems stay out of portals (`avoid-portals`, on by default): a copper golem never goes through a Nether portal, End portal or End gateway, so one that wanders into a portal stays in its own world. Golems on a lead or riding go through as usual.
 - Copper chest filters: an `[Only ...]` sign on a copper chest (`[Only Logs]`, `[Only Oak Log]`, `[Only #planks]`) makes golems take only those items out of it and leave the rest. Several `[Only ...]` lines add up. `/cgc check` shows the filter.
 - Status labels: while you hold bamboo, copper golems near you show what they're doing (`carrying 12 birch log`, `fetching granite`, `lost, walking home`, `idle`...) and how weathered their copper is. Only players holding bamboo see them. Turn them off with `status-labels: false`.
-- `/cgc stats`: how many items golems have sorted today, this week and all time, the most-sorted items and the busiest claims. Players are told when they join what golems sorted in their claims while they were away, and how many of their chests filled up (`join-summary`).
+- `/cgc stats`: how many items golems have sorted today, this week and all time: in your own claims for players, and for admins the whole server, the most-sorted items and the busiest claims. Players are told when they join what golems sorted in their claims while they were away, and how many of their chests filled up (`join-summary`).
 - Barrels and shulker boxes: `destination-containers` (default `[chest, trapped_chest]`, as in vanilla) can add `barrel` and `shulker_box`. Golems then use them like chests (labels, contents, `[Overflow]`); the golem walks up and the plugin puts the item in. Leaving `chest` out keeps golems away from plain chests.
 - Bigger loads: `carry-amount` (1 to 64, default 16 as in vanilla) sets how many items a golem carries per trip. After a golem takes items from a copper chest it takes more of the same from that chest (or puts some back, below 16); overflow fetches take that many too.
-- `/cgc find <item>`: which containers near you hold an item (or a group, pattern or tag), nearest first, counting items in shulker boxes; they glow for you for 10 seconds. By default it only looks in GriefPrevention claims you own (`find-outside-own-claims` widens it to unclaimed containers and claims where you have container trust). `find-enabled`, `find-radius`, `find-highlight-seconds`.
+- `/cgc find <item>`: which containers near you hold an item (or a group, pattern or tag), nearest first, counting items in shulker boxes; the nearest 5 glow for you for 10 seconds (`find-highlight-count`, `find-highlight-seconds`). By default it only looks in GriefPrevention claims you own (`find-outside-own-claims` widens it to unclaimed containers and claims where you have container trust). Players can search once every 2 seconds. `find-enabled`, `find-radius` (32).
 - Players can use `/cgc check`, `/cgc overflow` and `/cgc stats` (permissions `coppergolemclerk.check`/`.overflow`/`.stats`, everyone by default), limited to containers they could open and their own claims; `/cgc golems` too, for their own golems, if `golems-command-for-players` is on (off by default). `coppergolemclerk.allclaims` (op) sees into every claim.
+- Golem limits: `max-golems-per-claim` and `max-golems-outside-claims` (per world) cap how many copper golems use the plugin; the oldest keep it, the newest over the limit sort like vanilla, and the claim owner is told. Off (0) by default. Load testing (up to 200 golems) found each working golem costs about 0.1 ms per tick with or without the plugin; the README's Golem limits section has the numbers.
 
 ### Changed
-- Documentation: the README now starts with what the plugin does, has a feature overview, a full settings reference (every setting with its default and what it does) and a permissions table; `docs/hangar.md` is the plugin page text for Hangar; the `config.yml` header and `plugin.yml` description describe the plugin instead of vanilla golems.
+- Documentation: the README now starts with what the plugin does (golem limits included), has a feature overview, a full settings reference (every setting with its default and what it does) and a permissions table; `docs/hangar.md` is the plugin page text for Hangar (no overstated features, an invitation to suggest ideas); the `config.yml` header and `plugin.yml` description describe the plugin instead of vanilla golems.
 
 ### Fixed
 - Golems on the floor above an `[Overflow]` chest never fetched from it: they were sent to the chest block itself, and the pathfinder stopped them on the floor right above the chest instead of finding the way round by the stairs. Golems now walk to a spot beside the chest they have a whole path to, and skip an overflow chest they can't get to.
