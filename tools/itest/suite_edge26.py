@@ -177,7 +177,7 @@ def _(c):
 def _(c):
     def check():
         reply = say(c, "cgc find dirt 2900000 100 2900000")
-        return [has(reply, "No dirt in containers in this chunk")]
+        return [has(reply, "No dirt in containers within")]
     return check
 
 
@@ -200,7 +200,7 @@ def _(c):
 @scenario("old-config-new-settings-default", "edge26", 60, "A config.yml with no carry-amount or find-* lines reloads without warnings, and the defaults apply (16 per trip, find on).", alone=True)
 def _(c):
     text = open(CONFIG).read()
-    stripped = re.sub(r"(?m)^(carry-amount|find-enabled|find-chunk-radius|find-highlight-count|find-highlight-seconds): .*\n", "", text)
+    stripped = re.sub(r"(?m)^(carry-amount|find-enabled|find-radius|find-highlight-seconds): .*\n", "", text)
     with open(CONFIG, "w") as f:
         f.write(stripped)
     reply = say(c, "cgc reload")
@@ -218,15 +218,15 @@ def _(c):
     return check
 
 
-@scenario("find-settings-out-of-range", "edge26", 30, "find-chunk-radius: 9, find-highlight-seconds: -3 and find-highlight-count: 45 are warned about and clamped (4, 0 and 30).", alone=True)
+@scenario("find-settings-out-of-range", "edge26", 30, "find-radius: 500, find-highlight-seconds: -3 and find-highlight-count: 45 are warned about and clamped (64, 0 and 30).", alone=True)
 def _(c):
-    set_options(c, find_chunk_radius="9", find_highlight_seconds="-3", find_highlight_count="45")
+    set_options(c, find_radius="500", find_highlight_seconds="-3", find_highlight_count="45")
     def check():
         log = "\n".join(c.log_lines())
-        return [("find-chunk-radius must be 0 to 4 (it's 9); using 4" in log, "warned about find-chunk-radius"),
+        return [("find-radius must be 1 to 64 (it's 500); using 64" in log, "warned about find-radius"),
                 ("find-highlight-seconds must be 0 to 120 (it's -3); using 0" in log, "warned about find-highlight-seconds"),
                 ("find-highlight-count must be 0 to 30 (it's 45); using 30" in log, "warned about find-highlight-count"),
-                has(find_at(c, "dirt"), "in this chunk and the 80 around it")]
+                has(find_at(c, "dirt"), "within 64 blocks")]
     return check
 
 

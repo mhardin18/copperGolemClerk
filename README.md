@@ -432,8 +432,7 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   many in each (items inside shulker boxes count too), and the nearest
   `find-highlight-count` (5) glow for you for `find-highlight-seconds` (10). Players can search once every 2 seconds. Search for anything a sign label takes: an item
   (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). It
-  looks in the chunk you're in and the chunks around it (`find-chunk-radius`, 1 by default:
-  your chunk and the 8 around it, 48 by 48 blocks, from bedrock to the sky). **By default it only looks in GriefPrevention
+  looks `find-radius` blocks (32) around you. **By default it only looks in GriefPrevention
   claims you own** (never in locked containers); nothing hints at anything else.
   `find-outside-own-claims: true` also lets players find things in unclaimed containers
   and in claims where they have container trust; other players' claims stay hidden
@@ -506,7 +505,7 @@ with its line number and the old settings are kept.
 | `join-summary` | `true` | On join, tell players what golems sorted in their claims while they were away and how many of their chests filled up. |
 | `find-enabled` | `true` | `/cgc find`. `false` turns the command off for everyone. |
 | `find-outside-own-claims` | `false` | `false`: players' `/cgc find` only looks in claims they own. `true`: also unclaimed containers and claims where they have container trust (never other players' claims or locked containers). |
-| `find-chunk-radius` | `1` | Where `/cgc find` looks: the chunk the player is in and this many chunks around it, full height. 0: just that chunk; 1: that chunk and the 8 around it (48 x 48 blocks); up to 4. |
+| `find-radius` | `32` | How far `/cgc find` looks, 1 to 64 blocks sideways and up or down. |
 | `find-highlight-count` | `5` | How many of the containers `/cgc find` lists glow for the player, nearest first, 0 to 30 (0: no glow). |
 | `find-highlight-seconds` | `10` | How long the containers `/cgc find` lists glow for the player, 0 to 120 (0: no glow). |
 | `golems-command-for-players` | `false` | Let players use `/cgc golems` to list their own golems (in claims they own, or whose copper chest is in one). Off: admins only. |

@@ -50,7 +50,7 @@ final class HelpText {
                                     + " from the console without one, every golem in every world.")),
             new Entry("find", "/cgc find <item>", "/cgc find <item> <x> <y> <z> [world]",
                     "Which containers near you hold an item; they glow for a few seconds.",
-                    List.of("Lists the containers in your chunk and the chunks around it (find-chunk-radius, default 1) holding an item, nearest first,"
+                    List.of("Lists the containers within find-radius blocks (default 32) holding an item, nearest first,"
                                     + " counting items inside shulker boxes too. They glow for you for"
                                     + " find-highlight-seconds (default 10).",
                             "Search for anything a sign label takes: an item (birch log), a group (logs), a pattern"

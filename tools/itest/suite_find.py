@@ -79,26 +79,18 @@ def _(c):
     x, y, z = c.abs(10, 10)
 
     def check():
-        return [has(find(c, "emerald"), "No emerald in containers in this chunk"),
+        return [has(find(c, "emerald"), "No emerald in containers within"),
                 has(find(c, "frobnitz"), "'frobnitz' isn't an item, group, pattern or tag"),
                 has(re.sub(r"§.", "", c.r.cmd("cgc find")), "Usage: /cgc find <item> <x> <y> <z> [world]")]
     return check
 
 
-@scenario("find-chunk-radius", "find", 40, "find-chunk-radius: 0 looks only in the chunk you're in: a chest in the next chunk is left out; 1 finds both.", alone=True)
+@scenario("find-radius", "find", 40, "find-radius: 5 leaves out a chest 8 blocks away.", alone=True)
 def _(c):
-    # The platform's middle (dx=10) is in a different chunk (x >> 4) from dx=2.
-    x_mid, _, _ = c.abs(10, 10)
-    x_far, _, _ = c.abs(2, 10)
-    if x_mid >> 4 == x_far >> 4:
-        raise RuntimeError("test layout: dx=2 and dx=10 are in the same chunk")
-    c.chest("near", 12, 10, [("birch_log", 2)])
-    c.chest("far", 2, 10, [("birch_log", 9)])
-    set_options(c, find_chunk_radius="0")
-    only_here = find(c, "birch_log")
-    set_options(c, find_chunk_radius="1")
-    return lambda: [has(only_here, "2 birch log in 1 container in this chunk"),
-                    has(find(c, "birch_log"), "11 birch log in 2 containers in this chunk and the 8 around it")]
+    set_options(c, find_radius="5")
+    c.chest("near", 13, 10, [("birch_log", 2)])
+    c.chest("far", 18, 10, [("birch_log", 9)])
+    return lambda: [has(find(c, "birch_log"), "2 birch log in 1 container within 5 blocks")]
 
 
 @scenario("find-disabled", "find", 30, "find-enabled: false turns /cgc find off.", alone=True)

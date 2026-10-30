@@ -114,14 +114,12 @@ carry-amount: 16
 # container trust; other players' claims stay hidden either way. Without GriefPrevention
 # there are no claims, so players find nothing unless this is true.
 # coppergolemclerk.allclaims (ops) sees everything. find-enabled: false turns the command
-# off. find-chunk-radius: it looks in the chunk the player is in and this many chunks
-# around it, top to bottom (0 = just that chunk; 1 = that chunk and the 8 around it,
-# 48 x 48 blocks; up to 4).
+# off. find-radius: how far it looks (1 to 64 blocks, sideways and up/down).
 # find-highlight-count: how many of the containers it finds glow for the player who asked,
 # nearest first (0 to 30; 0 = no glow). find-highlight-seconds: how long they glow (0 = no glow).
 find-enabled: true
 find-outside-own-claims: false
-find-chunk-radius: 1
+find-radius: 32
 find-highlight-count: 5
 find-highlight-seconds: 10
 
