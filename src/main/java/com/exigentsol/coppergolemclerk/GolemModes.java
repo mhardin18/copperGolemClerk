@@ -196,7 +196,7 @@ final class GolemModes implements Listener {
     }
 
     private org.bukkit.Location markerSpot(CopperGolem golem) {
-        return golem.getLocation().add(0, golem.getHeight() + plugin.modeMarkerHeight(), 0);
+        return golem.getLocation().clone().add(0, golem.getHeight() + plugin.modeMarkerHeight(), 0);
     }
 
     /** Runs every two seconds, and after a reload: each golem's marker matches its mode. */
