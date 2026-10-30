@@ -78,14 +78,15 @@ final class ItemFinder implements Listener {
         Predicate<Material> wanted = rule.test();
         boolean seesAll = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS);
         Player player = sender instanceof Player p ? p : null;
-        int radius = plugin.findRadius();
+        int radius = plugin.findChunkRadius();
 
         List<Hit> hits = new ArrayList<>();
         Set<Block> seen = new HashSet<>();
         World world = around.getWorld();
         Block at = around.getBlock();
-        for (int cx = (at.getX() - radius) >> 4; cx <= (at.getX() + radius) >> 4; cx++) {
-            for (int cz = (at.getZ() - radius) >> 4; cz <= (at.getZ() + radius) >> 4; cz++) {
+        // The chunk you're in and `radius` chunks around it, top to bottom.
+        for (int cx = (at.getX() >> 4) - radius; cx <= (at.getX() >> 4) + radius; cx++) {
+            for (int cz = (at.getZ() >> 4) - radius; cz <= (at.getZ() >> 4) + radius; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
@@ -94,10 +95,6 @@ final class ItemFinder implements Listener {
                         continue;
                     }
                     Block block = state.getBlock();
-                    if (Math.abs(block.getX() - at.getX()) > radius || Math.abs(block.getZ() - at.getZ()) > radius
-                            || Math.abs(block.getY() - at.getY()) > radius) {
-                        continue;
-                    }
                     Inventory inventory = container.getInventory();
                     List<Block> blocks = ChestLabels.blocksOf(inventory);
                     if (blocks.isEmpty()) {
@@ -159,7 +156,7 @@ final class ItemFinder implements Listener {
         if (hits.isEmpty()) {
             String where = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS) ? "."
                     : plugin.findOutsideOwnClaims() ? " that you can open." : " in your claims.";
-            sender.sendMessage(Component.text("No " + what + " in containers within " + radius + " blocks" + where,
+            sender.sendMessage(Component.text("No " + what + " in containers " + area(radius) + where,
                     NamedTextColor.YELLOW));
             if (sender instanceof Player && !sender.hasPermission(Claims.ALL_CLAIMS) && !plugin.findOutsideOwnClaims()
                     && !plugin.claims().present()) {
@@ -170,7 +167,7 @@ final class ItemFinder implements Listener {
         }
         int total = hits.stream().mapToInt(Hit::count).sum();
         sender.sendMessage(Component.text(total + " " + what + " in " + hits.size()
-                + (hits.size() == 1 ? " container" : " containers") + " within " + radius + " blocks"
+                + (hits.size() == 1 ? " container" : " containers") + " " + area(radius)
                 + (sender instanceof Player && plugin.findHighlightSeconds() > 0 && plugin.findHighlightCount() > 0
                         ? glowNote(hits.size()) : ":"),
                 NamedTextColor.GOLD));
@@ -186,6 +183,12 @@ final class ItemFinder implements Listener {
         if (hits.size() > LIST_MAX) {
             sender.sendMessage(Component.text("  ...and " + (hits.size() - LIST_MAX) + " more, farther away.", NamedTextColor.GRAY));
         }
+    }
+
+    /** "in this chunk", "in this chunk and the 8 around it", "in this chunk and the 24 around it"... */
+    static String area(int chunkRadius) {
+        int side = 2 * chunkRadius + 1;
+        return chunkRadius <= 0 ? "in this chunk" : "in this chunk and the " + (side * side - 1) + " around it";
     }
 
     /** " (glowing for 10s):" or " (the nearest 5 glowing for 10s):" */

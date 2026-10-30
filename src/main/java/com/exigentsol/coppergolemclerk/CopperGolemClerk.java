@@ -67,7 +67,7 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean findOutsideOwnClaims;
     private volatile boolean golemsCommandForPlayers;
     private volatile boolean findEnabled = true;
-    private volatile int findRadius = 32;
+    private volatile int findChunkRadius = 1;
     private volatile int findHighlightSeconds = 10;
     private volatile int findHighlightCount = 5;
     private GolemRescue rescue;
@@ -234,7 +234,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         findEnabled = config.getBoolean("find-enabled", true);
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
-        findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
+        findChunkRadius = rangeSetting(config, "find-chunk-radius", 1, 0, 4);
         findHighlightSeconds = rangeSetting(config, "find-highlight-seconds", 10, 0, 120);
         findHighlightCount = rangeSetting(config, "find-highlight-count", 5, 0, 30);
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
@@ -376,9 +376,9 @@ public final class CopperGolemClerk extends JavaPlugin {
         return findEnabled;
     }
 
-    /** find-radius: how far /cgc find looks (1-64). */
-    int findRadius() {
-        return findRadius;
+    /** find-chunk-radius: /cgc find looks in the player's chunk and this many chunks around it (0-4). */
+    int findChunkRadius() {
+        return findChunkRadius;
     }
 
     /** find-highlight-count: how many of the nearest containers /cgc find makes glow (0-30). */
