@@ -2,7 +2,7 @@
 
 Furnace slots: container.0 = input, container.1 = fuel, container.2 = result.
 """
-from arena import expect, scenario
+from arena import Trigger, expect, scenario
 from suite_options import set_options
 
 
@@ -47,11 +47,12 @@ def _(c):
     return lambda: [expect(c, "ingots", "iron_ingot", 11), expect(c, "furnace", "iron_ingot", 0)]
 
 
-@scenario("furnace-fuel", "furnace", 150, "A labelled furnace with raw iron and no fuel: an idle golem brings coal from the coal chest.")
+@scenario("furnace-fuel", "furnace", 150, "A labelled furnace with raw iron and no fuel: an idle golem brings coal from the [Fuel] chest.")
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     furnace(c, "furnace", 8, 10, input=("raw_iron", 8), label="[raw iron]")
     c.chest("coal", 14, 10, [("coal", 32)])
+    c.sign(14, 10, "[Fuel]")
     c.golem(4, 10)
     return lambda: [(c.count("coal", "coal") < 32, f"coal chest has {c.count('coal', 'coal')} (want fewer than 32)"),
                     (c.count("furnace", "coal") > 0 or c.count("furnace", "iron_ingot") > 0,
@@ -103,3 +104,110 @@ def _(c):
         return [("furnace-fuel: 'frobnitz' isn't an item" in log, "warned about frobnitz"),
                 ("furnace-fuel: dirt doesn't burn" in log, "warned about dirt")]
     return check
+
+
+# ---- fuel: only from [Fuel] containers, in furnace-fuel order, just enough
+
+def fuel_setup(c, fuel_chest_items, raw=8, block="furnace", slot_fuel=None, fuel_label="[Fuel]"):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    furnace(c, "furnace", 8, 10, block=block, input=("raw_iron", raw), fuel=slot_fuel, label="[raw iron]")
+    c.chest("fuelchest", 14, 10, fuel_chest_items)
+    if fuel_label:
+        c.sign(14, 10, fuel_label)
+    c.golem(4, 10)
+
+
+@scenario("fuel-not-from-other-chests", "furnace", 60, "Coal in a chest without a [Fuel] sign is never used: after 40 seconds the furnace has no fuel and the coal is all there.")
+def _(c):
+    fuel_setup(c, [("coal", 32)], fuel_label=None)
+    return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "fuelchest", "coal", 32),
+                    (slot(c, "furnace", 1) == "", f"fuel slot: '{slot(c, 'furnace', 1)}' (want empty)")]
+
+
+@scenario("fuel-charcoal-before-coal", "furnace", 150, "A [Fuel] chest with coal and charcoal: golems bring charcoal (first in furnace-fuel), and the coal isn't touched.")
+def _(c):
+    fuel_setup(c, [("coal", 32), ("charcoal", 32)])
+    return lambda: [(c.count("fuelchest", "charcoal") < 32, f"charcoal left: {c.count('fuelchest', 'charcoal')} (want fewer than 32)"),
+                    expect(c, "fuelchest", "coal", 32)]
+
+
+@scenario("fuel-just-enough", "furnace", 150, "8 raw iron waiting: golems bring exactly 1 charcoal (it cooks 8), not a whole load.")
+def _(c):
+    fuel_setup(c, [("charcoal", 32)])
+    t = Trigger()
+
+    def check():
+        t.fire_when(lambda: c.count("fuelchest", "charcoal") < 32, lambda: None)
+        settled = t.at is not None and t.since() > 15 and c.holding("charcoal") == 0
+        return [(settled, "fuel delivered and the golem's hands empty for 15s"),
+                expect(c, "fuelchest", "charcoal", 31)]
+    return check
+
+
+@scenario("fuel-just-enough-20", "furnace", 150, "20 raw iron waiting: golems bring 3 charcoal (8 + 8 + 4).")
+def _(c):
+    fuel_setup(c, [("charcoal", 32)], raw=20)
+    t = Trigger()
+
+    def check():
+        t.fire_when(lambda: c.count("fuelchest", "charcoal") < 32, lambda: None)
+        settled = t.at is not None and t.since() > 15 and c.holding("charcoal") == 0
+        return [(settled, "fuel delivered and the golem's hands empty for 15s"),
+                expect(c, "fuelchest", "charcoal", 29)]
+    return check
+
+
+@scenario("fuel-coal-burns-out-first", "furnace", 240, "A blast furnace burning its last coal with more raw iron waiting: golems don't add coal, they wait and then bring charcoal.")
+def _(c):
+    fuel_setup(c, [("coal", 32), ("charcoal", 32)], raw=24, block="blast_furnace", slot_fuel=("coal", 1))
+    return lambda: [expect(c, "fuelchest", "coal", 32),
+                    (c.count("fuelchest", "charcoal") < 32, f"charcoal left: {c.count('fuelchest', 'charcoal')} (want fewer than 32: brought once the coal ran out)")]
+
+
+@scenario("fuel-chest-not-a-destination", "furnace", 150, "An empty [Fuel] chest never gets sorted items: a golem with dirt (no dirt chest) uses the other empty chest.")
+def _(c):
+    c.chest("copper", 2, 10, [("dirt", 16)], block="waxed_copper_chest")
+    c.chest("fuelchest", 6, 10)
+    c.sign(6, 10, "[Fuel]")
+    c.chest("empty", 16, 10)
+    c.golem(4, 10)
+    return lambda: [expect(c, "empty", "dirt", 16), expect(c, "fuelchest", "dirt", 0)]
+
+
+@scenario("fuel-chest-with-label-filled", "furnace", 150, "A [Fuel] [charcoal] chest gets charcoal sorted into it like any [charcoal] chest.")
+def _(c):
+    c.chest("copper", 2, 10, [("charcoal", 16)], block="waxed_copper_chest")
+    c.chest("fuelchest", 12, 10)
+    c.sign(12, 10, ["[Fuel]", "[charcoal]"])
+    c.golem(4, 10)
+    return lambda: [expect(c, "fuelchest", "charcoal", 16)]
+
+
+@scenario("check-furnace-report", "furnace", 30, "/cgc check on a furnace: what golems put in, a label entry that adds nothing, the fuel order and which [Fuel] chest would be used.")
+def _(c):
+    furnace(c, "furnace", 8, 10, block="blast_furnace", input=("raw_iron", 8), label=["[raw iron]", "[bread]"])
+    c.chest("fuelchest", 14, 10, [("coal", 5)])
+    c.sign(14, 10, "[Fuel]")
+    furnace(c, "plain", 4, 14)
+    x, y, z = c.abs(8, 10)
+    px, py, pz = c.abs(4, 14)
+    import re as _re
+
+    def check():
+        reply = _re.sub(r"§.", "", c.r.cmd(f"cgc check {x} {y} {z}"))
+        plain = _re.sub(r"§.", "", c.r.cmd(f"cgc check {px} {py} {pz}"))
+        def has(r, t):
+            return t in r, f"says '{t}'" + ("" if t in r else f"; got: {r.strip()[:400]}")
+        return [has(reply, "Golems put into it (1 item): raw iron."),
+                has(reply, "[bread]: nothing it covers can be cooked in a blast furnace"),
+                has(reply, "first available of: charcoal, coal"),
+                has(reply, "Golems would use coal from the container at"),
+                has(reply, "8 raw iron waiting, fuel: none; golems will bring 1 more"),
+                has(plain, "No label: golems leave this furnace alone")]
+    return check
+
+
+@scenario("fuel-lava-bucket-refused", "furnace", 30, "furnace-fuel with lava_bucket: a warning, and it's skipped.", alone=True)
+def _(c):
+    set_options(c, furnace_fuel="[charcoal, lava_bucket]")
+    return lambda: [(any("lava_bucket leaves an empty bucket" in l for l in c.log_lines()), "warned about lava_bucket")]
