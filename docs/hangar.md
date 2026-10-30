@@ -11,6 +11,9 @@ It works with the defaults: about 50 item groups cover nearly every survival ite
 with one log in it already collects every kind of log. Add a sign to a chest when you want
 more control.
 
+I'm always open to new ideas for this plugin. Open an enhancement request on GitHub:
+https://github.com/mhardin18/copperGolemClerk/issues
+
 ---
 
 ## What your golems learn
@@ -95,9 +98,6 @@ golems carry them over by themselves.
    what it's for, or add a sign such as `[logs]`.
 4. Build a copper golem (a carved pumpkin on a copper block) next to the copper chest.
 5. Stay nearby (golems only work in loaded chunks) and watch them file everything.
-
-I'm always open to new ideas for this plugin. Open an enhancement request on GitHub:
-https://github.com/mhardin18/copperGolemClerk/issues
 
 ## Requirements
 
