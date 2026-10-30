@@ -31,7 +31,7 @@ final class Reach {
     /** Where a golem can stand to reach a chest, and the chest's row from there. */
     record Spot(Block feet, int row) {
         Location target() {
-            return feet.getLocation().add(0.5, 0, 0.5);
+            return feet.getLocation().clone().add(0.5, 0, 0.5);
         }
     }
 
@@ -71,7 +71,7 @@ final class Reach {
                         spots.add(new Spot(feet, row));
                         break;
                     }
-                    if (!feet.isPassable()) {
+                    if (!GolemTraffic.passable.test(feet)) {
                         break; // solid with no room above it to stand: the side is closed here
                     }
                 }

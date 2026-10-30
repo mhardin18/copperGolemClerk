@@ -16,7 +16,7 @@ class Skip(Exception):
     """Raised by a scenario's setup when something it needs isn't available."""
 
 
-def scenario(name, suite, timeout, description, alone=False, manual=False, allow_errors=(), dimension=None):
+def scenario(name, suite, timeout, description, alone=False, manual=False, allow_errors=(), dimension=None, place=None):
     """Register a scenario.
 
     alone: changes something server-wide (config, reload, tick timing), so it runs by
@@ -24,11 +24,14 @@ def scenario(name, suite, timeout, description, alone=False, manual=False, allow
     manual: needs a person (a server restart); runs only when named explicitly.
     allow_errors: server log errors this scenario expects (e.g. a bad config).
     dimension: build the platform in another dimension ("minecraft:the_nether", "minecraft:the_end").
+    place: (x, z) for the platform's corner instead of the usual spot (e.g. inside a test claim);
+           scenarios sharing a place must be alone=True.
     The function gets a Cell, builds its setup, and returns check() -> [(ok, text)].
     """
     def wrap(fn):
         SCENARIOS.append(dict(name=name, suite=suite, timeout=timeout, description=description,
-                              alone=alone, manual=manual, allow_errors=allow_errors, dimension=dimension, build=fn))
+                              alone=alone, manual=manual, allow_errors=allow_errors, dimension=dimension, place=place,
+                              build=fn))
         return fn
     return wrap
 
@@ -70,11 +73,11 @@ class InDimension:
 class Cell:
     """One scenario's platform. Coordinates are relative: (dx, dz) on the floor."""
 
-    def __init__(self, rcon, index, log, dimension=None):
+    def __init__(self, rcon, index, log, dimension=None, place=None):
         self.dimension = dimension
         self.r = InDimension(rcon, dimension) if dimension else rcon
         self.log = log
-        self.x, self.z = X0, Z0 + index * SPACING
+        self.x, self.z = place if place else (X0, Z0 + index * SPACING)
         self.chests = {}
         self.cleanup = []  # extra commands for clear(): blocks a scenario put outside its platform
         self.started = time.time()

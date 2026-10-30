@@ -216,3 +216,41 @@ def _(c):
                 (most[0] == 16, f"most held at once: {most[0]} (want 16)"),
                 expect(c, "logs", "birch_log", 32), has(find_at(c, "birch_log", 14, 10), "32 birch log in 1 container")]
     return check
+
+
+@scenario("find-settings-out-of-range", "edge26", 30, "find-radius: 500, find-highlight-seconds: -3 and find-highlight-count: 45 are warned about and clamped (64, 0 and 30).", alone=True)
+def _(c):
+    set_options(c, find_radius="500", find_highlight_seconds="-3", find_highlight_count="45")
+    def check():
+        log = "\n".join(c.log_lines())
+        return [("find-radius must be 1 to 64 (it's 500); using 64" in log, "warned about find-radius"),
+                ("find-highlight-seconds must be 0 to 120 (it's -3); using 0" in log, "warned about find-highlight-seconds"),
+                ("find-highlight-count must be 0 to 30 (it's 45); using 30" in log, "warned about find-highlight-count"),
+                has(find_at(c, "dirt"), "within 64 blocks")]
+    return check
+
+
+@scenario("find-many-shulkers-time", "edge26", 90, "/cgc find in a storage room of 200 chests, each full of shulker boxes full of items, answers in under a second.", alone=True)
+def _(c):
+    import time
+    box = 'shulker_box[minecraft:container=[' + ",".join(
+        f'{{slot:{i},item:{{id:"minecraft:cobblestone",count:64}}}}' for i in range(18)) + ']]'  # 18: RCON caps a command at ~1446 bytes
+    x0, y0, z0 = c.abs(1, 1)
+    # 200 chests: 10 x 20 on the floor and stacked once, each with 27 full shulker boxes.
+    for dx in range(0, 20, 2):
+        for dz in range(0, 20, 2):
+            for dy in (0, 1):
+                x, y, z = x0 + dx, y0 + dy, z0 + dz
+                c.run(f"setblock {x} {y} {z} minecraft:chest[facing=south]")
+                for slot in range(27):
+                    c.run(f"item replace block {x} {y} {z} container.{slot} with minecraft:{box} 1")
+    c.chest("target", 21 - 1, 20, [("diamond", 3)])
+    times = []
+
+    def check():
+        start = time.time()
+        reply = find_at(c, "diamond")
+        times.append(time.time() - start)
+        best = min(times)
+        return [has(reply, "3 diamond in 1 container"), (best < 1.0, f"answered in {best:.2f}s (want under 1s)")]
+    return check

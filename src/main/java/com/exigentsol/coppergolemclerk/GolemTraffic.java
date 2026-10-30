@@ -332,7 +332,7 @@ final class GolemTraffic implements Listener {
             // to the first place with room to one side.
             Vector back = axis(dir);
             Vector sideAxis = new Vector(-back.getZ(), 0, back.getX());
-            Location from = at.getBlock().getLocation().add(0.5, 0, 0.5);
+            Location from = at.getBlock().getLocation().clone().add(0.5, 0, 0.5);
             from.setY(at.getY());
             for (int n = 1; n <= MAX_BACK_UP && route.isEmpty(); n++) {
                 Location next = standable(from, back);
@@ -370,7 +370,7 @@ final class GolemTraffic implements Listener {
 
     /** The block centres n steps back along this axis from the golem's block. */
     private static List<Location> stepsBack(Location at, Vector back, int n) {
-        Location base = at.getBlock().getLocation().add(0.5, 0, 0.5);
+        Location base = at.getBlock().getLocation().clone().add(0.5, 0, 0.5);
         List<Location> steps = new java.util.ArrayList<>();
         for (int i = 1; i <= n; i++) {
             Location step = base.clone().add(back.clone().multiply(i));
@@ -400,19 +400,22 @@ final class GolemTraffic implements Listener {
                 && !canStandIn(fromBlock.getRelative(0, 0, feet.getZ() - fromBlock.getZ()))) {
             return null;
         }
-        return feet.getLocation().add(0.5, 0, 0.5);
+        return feet.getLocation().clone().add(0.5, 0, 0.5);
     }
 
     /**
      * True if a golem can stand in this block: open with a solid floor, or a low
      * floor covering (carpet, a bottom slab) to stand on, and headroom above.
      */
+    /** Whether a block can be walked through. Unit tests swap this out (the test server lacks Block.isPassable). */
+    static java.util.function.Predicate<Block> passable = Block::isPassable;
+
     static boolean canStandIn(Block feet) {
         Block head = feet.getRelative(0, 1, 0);
-        if (!head.isPassable() || isHazard(feet.getType()) || isHazard(head.getType())) {
+        if (!passable.test(head) || isHazard(feet.getType()) || isHazard(head.getType())) {
             return false;
         }
-        if (feet.isPassable()) {
+        if (passable.test(feet)) {
             Block floor = feet.getRelative(0, -1, 0);
             return floor.getType().isSolid() && !isHazard(floor.getType());
         }

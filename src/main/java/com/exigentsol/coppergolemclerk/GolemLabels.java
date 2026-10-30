@@ -136,7 +136,7 @@ final class GolemLabels implements Listener {
     }
 
     private Location spot(CopperGolem golem) {
-        return golem.getLocation().add(0, golem.getHeight() + HEIGHT, 0);
+        return golem.getLocation().clone().add(0, golem.getHeight() + HEIGHT, 0);
     }
 
     /** The label: what the golem is doing, then its copper if it has started to weather. */

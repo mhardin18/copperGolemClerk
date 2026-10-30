@@ -97,7 +97,7 @@ public final class ItemGroups {
     private static List<Material> allItems() {
         List<Material> items = new ArrayList<>();
         for (Material m : Material.values()) {
-            if (m.isItem() && !m.isAir() && !m.isLegacy()) {
+            if (!m.isLegacy() && m.isItem() && !m.isAir()) { // legacy first: asking a legacy material isItem() is slow and pointless
                 items.add(m);
             }
         }
