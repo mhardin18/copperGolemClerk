@@ -83,6 +83,10 @@ final class ChestMatcher {
         if (labels.overflow()) {
             return new Match(Kind.OVERFLOW, "overflow chest");
         }
+        if (labels.fuel() && !labels.hasItemRules()) {
+            // A [Fuel] chest is where golems get furnace fuel; it only takes what its other labels say.
+            return new Match(Kind.LABEL_OTHER, "[Fuel] chest (add a label like [charcoal] to have golems fill it)");
+        }
         if (labels.hasItemRules()) {
             return new Match(Kind.LABEL_OTHER, "labelled for " + String.join(", ", labels.names()));
         }

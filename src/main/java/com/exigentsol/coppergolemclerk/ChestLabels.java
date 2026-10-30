@@ -53,10 +53,11 @@ final class ChestLabels {
      * @param noGolems  a [No Golems] sign is present
      * @param only      [Only ...] rules: what golems may take from a copper chest (empty = anything)
      * @param onlyNames the [Only ...] label texts, for /cgc check
+     * @param fuel a [Fuel] sign: golems take furnace fuel from this container (furnace-feeding)
      */
     record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow, List<String> unknown,
-                  boolean noGolems, List<ItemGroups.Rule> only, List<String> onlyNames) {
-        static final Labels NONE = new Labels(List.of(), List.of(), false, List.of(), false, List.of(), List.of());
+                  boolean noGolems, List<ItemGroups.Rule> only, List<String> onlyNames, boolean fuel) {
+        static final Labels NONE = new Labels(List.of(), List.of(), false, List.of(), false, List.of(), List.of(), false);
 
         /** True if golems may take this item (no [Only ...] filter, or the filter covers it). */
         boolean mayTake(Material type) {
@@ -100,6 +101,7 @@ final class ChestLabels {
         List<String> unknown = new ArrayList<>();
         boolean overflow = false;
         boolean noGolems = false;
+        boolean fuel = false;
         List<ItemGroups.Rule> only = new ArrayList<>();
         List<String> onlyNames = new ArrayList<>();
 
@@ -129,6 +131,10 @@ final class ChestLabels {
                                     noGolems = true;
                                     continue;
                                 }
+                                if (inner.toLowerCase(Locale.ROOT).equals("fuel")) {
+                                    fuel = true; // golems take furnace fuel from here
+                                    continue;
+                                }
                                 String filter = onlyLabel(inner);
                                 if (filter != null) {
                                     ItemGroups.Rule rule = groups.signRule(filter);
@@ -153,7 +159,7 @@ final class ChestLabels {
                 }
             }
         }
-        return new Labels(rules, names, overflow, unknown, noGolems, only, onlyNames);
+        return new Labels(rules, names, overflow, unknown, noGolems, only, onlyNames, fuel);
     }
 
     /** "Only Logs" -> "Logs" (any case, one or more spaces); null if the text isn't an [Only ...] label. */

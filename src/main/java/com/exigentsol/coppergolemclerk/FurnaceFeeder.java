@@ -1,7 +1,6 @@
 package com.exigentsol.coppergolemclerk;
 
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -39,8 +38,11 @@ import org.bukkit.inventory.SmokingRecipe;
  * - Empty: an idle golem takes what the furnace made out of it and sorts it like anything
  *   else. Items taken out of a furnace are never fed back into one (no cobblestone -> stone
  *   -> smooth stone loops).
- * - Fuel: an idle golem tops up a labelled furnace that has something to smelt but little
- *   fuel, with furnace-fuel items (coal and charcoal by default) from a container in range.
+ * - Fuel: an idle golem brings fuel to a labelled furnace that has something to cook, only
+ *   from containers with a [Fuel] sign, using the first furnace-fuel item (in list order,
+ *   charcoal before coal by default) that one of them holds, and only as much as the
+ *   waiting items need. A furnace burning a fuel lower on the list isn't topped up with it:
+ *   it switches once that runs out.
  *
  * Golems walk to a spot beside the furnace (Paper's pathfinder) and the plugin moves the
  * items. A golem that can't get there within 30 seconds gives up on that furnace for a minute.
@@ -53,8 +55,6 @@ final class FurnaceFeeder {
                        Location target, long startedMillis) {
     }
 
-    /** Fuel is topped up when the furnace has fewer than this many fuel items. */
-    static final int FUEL_LOW = 8;
     private static final long GIVE_UP_AFTER_MILLIS = 30_000;
     private static final long SKIP_AFTER_GIVING_UP_MILLIS = 60_000;
     private static final long OFFER_COOLDOWN_MILLIS = 5_000;
@@ -197,26 +197,94 @@ final class FurnaceFeeder {
                 return;
             }
         }
+        FuelPick pick = null;
+        boolean looked = false;
         for (BlockState state : furnaces) {
             if (!(state instanceof Furnace furnace) || !usable(golem, furnace, now)) {
                 continue;
             }
             FurnaceInventory inventory = furnace.getInventory();
             ItemStack fuel = inventory.getFuel();
-            if (isEmpty(inventory.getSmelting()) || (!isEmpty(fuel) && fuel.getAmount() >= FUEL_LOW)) {
-                continue;
+            if (isEmpty(inventory.getSmelting())) {
+                continue; // nothing to cook: no fuel needed
             }
             if (!isEmpty(fuel) && !plugin.furnaceFuel().contains(fuel.getType())) {
-                continue; // someone put in a fuel we don't hand out: leave it to them
+                continue; // someone put in a fuel that isn't in furnace-fuel: leave it to them
             }
-            Block source = fuelSource(golem, isEmpty(fuel) ? null : fuel.getType());
-            if (source != null) {
-                Material type = isEmpty(fuel) ? firstFuelIn(source) : fuel.getType();
-                if (type != null && start(golem, Kind.FUEL_TAKE, source, HomeFinder.Pos.of(state.getBlock()), type, now)) {
-                    return;
-                }
+            if (!looked) {
+                pick = bestFuel(golem); // the same for every furnace in range
+                looked = true;
+            }
+            if (pick == null) {
+                return; // no [Fuel] container in range has any furnace-fuel
+            }
+            if (!isEmpty(fuel) && fuel.getType() != pick.type()) {
+                continue; // burning a fuel lower on the list: let it run out, then switch
+            }
+            if (fuelNeeded(furnace, pick.type()) > 0
+                    && start(golem, Kind.FUEL_TAKE, pick.source(), HomeFinder.Pos.of(state.getBlock()), pick.type(), now)) {
+                return;
             }
         }
+    }
+
+    /** A fuel to use and the [Fuel] container to take it from. */
+    record FuelPick(Material type, Block source) {
+    }
+
+    /**
+     * The fuel highest on furnace-fuel that a [Fuel] container in range holds, and the nearest
+     * such container. Null if none has any.
+     */
+    private FuelPick bestFuel(CopperGolem golem) {
+        return bestFuelNear(golem.getLocation(), golem.isInsideVehicle());
+    }
+
+    /** bestFuel for a golem at this spot (for /cgc check: the furnace's own spot). */
+    FuelPick bestFuelNear(Location at, boolean riding) {
+        for (Material type : plugin.furnaceFuel()) {
+            Block source = fuelSource(at, riding, type);
+            if (source != null) {
+                return new FuelPick(type, source);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * How many of this fuel the furnace needs to cook everything waiting in it: the items
+     * still to cook, less what the fire burning now and the fuel already in the slot will
+     * cook. At most what fits in the fuel slot.
+     */
+    int fuelNeeded(Furnace furnace, Material type) {
+        FurnaceInventory inventory = furnace.getInventory();
+        ItemStack input = inventory.getSmelting();
+        if (isEmpty(input)) {
+            return 0;
+        }
+        ItemStack fuel = inventory.getFuel();
+        double covered = (double) furnace.getBurnTime() / Math.max(1, furnace.getCookTimeTotal());
+        if (!isEmpty(fuel)) {
+            covered += fuel.getAmount() * itemsPerFuel(fuel.getType());
+        }
+        double missing = input.getAmount() - covered;
+        if (missing <= 0) {
+            return 0;
+        }
+        int need = (int) Math.ceil(missing / itemsPerFuel(type));
+        int room = type.getMaxStackSize() - (isEmpty(fuel) ? 0 : fuel.getAmount());
+        return Math.max(0, Math.min(need, room));
+    }
+
+    /** How many items one of this fuel cooks (vanilla burn times; 1 for anything not listed). */
+    static double itemsPerFuel(Material type) {
+        return switch (type) {
+            case COAL, CHARCOAL -> 8;
+            case COAL_BLOCK -> 80;
+            case BLAZE_ROD -> 12;
+            case DRIED_KELP_BLOCK -> 20;
+            default -> org.bukkit.Tag.LOGS.isTagged(type) || org.bukkit.Tag.PLANKS.isTagged(type) ? 1.5 : 1;
+        };
     }
 
     /** A labelled furnace this golem may use now: not locked, no [No Golems], not given up on. */
@@ -232,7 +300,7 @@ final class FurnaceFeeder {
         return !labels.noGolems() && labels.hasItemRules();
     }
 
-    private ChestLabels.Labels labelsOf(Inventory inventory) {
+    ChestLabels.Labels labelsOf(Inventory inventory) {
         return ChestLabels.of(inventory, plugin.groups(), plugin.itemFrameLabels(), plugin.signLabels());
     }
 
@@ -240,35 +308,19 @@ final class FurnaceFeeder {
         return labelsOf(furnace).accepts(type);
     }
 
-    /** A container in range (not a furnace or [No Golems], not locked) holding fuel, nearest first. */
-    private Block fuelSource(CopperGolem golem, Material only) {
-        for (BlockState state : HomeFinder.containersInRange(golem, t -> !isFurnace(t))) {
+    /** The nearest container in range with a [Fuel] sign holding this fuel (not locked or [No Golems]). */
+    private Block fuelSource(Location at, boolean riding, Material type) {
+        for (BlockState state : HomeFinder.containersInRange(at, riding, t -> !isFurnace(t))) {
             if (!(state instanceof Container container) || HomeFinder.isLocked(state)) {
                 continue;
             }
             Inventory inventory = container.getInventory();
-            if (ChestLabels.noGolems(inventory, plugin)) {
+            ChestLabels.Labels labels = ChestLabels.of(inventory, plugin.groups(), false, plugin.signLabels());
+            if (!labels.fuel() || labels.noGolems() || !inventory.contains(type)
+                    || (Returns.isCopperChest(state.getType()) && !returns.mayTake(inventory, type))) {
                 continue;
             }
-            for (ItemStack stack : inventory.getStorageContents()) {
-                if (stack != null && !stack.isEmpty() && plugin.furnaceFuel().contains(stack.getType())
-                        && (only == null || stack.getType() == only)
-                        && (!Returns.isCopperChest(state.getType()) || returns.mayTake(inventory, stack.getType()))) {
-                    return state.getBlock();
-                }
-            }
-        }
-        return null;
-    }
-
-    private Material firstFuelIn(Block block) {
-        if (!(block.getState(false) instanceof Container container)) {
-            return null;
-        }
-        for (ItemStack stack : container.getInventory().getStorageContents()) {
-            if (stack != null && !stack.isEmpty() && plugin.furnaceFuel().contains(stack.getType())) {
-                return stack.getType();
-            }
+            return state.getBlock();
         }
         return null;
     }
@@ -328,7 +380,8 @@ final class FurnaceFeeder {
                     yield false;
                 }
                 case FUEL_PUT -> {
-                    put(golem, furnace, held, true);
+                    putFuel(golem, furnace, held, job.source() == null ? null
+                            : world.getBlockAt(job.source().x(), job.source().y(), job.source().z()));
                     yield false;
                 }
                 case EMPTY -> {
@@ -392,6 +445,31 @@ final class FurnaceFeeder {
         }
     }
 
+    /** Put just the fuel the furnace needs into its fuel slot; anything left goes back to where it came from. */
+    private void putFuel(CopperGolem golem, Furnace furnace, ItemStack held, Block source) {
+        int need = fuelNeeded(furnace, held.getType());
+        if (need <= 0) {
+            return; // enough already: the golem sorts it back
+        }
+        ItemStack part = held.clone();
+        part.setAmount(Math.min(need, held.getAmount()));
+        ItemStack rest = held.clone();
+        rest.setAmount(held.getAmount() - part.getAmount());
+        golem.getEquipment().setItemInMainHand(part);
+        put(golem, furnace, part, true);
+        ItemStack after = golem.getEquipment().getItemInMainHand();
+        if (rest.getAmount() > 0) {
+            if (!after.isEmpty()) {
+                rest.setAmount(rest.getAmount() + after.getAmount());
+            }
+            golem.getEquipment().setItemInMainHand(rest);
+            golem.getEquipment().setItemInMainHandDropChance(GolemCarry.GUARANTEED_DROP);
+            if (source != null) {
+                homes.startSearch(golem, rest.getType(), source); // sorted as usual; returned to its [Fuel] chest if nothing takes it
+            }
+        }
+    }
+
     /** Take what the furnace made (up to carry-amount); the golem then sorts it like any pickup. */
     private void takeResult(CopperGolem golem, Furnace furnace) {
         FurnaceInventory inventory = furnace.getInventory();
@@ -422,11 +500,13 @@ final class FurnaceFeeder {
             return false;
         }
         ItemStack fuel = furnace.getInventory().getFuel();
-        if (!isEmpty(fuel) && (fuel.getType() != job.type() || fuel.getAmount() >= FUEL_LOW)) {
-            return false; // someone else fuelled it meanwhile
+        if (!isEmpty(fuel) && fuel.getType() != job.type()) {
+            return false; // someone else fuelled it meanwhile, with something else
         }
-        int room = job.type().getMaxStackSize() - (isEmpty(fuel) ? 0 : fuel.getAmount());
-        int want = Math.min(room, GolemCarry.amountFor(job.type(), plugin.carryAmount()));
+        int want = Math.min(fuelNeeded(furnace, job.type()), GolemCarry.amountFor(job.type(), plugin.carryAmount()));
+        if (want <= 0) {
+            return false; // enough fuel in it now
+        }
         Inventory inventory = container.getInventory();
         ItemStack[] contents = inventory.getStorageContents();
         int got = 0;
@@ -454,7 +534,7 @@ final class FurnaceFeeder {
         if (spot == null) {
             return false;
         }
-        jobs.put(golem.getUniqueId(), new Job(Kind.FUEL_PUT, job.world(), job.furnace(), null, job.type(), spot.target(), now));
+        jobs.put(golem.getUniqueId(), new Job(Kind.FUEL_PUT, job.world(), job.furnace(), job.source(), job.type(), spot.target(), now));
         golem.getPathfinder().moveTo(spot.target(), 1.0);
         return true;
     }
@@ -495,8 +575,8 @@ final class FurnaceFeeder {
         failed.clear();
     }
 
-    /** Unused fuel names in furnace-fuel are reported once at load; this lists the defaults. */
-    static Set<Material> defaultFuel() {
-        return EnumSet.of(Material.COAL, Material.CHARCOAL);
+    /** furnace-fuel's default: charcoal first (renewable), then coal. */
+    static List<Material> defaultFuel() {
+        return List.of(Material.CHARCOAL, Material.COAL);
     }
 }

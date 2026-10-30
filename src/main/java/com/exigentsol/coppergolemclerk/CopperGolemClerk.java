@@ -44,7 +44,7 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile int carryAmount = GolemCarry.VANILLA;
     private GolemCarry carry;
     private volatile boolean furnaceFeeding = true;
-    private volatile Set<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
+    private volatile List<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -361,8 +361,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         return furnaceFeeding;
     }
 
-    /** furnace-fuel: what golems put into furnaces as fuel. */
-    Set<Material> furnaceFuel() {
+    /** furnace-fuel: what golems put into furnaces as fuel, most preferred first. */
+    List<Material> furnaceFuel() {
         return furnaceFuel;
     }
 
@@ -405,23 +405,25 @@ public final class CopperGolemClerk extends JavaPlugin {
         return traceGolems;
     }
 
-    /** furnace-fuel: item names that burn in a furnace (unknown names and non-fuels are warned about). */
-    private Set<Material> fuelSetting(YamlConfiguration config) {
+    /** furnace-fuel: fuels in order of preference (unknown names, non-fuels and buckets are warned about). */
+    private List<Material> fuelSetting(YamlConfiguration config) {
         if (!config.isList("furnace-fuel")) {
             return FurnaceFeeder.defaultFuel();
         }
-        Set<Material> fuel = java.util.EnumSet.noneOf(Material.class);
+        java.util.LinkedHashSet<Material> fuel = new java.util.LinkedHashSet<>();
         for (String raw : config.getStringList("furnace-fuel")) {
             Material m = Material.matchMaterial(raw.trim().replace(' ', '_'));
             if (m == null || !m.isItem()) {
                 getLogger().warning("furnace-fuel: '" + raw + "' isn't an item; ignored.");
             } else if (!m.isFuel()) {
                 getLogger().warning("furnace-fuel: " + m.getKey().getKey() + " doesn't burn in a furnace; ignored.");
+            } else if (m == Material.LAVA_BUCKET) {
+                getLogger().warning("furnace-fuel: lava_bucket leaves an empty bucket in the fuel slot; ignored.");
             } else {
                 fuel.add(m);
             }
         }
-        return fuel;
+        return List.copyOf(fuel);
     }
 
     /** destination-containers: chest, trapped_chest, barrel, shulker_box (every colour). */
