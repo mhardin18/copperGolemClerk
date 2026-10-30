@@ -2,7 +2,7 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## Unreleased
+## 2.6.1 (2026-10-30)
 
 ### Fixed
 - On a Paper 26.3 build older than 190 (before Paper added the golem sorting event), the plugin now logs that it needs build 190 or newer and turns itself off. Before, it stayed on with its sorting missing (Paper logged "Failed to register events for class SortListener" and golems sorted like vanilla) while its other features kept running.
