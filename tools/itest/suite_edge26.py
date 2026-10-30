@@ -234,7 +234,7 @@ def _(c):
 def _(c):
     import time
     box = 'shulker_box[minecraft:container=[' + ",".join(
-        f'{{slot:{i},item:{{id:"minecraft:cobblestone",count:64}}}}' for i in range(27)) + ']]'
+        f'{{slot:{i},item:{{id:"minecraft:cobblestone",count:64}}}}' for i in range(18)) + ']]'  # 18: RCON caps a command at ~1446 bytes
     x0, y0, z0 = c.abs(1, 1)
     # 200 chests: 10 x 20 on the floor and stacked once, each with 27 full shulker boxes.
     for dx in range(0, 20, 2):
