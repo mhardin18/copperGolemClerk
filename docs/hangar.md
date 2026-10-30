@@ -57,7 +57,8 @@ golems carry them over by themselves.
 
 - **`/cgc find diamond`:** lists the chests in your claims that hold diamonds, nearest
   first (including diamonds inside shulker boxes), and makes the nearest few glow for a few seconds.
-  **It only looks in your own GriefPrevention claims**, so nobody can use it to snoop.
+  **By default it only looks in your own GriefPrevention claims**, so nobody can use it to
+  snoop (a server can widen it to chests you've been trusted with, never further).
 - **`/cgc check`** explains a chest you can open, **`/cgc overflow`** shows what's piling
   up in your overflow chests, and **`/cgc stats`** shows what your golems have sorted.
 - **Hold bamboo** to see a label over each golem saying what it's doing ("carrying 32 birch
@@ -74,7 +75,7 @@ golems carry them over by themselves.
 - `/cgc golems` shows where every golem is, what it's carrying and whether it's lost
   (players can be allowed to list their own).
 - `/cgc stats` shows how much the golems have sorted, server-wide.
-- Admins see into every claim; players never see into anyone else's.
+- Admins see into every claim; players only ever see what they could open themselves.
 - Every feature can be switched off or tuned in `config.yml`; `/cgc reload` applies changes
   without a restart.
 - Only copper golems are ever affected. Iron and snow golems, villagers and other mobs are
