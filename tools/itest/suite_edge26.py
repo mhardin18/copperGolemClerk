@@ -227,3 +227,29 @@ def _(c):
                 ("find-highlight-seconds must be 0 to 120 (it's -3); using 0" in log, "warned about find-highlight-seconds"),
                 has(find_at(c, "dirt"), "within 64 blocks")]
     return check
+
+
+@scenario("find-many-shulkers-time", "edge26", 90, "/cgc find in a storage room of 200 chests, each full of shulker boxes full of items, answers in under a second.", alone=True)
+def _(c):
+    import time
+    box = 'shulker_box[minecraft:container=[' + ",".join(
+        f'{{slot:{i},item:{{id:"minecraft:cobblestone",count:64}}}}' for i in range(27)) + ']]'
+    x0, y0, z0 = c.abs(1, 1)
+    # 200 chests: 10 x 20 on the floor and stacked once, each with 27 full shulker boxes.
+    for dx in range(0, 20, 2):
+        for dz in range(0, 20, 2):
+            for dy in (0, 1):
+                x, y, z = x0 + dx, y0 + dy, z0 + dz
+                c.run(f"setblock {x} {y} {z} minecraft:chest[facing=south]")
+                for slot in range(27):
+                    c.run(f"item replace block {x} {y} {z} container.{slot} with minecraft:{box} 1")
+    c.chest("target", 21 - 1, 20, [("diamond", 3)])
+    times = []
+
+    def check():
+        start = time.time()
+        reply = find_at(c, "diamond")
+        times.append(time.time() - start)
+        best = min(times)
+        return [has(reply, "3 diamond in 1 container"), (best < 1.0, f"answered in {best:.2f}s (want under 1s)")]
+    return check
