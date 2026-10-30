@@ -41,7 +41,7 @@ item, the most specific one wins: `[stews]` beats `[food]` for a bowl of stew.
 Items with no home land in your `[Overflow]` chest. Add a chest for them later and idle
 golems carry them over by themselves.
 
-### 🏗️ Bigger storage rooms
+### 🗄️ Bigger storage rooms
 - **Tidy** as they go: partial stacks merged, like items kept together.
 - **Step aside** for each other in one-wide aisles instead of getting stuck.
 - Optional, with a setting:
@@ -49,7 +49,7 @@ golems carry them over by themselves.
   - carry up to **64 items** a trip (vanilla: 16);
   - use **barrels and shulker boxes** as well as chests.
 
-### 🧭 Look after themselves
+### 🦺 Look after themselves
 - A golem that falls down a shaft or wanders off **walks back home**; one that's stuck gets
   reported, with where it is.
 - Golems **keep off trapdoors** and **stay out of portals**.
