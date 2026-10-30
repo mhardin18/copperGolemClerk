@@ -27,6 +27,13 @@ final class HelpText {
                             "Not looking at a chest: the item groups the item in your hand belongs to.",
                             "Players can only check containers they could open (not locked; with GriefPrevention,"
                                     + " unclaimed or where they have container trust).")),
+            new Entry("label", "/cgc label", "/cgc label <x> <y> <z> [world]",
+                    "Suggest a sign label for the chest you're looking at.",
+                    List.of("Looks at what's in the chest and suggests what to write on its sign: the item's own label for"
+                                    + " one kind of item, else the most specific group they all share, most specific first.",
+                            "With no shared group it names the group most of the items fit and lists the ones that don't.",
+                            "A labelled chest: says whether everything in it matches. You place the sign yourself;"
+                                    + " players only get suggestions for containers they could open.")),
             new Entry("overflow", "/cgc overflow", "/cgc overflow <x> <y> <z> [world]",
                     "What's in nearby [Overflow] chests, and what to do about it.",
                     List.of("Looks at the [Overflow] chests within golem range of you (32 blocks across,"
