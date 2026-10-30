@@ -46,8 +46,8 @@ golems carry them over by themselves.
 - **Tidy** as they go: partial stacks merged, like items kept together.
 
 ### 🧭 Look after themselves
-- A golem that falls down a shaft or wanders off **walks home**, or you're told where it
-  is (or it's teleported back, if you prefer).
+- A golem that falls down a shaft or wanders off **walks home**, and if it's stuck you're
+  told where it is.
 - Golems **avoid trapdoors** and **stay out of portals**.
 - Every golem death is logged with its cause, so no golem goes missing unexplained.
 
@@ -55,9 +55,11 @@ golems carry them over by themselves.
 
 ## For players
 
-- **`/cgc find diamond`:** lists the chests near you that hold diamonds, nearest first
-  (including diamonds inside shulker boxes), and makes them glow for a few seconds.
-  You only see chests you could open yourself: **GriefPrevention claims are respected**.
+- **`/cgc find diamond`:** lists the chests in your claims that hold diamonds, nearest
+  first (including diamonds inside shulker boxes), and makes them glow for a few seconds.
+  **It only looks in your own GriefPrevention claims**, so nobody can use it to snoop.
+- **`/cgc check`** explains a chest you can open, **`/cgc overflow`** shows what's piling
+  up in your overflow chests, and **`/cgc stats`** shows what your golems have sorted.
 - **Hold bamboo** to see a label over each golem saying what it's doing ("carrying 32 birch
   log", "fetching granite", "lost, walking home") and how weathered it is.
 - **Right-click a golem with bamboo** to switch that one golem back to plain vanilla.
@@ -68,10 +70,11 @@ golems carry them over by themselves.
 
 - `/cgc check` explains any chest: what its labels mean, what it takes, and anything
   stopping golems from using it.
-- `/cgc overflow` lists what's in your overflow chests and what label would give each
-  item a home.
-- `/cgc golems` shows where every golem is, what it's carrying and whether it's lost.
-- `/cgc stats` shows how much the golems have sorted.
+- `/cgc overflow` lists what's in overflow chests and what label would give each item a home.
+- `/cgc golems` shows where every golem is, what it's carrying and whether it's lost
+  (players can be allowed to list their own).
+- `/cgc stats` shows how much the golems have sorted, server-wide.
+- Admins see into every claim; players never see into anyone else's.
 - Every feature can be switched off or tuned in `config.yml`; `/cgc reload` applies changes
   without a restart.
 - Only copper golems are ever affected. Iron and snow golems, villagers and other mobs are
@@ -98,11 +101,12 @@ golems carry them over by themselves.
 
 | Permission | Default | Allows |
 |---|---|---|
-| `coppergolemclerk.admin` | op | all `/cgc` commands |
-| `coppergolemclerk.find` | everyone | `/cgc find` |
-| `coppergolemclerk.find.allclaims` | op | `/cgc find` into other players' claims |
+| `coppergolemclerk.find`, `.check`, `.overflow`, `.stats` | everyone | the player commands, limited to their own claims / what they could open |
+| `coppergolemclerk.golems` | everyone | `/cgc golems` for their own golems, if the server turns it on |
 | `coppergolemclerk.toggle` | everyone | switching a golem to vanilla and back |
-| `coppergolemclerk.alerts` | op | alerts about unclaimed places |
+| `coppergolemclerk.allclaims` | op | the commands above see into every claim |
+| `coppergolemclerk.alerts` | op | alerts about things outside any claim, where there's no owner to tell |
+| `coppergolemclerk.admin` | op | all `/cgc` commands |
 
 ## Links
 

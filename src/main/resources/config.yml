@@ -108,13 +108,16 @@ fetchers-per-overflow-chest: 2
 # that many at most. Higher means fewer trips for big sorting jobs.
 carry-amount: 16
 
-# /cgc find <item>: which containers near a player hold an item. Players only see
-# containers they could open themselves (not locked; with GriefPrevention, unclaimed or
-# where they have container trust), unless they have coppergolemclerk.find.allclaims.
-# find-enabled: false turns the command off. find-radius: how far it looks (1 to 64
-# blocks, sideways and up/down). find-highlight-seconds: how long the containers glow
-# for the player who asked (0 = no glow).
+# /cgc find <item>: which containers near a player hold an item. By default players only
+# see containers inside GriefPrevention claims they own (never locked ones).
+# find-outside-own-claims: true also shows unclaimed containers and claims where they have
+# container trust; other players' claims stay hidden either way. Without GriefPrevention
+# there are no claims, so players find nothing unless this is true.
+# coppergolemclerk.allclaims (ops) sees everything. find-enabled: false turns the command
+# off. find-radius: how far it looks (1 to 64 blocks, sideways and up/down).
+# find-highlight-seconds: how long the containers glow for the player who asked (0 = no glow).
 find-enabled: true
+find-outside-own-claims: false
 find-radius: 32
 find-highlight-seconds: 10
 
@@ -189,8 +192,12 @@ greet-cooldown-minutes: 5
 # (see below) saying where it is, and it tries again every 5 minutes. A golem moved to a
 # place with its own copper chest just adopts that one. Golems on a lead are left alone.
 rescue-lost-golems: true
-# Teleport a golem that can't walk back to its copper chest, instead of only telling
-# the owner.
+# Teleport a golem that can't walk back to its copper chest, instead of only telling the
+# owner. Off by default. Even when on, a golem is only teleported if the owner of the
+# GriefPrevention claim its copper chest is in has the coppergolemclerk.teleport
+# permission (nobody has it unless you grant it, e.g. with LuckPerms; for an owner who's
+# offline the plugin asks LuckPerms). Golems whose chest isn't in a claim are never
+# teleported.
 lost-golem-teleport-home: false
 
 # Alerts: players are told when a golem is lost (above), finds a labelled chest full, or
@@ -226,6 +233,10 @@ tidy-chests: true
 # Worlds where the plugin does nothing (golems there behave as in vanilla), by
 # folder name, e.g. [world_nether, world_the_end].
 disabled-worlds: []
+
+# Let players use /cgc golems to list their own golems (in claims they own, or whose
+# copper chest is in one). Off by default: only admins can use it.
+golems-command-for-players: false
 
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false

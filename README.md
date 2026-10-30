@@ -33,7 +33,7 @@ that cover every survival item; everything else is optional.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
 
 **Golems that look after themselves**
-- **Lost golems walk home** (or are teleported back), and you're told if one is stuck.
+- **Lost golems walk home**, and you're told where one is if it's stuck.
 - Golems **keep off trapdoors** and **stay out of portals**.
 - Every golem death is logged with its cause, so none go missing unexplained.
 
@@ -336,11 +336,15 @@ it can't walk to a copper chest (in a pit, walled in), its owner gets an alert (
 
 > [Golem Clerk] A copper golem is lost at -757, -55, 102, 118 blocks from its copper chest at -760, 63, 98, and can't find a way back.
 
-It tries again every 5 minutes. Set `lost-golem-teleport-home: true` to have such golems
-teleported back to their copper chest instead. A golem moved somewhere with its own
+It tries again every 5 minutes. A golem moved somewhere with its own
 copper chest (on a lead, say) adopts that chest as its new home; golems on a lead are
 left alone. `/cgc golems` shows which golems are lost. Turn it off with
 `rescue-lost-golems: false`.
+
+Teleporting stuck golems home is possible but off by default: it needs
+`lost-golem-teleport-home: true` *and* the `coppergolemclerk.teleport` permission (nobody
+has it until you grant it, e.g. with LuckPerms) for the owner of the claim the golem's
+copper chest is in. Golems whose chest isn't in a claim are never teleported.
 
 ### Full-chest alerts
 
@@ -350,9 +354,15 @@ slots), the plugin says so:
 
 > [Golem Clerk] The [logs] chest at 120, 64, -40 is full: golems can't put birch log in it.
 
-The alert goes to the owner of the GriefPrevention claim the chest is in; an owner
-who's offline is told when they next join. Outside claims, or without GriefPrevention,
-it goes to online players with `coppergolemclerk.alerts` (ops by default). Every alert
+Who hears it:
+
+- **In a GriefPrevention claim:** the claim's owner, and nobody else. An owner who's
+  offline is told when they next join.
+- **Outside every claim** (or on a server without GriefPrevention): there's no owner to
+  tell, so it goes to the players online with `coppergolemclerk.alerts` (ops by default),
+  typically the server's staff.
+
+Every alert
 is also logged, and the same chest isn't mentioned again for `alert-cooldown-minutes`
 (default 30). Turn them off with `full-chest-alerts: false`.
 
@@ -386,8 +396,10 @@ release list. `/cgc version` checks right away. Turn it off with `update-check: 
 
 ## Commands
 
-Requires `coppergolemclerk.admin` (op by default), except `/cgc find` and `/cgc help`, which
-everyone has (`coppergolemclerk.find`). Alias `/cgc`.
+Alias `/cgc`. Players can use `help`, `find`, `check`, `overflow` and `stats` (and `golems`,
+if `golems-command-for-players` is on), and only ever see their own claims or containers
+they could open; see [Permissions](#permissions). Everything else, and the forms with a
+position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
 
 - `/cgc help`: list the commands. `/cgc help <command>` explains one.
 - `/cgc reload`: reload `config.yml`.
@@ -395,18 +407,22 @@ everyone has (`coppergolemclerk.find`). Alias `/cgc`.
   items with "horse" in their name, 9 items: ...), labels that match nothing, what
   the chest takes, whether it takes the item in your hand, and anything stopping
   golems from using it (a block on top, a lock, a hopper feeding a copper chest, full).
+  Players can only check containers they could open.
 - `/cgc check` while not looking at a chest: which groups the item in your hand belongs to.
 - `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
   items with no chest (with a sign label to use for each group), items whose chest is
-  full, and items golems will move on their own.
-- `/cgc golems`: the 10 copper golems nearest you, with their position (click to
-  teleport there), distance and direction, what they carry, their copper and their mode.
+  full, and items golems will move on their own. Players see only the `[Overflow]` chests
+  they could open.
+- `/cgc golems`: the 10 copper golems nearest you, with their position (admins can click
+  it to teleport there), distance and direction, what they carry, their copper and their
+  mode. Players (only with `golems-command-for-players: true`) see just their own golems:
+  in claims they own, or whose copper chest is in one.
   `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
   listed where they were last seen (the plugin keeps every golem's last spot in
   `golems.yml`, and forgets golems not seen for 30 days).
-- `/cgc stats`: how many items golems have put into chests today, in the last 7 days
-  and all time, the most-sorted items and the busiest claims; in game you also see your
-  own claims' numbers. With `join-summary` (on by default) players are told when they
+- `/cgc stats`: how many items golems have put into chests in your claims today, in the
+  last 7 days and all time. Admins (`coppergolemclerk.allclaims`) also see the whole
+  server's numbers, the most-sorted items and the busiest claims. With `join-summary` (on by default) players are told when they
   join what golems sorted in their claims while they were away and how many of their
   chests filled up. Numbers are kept in `stats.yml`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
@@ -414,10 +430,13 @@ everyone has (`coppergolemclerk.find`). Alias `/cgc`.
   many in each (items inside shulker boxes count too), and they glow for you for
   `find-highlight-seconds` (10). Search for anything a sign label takes: an item
   (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). It
-  looks `find-radius` blocks (32) around you. **You only see containers you could open
-  yourself**: not locked, and with GriefPrevention, unclaimed or in a claim where you have
-  container trust; nothing hints at the others. Ops see into every claim
-  (`coppergolemclerk.find.allclaims`). Turn the command off with `find-enabled: false`.
+  looks `find-radius` blocks (32) around you. **By default it only looks in GriefPrevention
+  claims you own** (never in locked containers); nothing hints at anything else.
+  `find-outside-own-claims: true` also lets players find things in unclaimed containers
+  and in claims where they have container trust; other players' claims stay hidden
+  either way. Without GriefPrevention there are no claims, so players find nothing unless
+  that's on. Ops see everything (`coppergolemclerk.allclaims`). Turn the command off with
+  `find-enabled: false`.
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,
 `/cgc overflow <x> <y> <z> [world]`, `/cgc golems <x> <y> <z> [world]` (the 10 golems
@@ -466,7 +485,7 @@ with its line number and the old settings are kept.
 | `avoid-trapdoors` | `true` | Golems never walk onto or through trapdoors (vanilla golems fall through open ones). |
 | `avoid-portals` | `true` | Golems never go through Nether portals, End portals or End gateways, unless on a lead or riding something. |
 | `rescue-lost-golems` | `true` | A golem far from any copper chest (40 blocks from its own, or 12 up or down) walks back; one that can't, or is stuck where it can't reach a copper chest, triggers an alert. |
-| `lost-golem-teleport-home` | `false` | Teleport such a golem back to its copper chest instead of only alerting. |
+| `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its copper chest, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
 | `log-golem-deaths` | `true` | Log every copper golem death (cause, place, what it held) and every other removal (statue, `/kill`). |
@@ -483,8 +502,10 @@ with its line number and the old settings are kept.
 | `alert-cooldown-minutes` | `30` | Don't repeat an alert about the same chest more often than this. |
 | `join-summary` | `true` | On join, tell players what golems sorted in their claims while they were away and how many of their chests filled up. |
 | `find-enabled` | `true` | `/cgc find`. `false` turns the command off for everyone. |
+| `find-outside-own-claims` | `false` | `false`: players' `/cgc find` only looks in claims they own. `true`: also unclaimed containers and claims where they have container trust (never other players' claims or locked containers). |
 | `find-radius` | `32` | How far `/cgc find` looks, 1 to 64 blocks sideways and up or down. |
 | `find-highlight-seconds` | `10` | How long the containers `/cgc find` lists glow for the player, 0 to 120 (0: no glow). |
+| `golems-command-for-players` | `false` | Let players use `/cgc golems` to list their own golems (in claims they own, or whose copper chest is in one). Off: admins only. |
 
 ### Server
 
@@ -499,11 +520,16 @@ with its line number and the old settings are kept.
 
 | Permission | Default | Allows |
 |---|---|---|
-| `coppergolemclerk.admin` | op | Every `/cgc` command (`check`, `overflow`, `golems`, `stats`, `reload`, `version`, and `find` around any spot); being told about new releases. |
-| `coppergolemclerk.find` | everyone | `/cgc find` and `/cgc help`. |
-| `coppergolemclerk.find.allclaims` | op | `/cgc find` also looks into other players' claims and locked containers. |
+| `coppergolemclerk.find` | everyone | `/cgc find`: containers in your own claims (wider with `find-outside-own-claims`). |
+| `coppergolemclerk.check` | everyone | `/cgc check` on containers you could open, or the item in your hand. |
+| `coppergolemclerk.overflow` | everyone | `/cgc overflow`: the `[Overflow]` chests near you that you could open. |
+| `coppergolemclerk.stats` | everyone | `/cgc stats`: what golems sorted in your claims. |
+| `coppergolemclerk.golems` | everyone | `/cgc golems`: your own golems. Only works if `golems-command-for-players` is `true` (it's `false` by default). |
 | `coppergolemclerk.toggle` | everyone | Switching golems between the plugin and vanilla with the toggle item (with GriefPrevention, only where you may build). |
-| `coppergolemclerk.alerts` | op | Hearing alerts about places outside anyone's claim (or every alert, without GriefPrevention). |
+| `coppergolemclerk.allclaims` | op | `find`, `check`, `overflow`, `stats` and `golems` see into every claim and locked containers. |
+| `coppergolemclerk.alerts` | op | Alerts (full chests, lost golems) usually go to the owner of the claim where they happen. Outside every claim there's no owner, so they go to online players with this permission instead (without GriefPrevention, every alert does). |
+| `coppergolemclerk.teleport` | nobody | Stuck golems whose copper chest is in this player's claim may be teleported home, if `lost-golem-teleport-home` is `true`. |
+| `coppergolemclerk.admin` | op | Every `/cgc` command (also `reload`, `version`, positions and `golems all`), and being told about new releases. |
 
 ## Building from source
 

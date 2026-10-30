@@ -88,7 +88,7 @@ def _(c):
     return check
 
 
-@scenario("rescue-teleport-home", "rescue", 150, "lost-golem-teleport-home: true: the boxed-in lost golem is teleported back beside its copper chest.", alone=True)
+@scenario("rescue-teleport-needs-claim", "rescue", 150, "lost-golem-teleport-home: true, but the golem's copper chest isn't in anyone's claim (so no owner with coppergolemclerk.teleport): it's NOT teleported, just reported as lost.", alone=True)
 def _(c):
     set_options(c, lost_golem_teleport_home="true")
     c.chest("copper", 2, 10, block="waxed_copper_chest")
@@ -97,8 +97,10 @@ def _(c):
     c.run(f"fill {x - 1} {y} {z - 1} {x + 1} {y + 2} {z + 1} minecraft:glass hollow")
     c.run(f"setblock {x} {y} {z} minecraft:air")
     lost_golem(c, FAR, 10)
-    return lambda: [(any("teleported it back" in l for l in c.log_lines() if "Alert" in l), "alert says it was teleported back"),
-                    (far_golems(c) == 0, "the golem left the box"), (c.golems() == 1, "it's on the platform")]
+    alerts = lambda: [l for l in c.log_lines() if "Alert" in l and "copper golem" in l]
+    return lambda: [(any("can't find a way back" in l or "is stuck" in l for l in alerts()), "an alert says it's lost"),
+                    (not any("teleported it back" in l for l in alerts()), "not teleported"),
+                    (far_golems(c) == 1, "the golem is still in its box")]
 
 
 @scenario("rescue-stuck-in-pit", "rescue", 240, "A golem walled in 8 blocks from its copper chest (in range, no way out) is reported as stuck after two minutes.")

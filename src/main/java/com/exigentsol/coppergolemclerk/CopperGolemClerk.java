@@ -63,6 +63,9 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean statusLabelsEverywhere;
     private GolemFinder finder;
     private ItemFinder itemFinder;
+    private final Claims claims = new Claims(this);
+    private volatile boolean findOutsideOwnClaims;
+    private volatile boolean golemsCommandForPlayers;
     private volatile boolean findEnabled = true;
     private volatile int findRadius = 32;
     private volatile int findHighlightSeconds = 10;
@@ -228,6 +231,8 @@ public final class CopperGolemClerk extends JavaPlugin {
             carryAmount = Math.max(1, Math.min(64, carryAmount));
         }
         findEnabled = config.getBoolean("find-enabled", true);
+        findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
+        golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
         findRadius = Math.max(1, Math.min(64, config.getInt("find-radius", 32)));
         findHighlightSeconds = Math.max(0, Math.min(120, config.getInt("find-highlight-seconds", 10)));
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
@@ -350,6 +355,21 @@ public final class CopperGolemClerk extends JavaPlugin {
     }
 
     /** find-enabled: /cgc find is available. */
+    /** find-outside-own-claims: players' /cgc find also looks outside claims they own. */
+    boolean findOutsideOwnClaims() {
+        return findOutsideOwnClaims;
+    }
+
+    /** golems-command-for-players: players may use /cgc golems (their own golems only). */
+    boolean golemsCommandForPlayers() {
+        return golemsCommandForPlayers;
+    }
+
+    /** GriefPrevention claims and LuckPerms permissions. */
+    Claims claims() {
+        return claims;
+    }
+
     boolean findEnabled() {
         return findEnabled;
     }
@@ -543,8 +563,33 @@ public final class CopperGolemClerk extends JavaPlugin {
         return debug;
     }
 
-    /** Subcommands for players without coppergolemclerk.admin (with coppergolemclerk.find). */
-    private static final Set<String> PLAYER_COMMANDS = Set.of("find", "help", "?", "");
+    /** The permission a player needs for a subcommand (admins may use them all); null = anyone who can use /cgc. */
+    private static String permissionFor(String sub) {
+        return switch (sub) {
+            case "find" -> "coppergolemclerk.find";
+            case "check" -> "coppergolemclerk.check";
+            case "overflow" -> "coppergolemclerk.overflow";
+            case "stats" -> "coppergolemclerk.stats";
+            case "golems" -> "coppergolemclerk.golems";
+            case "", "help", "?" -> null;
+            default -> "coppergolemclerk.admin";
+        };
+    }
+
+    /** True if this sender may use this subcommand now (permission, and the setting that turns it on). */
+    boolean mayUse(CommandSender sender, String sub) {
+        if (sub.equals("find") && !findEnabled) {
+            return false;
+        }
+        if (sender.hasPermission("coppergolemclerk.admin")) {
+            return true;
+        }
+        if (sub.equals("golems") && !golemsCommandForPlayers) {
+            return false;
+        }
+        String permission = permissionFor(sub);
+        return permission == null || sender.hasPermission(permission);
+    }
 
     private final class Command implements BasicCommand {
 
@@ -561,11 +606,20 @@ public final class CopperGolemClerk extends JavaPlugin {
 
         private void run(CommandSender sender, String sub, String[] args) {
             boolean admin = sender.hasPermission("coppergolemclerk.admin");
-            if (!admin && (!PLAYER_COMMANDS.contains(sub) || (sub.equals("find") && !findEnabled))) {
-                sender.sendMessage(Component.text(sub.isEmpty() || sub.equals("help") || sub.equals("?")
-                        ? "" : "You need coppergolemclerk.admin for /cgc " + sub + ".", NamedTextColor.RED));
-                HelpText.send(sender, null, false);
+            if (!mayUse(sender, sub)) {
+                String why = sub.equals("find") && !findEnabled ? "/cgc find is turned off on this server (find-enabled: false)."
+                        : sub.equals("golems") && !golemsCommandForPlayers ? "/cgc golems is for admins on this server."
+                        : HelpText.names().contains(sub) ? "You don't have permission for /cgc " + sub + "."
+                        : "Unknown command '" + sub + "'.";
+                sender.sendMessage(Component.text(why, NamedTextColor.RED));
+                HelpText.send(sender, null, s -> mayUse(sender, s));
                 return;
+            }
+            if (!admin && args.length > 2 && !sub.equals("find") && !sub.equals("help")) {
+                throw new IllegalArgumentException("Only admins can give a position or 'all'.");
+            }
+            if (!admin && sub.equals("golems") && args.length > 1) {
+                throw new IllegalArgumentException("Only admins can give a position or 'all'.");
             }
             switch (sub) {
                 case "find" -> {
@@ -603,6 +657,11 @@ public final class CopperGolemClerk extends JavaPlugin {
                     ItemStack hand = player.getInventory().getItemInMainHand();
                     Block target = player.getTargetBlockExact(6);
                     if (target != null && target.getState(false) instanceof Container) {
+                        if (!player.hasPermission(Claims.ALL_CLAIMS) && !claims.mayOpen(player, target)) {
+                            sender.sendMessage(Component.text("You can't open that container (locked, or in someone else's"
+                                    + " claim), so you can't check it either.", NamedTextColor.RED));
+                            return;
+                        }
                         reports.checkChest(player, target, hand);
                         return;
                     }
@@ -619,9 +678,10 @@ public final class CopperGolemClerk extends JavaPlugin {
                 case "overflow" -> {
                     Block at = blockArg(sender, args);
                     if (at != null) {
-                        reports.overflow(sender, at.getLocation());
+                        reports.overflow(sender, at.getLocation(), state -> true);
                     } else if (sender instanceof Player player) {
-                        reports.overflow(player, player.getLocation());
+                        boolean all = player.hasPermission(Claims.ALL_CLAIMS);
+                        reports.overflow(player, player.getLocation(), state -> all || claims.mayOpen(player, state));
                     } else {
                         sender.sendMessage(Component.text("From the console: /cgc overflow <x> <y> <z> [world]", NamedTextColor.RED));
                     }
@@ -632,10 +692,10 @@ public final class CopperGolemClerk extends JavaPlugin {
                     boolean all = args.length > 1 && args[1].equalsIgnoreCase("all");
                     finder.report(sender, all, all ? null : spotArg(sender, args));
                 }
-                case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null, admin);
+                case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null, s -> mayUse(sender, s));
                 default -> {
                     sender.sendMessage(Component.text("Unknown command '" + args[0] + "'.", NamedTextColor.RED));
-                    HelpText.send(sender, null, admin);
+                    HelpText.send(sender, null, s -> mayUse(sender, s));
                 }
             }
         }
@@ -732,11 +792,11 @@ public final class CopperGolemClerk extends JavaPlugin {
 
         @Override
         public Collection<String> suggest(CommandSourceStack source, String[] args) {
-            boolean admin = source.getSender().hasPermission("coppergolemclerk.admin");
+            CommandSender who = source.getSender();
+            boolean admin = who.hasPermission("coppergolemclerk.admin");
             if (args.length <= 1) {
                 String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
-                return HelpText.names().stream().filter(s -> s.startsWith(prefix))
-                        .filter(s -> admin || PLAYER_COMMANDS.contains(s)).toList();
+                return HelpText.names().stream().filter(s -> s.startsWith(prefix)).filter(s -> mayUse(who, s)).toList();
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("find")) {
                 String prefix = args[1].toLowerCase(Locale.ROOT);
@@ -754,7 +814,7 @@ public final class CopperGolemClerk extends JavaPlugin {
                 }
                 return out;
             }
-            if (args.length == 2 && args[0].equalsIgnoreCase("golems")) {
+            if (args.length == 2 && args[0].equalsIgnoreCase("golems") && admin) {
                 return "all".startsWith(args[1].toLowerCase(Locale.ROOT)) ? List.of("all") : List.of();
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
@@ -766,8 +826,12 @@ public final class CopperGolemClerk extends JavaPlugin {
 
         @Override
         public boolean canUse(CommandSender sender) {
-            return sender.hasPermission("coppergolemclerk.admin")
-                    || (findEnabled && sender.hasPermission("coppergolemclerk.find"));
+            for (String sub : List.of("find", "check", "overflow", "stats", "golems")) {
+                if (mayUse(sender, sub)) {
+                    return true;
+                }
+            }
+            return sender.hasPermission("coppergolemclerk.admin");
         }
     }
 }

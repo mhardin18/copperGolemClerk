@@ -234,7 +234,8 @@ final class ChestReports {
     private record Seen(Material type, ItemStack sample, int count) {
     }
 
-    void overflow(CommandSender player, Location center) {
+    /** /cgc overflow around a spot; visible says which [Overflow] chests this sender may see into. */
+    void overflow(CommandSender player, Location center, java.util.function.Predicate<BlockState> visible) {
         if (!plugin.enabledIn(center.getWorld())) {
             say(player, NamedTextColor.YELLOW, "Copper Golem Clerk is off in this world (disabled-worlds).");
             return;
@@ -260,7 +261,7 @@ final class ChestReports {
             if (labels.noGolems()) {
                 continue; // golems never use it, as overflow or as a destination
             }
-            if (labels.overflow()) {
+            if (labels.overflow() && visible.test(state)) {
                 overflowChests.add(inv);
                 overflowLabels.add(labels);
             }
