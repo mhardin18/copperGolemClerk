@@ -340,6 +340,7 @@ Settings:
 - `return-unsortable-items: true`, `homeless-retry-minutes: 5`: see above.
 - `fetch-from-overflow: true`, `fetchers-per-overflow-chest: 2`: see above.
 - `carry-amount: 16`: see "Bigger loads" above.
+- `find-enabled: true`, `find-radius: 32`, `find-highlight-seconds: 10`: see `/cgc find` under Commands.
 - `sign-labels: true` (default): sign labels and `[Overflow]` chests.
 - `overflow-before-empty: true` (default): see above.
 - `allow-empty-chests: true` (default): golems may use empty chests as a last
@@ -376,7 +377,8 @@ release list. `/cgc version` checks right away. Turn it off with `update-check: 
 
 ## Commands
 
-Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
+Requires `coppergolemclerk.admin` (op by default), except `/cgc find` and `/cgc help`, which
+everyone has (`coppergolemclerk.find`). Alias `/cgc`.
 
 - `/cgc help`: list the commands. `/cgc help <command>` explains one.
 - `/cgc reload`: reload `config.yml`.
@@ -399,10 +401,19 @@ Requires `coppergolemclerk.admin` (op by default). Alias `/cgc`.
   join what golems sorted in their claims while they were away and how many of their
   chests filled up. Numbers are kept in `stats.yml`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
+- `/cgc find <item>`: which containers near you hold an item, nearest first, with how
+  many in each (items inside shulker boxes count too), and they glow for you for
+  `find-highlight-seconds` (10). Search for anything a sign label takes: an item
+  (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). It
+  looks `find-radius` blocks (32) around you. **You only see containers you could open
+  yourself**: not locked, and with GriefPrevention, unclaimed or in a claim where you have
+  container trust; nothing hints at the others. Ops see into every claim
+  (`coppergolemclerk.find.allclaims`). Turn the command off with `find-enabled: false`.
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,
 `/cgc overflow <x> <y> <z> [world]`, `/cgc golems <x> <y> <z> [world]` (the 10 golems
-nearest that spot; without a position the console lists every golem).
+nearest that spot; without a position the console lists every golem),
+`/cgc find <item> <x> <y> <z> [world]`.
 
 ## Building from source
 

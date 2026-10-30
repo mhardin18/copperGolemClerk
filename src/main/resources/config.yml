@@ -107,6 +107,16 @@ fetchers-per-overflow-chest: 2
 # that many at most. Higher means fewer trips for big sorting jobs.
 carry-amount: 16
 
+# /cgc find <item>: which containers near a player hold an item. Players only see
+# containers they could open themselves (not locked; with GriefPrevention, unclaimed or
+# where they have container trust), unless they have coppergolemclerk.find.allclaims.
+# find-enabled: false turns the command off. find-radius: how far it looks (1 to 64
+# blocks, sideways and up/down). find-highlight-seconds: how long the containers glow
+# for the player who asked (0 = no glow).
+find-enabled: true
+find-radius: 32
+find-highlight-seconds: 10
+
 # Golems give way to each other instead of getting stuck nose to nose. When a
 # golem is stuck (trying to walk but barely moving for a second) because another
 # golem is in its way, one of them steps one block aside and waits for the other
