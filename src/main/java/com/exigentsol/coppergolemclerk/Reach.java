@@ -1,10 +1,14 @@
 package com.exigentsol.coppergolemclerk;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.entity.Mob;
 
 /**
  * How high a chest is for a golem: its row above the nearest spot beside it where a golem
@@ -27,7 +31,7 @@ final class Reach {
     /** Where a golem can stand to reach a chest, and the chest's row from there. */
     record Spot(Block feet, int row) {
         Location target() {
-            return feet.getLocation().add(0.5, 0, 0.5);
+            return feet.getLocation().clone().add(0.5, 0, 0.5);
         }
     }
 
@@ -41,6 +45,15 @@ final class Reach {
      */
     static Spot spotFor(World world, Set<HomeFinder.Pos> halves) {
         Spot best = null;
+        for (Spot spot : spotsFor(world, halves)) {
+            best = better(best, spot);
+        }
+        return best;
+    }
+
+    /** Every spot beside this chest (any half) where a golem can stand and reach it within MAX rows. */
+    static List<Spot> spotsFor(World world, Set<HomeFinder.Pos> halves) {
+        List<Spot> spots = new ArrayList<>();
         for (HomeFinder.Pos p : halves) {
             Block chest = world.getBlockAt(p.x(), p.y(), p.z());
             for (BlockFace side : SIDES) {
@@ -48,23 +61,45 @@ final class Reach {
                 // Row 0: standing on the block beside the chest, one level up.
                 Block above = column.getRelative(0, 1, 0);
                 if (standable(above)) {
-                    best = better(best, new Spot(above, 0));
+                    spots.add(new Spot(above, 0));
                     continue;
                 }
                 // Rows 1..MAX: down the open column beside the chest to the first place to stand.
                 for (int row = 1; row <= MAX; row++) {
                     Block feet = column.getRelative(0, 1 - row, 0);
                     if (standable(feet)) {
-                        best = better(best, new Spot(feet, row));
+                        spots.add(new Spot(feet, row));
                         break;
                     }
-                    if (!feet.isPassable()) {
+                    if (!GolemTraffic.passable.test(feet)) {
                         break; // solid with no room above it to stand: the side is closed here
                     }
                 }
             }
         }
-        return best;
+        return spots;
+    }
+
+    /**
+     * A spot beside this chest, at most maxRow rows below it, that the golem has a whole path
+     * to, or null if it has none. Lower rows first, then nearer spots. The golem is sent to a
+     * place it can stand rather than to the chest block itself: aiming at the chest lets the
+     * pathfinder settle for the nearest point it finds, such as the floor above the chest,
+     * where the golem can never reach it.
+     */
+    static Spot reachableSpot(Mob golem, World world, Set<HomeFinder.Pos> halves, int maxRow) {
+        List<Spot> spots = new ArrayList<>(spotsFor(world, halves));
+        Location at = golem.getLocation();
+        spots.removeIf(spot -> spot.row() > maxRow);
+        spots.sort(Comparator.comparingInt(Spot::row)
+                .thenComparingDouble(spot -> spot.target().distanceSquared(at)));
+        for (Spot spot : spots) {
+            var path = golem.getPathfinder().findPath(spot.target());
+            if (path != null && path.canReachFinalPoint()) {
+                return spot;
+            }
+        }
+        return null;
     }
 
     /** A golem can stand here, and not on top of another container (golems don't climb chest walls). */

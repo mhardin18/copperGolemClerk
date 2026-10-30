@@ -97,7 +97,7 @@ public final class ItemGroups {
     private static List<Material> allItems() {
         List<Material> items = new ArrayList<>();
         for (Material m : Material.values()) {
-            if (m.isItem() && !m.isAir() && !m.isLegacy()) {
+            if (!m.isLegacy() && m.isItem() && !m.isAir()) { // legacy first: asking a legacy material isItem() is slow and pointless
                 items.add(m);
             }
         }
@@ -173,6 +173,11 @@ public final class ItemGroups {
      * Spaces count as underscores and case is ignored. Returns null if it
      * matches nothing.
      */
+    /** The group names, in config order. */
+    List<String> groupNames() {
+        return groupNames;
+    }
+
     Rule signRule(String text) {
         String key = text.trim().toLowerCase(Locale.ROOT);
         return signRules.computeIfAbsent(key, this::parseSignRule).orElse(null);

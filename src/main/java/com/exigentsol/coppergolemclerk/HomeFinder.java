@@ -15,6 +15,7 @@ import java.util.function.Predicate;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -132,6 +133,7 @@ final class HomeFinder {
 
     /** Start a search for an item the plugin just handed the golem, from a known chest. */
     void startSearch(Entity golem, Material type, Block source) {
+        plugin.rescue().noteHome(golem, source); // only if it's a copper chest
         searches.put(golem.getUniqueId(), new Search(type, System.currentTimeMillis(),
                 golem.getWorld().getUID(), Pos.of(source)));
         activeMillis.put(golem.getUniqueId(), 0L);
@@ -202,6 +204,7 @@ final class HomeFinder {
         Search search = searches.get(golem.getUniqueId());
         if (search == null || search.type() != type) {
             Block source = Returns.sourceChestNear(golem);
+            plugin.rescue().noteHome(golem, source);
             search = new Search(type, System.currentTimeMillis(), golem.getWorld().getUID(),
                     source == null ? null : Pos.of(source));
             searches.put(golem.getUniqueId(), search);
@@ -304,6 +307,9 @@ final class HomeFinder {
     }
 
     /** Same, around any spot (for /cgc overflow). */
+    /** A chunk's block entities. Unit tests swap this out (the test server can't list them). */
+    static java.util.function.Function<org.bukkit.Chunk, BlockState[]> blockEntities = chunk -> chunk.getTileEntities(false);
+
     static List<BlockState> containersInRange(Location center, boolean riding, Predicate<Material> types) {
         List<BlockState> found = new ArrayList<>();
         World world = center.getWorld();
@@ -318,7 +324,7 @@ final class HomeFinder {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
-                for (BlockState state : world.getChunkAt(cx, cz).getTileEntities(false)) {
+                for (BlockState state : blockEntities.apply(world.getChunkAt(cx, cz))) {
                     if (!(state instanceof Container) || !types.test(state.getType())) {
                         continue;
                     }
@@ -331,7 +337,7 @@ final class HomeFinder {
             }
         }
         Location here = center;
-        found.sort(Comparator.comparingDouble(st -> st.getLocation().add(0.5, 0.5, 0.5).distanceSquared(here)));
+        found.sort(Comparator.comparingDouble(st -> st.getLocation().clone().add(0.5, 0.5, 0.5).distanceSquared(here)));
         return found;
     }
 
@@ -347,16 +353,19 @@ final class HomeFinder {
         for (BlockState state : containersInRange(golem, HomeFinder::isDestination)) {
             Inventory inventory = ((Container) state).getInventory();
             Set<Pos> halves = halvesOf(inventory, state.getBlock());
-            if (isBlocked(golem.getWorld(), halves) || isWaterlogged(golem.getWorld(), halves) || isLocked(state)
+            if (cannotOpen(golem.getWorld(), state, halves) || isWaterlogged(golem.getWorld(), halves) || isLocked(state)
                     || feedsCopperChest(golem.getWorld(), halves)) {
                 continue;
+            }
+            if (!isVanillaTarget(state.getType()) && pluginRow(golem.getWorld(), halves) == Integer.MAX_VALUE) {
+                continue; // a barrel or shulker box with nowhere to stand in reach of it
             }
             ChestLabels.Labels labels = matcher.labelsOf(inventory);
             if (labels.overflow() && !labels.hasItemRules()) {
                 continue; // overflow chests are never a home
             }
             for (ItemStack item : candidates) {
-                if (!withHome.contains(item.getType())
+                if (!withHome.contains(item.getType()) && !refuses(state.getType(), item.getType())
                         && matcher.classify(item, inventory, labels).kind().isHome()
                         && ChestMatcher.hasRoom(item, inventory)) {
                     withHome.add(item.getType());
@@ -380,24 +389,33 @@ final class HomeFinder {
         int bestSpecificity = Integer.MAX_VALUE;
 
         for (BlockState state : containersInRange(golem, HomeFinder::isDestination)) {
-            if (!(state instanceof Chest chest)) {
+            if (!(state instanceof Container container)) {
                 continue;
             }
             Block block = state.getBlock();
             if (!seen.add(Pos.of(block))) {
                 continue; // other half of a double chest already handled
             }
-            Inventory inventory = chest.getInventory();
+            Inventory inventory = container.getInventory();
             Set<Pos> halves = halvesOf(inventory, block);
             seen.addAll(halves);
-            if (isBlocked(world(golem), halves) || isWaterlogged(world(golem), halves) || isLocked(state)) {
-                continue; // vanilla won't open it, so it can't be anyone's destination
+            if (cannotOpen(world(golem), state, halves) || isWaterlogged(world(golem), halves) || isLocked(state)) {
+                continue; // it won't open, so it can't be anyone's destination
             }
             if (feedsCopperChest(world(golem), halves)) {
                 continue; // an input chest for a copper chest: refilling it would loop items forever
             }
+            if (refuses(state.getType(), held.getType())) {
+                continue; // a shulker box can't hold a shulker box
+            }
 
-            if (reach > Reach.VANILLA) {
+            if (!isVanillaTarget(state.getType())) {
+                // A barrel or shulker box: vanilla golems never use them, so the plugin delivers.
+                if (pluginRow(world(golem), halves) == Integer.MAX_VALUE) {
+                    continue; // nowhere to stand within reach of it
+                }
+                high.addAll(halves);
+            } else if (reach > Reach.VANILLA) {
                 int row = Reach.rowOf(world(golem), halves);
                 if (row > Reach.VANILLA && row <= reach) {
                     high.addAll(halves); // out of vanilla's reach, within ours
@@ -406,6 +424,9 @@ final class HomeFinder {
 
             ChestMatcher.Match match = matcher.classify(held, inventory);
             ChestMatcher.Kind kind = match.kind();
+            if (plugin.fullChestAlerts()) {
+                alertIfFull(block, halves, inventory, kind, held);
+            }
             if (kind.isHome() && ChestMatcher.hasRoom(held, inventory)) {
                 allMatching.addAll(halves);
                 // Keep only the most specific homes: [stews] beats [food] for a stew.
@@ -426,6 +447,58 @@ final class HomeFinder {
     }
 
     /**
+     * full-chest-alerts: a labelled chest with no room for an item it's labelled for, or an
+     * [Overflow] chest that's full or nearly (overflow-alert-percent of its slots in use).
+     */
+    private void alertIfFull(Block block, Set<Pos> halves, Inventory inventory, ChestMatcher.Kind kind, ItemStack held) {
+        if (kind != ChestMatcher.Kind.LABEL_MATCH && kind != ChestMatcher.Kind.OVERFLOW) {
+            return;
+        }
+        Pos first = halves.stream().min(Comparator.comparingInt(Pos::x).thenComparingInt(Pos::z)).orElse(Pos.of(block));
+        Location place = new Location(block.getWorld(), first.x(), first.y(), first.z());
+        String where = Alerts.at(place);
+        String id = block.getWorld().getName() + ":" + first;
+        boolean room = ChestMatcher.hasRoom(held, inventory);
+        if (kind == ChestMatcher.Kind.LABEL_MATCH) {
+            if (!room) {
+                String label = String.join("", matcher.labelsOf(inventory).names());
+                plugin.alerts().send("full:" + id, place, "The " + label + " chest at " + where
+                        + " is full: golems can't put " + held.getType().getKey().getKey().replace('_', ' ') + " in it.");
+            }
+            return;
+        }
+        if (!room) {
+            plugin.alerts().send("overflow-full:" + id, place, "The [Overflow] chest at " + where + " is full.");
+            return;
+        }
+        int percent = plugin.overflowAlertPercent();
+        if (percent <= 0 || percent >= 100) {
+            return;
+        }
+        ItemStack[] slots = inventory.getStorageContents();
+        int used = 0;
+        for (ItemStack s : slots) {
+            if (s != null && !s.isEmpty()) {
+                used++;
+            }
+        }
+        int filled = (int) Math.floor(100.0 * used / slots.length);
+        if (filled >= percent) {
+            plugin.alerts().send("overflow-filling:" + id, place, "The [Overflow] chest at " + where + " is "
+                    + filled + "% full (" + used + " of " + slots.length + " slots).");
+        }
+    }
+
+    /**
+     * The row of a container the plugin delivers to itself (barrel, shulker box), if a golem
+     * can stand within reach of it (deliver-reach rows, at least vanilla's); else Integer.MAX_VALUE.
+     */
+    int pluginRow(World world, Set<Pos> halves) {
+        int row = Reach.rowOf(world, halves);
+        return row <= Math.max(Reach.VANILLA, plugin.deliverReach()) ? row : Integer.MAX_VALUE;
+    }
+
+    /**
      * Vanilla's ChestBlock.isChestBlockedAt: a chest can't open with a solid
      * (occluding) block on top or a sitting cat on it. A double chest is blocked
      * if either half is.
@@ -436,7 +509,7 @@ final class HomeFinder {
             if (above.getType().isOccluding()) {
                 return true;
             }
-            for (Cat cat : world.getNearbyEntitiesByType(Cat.class, above.getLocation().add(0.5, 0.5, 0.5), 0.5, 0.5, 0.5)) {
+            for (Cat cat : world.getNearbyEntitiesByType(Cat.class, above.getLocation().clone().add(0.5, 0.5, 0.5), 0.5, 0.5, 0.5)) {
                 if (cat.isSitting()) {
                     return true;
                 }
@@ -514,8 +587,45 @@ final class HomeFinder {
         return e.getWorld();
     }
 
+    /** Container types golems put items into (destination-containers); chests by default. */
+    private static volatile Set<Material> destinations = EnumSet.of(Material.CHEST, Material.TRAPPED_CHEST);
+
+    static void setDestinations(Set<Material> types) {
+        destinations = types.isEmpty() ? EnumSet.noneOf(Material.class) : EnumSet.copyOf(types);
+    }
+
+    /** True if golems may put items into this kind of container (destination-containers). */
     static boolean isDestination(Material type) {
+        return destinations.contains(type);
+    }
+
+    /** Chests and trapped chests: the only containers vanilla golems put items into themselves. */
+    static boolean isVanillaTarget(Material type) {
         return type == Material.CHEST || type == Material.TRAPPED_CHEST;
+    }
+
+    /**
+     * True if a golem can't open this container: a chest with a solid block or sitting cat on
+     * top (vanilla's rule), or a shulker box with a solid block in front of its lid. Barrels
+     * always open.
+     */
+    static boolean cannotOpen(World world, BlockState state, Set<Pos> halves) {
+        if (Tag.SHULKER_BOXES.isTagged(state.getType())) {
+            if (state.getBlockData() instanceof org.bukkit.block.data.Directional d) {
+                Block front = state.getBlock().getRelative(d.getFacing());
+                return !GolemTraffic.passable.test(front);
+            }
+            return false;
+        }
+        if (state.getType() == Material.BARREL) {
+            return false;
+        }
+        return isBlocked(world, halves);
+    }
+
+    /** Shulker boxes can't hold shulker boxes. */
+    static boolean refuses(Material container, Material item) {
+        return Tag.SHULKER_BOXES.isTagged(container) && Tag.SHULKER_BOXES.isTagged(item);
     }
 
     static Set<Pos> halvesOf(Inventory inventory, Block fallback) {

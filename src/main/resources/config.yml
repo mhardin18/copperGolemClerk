@@ -1,13 +1,14 @@
 # Copper Golem Clerk configuration
 #
-# Vanilla copper golems only put an item into a chest that already holds that
-# exact item, or into an empty chest. This plugin adds "groups": a golem may
-# also put an item into a chest that holds other items from the same group.
+# Copper golems take items out of copper chests and put them away. With this plugin
+# they file them properly: by group (birch logs go in with the oak logs), by label
+# (a sign like [logs] or an item in a frame on the chest), and into [Overflow]
+# chests when nothing else fits.
 #
-# Example: with the "logs" group, a golem carrying birch logs will put them in a
-# chest that already has oak logs in it.
+# Every setting below has a default, so a setting missing from this file still
+# works. The README lists them all: https://github.com/mhardin18/copperGolemClerk
 #
-# Use /cgc reload after editing this file.
+# Use /cgc reload after editing this file (no restart needed).
 
 # How a chest qualifies for a group match:
 #   all - every item in the chest must share a group with the carried item.
@@ -91,8 +92,8 @@ overflow-before-empty: true
 
 # When a golem has nothing to do (empty hand, and no copper chest in range has
 # anything it would take), send it to an [Overflow] chest to fetch an item that
-# now has a home, e.g. ores after you add an [ores] chest. It takes up to 16, like
-# a normal pickup, and sorts them. Items that would just go back to overflow are
+# now has a home, e.g. ores after you add an [ores] chest. It takes up to
+# carry-amount (16 by default), like a normal pickup, and sorts them. Items that would just go back to overflow are
 # left alone. If it can't reach the overflow chest within 30 seconds it gives
 # up and waits a minute. Items it can't deliver go back to that chest.
 fetch-from-overflow: true
@@ -100,6 +101,27 @@ fetch-from-overflow: true
 # How many golems may fetch from one overflow chest at the same time (each takes
 # a different item). Higher empties overflow faster but can crowd the chest.
 fetchers-per-overflow-chest: 2
+
+# How many items a golem carries per trip (1 to 64; vanilla is 16). Right after a golem
+# takes items out of a copper chest, it takes more of the same from that chest (or puts
+# some back, below 16). Items that stack to 16 or 1 (ender pearls, tools) are carried
+# that many at most. Higher means fewer trips for big sorting jobs.
+carry-amount: 16
+
+# /cgc find <item>: which containers near a player hold an item. By default players only
+# see containers inside GriefPrevention claims they own (never locked ones).
+# find-outside-own-claims: true also shows unclaimed containers and claims where they have
+# container trust; other players' claims stay hidden either way. Without GriefPrevention
+# there are no claims, so players find nothing unless this is true.
+# coppergolemclerk.allclaims (ops) sees everything. find-enabled: false turns the command
+# off. find-radius: how far it looks (1 to 64 blocks, sideways and up/down).
+# find-highlight-count: how many of the containers it finds glow for the player who asked,
+# nearest first (0 to 30; 0 = no glow). find-highlight-seconds: how long they glow (0 = no glow).
+find-enabled: true
+find-outside-own-claims: false
+find-radius: 32
+find-highlight-count: 5
+find-highlight-seconds: 10
 
 # Golems give way to each other instead of getting stuck nose to nose. When a
 # golem is stuck (trying to walk but barely moving for a second) because another
@@ -113,6 +135,11 @@ golems-give-way: true
 # treat an open trapdoor as floor and fall through it into the hole below.
 # Golems stepping aside for each other (golems-give-way) avoid trapdoors too.
 avoid-trapdoors: true
+
+# Golems never go through a Nether portal, End portal or End gateway, so one that
+# wanders into a portal stays in its own world near its copper chest. Golems on a
+# lead or riding something go through as usual (a player is taking them).
+avoid-portals: true
 
 # Once a week (and a minute after the server starts), check GitHub for a newer
 # release of this plugin. If there is one, it's logged and admins (op, or the
@@ -131,6 +158,13 @@ update-check: true
 deliver-reach: 2
 take-reach: 2
 
+# Which containers golems put items into. Vanilla golems only use chests and trapped
+# chests. Add barrel and/or shulker_box (every colour) and golems use those too: the
+# golem walks up to it and the plugin puts the item in, with labels, contents matching
+# and [Overflow] working as for chests. Take chest out to keep golems away from plain
+# chests. (Golems always take items from copper chests.)
+destination-containers: [chest, trapped_chest]
+
 # Players can switch a single copper golem back to plain vanilla behavior (and back
 # again) by right-clicking it with this item. While a player holds it, golems using
 # this plugin show that player a small green light on their antenna; vanilla golems
@@ -141,12 +175,50 @@ take-reach: 2
 golem-toggle-item: bamboo
 # Show the green light (to players holding the toggle item) on golems that use this plugin.
 mode-markers: true
+# While a player holds the toggle item, golems near them also show a small label
+# saying what they're doing ("carrying 12 birch log", "fetching granite", "lost,
+# walking home", "idle") and how weathered their copper is. Only players holding the
+# item see them.
+status-labels: true
 
 # A copper golem with nothing to do walks over to say hello to an iron or snow
 # golem within 16 blocks, then goes back to its routine. It doesn't follow them,
 # and waits greet-cooldown-minutes before greeting again.
 greet-other-golems: true
 greet-cooldown-minutes: 5
+
+# Lost golems: each golem remembers the copper chest it last took items from. If it ends
+# up far from any copper chest (more than 40 blocks from its own, or 12 up or down, e.g.
+# after falling down a shaft), it walks back. If it can't get any closer, or it's stuck
+# where it can't walk to a copper chest (a pit, walled in), its owner gets an alert
+# (see below) saying where it is, and it tries again every 5 minutes. A golem moved to a
+# place with its own copper chest just adopts that one. Golems on a lead are left alone.
+rescue-lost-golems: true
+# Teleport a golem that can't walk back to its copper chest, instead of only telling the
+# owner. Off by default. Even when on, a golem is only teleported if the owner of the
+# GriefPrevention claim its copper chest is in has the coppergolemclerk.teleport
+# permission (nobody has it unless you grant it, e.g. with LuckPerms; for an owner who's
+# offline the plugin asks LuckPerms). Golems whose chest isn't in a claim are never
+# teleported.
+lost-golem-teleport-home: false
+
+# Alerts: players are told when a golem is lost (above), finds a labelled chest full, or
+# an [Overflow] chest is filling up. An alert goes to the owner of the GriefPrevention claim where it
+# happens (an owner who's offline is told when they join); outside claims, or without
+# GriefPrevention, to online players with coppergolemclerk.alerts (ops by default).
+# Every alert is also written to the server log.
+full-chest-alerts: true
+# Warn when an [Overflow] chest has at least this many of its slots in use (percent).
+# 0: only when it's completely full.
+overflow-alert-percent: 90
+# Don't repeat an alert about the same chest more often than this.
+alert-cooldown-minutes: 30
+
+# When a player joins, tell them how many items golems sorted in their claims while
+# they were away, and how many of their chests filled up (without GriefPrevention:
+# server-wide numbers, for players with coppergolemclerk.alerts). /cgc stats shows
+# the numbers any time.
+join-summary: true
 
 # Write a line in the server log when a copper golem dies (with the cause, e.g.
 # lava, fall or a mob, and what it was holding) or is removed another way (turned
@@ -163,6 +235,21 @@ tidy-chests: true
 # Worlds where the plugin does nothing (golems there behave as in vanilla), by
 # folder name, e.g. [world_nether, world_the_end].
 disabled-worlds: []
+
+# Golem limits: how many copper golems in
+# one GriefPrevention claim (max-golems-per-claim), or on unclaimed land in one world
+# (max-golems-outside-claims; without GriefPrevention that's every golem in the world), use
+# this plugin. The oldest golems keep it; the newest over the limit sort like vanilla, and the
+# claim owner (or players with coppergolemclerk.alerts) is told. 0 = no limit.
+# Each working golem costs about 0.1 ms per tick with or without this plugin, so golems over
+# the limit still cost the same tick time (see the README).
+max-golems-per-claim: 0
+max-golems-outside-claims: 0
+
+# Let players use /cgc golems to list their own golems (in claims they own, or whose
+# copper chest is in one; without GriefPrevention, the golems within 48 blocks of them).
+# Off by default: only admins can use it.
+golems-command-for-players: false
 
 # Log every sort decision to the console. Useful while setting up groups.
 debug: false

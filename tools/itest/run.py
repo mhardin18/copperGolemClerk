@@ -22,22 +22,34 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arena  # noqa: E402
+import suite_alerts  # noqa: E402,F401
 import suite_commands  # noqa: E402,F401
 import suite_config  # noqa: E402
 import suite_conflicts  # noqa: E402,F401
 import suite_core  # noqa: E402,F401
 import suite_edge  # noqa: E402,F401
+import suite_filters  # noqa: E402,F401
+import suite_finder  # noqa: E402,F401
 import suite_greet  # noqa: E402,F401
+import suite_labels  # noqa: E402,F401
 import suite_lifecycle  # noqa: E402,F401
 import suite_modes  # noqa: E402,F401
 import suite_options  # noqa: E402,F401
 import suite_perf  # noqa: E402,F401
+import suite_portals  # noqa: E402,F401
 import suite_scenes  # noqa: E402,F401
 import suite_reach  # noqa: E402,F401
+import suite_rescue  # noqa: E402,F401
 import suite_setup  # noqa: E402,F401
+import suite_stats  # noqa: E402,F401
 import suite_tidy  # noqa: E402,F401
 import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
+import suite_destinations  # noqa: E402,F401
+import suite_carry  # noqa: E402,F401
+import suite_find  # noqa: E402,F401
+import suite_edge26  # noqa: E402,F401
+import suite_claims  # noqa: E402,F401
 import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the others)
 from rcon import from_properties  # noqa: E402
 
@@ -66,7 +78,7 @@ def run_batch(r, log, batch, keep):
     """Build a batch of scenarios, poll until each passes or times out. Returns results."""
     cells, checks, done, last = {}, {}, {}, None
     for i, s in batch:
-        cells[i] = arena.Cell(r, i, log, s["dimension"])
+        cells[i] = arena.Cell(r, i, log, s["dimension"], s.get("place"))
         cells[i].forceload(True)
     time.sleep(2)
     try:

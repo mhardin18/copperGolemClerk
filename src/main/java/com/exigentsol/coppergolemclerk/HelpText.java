@@ -24,7 +24,9 @@ final class HelpText {
                             "- whether the item in your hand would go there",
                             "- anything stopping golems from using it: a block on top, a lock, a hopper"
                                     + " under it feeding a copper chest, or no room",
-                            "Not looking at a chest: the item groups the item in your hand belongs to.")),
+                            "Not looking at a chest: the item groups the item in your hand belongs to.",
+                            "Players can only check containers they could open (not locked; with GriefPrevention,"
+                                    + " unclaimed or where they have container trust).")),
             new Entry("overflow", "/cgc overflow", "/cgc overflow <x> <y> <z> [world]",
                     "What's in nearby [Overflow] chests, and what to do about it.",
                     List.of("Looks at the [Overflow] chests within golem range of you (32 blocks across,"
@@ -32,7 +34,36 @@ final class HelpText {
                             "- no chest for it: add a chest with the sign label shown",
                             "- its chest can't be used by golems: what to fix",
                             "- its chest is full: make room",
-                            "- has a chest with room: idle golems will move it on their own")),
+                            "- has a chest with room: idle golems will move it on their own",
+                            "Players see only the [Overflow] chests they could open.")),
+            new Entry("golems", "/cgc golems [all]", "/cgc golems [<x> <y> <z> [world]]",
+                    "Where the copper golems are, nearest first.",
+                    List.of("Lists the copper golems in your world, nearest first (the 10 nearest;"
+                                    + " /cgc golems all lists every golem in every world).",
+                            "Players see only golems in claims they own or whose copper chest is in one (and only if"
+                                    + " golems-command-for-players is on); 'all' and positions are for admins.",
+                            "Each line has the golem's position (admins can click it to teleport there), how far away it is,"
+                                    + " what it's carrying, its copper and its mode.",
+                            "Golems in unloaded chunks are listed where they were last seen: the plugin"
+                                    + " remembers every golem's last spot in golems.yml.",
+                            "Give a position (/cgc golems <x> <y> <z> [world]) for the 10 nearest to it;"
+                                    + " from the console without one, every golem in every world.")),
+            new Entry("find", "/cgc find <item>", "/cgc find <item> <x> <y> <z> [world]",
+                    "Which containers near you hold an item; they glow for a few seconds.",
+                    List.of("Lists the containers within find-radius blocks (default 32) holding an item, nearest first,"
+                                    + " counting items inside shulker boxes too. They glow for you for"
+                                    + " find-highlight-seconds (default 10).",
+                            "Search for anything a sign label takes: an item (birch log), a group (logs), a pattern"
+                                    + " (*_log) or a tag (#minecraft:logs).",
+                            "It only looks in GriefPrevention claims you own (never locked containers); the server can"
+                                    + " allow unclaimed containers and claims where you have container trust too.")),
+            new Entry("stats", "/cgc stats", "/cgc stats",
+                    "How much golems have sorted: today, this week, all time.",
+                    List.of("Players see what golems put into chests in their own claims: today, the last 7 days"
+                                    + " and all time.",
+                            "Admins (coppergolemclerk.allclaims) also see the whole server's numbers, the most-sorted"
+                                    + " items and the busiest claims.",
+                            "Players are also told what golems sorted while they were away when they join (join-summary).")),
             new Entry("reload", "/cgc reload", "/cgc reload",
                     "Reload config.yml.",
                     List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",
@@ -51,13 +82,13 @@ final class HelpText {
         return ENTRIES.stream().map(Entry::name).toList();
     }
 
-    /** The command list, or one command's details when topic names one. */
-    static void send(CommandSender sender, String topic) {
+    /** The command list, or one command's details when topic names one: only commands this sender may use. */
+    static void send(CommandSender sender, String topic, java.util.function.Predicate<String> mayUse) {
         boolean player = sender instanceof Player;
         if (topic != null) {
             String wanted = topic.toLowerCase(Locale.ROOT);
             for (Entry e : ENTRIES) {
-                if (e.name().equals(wanted)) {
+                if (e.name().equals(wanted) && mayUse.test(e.name())) {
                     sender.sendMessage(Component.text(player ? e.usage() : e.consoleUsage(), NamedTextColor.GOLD)
                             .append(Component.text(": " + e.summary(), NamedTextColor.WHITE)));
                     for (String line : e.details()) {
@@ -77,6 +108,9 @@ final class HelpText {
         sender.sendMessage(Component.text("Copper Golem Clerk commands (/cgc or /coppergolemclerk):",
                 NamedTextColor.GOLD));
         for (Entry e : ENTRIES) {
+            if (!mayUse.test(e.name())) {
+                continue;
+            }
             String usage = player ? e.usage() : e.consoleUsage();
             Component name = Component.text(usage, NamedTextColor.AQUA);
             if (player) {

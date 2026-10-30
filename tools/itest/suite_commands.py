@@ -89,7 +89,7 @@ def _(c):
     c.chest("barrel", 6, 10, block="barrel")
     c.chest("trapped", 10, 10, block="trapped_chest")
     c.sign(10, 10, "[logs]")
-    return lambda: [has(check_at(c, 6, 10), "they ignore this"),
+    return lambda: [has(check_at(c, 6, 10), "so they ignore it"),
                     has(check_at(c, 10, 10), "[logs] = group logs"),
                     has(say(c, "cgc check 1 2 nowhere"), "whole-number"),
                     has(say(c, "cgc check 0 100 0 no_such_world"), "No world named 'no_such_world'"),
@@ -122,6 +122,8 @@ def _(c):
     return lambda: [has(listing, "/cgc check <x> <y> <z> [world]"),
                     has(listing, "/cgc overflow <x> <y> <z> [world]"),
                     has(listing, "/cgc reload"),
+                    has(listing, "/cgc golems [<x> <y> <z> [world]] - Where the copper golems are"),
+                    has(listing, "/cgc stats - How much golems have sorted"),
                     has(listing, "/cgc help"),
                     has(one, "idle golems will move it"),
                     has(one, "From the console, give the position"),

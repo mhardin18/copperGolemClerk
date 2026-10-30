@@ -567,3 +567,56 @@ def _(c):
                 (bool(picked) and in_chest == 16 and holding == 0, f"copper chest has {in_chest} birch logs back (want 16), golem holding {holding}"),
                 expect(c, "logs", "birch_log", 0)]
     return check
+
+
+# ---- a room with a floor above it (survival, 2026-10-29: golems upstairs never fetched)
+
+def roofed_room(c, stairs=True):
+    """Roof over the whole platform at dy=3 (golems stand on it at dy=4), a glass rail round its
+    edge, and (optionally) a staircase in the north-east corner: up north from dz=5 to the roof."""
+    x0, y0, z0 = c.abs(-1, -1, 3)
+    x1, _, z1 = c.abs(21, 21, 3)
+    c.run(f"fill {x0} {y0} {z0} {x1} {y0} {z1} minecraft:stone")
+    for wall in (f"{x0} {y0 + 1} {z0} {x1} {y0 + 2} {z0}", f"{x0} {y0 + 1} {z1} {x1} {y0 + 2} {z1}",
+                 f"{x0} {y0 + 1} {z0} {x0} {y0 + 2} {z1}", f"{x1} {y0 + 1} {z0} {x1} {y0 + 2} {z1}"):
+        c.run(f"fill {wall} minecraft:glass")
+    if stairs:
+        for dz, dy in ((5, 0), (4, 1), (3, 2), (2, 3)):
+            for below in range(dy):
+                c.block(18, dz, "stone", dy=below)
+            c.block(18, dz, "stone_stairs[facing=north]", dy=dy)
+        c.block(18, 4, "air", dy=3)  # head room over the steps
+        c.block(18, 3, "air", dy=3)
+
+
+def golem_on_roof(c, dx, dz):
+    x, y, z = c.abs(dx, dz, 4)
+    c.run(f'summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} '
+          '{active_effects:[{id:"minecraft:luck",duration:-1,show_particles:0b,show_icon:0b}]}')
+
+
+@scenario("fetch-from-floor-above", "edge", 240, "A golem on the floor above the [Overflow] chest walks round by the stairs and fetches the granite (it used to stand on the roof over the chest forever).")
+def _(c):
+    roofed_room(c)
+    c.chest("overflow", 10, 10, [("granite", 16)])
+    c.sign(10, 10, "[Overflow]")
+    c.chest("stone", 4, 10, [("andesite", 1)])
+    golem_on_roof(c, 10, 10)
+    return lambda: [expect(c, "stone", "granite", 16), expect(c, "overflow", "granite", 0)]
+
+
+@scenario("fetch-no-path", "edge", 60, "With no way down from the roof, the golem isn't sent to stand over the [Overflow] chest: the plugin sees there's no path and skips it.")
+def _(c):
+    roofed_room(c, stairs=False)
+    c.chest("overflow", 10, 10, [("granite", 16)])
+    c.sign(10, 10, "[Overflow]")
+    c.chest("stone", 4, 10, [("andesite", 1)])
+    golem_on_roof(c, 10, 10)
+
+    def check():
+        skipped = [l for l in c.log_lines() if "has no path to the overflow chest" in l and c.in_cell(l)]
+        fetched = [l for l in c.log_lines() if "fetching GRANITE" in l and c.in_cell(l)]
+        return [(c.elapsed() > 20, "waited 20s"), (bool(skipped), "logged that there's no path"),
+                (not fetched, f"never sent to fetch ({len(fetched)} tries)"),
+                expect(c, "overflow", "granite", 16)]
+    return check

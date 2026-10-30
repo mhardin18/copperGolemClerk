@@ -59,14 +59,36 @@ final class ChestReports {
             return;
         }
         if (Returns.isCopperChest(block.getType())) {
-            say(player, NamedTextColor.AQUA, ChestLabels.noGolems(inv, plugin)
-                    ? "Copper chest with a [No Golems] sign: golems leave it alone."
-                    : "Copper chest: golems take items out of it to sort them.");
+            ChestLabels.Labels filter = ChestLabels.filterOf(inv, plugin);
+            if (ChestLabels.noGolems(inv, plugin)) {
+                say(player, NamedTextColor.AQUA, "Copper chest with a [No Golems] sign: golems leave it alone.");
+            } else if (!filter.only().isEmpty()) {
+                say(player, NamedTextColor.AQUA, "Copper chest with a filter: golems take only these items out of it"
+                        + " and leave the rest:");
+                for (int i = 0; i < filter.only().size(); i++) {
+                    say(player, NamedTextColor.AQUA, "  " + filter.onlyNames().get(i) + " = " + describe(filter.only().get(i)));
+                }
+                int left = 0;
+                for (ItemStack s : inv.getStorageContents()) {
+                    if (s != null && !s.isEmpty() && !filter.mayTake(s.getType())) {
+                        left += s.getAmount();
+                    }
+                }
+                if (left > 0) {
+                    say(player, NamedTextColor.WHITE, left + " item" + (left == 1 ? "" : "s") + " in it don't match, so golems leave them.");
+                }
+            } else {
+                say(player, NamedTextColor.AQUA, "Copper chest: golems take items out of it to sort them.");
+            }
+            for (String unknown : filter.unknown()) {
+                say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+            }
             reachNote(player, block, inv, "take-reach", plugin.takeReach());
             return;
         }
         if (!HomeFinder.isDestination(block.getType())) {
-            say(player, NamedTextColor.YELLOW, "Golems only put items in chests and trapped chests, so they ignore this.");
+            say(player, NamedTextColor.YELLOW, "Golems don't put items in this kind of container"
+                    + " (destination-containers in the config), so they ignore it.");
             return;
         }
 
@@ -86,6 +108,10 @@ final class ChestReports {
         for (String unknown : labels.unknown()) {
             say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
         }
+        for (String only : labels.onlyNames()) {
+            say(player, NamedTextColor.YELLOW, "  " + only + " is a filter for copper chests (what golems take out);"
+                    + " it does nothing on this chest");
+        }
 
         if (labels.hasItemRules()) {
             say(player, NamedTextColor.WHITE, labels.overflow()
@@ -99,8 +125,8 @@ final class ChestReports {
         Set<HomeFinder.Pos> pos = new HashSet<>();
         halves.forEach(b -> pos.add(HomeFinder.Pos.of(b)));
         pos.add(HomeFinder.Pos.of(block));
-        if (HomeFinder.isBlocked(block.getWorld(), pos)) {
-            say(player, NamedTextColor.RED, "Problem: a solid block or a sitting cat is on top, so golems can't open it.");
+        if (HomeFinder.cannotOpen(block.getWorld(), state, pos)) {
+            say(player, NamedTextColor.RED, "Problem: a solid block (or a sitting cat) is in the way of its lid, so golems can't open it.");
         }
         if (HomeFinder.isWaterlogged(block.getWorld(), pos)) {
             say(player, NamedTextColor.RED, "Problem: it's waterlogged, so golems can't get close enough to use it. Drain it.");
@@ -208,7 +234,8 @@ final class ChestReports {
     private record Seen(Material type, ItemStack sample, int count) {
     }
 
-    void overflow(CommandSender player, Location center) {
+    /** /cgc overflow around a spot; visible says which [Overflow] chests this sender may see into. */
+    void overflow(CommandSender player, Location center, java.util.function.Predicate<BlockState> visible) {
         if (!plugin.enabledIn(center.getWorld())) {
             say(player, NamedTextColor.YELLOW, "Copper Golem Clerk is off in this world (disabled-worlds).");
             return;
@@ -234,7 +261,7 @@ final class ChestReports {
             if (labels.noGolems()) {
                 continue; // golems never use it, as overflow or as a destination
             }
-            if (labels.overflow()) {
+            if (labels.overflow() && visible.test(state)) {
                 overflowChests.add(inv);
                 overflowLabels.add(labels);
             }
@@ -365,7 +392,7 @@ final class ChestReports {
     }
 
     private String describeChest(Inventory inv, ChestLabels.Labels labels) {
-        var loc = inv.getLocation();
+        var loc = ChestLabels.locationOf.apply(inv);
         String at = loc == null ? "?" : loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
         return (labels.names().isEmpty() ? "chest" : String.join(" ", labels.names())) + " at " + at;
     }

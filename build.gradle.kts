@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.exigentsol"
-version = "2.5.1"
+version = "2.6.0"
 
 repositories {
     mavenCentral()
@@ -16,8 +16,10 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.3.build.214-stable")
-    testImplementation("io.papermc.paper:paper-api:26.3.build.214-stable")
+    compileOnly("io.papermc.paper:paper-api:26.3.build.231-stable")
+    testImplementation("io.papermc.paper:paper-api:26.3.build.231-stable")
+    // A fake Paper server for unit tests of the code that calls the Paper API.
+    testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v26.3:4.118.0")
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
@@ -25,6 +27,19 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // MockBukkit reports Paper API it hasn't implemented as a skipped test: fail instead of
+    // letting a whole test class go quietly green.
+    addTestListener(object : TestListener {
+        override fun beforeSuite(suite: TestDescriptor) {}
+        override fun beforeTest(testDescriptor: TestDescriptor) {}
+        override fun afterTest(testDescriptor: TestDescriptor, result: TestResult) {}
+        override fun afterSuite(suite: TestDescriptor, result: TestResult) {
+            if (suite.parent == null && result.skippedTestCount > 0) {
+                throw GradleException("${result.skippedTestCount} unit test(s) were skipped (MockBukkit lacks some API?)."
+                    + " See build/reports/tests/test/index.html")
+            }
+        }
+    })
 }
 
 java {

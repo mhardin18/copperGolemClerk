@@ -28,7 +28,9 @@ import org.bukkit.inventory.ItemStack;
  */
 final class ReachDelivery {
 
-    private record Job(UUID world, Set<HomeFinder.Pos> halves, Material type, Location target, long startedMillis) {
+    /** chest: a chest above vanilla's reach (vs a barrel or shulker box, which vanilla never uses). */
+    private record Job(UUID world, Set<HomeFinder.Pos> halves, Material type, Location target, long startedMillis,
+                       boolean chest) {
     }
 
     private static final long GIVE_UP_AFTER_MILLIS = 30_000;
@@ -69,13 +71,17 @@ final class ReachDelivery {
         if (spot == null) {
             return false;
         }
+        HomeFinder.Pos first = halves.iterator().next();
+        Material container = golem.getWorld().getBlockAt(first.x(), first.y(), first.z()).getType();
         jobs.put(golem.getUniqueId(), new Job(golem.getWorld().getUID(), halves, type, spot.target(),
-                System.currentTimeMillis()));
+                System.currentTimeMillis(), HomeFinder.isVanillaTarget(container)));
         copper.getPathfinder().moveTo(spot.target(), 1.0);
         if (plugin.debug()) {
             HomeFinder.Pos p = halves.iterator().next();
-            plugin.getLogger().info(String.format("%s carrying %s heads for the chest at %d,%d,%d (row %d, above vanilla's reach)",
-                    golem.getType(), type, p.x(), p.y(), p.z(), spot.row()));
+            Material what = golem.getWorld().getBlockAt(p.x(), p.y(), p.z()).getType();
+            plugin.getLogger().info(String.format("%s carrying %s heads for the %s at %d,%d,%d (row %d, %s)",
+                    golem.getType(), type, what.getKey().getKey().replace('_', ' '), p.x(), p.y(), p.z(), spot.row(),
+                    HomeFinder.isVanillaTarget(what) ? "above vanilla's reach" : "vanilla golems don't use these"));
         }
         return true;
     }
@@ -95,13 +101,18 @@ final class ReachDelivery {
                 continue;
             }
             ItemStack held = golem.getEquipment().getItemInMainHand();
-            if (held.isEmpty() || held.getType() != job.type() || plugin.deliverReach() <= Reach.VANILLA) {
-                // Delivered or dropped some other way, or deliver-reach was lowered by a reload.
+            HomeFinder.Pos at = job.halves().iterator().next();
+            Material container = golem.getWorld().getBlockAt(at.x(), at.y(), at.z()).getType();
+            if (held.isEmpty() || held.getType() != job.type() || !HomeFinder.isDestination(container)
+                    || (job.chest() && plugin.deliverReach() <= Reach.VANILLA)) {
+                // Delivered or dropped some other way, or a reload lowered deliver-reach or dropped this
+                // kind of container from destination-containers (or it was broken).
                 golem.getPathfinder().stopPathfinding();
                 it.remove();
                 continue;
             }
-            if (Reach.within(golem.getLocation(), golem.getWorld(), job.halves(), plugin.deliverReach())) {
+            if (Reach.within(golem.getLocation(), golem.getWorld(), job.halves(),
+                    Math.max(Reach.VANILLA, plugin.deliverReach()))) {
                 deliver(golem, job);
                 golem.getPathfinder().stopPathfinding();
                 it.remove();
@@ -134,7 +145,8 @@ final class ReachDelivery {
         ItemStack held = equipment.getItemInMainHand();
         ChestMatcher.Kind kind = matcher.classify(held, inventory).kind();
         if (kind == ChestMatcher.Kind.NO_GOLEMS || kind == ChestMatcher.Kind.LABEL_OTHER
-                || kind == ChestMatcher.Kind.NONE || !ChestMatcher.hasRoom(held, inventory)) {
+                || kind == ChestMatcher.Kind.NONE || !ChestMatcher.hasRoom(held, inventory)
+                || HomeFinder.refuses(block.getType(), held.getType())) {
             return; // changed while the golem walked over; its search goes on
         }
         if (container instanceof Lidded lid) {
@@ -149,12 +161,15 @@ final class ReachDelivery {
         Map<Integer, ItemStack> leftover = inventory.addItem(held.clone());
         ItemStack rest = leftover.isEmpty() ? ItemStack.empty() : leftover.values().iterator().next();
         equipment.setItemInMainHand(rest);
-        world.playSound(block.getLocation().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
+        world.playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
         homes.accepted(golem.getUniqueId());
         if (rest.isEmpty()) {
             homes.forget(golem);
         }
         tidier.delivered(inventory);
+        if (plugin.stats() != null) {
+            plugin.stats().delivered(golem, block.getLocation(), held.getType(), before - rest.getAmount(), false);
+        }
         if (plugin.debug()) {
             plugin.getLogger().info(String.format("%s put %d %s into %s at %d,%d,%d (above vanilla's reach)",
                     golem.getType(), before - rest.getAmount(), held.getType(), block.getType(), p.x(), p.y(), p.z()));
