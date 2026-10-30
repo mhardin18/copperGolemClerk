@@ -2,7 +2,12 @@
 
 All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## Unreleased
+## 2.7.0 (in progress)
+
+### New
+- `/cgc storage`: how full the storage around you is, by label (or by contents for unlabelled chests), fullest first, with full and nearly full ones flagged, plus `[Overflow]` chests, empty chests left and items waiting in copper chests. Players see only containers they could open (`coppergolemclerk.storage`, everyone by default).
+
+## 2.6.0 (unreleased)
 
 ### New
 - `/cgc golems` finds your copper golems: the 10 nearest (or every one with `all`), each with its position (admins can click to teleport), distance and direction, what it's carrying, its copper and its mode. Golems in unloaded chunks are listed where they were last seen.

@@ -36,6 +36,12 @@ final class HelpText {
                             "- its chest is full: make room",
                             "- has a chest with room: idle golems will move it on their own",
                             "Players see only the [Overflow] chests they could open.")),
+            new Entry("storage", "/cgc storage", "/cgc storage <x> <y> <z> [world]",
+                    "How full the storage around you is.",
+                    List.of("Groups the containers within golem range (32 blocks sideways, 8 up or down) by their label, or for"
+                                    + " unlabelled ones by what they hold, fullest first, and flags full and nearly full (90%) ones.",
+                            "Also shows [Overflow] chests, how many empty chests are left for new kinds of items, and how"
+                                    + " many items are waiting in copper chests. Players only see containers they could open.")),
             new Entry("golems", "/cgc golems [all]", "/cgc golems [<x> <y> <z> [world]]",
                     "Where the copper golems are, nearest first.",
                     List.of("Lists the copper golems in your world, nearest first (the 10 nearest;"

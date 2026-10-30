@@ -14,6 +14,9 @@ permissions:
   coppergolemclerk.check:
     description: /cgc check - explain a container you could open, or the item in your hand.
     default: true
+  coppergolemclerk.storage:
+    description: /cgc storage - how full the storage near you is (containers you could open).
+    default: true
   coppergolemclerk.overflow:
     description: /cgc overflow - what's in the [Overflow] chests near you that you could open.
     default: true

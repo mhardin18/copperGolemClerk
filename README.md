@@ -396,7 +396,7 @@ release list. `/cgc version` checks right away. Turn it off with `update-check: 
 
 ## Commands
 
-Alias `/cgc`. Players can use `help`, `find`, `check`, `overflow` and `stats` (and `golems`,
+Alias `/cgc`. Players can use `help`, `find`, `check`, `overflow`, `storage` and `stats` (and `golems`,
 if `golems-command-for-players` is on), and only ever see their own claims or containers
 they could open; see [Permissions](#permissions). Everything else, and the forms with a
 position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
@@ -427,6 +427,10 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   there are no claims, so everyone sees the server's numbers. With `join-summary` (on by default) players are told when they
   join what golems sorted in their claims while they were away and how many of their
   chests filled up. Numbers are kept in `stats.yml`.
+- `/cgc storage`: how full the storage around you is. Containers within golem range (32 blocks sideways, 8 up
+  or down) are grouped by label, or for unlabelled ones by what they hold, fullest first, with full and nearly
+  full (90%) ones flagged; then `[Overflow]` chests, how many empty chests are left for new kinds of items, and
+  how many items are waiting in copper chests. Players only see containers they could open.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 - `/cgc find <item>`: which containers near you hold an item, nearest first, with how
   many in each (items inside shulker boxes count too), and the nearest
@@ -526,6 +530,7 @@ with its line number and the old settings are kept.
 | `coppergolemclerk.find` | everyone | `/cgc find`: containers in your own claims (wider with `find-outside-own-claims`). |
 | `coppergolemclerk.check` | everyone | `/cgc check` on containers you could open, or the item in your hand. |
 | `coppergolemclerk.overflow` | everyone | `/cgc overflow`: the `[Overflow]` chests near you that you could open. |
+| `coppergolemclerk.storage` | everyone | `/cgc storage`: how full the containers near you that you could open are. |
 | `coppergolemclerk.stats` | everyone | `/cgc stats`: what golems sorted in your claims. |
 | `coppergolemclerk.golems` | everyone | `/cgc golems`: your own golems. Only works if `golems-command-for-players` is `true` (it's `false` by default). |
 | `coppergolemclerk.toggle` | everyone | Switching golems between the plugin and vanilla with the toggle item (with GriefPrevention, only where you may build). |

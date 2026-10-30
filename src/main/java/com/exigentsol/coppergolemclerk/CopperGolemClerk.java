@@ -63,6 +63,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean statusLabelsEverywhere;
     private GolemFinder finder;
     private ItemFinder itemFinder;
+    private StorageReport storageReport;
     private final Claims claims = new Claims(this);
     private volatile boolean findOutsideOwnClaims;
     private volatile boolean golemsCommandForPlayers;
@@ -134,6 +135,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getPluginManager().registerEvents(finder, this);
         getServer().getScheduler().runTaskTimer(this, finder::tick, 20 * 30, 20 * 30);
         itemFinder = new ItemFinder(this);
+        storageReport = new StorageReport(this);
         getServer().getPluginManager().registerEvents(itemFinder, this);
         updates = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updates, this);
@@ -596,6 +598,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             case "find" -> "coppergolemclerk.find";
             case "check" -> "coppergolemclerk.check";
             case "overflow" -> "coppergolemclerk.overflow";
+            case "storage" -> "coppergolemclerk.storage";
             case "stats" -> "coppergolemclerk.stats";
             case "golems" -> "coppergolemclerk.golems";
             case "", "help", "?" -> null;
@@ -711,6 +714,17 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         reports.overflow(player, player.getLocation(), state -> all || claims.mayOpen(player, state));
                     } else {
                         sender.sendMessage(Component.text("From the console: /cgc overflow <x> <y> <z> [world]", NamedTextColor.RED));
+                    }
+                }
+                case "storage" -> {
+                    Block at = blockArg(sender, args);
+                    if (at != null) {
+                        storageReport.report(sender, at.getLocation(), state -> true);
+                    } else if (sender instanceof Player player) {
+                        boolean all = player.hasPermission(Claims.ALL_CLAIMS);
+                        storageReport.report(player, player.getLocation(), state -> all || claims.mayOpen(player, state));
+                    } else {
+                        sender.sendMessage(Component.text("From the console: /cgc storage <x> <y> <z> [world]", NamedTextColor.RED));
                     }
                 }
                 case "version" -> updates.report(sender);
@@ -853,7 +867,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
         @Override
         public boolean canUse(CommandSender sender) {
-            for (String sub : List.of("find", "check", "overflow", "stats", "golems")) {
+            for (String sub : List.of("find", "check", "overflow", "storage", "stats", "golems")) {
                 if (mayUse(sender, sub)) {
                     return true;
                 }
