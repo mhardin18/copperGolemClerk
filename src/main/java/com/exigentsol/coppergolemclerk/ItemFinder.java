@@ -53,6 +53,9 @@ final class ItemFinder implements Listener {
     private record Hit(List<Block> blocks, Block first, String what, int count, int inShulkers, double distance) {
     }
 
+    /** Make a highlight invisible to everyone but the player it's shown to. Unit tests swap this out. */
+    static java.util.function.Consumer<BlockDisplay> hideFromOthers = d -> d.setVisibleByDefault(false);
+
     private final CopperGolemClerk plugin;
     private final Map<UUID, List<BlockDisplay>> highlights = new HashMap<>();
     private final Map<UUID, Long> lastSearch = new HashMap<>();
@@ -89,7 +92,7 @@ final class ItemFinder implements Listener {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
-                for (BlockState state : world.getChunkAt(cx, cz).getTileEntities(false)) {
+                for (BlockState state : HomeFinder.blockEntities.apply(world.getChunkAt(cx, cz))) {
                     if (!(state instanceof Container container) || seen.contains(state.getBlock())) {
                         continue;
                     }
@@ -112,7 +115,7 @@ final class ItemFinder implements Listener {
                         continue; // not theirs to look into: not even counted
                     }
                     hits.add(new Hit(blocks, block, describe(state, inventory), count[0] + count[1], count[1],
-                            block.getLocation().add(0.5, 0.5, 0.5).distance(around)));
+                            block.getLocation().clone().add(0.5, 0.5, 0.5).distance(around)));
                 }
             }
         }
@@ -207,7 +210,7 @@ final class ItemFinder implements Listener {
             for (Block block : hit.blocks()) {
                 BlockDisplay display = block.getWorld().spawn(block.getLocation(), BlockDisplay.class, d -> {
                     d.setPersistent(false);
-                    d.setVisibleByDefault(false);
+                    hideFromOthers.accept(d);
                     d.setBlock(block.getBlockData());
                     d.setGlowing(true);
                     d.setGlowColorOverride(Color.LIME);

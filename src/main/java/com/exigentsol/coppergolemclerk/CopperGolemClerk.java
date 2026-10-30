@@ -28,7 +28,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class CopperGolemClerk extends JavaPlugin {
+public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subclasses it in unit tests
 
     private volatile ItemGroups groups;
     private volatile boolean matchModeAll;
@@ -197,7 +197,7 @@ public final class CopperGolemClerk extends JavaPlugin {
      *
      * @return null on success, otherwise a short description of the problem
      */
-    private String loadSettings() {
+    String loadSettings() { // package-private: unit tests reload settings
         YamlConfiguration config = new YamlConfiguration();
         try {
             config.load(new File(getDataFolder(), "config.yml"));
@@ -365,6 +365,15 @@ public final class CopperGolemClerk extends JavaPlugin {
     /** golems-command-for-players: players may use /cgc golems (their own golems only). */
     boolean golemsCommandForPlayers() {
         return golemsCommandForPlayers;
+    }
+
+    /** /cgc find (also used by unit tests). */
+    void findItems(CommandSender sender, String text, org.bukkit.Location around) {
+        itemFinder.find(sender, text, around);
+    }
+
+    GolemLabels labels() {
+        return labels;
     }
 
     /** GriefPrevention claims and LuckPerms permissions. */
@@ -826,7 +835,7 @@ public final class CopperGolemClerk extends JavaPlugin {
                 }
                 for (Material m : Material.values()) {
                     String key = m.getKey().getKey();
-                    if (m.isItem() && !m.isLegacy() && key.startsWith(prefix) && out.size() < 100) {
+                    if (!m.isLegacy() && m.isItem() && key.startsWith(prefix) && out.size() < 100) {
                         out.add(key);
                     }
                 }

@@ -319,6 +319,6 @@ final class GolemRescue {
     }
 
     private static double distance(Location at, Block b) {
-        return at.distance(b.getLocation().add(0.5, 0, 0.5));
+        return at.distance(b.getLocation().clone().add(0.5, 0, 0.5));
     }
 }

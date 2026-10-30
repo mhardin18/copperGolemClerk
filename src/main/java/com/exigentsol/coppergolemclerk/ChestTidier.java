@@ -104,7 +104,7 @@ final class ChestTidier {
         }
         inventory.setStorageContents(after);
         if (plugin.debug()) {
-            var loc = inventory.getLocation();
+            var loc = ChestLabels.locationOf.apply(inventory);
             plugin.getLogger().info(String.format("Tidied chest at %s: %d stacks -> %d",
                     loc == null ? "?" : loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ(),
                     count(before), count(after)));
