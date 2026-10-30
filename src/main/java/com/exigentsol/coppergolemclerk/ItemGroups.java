@@ -173,6 +173,11 @@ public final class ItemGroups {
      * Spaces count as underscores and case is ignored. Returns null if it
      * matches nothing.
      */
+    /** The group names, in config order. */
+    List<String> groupNames() {
+        return groupNames;
+    }
+
     Rule signRule(String text) {
         String key = text.trim().toLowerCase(Locale.ROOT);
         return signRules.computeIfAbsent(key, this::parseSignRule).orElse(null);
