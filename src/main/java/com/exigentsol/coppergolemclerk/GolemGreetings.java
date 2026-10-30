@@ -98,8 +98,7 @@ final class GolemGreetings {
         if (!golem.isValid() || golem.isLeashed() || golem.isInsideVehicle()
                 || !golem.getEquipment().getItemInMainHand().isEmpty()
                 || fetcher.isFetching(golem.getUniqueId()) || traffic.isYielding(golem.getUniqueId())
-                || plugin.rescue().isRescuing(golem.getUniqueId())
-                || (plugin.sortListener() != null && plugin.sortListener().furnaces().isBusy(golem.getUniqueId()))) {
+                || plugin.rescue().isRescuing(golem.getUniqueId())) {
             return false;
         }
         for (BlockState state : HomeFinder.containersInRange(golem, Returns::isCopperChest)) {

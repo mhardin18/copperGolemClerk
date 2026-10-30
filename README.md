@@ -3,8 +3,8 @@
 **Turn copper golems into a storage staff that actually keeps your base in order.**
 
 Drop anything into a copper chest and your golems file it away: birch logs go in with the
-oak logs, a diamond pickaxe goes to the tools, raw iron goes into the blast furnace and the
-ingots come back out to the iron chest. Label chests with a sign like `[logs]` or `[Ores]`,
+oak logs, a diamond pickaxe goes to the tools, and the stack of mixed loot from your last
+mining trip ends up in a dozen tidy chests. Label chests with a sign like `[logs]` or `[Ores]`,
 or just put one item in a chest to say what it's for. Golems pick the right chest, walk
 straight to it, keep the chests tidy, and tell you when one is full.
 
@@ -30,8 +30,6 @@ that cover every survival item; everything else is optional.
 - **Taller stacks:** golems reach chests up to 6 rows high (vanilla: 2).
 - **Barrels and shulker boxes** as destinations, if you want them.
 - **Bigger loads:** carry up to 64 items a trip instead of 16.
-- **Golems run your furnaces:** label a furnace `[raw iron]` and golems feed it, keep it
-  fuelled and sort what comes out.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
 
 **Golems that look after themselves**
@@ -226,25 +224,6 @@ item from that chest, or puts the extra back if the setting is under 16. An item
 stacks to less (16 ender pearls, one tool) is carried that many at most. At 64 a big
 sorting job needs a quarter of the trips. Items held back by `[Only ...]` or returned as
 homeless aren't added.
-
-### Golems run your furnaces
-
-Put a label on a furnace, smoker or blast furnace, the same way as on a chest (a sign
-or an item frame), and golems keep it going:
-
-- **Feeding:** a golem carrying something the furnace's label covers, and the furnace
-  can cook, takes it to the furnace before looking for a chest. `[raw iron]` on a blast
-  furnace, `[Sand]` on a furnace, `[food]` on a smoker (it only gets the raw food a smoker can cook)...
-- **Emptying:** an idle golem takes out what the furnace has made and sorts it like
-  anything else (iron ingots to your `[Iron]` chest).
-- **Fuel:** when a labelled furnace has something to cook and fewer than 8 fuel items,
-  an idle golem brings fuel from a container in range: the items listed in
-  `furnace-fuel` (coal and charcoal by default). It tops up the same fuel already in it.
-
-Unlabelled furnaces are never touched, so your own furnaces stay yours. Items a golem
-takes out of a furnace are never put back into one, so `[stone]` can't turn into an
-endless cobblestone → stone → smooth stone loop. `[No Golems]` and locked furnaces
-are left alone too. Turn it all off with `furnace-feeding: false`.
 
 ### Golems give way to each other
 
@@ -478,8 +457,6 @@ with its line number and the old settings are kept.
 | `carry-amount` | `16` | Items a golem carries per trip, 1 to 64 (vanilla: 16). Items that stack to less (ender pearls 16, tools 1) are carried that many at most. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
 | `take-reach` | `2` | How many rows up golems take from copper chests and fetch from `[Overflow]` chests, 2 to 6. |
-| `furnace-feeding` | `true` | Golems feed, empty and fuel furnaces, smokers and blast furnaces that have a label. Unlabelled furnaces are never touched. |
-| `furnace-fuel` | `[coal, charcoal]` | What golems put into furnaces as fuel, taken from containers in range when a labelled furnace has fewer than 8. Unknown names and items that don't burn are reported. |
 
 ### Looking after golems
 

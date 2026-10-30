@@ -3,8 +3,8 @@
 **Your copper golems, promoted to storage clerks.**
 
 Throw your loot into a copper chest and walk away. Your golems file it all: birch logs in
-with the oak logs, the diamond pickaxe with the tools, raw iron into the blast furnace and
-the ingots back out to your iron chest. They pick the right chest, walk straight to it,
+with the oak logs, the diamond pickaxe with the tools, and the mixed loot from your last
+mining trip into a dozen tidy chests. They pick the right chest, walk straight to it,
 keep it tidy, and let you know when it's full.
 
 No commands to learn and nothing to set up: about 50 item groups covering every survival
@@ -38,11 +38,6 @@ item, the most specific one wins: `[stews]` beats `[food]` for a bowl of stew.
 Items with no home land in your `[Overflow]` chest. Add a chest for them later and idle
 golems carry them over by themselves.
 
-### 🔥 Run your furnaces
-Put `[raw iron]` on a blast furnace or `[food]` on a smoker (it only gets the raw food it can cook). Golems bring what it
-cooks, keep it topped up with coal from your storage, and sort the results.
-Furnaces without a label are never touched.
-
 ### 🏗️ Big storage rooms
 - Reach chests stacked up to **6 high** (vanilla: 2).
 - Use **barrels and shulker boxes** too, if you like.
@@ -64,7 +59,7 @@ Furnaces without a label are never touched.
   (including diamonds inside shulker boxes), and makes them glow for a few seconds.
   You only see chests you could open yourself: **GriefPrevention claims are respected**.
 - **Hold bamboo** to see a label over each golem saying what it's doing ("carrying 32 birch
-  log", "taking raw iron to a furnace", "lost, walking home") and how weathered it is.
+  log", "fetching granite", "lost, walking home") and how weathered it is.
 - **Right-click a golem with bamboo** to switch that one golem back to plain vanilla.
 - **Get told** when one of your chests is full, even if you were offline at the time, and
   get a summary of what your golems sorted while you were away.

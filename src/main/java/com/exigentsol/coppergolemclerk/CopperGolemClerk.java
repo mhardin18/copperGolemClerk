@@ -43,8 +43,6 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile int fetchersPerOverflowChest;
     private volatile int carryAmount = GolemCarry.VANILLA;
     private GolemCarry carry;
-    private volatile boolean furnaceFeeding = true;
-    private volatile Set<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -246,11 +244,6 @@ public final class CopperGolemClerk extends JavaPlugin {
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         deliverReach = reachSetting(config, "deliver-reach");
         HomeFinder.setDestinations(destinationSetting(config));
-        furnaceFeeding = config.getBoolean("furnace-feeding", true);
-        furnaceFuel = fuelSetting(config);
-        if (listener != null) {
-            listener.furnaces().clear();
-        }
         takeReach = reachSetting(config, "take-reach");
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
@@ -356,16 +349,6 @@ public final class CopperGolemClerk extends JavaPlugin {
         return carry;
     }
 
-    /** furnace-feeding: golems feed, fuel and empty labelled furnaces. */
-    boolean furnaceFeeding() {
-        return furnaceFeeding;
-    }
-
-    /** furnace-fuel: what golems put into furnaces as fuel. */
-    Set<Material> furnaceFuel() {
-        return furnaceFuel;
-    }
-
     /** find-enabled: /cgc find is available. */
     boolean findEnabled() {
         return findEnabled;
@@ -403,25 +386,6 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     boolean traceGolems() {
         return traceGolems;
-    }
-
-    /** furnace-fuel: item names that burn in a furnace (unknown names and non-fuels are warned about). */
-    private Set<Material> fuelSetting(YamlConfiguration config) {
-        if (!config.isList("furnace-fuel")) {
-            return FurnaceFeeder.defaultFuel();
-        }
-        Set<Material> fuel = java.util.EnumSet.noneOf(Material.class);
-        for (String raw : config.getStringList("furnace-fuel")) {
-            Material m = Material.matchMaterial(raw.trim().replace(' ', '_'));
-            if (m == null || !m.isItem()) {
-                getLogger().warning("furnace-fuel: '" + raw + "' isn't an item; ignored.");
-            } else if (!m.isFuel()) {
-                getLogger().warning("furnace-fuel: " + m.getKey().getKey() + " doesn't burn in a furnace; ignored.");
-            } else {
-                fuel.add(m);
-            }
-        }
-        return fuel;
     }
 
     /** destination-containers: chest, trapped_chest, barrel, shulker_box (every colour). */
