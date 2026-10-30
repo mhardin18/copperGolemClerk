@@ -42,6 +42,7 @@ that cover every survival item; everything else is optional.
   Players only see chests they could open (GriefPrevention claims respected).
 - **Full-chest alerts** to the claim owner, even if they're offline.
 - **Status labels:** hold bamboo to see what each golem is doing.
+- **`/cgc label`** suggests what to write on a chest's sign, from what's in it.
 - **`/cgc stats`**, a join summary of what golems sorted while you were away,
   **`/cgc check`** to explain any chest, **`/cgc golems`** to find your golems.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
@@ -396,7 +397,7 @@ release list. `/cgc version` checks right away. Turn it off with `update-check: 
 
 ## Commands
 
-Alias `/cgc`. Players can use `help`, `find`, `check`, `overflow` and `stats` (and `golems`,
+Alias `/cgc`. Players can use `help`, `find`, `check`, `label`, `overflow` and `stats` (and `golems`,
 if `golems-command-for-players` is on), and only ever see their own claims or containers
 they could open; see [Permissions](#permissions). Everything else, and the forms with a
 position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
@@ -409,6 +410,10 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   golems from using it (a block on top, a lock, a hopper feeding a copper chest, full).
   Players can only check containers they could open.
 - `/cgc check` while not looking at a chest: which groups the item in your hand belongs to.
+- `/cgc label` while looking at a chest: what to write on its sign, from what's in it. One kind of item: its own
+  label, then its groups; several kinds: the most specific group they all share; no shared group: the group most
+  of them fit, and which items don't. On a labelled chest it says whether everything in it matches. It only
+  suggests: you place the sign. Players only get suggestions for containers they could open.
 - `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
   items with no chest (with a sign label to use for each group), items whose chest is
   full, and items golems will move on their own. Players see only the `[Overflow]` chests
@@ -525,6 +530,7 @@ with its line number and the old settings are kept.
 |---|---|---|
 | `coppergolemclerk.find` | everyone | `/cgc find`: containers in your own claims (wider with `find-outside-own-claims`). |
 | `coppergolemclerk.check` | everyone | `/cgc check` on containers you could open, or the item in your hand. |
+| `coppergolemclerk.label` | everyone | `/cgc label`: a sign label suggestion for a container you could open. |
 | `coppergolemclerk.overflow` | everyone | `/cgc overflow`: the `[Overflow]` chests near you that you could open. |
 | `coppergolemclerk.stats` | everyone | `/cgc stats`: what golems sorted in your claims. |
 | `coppergolemclerk.golems` | everyone | `/cgc golems`: your own golems. Only works if `golems-command-for-players` is `true` (it's `false` by default). |
