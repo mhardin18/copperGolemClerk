@@ -44,6 +44,7 @@ public final class SortListener implements Listener {
     private final OverflowFetcher fetcher;
     private final ChestTidier tidier;
     private final ReachDelivery reach;
+    private final FurnaceFeeder furnaces;
 
     public SortListener(CopperGolemClerk plugin) {
         this.plugin = plugin;
@@ -53,6 +54,9 @@ public final class SortListener implements Listener {
         this.fetcher = new OverflowFetcher(plugin, homes, returns);
         this.tidier = new ChestTidier(plugin);
         this.reach = new ReachDelivery(plugin, matcher, homes, tidier);
+        this.furnaces = new FurnaceFeeder(plugin, homes, returns);
+        fetcher.setFurnaces(furnaces);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, furnaces::tick, 20, 20);
         plugin.getServer().getScheduler().runTaskTimer(plugin, reach::tick, 10, 10);
         plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             homes.prune();
@@ -78,6 +82,10 @@ public final class SortListener implements Listener {
 
     HomeFinder homes() {
         return homes;
+    }
+
+    FurnaceFeeder furnaces() {
+        return furnaces;
     }
 
     ReachDelivery reach() {
@@ -148,8 +156,8 @@ public final class SortListener implements Listener {
             } else if (plugin.takeReach() > Reach.VANILLA && Returns.isCopperChest(block.getType())
                     && !Reach.vanillaReaches(rowOf(block))) {
                 event.setAllowed(false); // too high for vanilla; idle golems fetch from it (OverflowFetcher)
-            } else if (fetcher.isFetching(golem.getUniqueId())) {
-                event.setAllowed(false); // walking to an overflow chest; don't get pulled away
+            } else if (fetcher.isFetching(golem.getUniqueId()) || furnaces.isBusy(golem.getUniqueId())) {
+                event.setAllowed(false); // walking to an overflow chest or a furnace; don't get pulled away
             } else if (!returns.prepareSource(event.getBlock())) {
                 // Empty, or only items with no home: don't walk over for nothing.
                 event.setAllowed(false);
@@ -158,10 +166,14 @@ public final class SortListener implements Listener {
         }
         // Note where the item came from and start its timer, even if steering is off.
         homes.track(golem, held.getType());
-        if (noGolems || reach.isDelivering(golem.getUniqueId())) {
+        if (noGolems || reach.isDelivering(golem.getUniqueId()) || furnaces.isBusy(golem.getUniqueId())) {
             // [No Golems]: never put anything in it, even after the timeouts.
-            // Delivering to a high chest: keep vanilla from pulling it elsewhere.
+            // Delivering to a high chest or a furnace: keep vanilla from pulling it elsewhere.
             event.setAllowed(false);
+            return;
+        }
+        if (golem instanceof org.bukkit.entity.CopperGolem copper && furnaces.offer(copper, held)) {
+            event.setAllowed(false); // a labelled furnace takes it: it goes there first
             return;
         }
         if (!HomeFinder.isDestination(block.getType())) {
@@ -322,7 +334,8 @@ public final class SortListener implements Listener {
     private void startPluginDeliveries() {
         for (org.bukkit.World world : plugin.getServer().getWorlds()) {
             for (org.bukkit.entity.CopperGolem golem : world.getEntitiesByClass(org.bukkit.entity.CopperGolem.class)) {
-                if (!plugin.manages(golem) || reach.isDelivering(golem.getUniqueId()) || golem.isLeashed()
+                if (!plugin.manages(golem) || reach.isDelivering(golem.getUniqueId())
+                        || furnaces.isBusy(golem.getUniqueId()) || golem.isLeashed()
                         || golem.isInsideVehicle()) {
                     continue;
                 }
