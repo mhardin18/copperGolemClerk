@@ -263,12 +263,14 @@ final class FurnaceFeeder {
             return 0;
         }
         ItemStack fuel = inventory.getFuel();
-        double covered = (double) furnace.getBurnTime() / Math.max(1, furnace.getCookTimeTotal());
+        int cookTotal = Math.max(1, furnace.getCookTimeTotal());
+        // What the fire burning now will still cook, plus the progress on the item cooking now.
+        double covered = ((double) furnace.getBurnTime() + furnace.getCookTime()) / cookTotal;
         if (!isEmpty(fuel)) {
             covered += fuel.getAmount() * itemsPerFuel(fuel.getType());
         }
         double missing = input.getAmount() - covered;
-        if (missing <= 0) {
+        if (missing <= 1e-6) {
             return 0;
         }
         int need = (int) Math.ceil(missing / itemsPerFuel(type));
