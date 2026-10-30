@@ -5,7 +5,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 ## Unreleased
 
 ### Fixed
-- On a Paper 26.3 build older than 190 (before Paper added the golem sorting event), the plugin now logs that it needs build 190 or newer and turns itself off, instead of failing with an error.
+- On a Paper 26.3 build older than 190 (before Paper added the golem sorting event), the plugin now logs that it needs build 190 or newer and turns itself off. Before, it stayed on with its sorting missing (Paper logged "Failed to register events for class SortListener" and golems sorted like vanilla) while its other features kept running.
 
 ### Changed
 - README, Hangar page and CHANGELOG say which Paper build is needed: 26.3 build 190 or newer.
