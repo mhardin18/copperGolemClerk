@@ -95,6 +95,12 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     @Override
     public void onEnable() {
+        String missing = PaperSupport.firstMissing(PaperSupport.REQUIRED, getClass().getClassLoader());
+        if (missing != null) {
+            getLogger().severe(PaperSupport.tooOldMessage(missing, getServer().getVersion()));
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         carryOverOldSettings();
         if (getServer().getPluginManager().getPlugin(OLD_NAME) != null) {
             getLogger().severe(OLD_NAME + " (this plugin's old name) is also installed. Delete its jar from plugins/"

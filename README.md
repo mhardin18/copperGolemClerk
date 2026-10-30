@@ -8,7 +8,7 @@ mining trip ends up in a dozen tidy chests. Label chests with a sign like `[logs
 or just put one item in a chest to say what it's for. Golems pick the right chest, walk
 straight to it, keep the chests tidy, and tell you when one is full.
 
-A Paper plugin for **Paper 26.3** (Java 25). Works out of the box with about 50 item groups
+A Paper plugin for **Paper 26.3**, build 190 or newer (Java 25). Works out of the box with about 50 item groups
 that cover nearly every survival item; everything else is optional.
 
 ## Features
@@ -52,7 +52,8 @@ Every feature has a setting; see [Settings reference](#settings-reference).
 
 ## Requirements
 
-- A [Paper](https://papermc.io/downloads/paper) server, version **26.3**
+- A [Paper](https://papermc.io/downloads/paper) server, version **26.3**, build **190** or newer
+  (the build that added the golem sorting event; on older builds the plugin logs why and turns itself off)
 - Java **25**
 
 Spigot and Bukkit aren't supported: the plugin uses Paper-only golem events.

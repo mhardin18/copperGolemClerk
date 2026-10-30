@@ -101,7 +101,7 @@ golems carry them over by themselves.
 
 ## Requirements
 
-- **Paper 26.3** (Spigot and Bukkit aren't supported: the plugin uses Paper's golem events)
+- **Paper 26.3**, build 190 or newer (Spigot and Bukkit aren't supported: the plugin uses Paper's golem events)
 - **Java 25**
 - Recommended: **GriefPrevention**. Alerts then go to the claim's owner, players' commands
   stay within their own claims, and only players who may build somewhere can switch golems
