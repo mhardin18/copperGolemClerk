@@ -46,8 +46,6 @@ import org.joml.Vector3f;
 final class ItemFinder implements Listener {
 
     private static final int LIST_MAX = 10;
-    /** At most this many containers glow at once (each half of a double chest is a display). */
-    static final int HIGHLIGHT_MAX = 30;
     /** A player can search again after this long. */
     private static final long COOLDOWN_MILLIS = 2_000;
 
@@ -173,9 +171,8 @@ final class ItemFinder implements Listener {
         int total = hits.stream().mapToInt(Hit::count).sum();
         sender.sendMessage(Component.text(total + " " + what + " in " + hits.size()
                 + (hits.size() == 1 ? " container" : " containers") + " within " + radius + " blocks"
-                + (sender instanceof Player && plugin.findHighlightSeconds() > 0
-                        ? " (the nearest " + (hits.size() > HIGHLIGHT_MAX ? HIGHLIGHT_MAX + " " : "") + "glowing for "
-                                + plugin.findHighlightSeconds() + "s):" : ":"),
+                + (sender instanceof Player && plugin.findHighlightSeconds() > 0 && plugin.findHighlightCount() > 0
+                        ? glowNote(hits.size()) : ":"),
                 NamedTextColor.GOLD));
         for (int i = 0; i < Math.min(LIST_MAX, hits.size()); i++) {
             Hit hit = hits.get(i);
@@ -191,15 +188,22 @@ final class ItemFinder implements Listener {
         }
     }
 
-    /** Make the containers glow for this player only, for find-highlight-seconds. */
+    /** " (glowing for 10s):" or " (the nearest 5 glowing for 10s):" */
+    private String glowNote(int found) {
+        int glowing = Math.min(found, plugin.findHighlightCount());
+        return " (" + (glowing < found ? "the nearest " + glowing + " " : "") + "glowing for "
+                + plugin.findHighlightSeconds() + "s):";
+    }
+
+    /** Make the nearest find-highlight-count containers glow for this player only, for find-highlight-seconds. */
     private void highlight(Player player, List<Hit> hits) {
         clear(player.getUniqueId());
         int seconds = plugin.findHighlightSeconds();
-        if (seconds <= 0 || hits.isEmpty()) {
+        if (seconds <= 0 || plugin.findHighlightCount() <= 0 || hits.isEmpty()) {
             return;
         }
         List<BlockDisplay> shown = new ArrayList<>();
-        for (Hit hit : hits.subList(0, Math.min(HIGHLIGHT_MAX, hits.size()))) { // nearest first
+        for (Hit hit : hits.subList(0, Math.min(plugin.findHighlightCount(), hits.size()))) { // nearest first
             for (Block block : hit.blocks()) {
                 BlockDisplay display = block.getWorld().spawn(block.getLocation(), BlockDisplay.class, d -> {
                     d.setPersistent(false);

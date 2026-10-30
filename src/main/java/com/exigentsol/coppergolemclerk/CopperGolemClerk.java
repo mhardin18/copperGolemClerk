@@ -69,6 +69,7 @@ public final class CopperGolemClerk extends JavaPlugin {
     private volatile boolean findEnabled = true;
     private volatile int findRadius = 32;
     private volatile int findHighlightSeconds = 10;
+    private volatile int findHighlightCount = 5;
     private GolemRescue rescue;
     private volatile boolean rescueLostGolems = true;
     private volatile boolean lostGolemTeleportHome;
@@ -235,6 +236,7 @@ public final class CopperGolemClerk extends JavaPlugin {
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
         findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
         findHighlightSeconds = rangeSetting(config, "find-highlight-seconds", 10, 0, 120);
+        findHighlightCount = rangeSetting(config, "find-highlight-count", 5, 0, 30);
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
         if (listener != null) {
             listener.clearHomeless();
@@ -377,6 +379,11 @@ public final class CopperGolemClerk extends JavaPlugin {
     /** find-radius: how far /cgc find looks (1-64). */
     int findRadius() {
         return findRadius;
+    }
+
+    /** find-highlight-count: how many of the nearest containers /cgc find makes glow (0-30). */
+    int findHighlightCount() {
+        return findHighlightCount;
     }
 
     /** find-highlight-seconds: how long /cgc find makes containers glow (0 = not at all). */

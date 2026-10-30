@@ -218,13 +218,14 @@ def _(c):
     return check
 
 
-@scenario("find-settings-out-of-range", "edge26", 30, "find-radius: 500 and find-highlight-seconds: -3 are warned about and clamped (64 and 0).", alone=True)
+@scenario("find-settings-out-of-range", "edge26", 30, "find-radius: 500, find-highlight-seconds: -3 and find-highlight-count: 45 are warned about and clamped (64, 0 and 30).", alone=True)
 def _(c):
-    set_options(c, find_radius="500", find_highlight_seconds="-3")
+    set_options(c, find_radius="500", find_highlight_seconds="-3", find_highlight_count="45")
     def check():
         log = "\n".join(c.log_lines())
         return [("find-radius must be 1 to 64 (it's 500); using 64" in log, "warned about find-radius"),
                 ("find-highlight-seconds must be 0 to 120 (it's -3); using 0" in log, "warned about find-highlight-seconds"),
+                ("find-highlight-count must be 0 to 30 (it's 45); using 30" in log, "warned about find-highlight-count"),
                 has(find_at(c, "dirt"), "within 64 blocks")]
     return check
 
