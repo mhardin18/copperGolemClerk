@@ -9,7 +9,7 @@ or just put one item in a chest to say what it's for. Golems pick the right ches
 straight to it, keep the chests tidy, and tell you when one is full.
 
 A Paper plugin for **Paper 26.3** (Java 25). Works out of the box with about 50 item groups
-that cover every survival item; everything else is optional.
+that cover nearly every survival item; everything else is optional.
 
 ## Features
 
@@ -27,9 +27,9 @@ that cover every survival item; everything else is optional.
 - **Tidy chests:** partial stacks merged and like items kept together.
 
 **Bigger, faster storage rooms**
-- **Taller stacks:** golems reach chests up to 6 rows high (vanilla: 2).
-- **Barrels and shulker boxes** as destinations, if you want them.
-- **Bigger loads:** carry up to 64 items a trip instead of 16.
+- **Taller stacks** (a setting): golems reach chests up to 6 rows high (vanilla: 2).
+- **Barrels and shulker boxes** as destinations (a setting).
+- **Bigger loads** (a setting): carry up to 64 items a trip instead of 16.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
 
 **Golems that look after themselves**
@@ -45,6 +45,8 @@ that cover every survival item; everything else is optional.
 - **`/cgc stats`**, a join summary of what golems sorted while you were away, and
   **`/cgc check`** to explain any chest; admins also get **`/cgc golems`** to find every golem.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
+- **Golem limits** (optional, off by default): cap how many golems in one claim use the
+  plugin, so one huge golem farm can't lag the server.
 
 Every feature has a setting; see [Settings reference](#settings-reference).
 
@@ -65,7 +67,7 @@ Spigot and Bukkit aren't supported: the plugin uses Paper-only golem events.
 4. Check the console for `Enabling CopperGolemClerk`, or run `/plugins` in game.
 
 On first start the plugin creates `plugins/CopperGolemClerk/config.yml`. The
-defaults work as-is: about 50 groups that cover every survival item. After editing
+defaults work as-is: about 50 groups that cover nearly every survival item. After editing
 the file, run `/cgc reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
@@ -306,7 +308,7 @@ golem.
 While you hold bamboo, every copper golem within 48 blocks also shows a small label
 saying what it's doing: `carrying 12 birch log`, `fetching granite`, `no chest for 3
 kelp`, `taking 5 kelp back`, `giving way`, `saying hello`, `lost, walking home`,
-`vanilla mode` or `idle`. Once its copper starts to weather, a second line says how far
+`vanilla mode`, `over the golem limit: vanilla` or `idle`. Once its copper starts to weather, a second line says how far
 along it is (`oxidized: may turn into a statue` in red). Nobody else sees the labels.
 Turn them off with `status-labels: false`.
 
@@ -379,6 +381,19 @@ kind:
 
 Copper chests are left alone, and so is a chest a player has open (it's tidied
 after they close it).
+
+### Golem limits
+
+On a busy server one player's huge golem farm can cost a lot of tick time. Two settings cap
+how many copper golems use this plugin (both 0, no limit, by default):
+
+- `max-golems-per-claim`: golems in one GriefPrevention claim.
+- `max-golems-outside-claims`: golems on unclaimed land, per world (without
+  GriefPrevention, every golem in the world).
+
+The golems are recounted every few seconds. The oldest keep the plugin; the newest ones over
+the limit sort like vanilla, and the claim's owner (or, outside claims, players with
+`coppergolemclerk.alerts`) is told. Golems a player switched to vanilla don't count.
 
 Every setting is listed in [Settings reference](#settings-reference) below.
 

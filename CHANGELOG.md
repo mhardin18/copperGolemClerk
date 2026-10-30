@@ -19,7 +19,7 @@ All versions are for **Paper 26.3** (Java 25). Versions before 2.0 were called S
 - Golem limits: `max-golems-per-claim` and `max-golems-outside-claims` (per world) cap how many copper golems use the plugin; the oldest keep it, the newest over the limit sort like vanilla, and the claim owner is told. Off (0) by default until load testing settles a sensible default.
 
 ### Changed
-- Documentation: the README now starts with what the plugin does, has a feature overview, a full settings reference (every setting with its default and what it does) and a permissions table; `docs/hangar.md` is the plugin page text for Hangar; the `config.yml` header and `plugin.yml` description describe the plugin instead of vanilla golems.
+- Documentation: the README now starts with what the plugin does (golem limits included), has a feature overview, a full settings reference (every setting with its default and what it does) and a permissions table; `docs/hangar.md` is the plugin page text for Hangar (no overstated features, an invitation to suggest ideas); the `config.yml` header and `plugin.yml` description describe the plugin instead of vanilla golems.
 
 ### Fixed
 - Golems on the floor above an `[Overflow]` chest never fetched from it: they were sent to the chest block itself, and the pathfinder stopped them on the floor right above the chest instead of finding the way round by the stairs. Golems now walk to a spot beside the chest they have a whole path to, and skip an overflow chest they can't get to.
