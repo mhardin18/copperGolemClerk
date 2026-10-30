@@ -63,6 +63,8 @@ final class GolemCarry implements Listener {
         if (!pickedUp) {
             return;
         }
+        int tick = plugin.getServer().getCurrentTick();
+        handedByPlugin.values().removeIf(t -> tick - t > 100); // golems that died or unloaded before their pickup event
         Integer handedAt = handedByPlugin.remove(id);
         if ((handedAt != null && plugin.getServer().getCurrentTick() - handedAt <= 5)
                 || !plugin.manages(golem) || plugin.carryAmount() == VANILLA) {

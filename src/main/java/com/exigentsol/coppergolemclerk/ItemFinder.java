@@ -46,6 +46,10 @@ import org.joml.Vector3f;
 final class ItemFinder implements Listener {
 
     private static final int LIST_MAX = 10;
+    /** At most this many containers glow at once (each half of a double chest is a display). */
+    static final int HIGHLIGHT_MAX = 30;
+    /** A player can search again after this long. */
+    private static final long COOLDOWN_MILLIS = 2_000;
 
     /** One container (both halves of a double chest) holding the item. */
     private record Hit(List<Block> blocks, Block first, String what, int count, int inShulkers, double distance) {
@@ -53,6 +57,7 @@ final class ItemFinder implements Listener {
 
     private final CopperGolemClerk plugin;
     private final Map<UUID, List<BlockDisplay>> highlights = new HashMap<>();
+    private final Map<UUID, Long> lastSearch = new HashMap<>();
 
     ItemFinder(CopperGolemClerk plugin) {
         this.plugin = plugin;
@@ -60,6 +65,14 @@ final class ItemFinder implements Listener {
 
     /** Run /cgc find for this item text around a spot. */
     void find(CommandSender sender, String text, Location around) {
+        if (sender instanceof Player p && !p.hasPermission("coppergolemclerk.admin")) {
+            long now = System.currentTimeMillis();
+            Long last = lastSearch.get(p.getUniqueId());
+            if (last != null && now - last < COOLDOWN_MILLIS) {
+                throw new IllegalArgumentException("Wait a moment before searching again.");
+            }
+            lastSearch.put(p.getUniqueId(), now);
+        }
         ItemGroups.Rule rule = plugin.groups().signRule(text);
         if (rule == null) {
             throw new IllegalArgumentException("'" + text + "' isn't an item, group, pattern or tag.");
@@ -160,7 +173,9 @@ final class ItemFinder implements Listener {
         int total = hits.stream().mapToInt(Hit::count).sum();
         sender.sendMessage(Component.text(total + " " + what + " in " + hits.size()
                 + (hits.size() == 1 ? " container" : " containers") + " within " + radius + " blocks"
-                + (sender instanceof Player ? " (glowing for " + plugin.findHighlightSeconds() + "s):" : ":"),
+                + (sender instanceof Player && plugin.findHighlightSeconds() > 0
+                        ? " (the nearest " + (hits.size() > HIGHLIGHT_MAX ? HIGHLIGHT_MAX + " " : "") + "glowing for "
+                                + plugin.findHighlightSeconds() + "s):" : ":"),
                 NamedTextColor.GOLD));
         for (int i = 0; i < Math.min(LIST_MAX, hits.size()); i++) {
             Hit hit = hits.get(i);
@@ -184,7 +199,7 @@ final class ItemFinder implements Listener {
             return;
         }
         List<BlockDisplay> shown = new ArrayList<>();
-        for (Hit hit : hits) {
+        for (Hit hit : hits.subList(0, Math.min(HIGHLIGHT_MAX, hits.size()))) { // nearest first
             for (Block block : hit.blocks()) {
                 BlockDisplay display = block.getWorld().spawn(block.getLocation(), BlockDisplay.class, d -> {
                     d.setPersistent(false);
@@ -220,6 +235,7 @@ final class ItemFinder implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         clear(event.getPlayer().getUniqueId());
+        lastSearch.remove(event.getPlayer().getUniqueId());
     }
 
     /** Remove every highlight (plugin disabled). */

@@ -43,6 +43,8 @@ final class GolemFinder implements Listener {
     }
 
     private static final int MAX_NEAR = 10;
+    /** Without GriefPrevention, players' /cgc golems lists golems this close to them. */
+    private static final double PLAYER_RANGE_WITHOUT_CLAIMS = 48;
     private static final int MAX_ALL = 100;
 
     private final CopperGolemClerk plugin;
@@ -221,9 +223,13 @@ final class GolemFinder implements Listener {
         }
     }
 
-    /** A golem in a claim the player owns, or whose copper chest is in one. */
+    /** A golem in a claim the player owns, or whose copper chest is in one (no GriefPrevention: near the player). */
     private boolean mine(Player player, Row row) {
         Claims claims = plugin.claims();
+        if (!claims.present()) {
+            // No GriefPrevention, so no claims: the golems near the player.
+            return row.distance() <= PLAYER_RANGE_WITHOUT_CLAIMS;
+        }
         Location at = row.live() != null ? row.live().getLocation() : locationOf(row.seen());
         if (at != null && claims.ownsClaimAt(player, at)) {
             return true;

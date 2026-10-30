@@ -235,7 +235,8 @@ tidy-chests: true
 disabled-worlds: []
 
 # Let players use /cgc golems to list their own golems (in claims they own, or whose
-# copper chest is in one). Off by default: only admins can use it.
+# copper chest is in one; without GriefPrevention, the golems within 48 blocks of them).
+# Off by default: only admins can use it.
 golems-command-for-players: false
 
 # Log every sort decision to the console. Useful while setting up groups.

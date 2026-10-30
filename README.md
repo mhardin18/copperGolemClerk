@@ -416,19 +416,21 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
 - `/cgc golems`: the 10 copper golems nearest you, with their position (admins can click
   it to teleport there), distance and direction, what they carry, their copper and their
   mode. Players (only with `golems-command-for-players: true`) see just their own golems:
-  in claims they own, or whose copper chest is in one.
+  in claims they own, or whose copper chest is in one (without GriefPrevention: the golems
+  within 48 blocks of them).
   `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
   listed where they were last seen (the plugin keeps every golem's last spot in
   `golems.yml`, and forgets golems not seen for 30 days).
 - `/cgc stats`: how many items golems have put into chests in your claims today, in the
   last 7 days and all time. Admins (`coppergolemclerk.allclaims`) also see the whole
-  server's numbers, the most-sorted items and the busiest claims. With `join-summary` (on by default) players are told when they
+  server's numbers, the most-sorted items and the busiest claims. Without GriefPrevention
+  there are no claims, so everyone sees the server's numbers. With `join-summary` (on by default) players are told when they
   join what golems sorted in their claims while they were away and how many of their
   chests filled up. Numbers are kept in `stats.yml`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 - `/cgc find <item>`: which containers near you hold an item, nearest first, with how
-  many in each (items inside shulker boxes count too), and they glow for you for
-  `find-highlight-seconds` (10). Search for anything a sign label takes: an item
+  many in each (items inside shulker boxes count too), and the nearest 30 glow for you for
+  `find-highlight-seconds` (10). Players can search once every 2 seconds. Search for anything a sign label takes: an item
   (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). It
   looks `find-radius` blocks (32) around you. **By default it only looks in GriefPrevention
   claims you own** (never in locked containers); nothing hints at anything else.

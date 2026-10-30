@@ -233,8 +233,8 @@ public final class CopperGolemClerk extends JavaPlugin {
         findEnabled = config.getBoolean("find-enabled", true);
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
-        findRadius = Math.max(1, Math.min(64, config.getInt("find-radius", 32)));
-        findHighlightSeconds = Math.max(0, Math.min(120, config.getInt("find-highlight-seconds", 10)));
+        findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
+        findHighlightSeconds = rangeSetting(config, "find-highlight-seconds", 10, 0, 120);
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
         if (listener != null) {
             listener.clearHomeless();
@@ -406,6 +406,17 @@ public final class CopperGolemClerk extends JavaPlugin {
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    /** A whole-number setting kept within min..max; out-of-range values are warned about and clamped. */
+    private int rangeSetting(YamlConfiguration config, String key, int def, int min, int max) {
+        int value = config.getInt(key, def);
+        if (value < min || value > max) {
+            int used = Math.clamp(value, min, max);
+            getLogger().warning(key + " must be " + min + " to " + max + " (it's " + value + "); using " + used + ".");
+            return used;
+        }
+        return value;
     }
 
     /** destination-containers: chest, trapped_chest, barrel, shulker_box (every colour). */
