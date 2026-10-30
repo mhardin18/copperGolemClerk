@@ -175,10 +175,6 @@ final class GolemLabels implements Listener {
             return "saying hello";
         }
         SortListener sort = plugin.sortListener();
-        String furnaceJob = sort == null ? null : sort.furnaces().statusOf(id);
-        if (furnaceJob != null) {
-            return furnaceJob;
-        }
         Material fetching = sort == null ? null : sort.fetcher().fetchingType(id);
         if (fetching != null) {
             return "fetching " + name(fetching);
