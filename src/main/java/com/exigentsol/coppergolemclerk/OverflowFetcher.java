@@ -26,7 +26,7 @@ import org.bukkit.inventory.ItemStack;
  * A golem is idle when its hand is empty and no copper chest in its range has
  * anything it would take. It then looks for an overflow chest holding an item
  * that a chest in range would accept (label, exact or group, with room), walks
- * there, and takes up to 16 of it, like a normal pickup. From then on, normal
+ * there, and takes up to carry-amount (16 by default) of it, like a normal pickup. From then on, normal
  * sorting steers it to the item's home. At most fetchers-per-overflow-chest
  * golems fetch from one overflow chest at a time (each a different item), so
  * they don't crowd it.
@@ -47,7 +47,6 @@ final class OverflowFetcher {
     private static final long CHECK_EVERY_MILLIS = 5_000;
     private static final long GIVE_UP_AFTER_MILLIS = 30_000;
     private static final long WAIT_AFTER_GIVING_UP_MILLIS = 60_000;
-    private static final int MAX_TAKE = 16; // vanilla's per-trip limit
     private static final double REACH = 2.0;
     /** Mob.setGuaranteedDrop's value: above 1.0 marks the item as the mob's own, as vanilla golems do on pickup. */
     private static final float GUARANTEED_DROP = 2.0f;
@@ -317,13 +316,16 @@ final class OverflowFetcher {
             if (stack == null || stack.getType() != type) {
                 continue;
             }
-            int take = Math.min(stack.getAmount(), MAX_TAKE);
+            int take = Math.min(stack.getAmount(), GolemCarry.amountFor(type, plugin.carryAmount()));
             ItemStack taken = stack.clone();
             taken.setAmount(take);
             stack.setAmount(stack.getAmount() - take);
             inventory.setItem(slot, stack.getAmount() > 0 ? stack : null);
 
             EntityEquipment equipment = golem.getEquipment();
+            if (plugin.carry() != null) {
+                plugin.carry().handedByPlugin(golem.getUniqueId());
+            }
             equipment.setItemInMainHand(taken);
             // Vanilla's "guaranteed drop" (2.0, not 1.0): dropped if the golem dies, and also when
             // it turns into a statue, which drops only guaranteed items.
