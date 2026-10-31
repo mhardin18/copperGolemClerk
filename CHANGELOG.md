@@ -2,7 +2,7 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## 2.6.2 (Unreleased)
+## 2.6.2 (2026-10-31)
 
 ### Changed
 - `/cgc find torch` finds only torches, as before, but now adds an "Also nearby" line naming other items near you with the word in their name (copper torch, soul torch...) and suggests `/cgc find *torch*` to find them all (`/cgc help find`, README and Hangar page say so too). Searches that already match by name, patterns, tags and groups that cover them get no hint.
