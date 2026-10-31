@@ -64,6 +64,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private GolemFinder finder;
     private ItemFinder itemFinder;
     private StorageReport storageReport;
+    private GolemLimits limits;
+    private volatile int maxGolemsPerClaim;
+    private volatile int maxGolemsOutsideClaims;
     private final Claims claims = new Claims(this);
     private volatile boolean findOutsideOwnClaims;
     private volatile boolean golemsCommandForPlayers;
@@ -93,6 +96,12 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     @Override
     public void onEnable() {
+        String missing = PaperSupport.firstMissing(PaperSupport.REQUIRED, getClass().getClassLoader());
+        if (missing != null) {
+            getLogger().severe(PaperSupport.tooOldMessage(missing, getServer().getVersion()));
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
         carryOverOldSettings();
         if (getServer().getPluginManager().getPlugin(OLD_NAME) != null) {
             getLogger().severe(OLD_NAME + " (this plugin's old name) is also installed. Delete its jar from plugins/"
@@ -136,6 +145,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getScheduler().runTaskTimer(this, finder::tick, 20 * 30, 20 * 30);
         itemFinder = new ItemFinder(this);
         storageReport = new StorageReport(this);
+        limits = new GolemLimits(this);
+        getServer().getScheduler().runTaskTimer(this, limits::tick, 100, 100);
         getServer().getPluginManager().registerEvents(itemFinder, this);
         updates = new UpdateChecker(this);
         getServer().getPluginManager().registerEvents(updates, this);
@@ -234,6 +245,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             carryAmount = Math.max(1, Math.min(64, carryAmount));
         }
         findEnabled = config.getBoolean("find-enabled", true);
+        maxGolemsPerClaim = rangeSetting(config, "max-golems-per-claim", 0, 0, 100_000);
+        maxGolemsOutsideClaims = rangeSetting(config, "max-golems-outside-claims", 0, 0, 100_000);
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
         findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
@@ -356,6 +369,20 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     GolemCarry carry() {
         return carry;
+    }
+
+    /** max-golems-per-claim: golems in one claim that use the plugin (0 = no limit). */
+    int maxGolemsPerClaim() {
+        return maxGolemsPerClaim;
+    }
+
+    /** max-golems-outside-claims: golems on unclaimed land in one world that use the plugin (0 = no limit). */
+    int maxGolemsOutsideClaims() {
+        return maxGolemsOutsideClaims;
+    }
+
+    GolemLimits limits() {
+        return limits;
     }
 
     /** find-enabled: /cgc find is available. */
@@ -486,7 +513,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
      */
     boolean manages(Entity golem) {
         return golem instanceof org.bukkit.entity.CopperGolem && enabledIn(golem.getWorld())
-                && (modes == null || !modes.isVanilla(golem));
+                && (modes == null || !modes.isVanilla(golem))
+                && (limits == null || !limits.isOver(golem.getUniqueId()));
     }
 
     /** A player switched this golem's mode: drop what the plugin was doing with it. */

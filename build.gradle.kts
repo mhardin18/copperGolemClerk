@@ -16,8 +16,8 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.3.build.214-stable")
-    testImplementation("io.papermc.paper:paper-api:26.3.build.214-stable")
+    compileOnly("io.papermc.paper:paper-api:26.3.build.231-stable")
+    testImplementation("io.papermc.paper:paper-api:26.3.build.231-stable")
     // A fake Paper server for unit tests of the code that calls the Paper API.
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v26.3:4.118.0")
     testImplementation(platform("org.junit:junit-bom:5.11.4"))

@@ -8,8 +8,8 @@ mining trip ends up in a dozen tidy chests. Label chests with a sign like `[logs
 or just put one item in a chest to say what it's for. Golems pick the right chest, walk
 straight to it, keep the chests tidy, and tell you when one is full.
 
-A Paper plugin for **Paper 26.3** (Java 25). Works out of the box with about 50 item groups
-that cover every survival item; everything else is optional.
+A Paper plugin for **Paper 26.3**, build 190 or newer (Java 25). Works out of the box with about 50 item groups
+that cover nearly every survival item; everything else is optional.
 
 ## Features
 
@@ -27,9 +27,9 @@ that cover every survival item; everything else is optional.
 - **Tidy chests:** partial stacks merged and like items kept together.
 
 **Bigger, faster storage rooms**
-- **Taller stacks:** golems reach chests up to 6 rows high (vanilla: 2).
-- **Barrels and shulker boxes** as destinations, if you want them.
-- **Bigger loads:** carry up to 64 items a trip instead of 16.
+- **Taller stacks** (a setting): golems reach chests up to 6 rows high (vanilla: 2).
+- **Barrels and shulker boxes** as destinations (a setting).
+- **Bigger loads** (a setting): carry up to 64 items a trip instead of 16.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
 
 **Golems that look after themselves**
@@ -38,19 +38,22 @@ that cover every survival item; everything else is optional.
 - Every golem death is logged with its cause, so none go missing unexplained.
 
 **Tools for players and admins**
-- **`/cgc find <item>`:** which chests near you hold something, and they glow for you.
-  Players only see chests they could open (GriefPrevention claims respected).
+- **`/cgc find <item>`:** which chests near you hold something, and the nearest glow for you.
+  By default players only search their own GriefPrevention claims.
 - **Full-chest alerts** to the claim owner, even if they're offline.
 - **Status labels:** hold bamboo to see what each golem is doing.
-- **`/cgc stats`**, a join summary of what golems sorted while you were away,
-  **`/cgc check`** to explain any chest, **`/cgc golems`** to find your golems.
+- **`/cgc stats`**, a join summary of what golems sorted while you were away, and
+  **`/cgc check`** to explain any chest; admins also get **`/cgc golems`** to find every golem.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
+- **Golem limits** (optional, off by default): cap how many golems in one claim use the
+  plugin.
 
 Every feature has a setting; see [Settings reference](#settings-reference).
 
 ## Requirements
 
-- A [Paper](https://papermc.io/downloads/paper) server, version **26.3**
+- A [Paper](https://papermc.io/downloads/paper) server, version **26.3**, build **190** or newer
+  (the build that added the golem sorting event; on older builds the plugin logs why and turns itself off)
 - Java **25**
 
 Spigot and Bukkit aren't supported: the plugin uses Paper-only golem events.
@@ -65,7 +68,7 @@ Spigot and Bukkit aren't supported: the plugin uses Paper-only golem events.
 4. Check the console for `Enabling CopperGolemClerk`, or run `/plugins` in game.
 
 On first start the plugin creates `plugins/CopperGolemClerk/config.yml`. The
-defaults work as-is: about 50 groups that cover every survival item. After editing
+defaults work as-is: about 50 groups that cover nearly every survival item. After editing
 the file, run `/cgc reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
@@ -116,16 +119,16 @@ Groups are defined in `config.yml` (and you can edit them) using:
 
 Vanilla golems walk to the nearest chest they haven't tried and drop their item
 into the first empty chest they reach, often before finding the chest where it
-belongs. They also give up after trying 10 chests, so far-away chests never get
-used.
+belongs. After trying 10 chests they pause and start over from the nearest, so
+far-away chests seldom get used.
 
 With `prefer-matching-chests` (on by default), a golem carrying an item first
 looks over every chest in its range: 32 blocks sideways and 8 up or down, in
-loaded chunks. If any chest matches the item (frame label, same item, or same
-group) and has room, the golem walks straight to it. Empty chests are used only
-when no matching chest has room. If the golem hasn't delivered within
+loaded chunks. If any chest matches the item (a sign or frame label, the same item,
+or the same group) and has room, the golem walks straight to it. Empty chests are
+used only when no matching chest has room. If the golem hasn't delivered within
 `matching-chest-timeout-seconds` (default 30), for example because the chest is
-walled off, it falls back to vanilla behavior for that item.
+walled off, it works through the fallback steps in "Items with no home" below.
 
 ### Item frame labels
 
@@ -194,7 +197,7 @@ If a golem can't deliver its item it works through four steps, each lasting
 `matching-chest-timeout-seconds` (default 30): steer to the most specific matching
 chest, overflow or empty chest; then any matching chest (the most specific one may be
 unreachable); then only overflow or empty chests; then plain vanilla wandering. After
-that, the item is put back into the copper chest it came from (golems can't walk to
+that (with `return-unsortable-items`, on by default), the item is put back into the copper chest it came from (golems can't walk to
 copper chests while carrying, so it's moved directly) and marked "no home" there for
 `homeless-retry-minutes` (default 5). Golems take other items first and skip a copper
 chest that has only "no home" items left. Add a home for the item, then
@@ -213,8 +216,8 @@ chest and takes up to `carry-amount` (16) of an item that now has a home, then s
 at a time, each a different item, so they don't crowd it. So when
 you add a chest for something that was piling up in overflow, golems move it
 over on their own. Items with no home are left in overflow, and so are items in
-an overflow chest golems can't open (locked, blocked or waterlogged). Golems also no
-longer walk to empty copper chests.
+an overflow chest golems can't open (locked, blocked or waterlogged). Golems never walk
+to an empty copper chest.
 
 ### Bigger loads
 
@@ -237,9 +240,9 @@ is in its way, one of them steps one block aside and waits for the other to pass
   gives way, so they never both dodge.
 - A golem busy at a chest never steps aside, and golems that are just passing
   each other are left alone.
-- A golem never steps aside into fire, lava, water, a cobweb, powder snow, a
-  berry bush or a trapdoor, or onto a campfire, magma block or trapdoor; it backs up
-  to a safe spot instead.
+- A golem never steps aside into fire, lava, water, a bubble column, a cobweb, powder
+  snow, a berry bush, a wither rose, pointed dripstone, a cactus or a trapdoor, or onto
+  a campfire, magma block or trapdoor; it backs up to a safe spot instead.
 
 ### Golems keep off trapdoors
 
@@ -306,7 +309,7 @@ golem.
 While you hold bamboo, every copper golem within 48 blocks also shows a small label
 saying what it's doing: `carrying 12 birch log`, `fetching granite`, `no chest for 3
 kelp`, `taking 5 kelp back`, `giving way`, `saying hello`, `lost, walking home`,
-`vanilla mode` or `idle`. Once its copper starts to weather, a second line says how far
+`vanilla mode`, `over the golem limit: vanilla` or `idle`. Once its copper starts to weather, a second line says how far
 along it is (`oxidized: may turn into a statue` in red). Nobody else sees the labels.
 Turn them off with `status-labels: false`.
 
@@ -362,9 +365,8 @@ Who hears it:
   tell, so it goes to the players online with `coppergolemclerk.alerts` (ops by default),
   typically the server's staff.
 
-Every alert
-is also logged, and the same chest isn't mentioned again for `alert-cooldown-minutes`
-(default 30). Turn them off with `full-chest-alerts: false`.
+Every alert is also logged, and the same chest isn't mentioned again for
+`alert-cooldown-minutes` (default 30). Turn them off with `full-chest-alerts: false`.
 
 ### Golems tidy the chests they use
 
@@ -380,6 +382,36 @@ kind:
 
 Copper chests are left alone, and so is a chest a player has open (it's tidied
 after they close it).
+
+### Golem limits
+
+Two settings cap how many copper golems use this plugin (both 0, no limit, by default):
+
+- `max-golems-per-claim`: golems in one GriefPrevention claim. Each claim has its own limit, even
+  when one player owns several; admin claims too. A subdivision counts with its claim.
+- `max-golems-outside-claims`: golems on unclaimed land, per world (without
+  GriefPrevention, every golem in the world).
+
+The golems are recounted every few seconds. The oldest keep the plugin; the newest ones over
+the limit sort like vanilla, and the claim's owner (or, outside claims, players with
+`coppergolemclerk.alerts`) is told. Golems a player switched to vanilla don't count.
+
+**Tick cost.** A working copper golem costs about 0.1 ms per tick, whether it uses this plugin
+or sorts like vanilla: the cost is the golem's own AI and pathfinding, and the plugin adds
+nothing measurable on top. Measured on Paper 26.3 with 0 to 200 golems all sorting at once:
+
+| Golems | With the plugin | Vanilla |
+|---|---|---|
+| 20 | 3.9 ms | 3.5 ms |
+| 50 | 5.3 ms | 6.4 ms |
+| 100 | 12.2 ms | 10.5 ms |
+| 150 | 17.0 ms | 17.9 ms |
+| 200 | 21.4 ms | 19.4 ms |
+
+(1.7 ms with no golems; a server starts to lag at 50 ms per tick. Your numbers depend on your
+hardware.) Golems over the limit keep sorting like vanilla, so the limits don't lower tick
+time: they cap how many golems get this plugin's sorting. To limit the tick cost itself, limit
+the number of golems.
 
 Every setting is listed in [Settings reference](#settings-reference) below.
 
@@ -424,9 +456,9 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
 - `/cgc stats`: how many items golems have put into chests in your claims today, in the
   last 7 days and all time. Admins (`coppergolemclerk.allclaims`) also see the whole
   server's numbers, the most-sorted items and the busiest claims. Without GriefPrevention
-  there are no claims, so everyone sees the server's numbers. With `join-summary` (on by default) players are told when they
-  join what golems sorted in their claims while they were away and how many of their
-  chests filled up. Numbers are kept in `stats.yml`.
+  there are no claims, so everyone sees the server's numbers. With `join-summary` (on by
+  default) players are told when they join what golems sorted in their claims while they
+  were away and how many of their chests filled up. Numbers are kept in `stats.yml`.
 - `/cgc storage`: how full the storage around you is. Containers within golem range (32 blocks sideways, 8 up
   or down) are grouped by label, or for unlabelled ones by what they hold, fullest first, with full and nearly
   full (90%) ones flagged; then `[Overflow]` chests, how many empty chests are left for new kinds of items, and
@@ -434,9 +466,10 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 - `/cgc find <item>`: which containers near you hold an item, nearest first, with how
   many in each (items inside shulker boxes count too), and the nearest
-  `find-highlight-count` (5) glow for you for `find-highlight-seconds` (10). Players can search once every 2 seconds. Search for anything a sign label takes: an item
+  `find-highlight-count` (5) glow for you for `find-highlight-seconds` (10). Players can
+  search once every 2 seconds. Search for anything a sign label takes: an item
   (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). It
-  looks `find-radius` blocks (32) around you. **By default it only looks in GriefPrevention
+  looks `find-radius` blocks (32) around you, sideways and up or down. **By default it only looks in GriefPrevention
   claims you own** (never in locked containers); nothing hints at anything else.
   `find-outside-own-claims: true` also lets players find things in unclaimed containers
   and in claims where they have container trust; other players' claims stay hidden
@@ -494,6 +527,8 @@ with its line number and the old settings are kept.
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its copper chest, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
+| `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit). Each claim (admin claims too) has its own limit. The oldest keep it; the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
+| `max-golems-outside-claims` | `0` | The same for unclaimed land, per world (without GriefPrevention: every golem in the world). |
 | `log-golem-deaths` | `true` | Log every copper golem death (cause, place, what it held) and every other removal (statue, `/kill`). |
 
 ### Players, alerts and tools
