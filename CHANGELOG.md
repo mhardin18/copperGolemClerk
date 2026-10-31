@@ -5,6 +5,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 ## 2.7.0 (in progress)
 
 ### New
+- `/cgc label`: suggests a sign label for the chest you're looking at, from what's in it (the item's own label, the most specific group its items share, or the group most of them fit and which items don't); on a labelled chest it says whether everything matches. It only suggests; you place the sign. Players get suggestions for containers they could open (`coppergolemclerk.label`, everyone by default).
 - `/cgc storage`: how full the storage around you is, by label (or by contents for unlabelled chests), fullest first, with full and nearly full ones flagged, plus `[Overflow]` chests, empty chests left and items waiting in copper chests. Players see only containers they could open (`coppergolemclerk.storage`, everyone by default).
 
 ## 2.6.0 (unreleased)
