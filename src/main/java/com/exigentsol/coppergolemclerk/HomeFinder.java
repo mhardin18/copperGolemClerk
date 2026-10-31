@@ -354,7 +354,7 @@ final class HomeFinder {
             Inventory inventory = ((Container) state).getInventory();
             Set<Pos> halves = halvesOf(inventory, state.getBlock());
             if (cannotOpen(golem.getWorld(), state, halves) || isWaterlogged(golem.getWorld(), halves) || isLocked(state)
-                    || feedsCopperChest(golem.getWorld(), halves)) {
+                    || feedsCopperChest(golem.getWorld(), halves) || HopperLines.feedsFurnace(golem.getWorld(), halves)) {
                 continue;
             }
             if (!isVanillaTarget(state.getType()) && pluginRow(golem.getWorld(), halves) == Integer.MAX_VALUE) {
@@ -404,6 +404,9 @@ final class HomeFinder {
             }
             if (feedsCopperChest(world(golem), halves)) {
                 continue; // an input chest for a copper chest: refilling it would loop items forever
+            }
+            if (HopperLines.feedsFurnace(world(golem), halves)) {
+                continue; // feeds a smelter through hoppers: only furnace feeding puts things in it
             }
             if (refuses(state.getType(), held.getType())) {
                 continue; // a shulker box can't hold a shulker box

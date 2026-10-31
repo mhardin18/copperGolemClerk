@@ -49,6 +49,11 @@ golems carry them over by themselves.
   - carry up to **64 items** a trip (vanilla: 16);
   - use **barrels and shulker boxes** as well as chests.
 
+### 🔥 Run your furnaces
+Label a furnace `[raw iron]`, or build a hopper smelter, and golems keep it cooking: items
+from your `[Furnace Supply]` chest, fuel from your `[Fuel]` chest (just enough for what's
+waiting), and what's done sorted away. Nothing else from your storage goes in a furnace.
+
 ### 🦺 Look after themselves
 - A golem that falls down a shaft or wanders off **walks back home**; one that's stuck gets
   reported, with where it is.

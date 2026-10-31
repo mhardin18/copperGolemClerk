@@ -43,6 +43,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile int fetchersPerOverflowChest;
     private volatile int carryAmount = GolemCarry.VANILLA;
     private GolemCarry carry;
+    private volatile boolean furnaceFeeding = true;
+    private volatile List<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
+    private volatile boolean furnaceEmptyHopperLines = true;
+    private volatile boolean furnaceTrustedClaims = true;
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -264,6 +268,13 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         deliverReach = reachSetting(config, "deliver-reach");
         HomeFinder.setDestinations(destinationSetting(config));
+        furnaceFeeding = config.getBoolean("furnace-feeding", true);
+        furnaceFuel = fuelSetting(config);
+        furnaceEmptyHopperLines = config.getBoolean("furnace-empty-hopper-lines", true);
+        furnaceTrustedClaims = config.getBoolean("furnace-trusted-claims", true);
+        if (listener != null) {
+            listener.furnaces().clear();
+        }
         takeReach = reachSetting(config, "take-reach");
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
@@ -369,6 +380,26 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return carry;
     }
 
+    /** furnace-feeding: golems feed, fuel and empty labelled furnaces. */
+    boolean furnaceFeeding() {
+        return furnaceFeeding;
+    }
+
+    /** furnace-empty-hopper-lines: golems empty furnaces fed by hopper lines (unless a hopper under them collects). */
+    boolean furnaceEmptyHopperLines() {
+        return furnaceEmptyHopperLines;
+    }
+
+    /** furnace-trusted-claims: golems also use furnaces and supplies in claims where their owner has container trust. */
+    boolean furnaceTrustedClaims() {
+        return furnaceTrustedClaims;
+    }
+
+    /** furnace-fuel: what golems put into furnaces as fuel, most preferred first. */
+    List<Material> furnaceFuel() {
+        return furnaceFuel;
+    }
+
     /** max-golems-per-claim: golems in one claim that use the plugin (0 = no limit). */
     int maxGolemsPerClaim() {
         return maxGolemsPerClaim;
@@ -449,6 +480,25 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    /** furnace-fuel: fuels in order of preference (unknown names and non-fuels are warned about). */
+    private List<Material> fuelSetting(YamlConfiguration config) {
+        if (!config.isList("furnace-fuel")) {
+            return FurnaceFeeder.defaultFuel();
+        }
+        java.util.LinkedHashSet<Material> fuel = new java.util.LinkedHashSet<>();
+        for (String raw : config.getStringList("furnace-fuel")) {
+            Material m = Material.matchMaterial(raw.trim().replace(' ', '_'));
+            if (m == null || !m.isItem()) {
+                getLogger().warning("furnace-fuel: '" + raw + "' isn't an item; ignored.");
+            } else if (!m.isFuel()) {
+                getLogger().warning("furnace-fuel: " + m.getKey().getKey() + " doesn't burn in a furnace; ignored.");
+            } else {
+                fuel.add(m);
+            }
+        }
+        return List.copyOf(fuel);
     }
 
     /** A whole-number setting kept within min..max; out-of-range values are warned about and clamped. */

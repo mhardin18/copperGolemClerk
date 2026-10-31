@@ -53,10 +53,12 @@ final class ChestLabels {
      * @param noGolems  a [No Golems] sign is present
      * @param only      [Only ...] rules: what golems may take from a copper chest (empty = anything)
      * @param onlyNames the [Only ...] label texts, for /cgc check
+     * @param fuel a [Fuel] sign: golems take furnace fuel from this container (furnace-feeding)
+     * @param supply a [Furnace Supply] sign: golems take items to cook from this container (furnace-feeding)
      */
     record Labels(List<ItemGroups.Rule> rules, List<String> names, boolean overflow, List<String> unknown,
-                  boolean noGolems, List<ItemGroups.Rule> only, List<String> onlyNames) {
-        static final Labels NONE = new Labels(List.of(), List.of(), false, List.of(), false, List.of(), List.of());
+                  boolean noGolems, List<ItemGroups.Rule> only, List<String> onlyNames, boolean fuel, boolean supply) {
+        static final Labels NONE = new Labels(List.of(), List.of(), false, List.of(), false, List.of(), List.of(), false, false);
 
         /** True if golems may take this item (no [Only ...] filter, or the filter covers it). */
         boolean mayTake(Material type) {
@@ -100,6 +102,8 @@ final class ChestLabels {
         List<String> unknown = new ArrayList<>();
         boolean overflow = false;
         boolean noGolems = false;
+        boolean fuel = false;
+        boolean supply = false;
         List<ItemGroups.Rule> only = new ArrayList<>();
         List<String> onlyNames = new ArrayList<>();
 
@@ -129,6 +133,14 @@ final class ChestLabels {
                                     noGolems = true;
                                     continue;
                                 }
+                                if (inner.toLowerCase(Locale.ROOT).equals("fuel")) {
+                                    fuel = true; // golems take furnace fuel from here
+                                    continue;
+                                }
+                                if (isFurnaceSupply(inner)) {
+                                    supply = true; // golems take items to cook from here
+                                    continue;
+                                }
                                 String filter = onlyLabel(inner);
                                 if (filter != null) {
                                     ItemGroups.Rule rule = groups.signRule(filter);
@@ -153,7 +165,7 @@ final class ChestLabels {
                 }
             }
         }
-        return new Labels(rules, names, overflow, unknown, noGolems, only, onlyNames);
+        return new Labels(rules, names, overflow, unknown, noGolems, only, onlyNames, fuel, supply);
     }
 
     /** "Only Logs" -> "Logs" (any case, one or more spaces); null if the text isn't an [Only ...] label. */
@@ -167,6 +179,13 @@ final class ChestLabels {
     /** The [Only ...] filter on this copper chest (NONE-like if there's none). Only signs are read. */
     static Labels filterOf(Inventory container, CopperGolemClerk plugin) {
         return plugin.signLabels() ? of(container, plugin.groups(), false, true) : Labels.NONE;
+    }
+
+    /** "Furnace Supply", "furnace supplies", "FURNACE-SUPPLY": any case, singular or plural. */
+    static boolean isFurnaceSupply(String text) {
+        String[] words = ItemGroups.words(text);
+        return words.length == 2 && ItemGroups.singular(words[0]).equals("furnace")
+                && (words[1].equals("supply") || words[1].equals("supplies"));
     }
 
     /** "No Golems", "no golem", "NO-GOLEMS", "no_golems": any case, singular or plural. */
