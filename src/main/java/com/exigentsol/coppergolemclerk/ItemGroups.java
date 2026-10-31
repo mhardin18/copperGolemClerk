@@ -267,6 +267,11 @@ public final class ItemGroups {
         return groupNames.indexOf(name);
     }
 
+    /** How many items a group (by config index) holds. */
+    int groupSize(int index) {
+        return groupSizes[index];
+    }
+
     String groupName(int index) {
         return groupNames.get(index);
     }

@@ -2,7 +2,13 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
-## Unreleased
+## 2.7.0 (in progress)
+
+### New
+- `/cgc label`: suggests a sign label for the chest you're looking at, from what's in it (the item's own label, the most specific group its items share, or the group most of them fit and which items don't); on a labelled chest it says whether everything matches. It only suggests; you place the sign. Players get suggestions for containers they could open (`coppergolemclerk.label`, everyone by default).
+- `/cgc storage`: how full the storage around you is, by label (or by contents for unlabelled chests), fullest first, with full and nearly full ones flagged, plus `[Overflow]` chests, empty chests left and items waiting in copper chests. Players see only containers they could open (`coppergolemclerk.storage`, everyone by default).
+
+## 2.6.0 (unreleased)
 
 ### New
 - Golems run your furnaces: label a furnace, smoker or blast furnace like a chest (`[raw iron]`), or build a hopper smelter (hoppers into a furnace's top for items to cook, its side for fuel), and golems keep it going. Items to cook come only from `[Furnace Supply]` containers and each load is split between all the furnaces that take it; a hopper line gets only what every furnace on it can cook, and only while it's empty or holds the same item, so it never clogs. Fuel comes only from `[Fuel]` containers (`furnace-fuel`, default charcoal, coal, then lava buckets, whose empty buckets are refilled at a lava cauldron), just enough for what's waiting. Golems take out what's done and sort it, unless a hopper under the furnace collects it (`furnace-empty-hopper-lines`). Chests sitting on a hopper smelter line are never used for sorting. With GriefPrevention, golems use only furnaces and containers in their copper chest's claim, or where its owner has container trust (`furnace-trusted-claims`). `/cgc check` on a furnace or hopper explains what golems will do and why.
