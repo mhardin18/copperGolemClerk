@@ -94,7 +94,15 @@ final class ChestReports {
                     + "): " + String.join(", ", names.subList(0, Math.min(15, names.size())))
                     + (names.size() > 15 ? ", and " + (names.size() - 15) + " more" : "") + ".");
         }
-        say(player, NamedTextColor.AQUA, "Golems take out whatever it makes and sort it (never back into a furnace).");
+        if (FurnaceFeeder.collectedByHopper(furnace.getBlock())) {
+            say(player, NamedTextColor.AQUA, "A hopper under it collects what it makes, so golems leave the output to it.");
+        } else {
+            say(player, NamedTextColor.AQUA, "Golems take out whatever it makes and sort it (never back into a furnace).");
+        }
+        say(player, NamedTextColor.AQUA, "Items to cook come only from [Furnace Supply] containers.");
+        if (FurnaceFeeder.fedFuelByHopper(furnace.getBlock())) {
+            say(player, NamedTextColor.AQUA, "A hopper fuels it from the side: golems fuel it through that hopper line.");
+        }
         // Fuel.
         List<String> order = plugin.furnaceFuel().stream().map(m -> m.getKey().getKey().replace('_', ' ')).toList();
         say(player, NamedTextColor.AQUA, "Fuel: only from containers with a [Fuel] sign, first available of: "
@@ -127,6 +135,84 @@ final class ChestReports {
         say(player, NamedTextColor.WHITE, "Now: " + now + ".");
     }
 
+    private static java.util.Set<HomeFinder.Pos> halvesOf(Block block, Inventory inv) {
+        return HomeFinder.halvesOf(inv, block);
+    }
+
+    /** /cgc check on a hopper: the furnaces its line reaches, through which side, and what golems put into it. */
+    private void hopperReport(CommandSender player, Block hopper) {
+        if (!plugin.furnaceFeeding()) {
+            say(player, NamedTextColor.YELLOW, "Furnace feeding is off (furnace-feeding: false): golems leave hoppers alone.");
+            return;
+        }
+        FurnaceFeeder feeder = plugin.sortListener().furnaces();
+        Block head = HopperLines.headOf(hopper);
+        HopperLines.Line line = HopperLines.follow(head);
+        if (!line.reachesFurnace()) {
+            say(player, NamedTextColor.AQUA, "This hopper doesn't lead into a furnace, smoker or blast furnace: golems leave it alone.");
+            return;
+        }
+        if (!head.equals(hopper)) {
+            say(player, NamedTextColor.WHITE, "It's on a line whose head is the " + pretty(head.getType()).toLowerCase(java.util.Locale.ROOT)
+                    + " at " + head.getX() + "," + head.getY() + "," + head.getZ() + " (golems deliver there when they can reach it).");
+        } else {
+            say(player, NamedTextColor.WHITE, "It's the head of its line: golems deliver here when they can reach it.");
+        }
+        if (!line.input().isEmpty()) {
+            say(player, NamedTextColor.AQUA, "Feeds the top (items to cook) of: " + furnaces(hopper.getWorld(), line.input()) + ".");
+        }
+        if (!line.fuel().isEmpty()) {
+            say(player, NamedTextColor.AQUA, "Feeds the side (fuel) of: " + furnaces(hopper.getWorld(), line.fuel()) + ".");
+        }
+        String closed = feeder.lineClosed(hopper.getWorld(), line);
+        if (closed != null) {
+            say(player, NamedTextColor.YELLOW, "Golems leave this line alone: " + closed + ".");
+            return;
+        }
+        if (!line.input().isEmpty()) {
+            say(player, NamedTextColor.AQUA, "Golems put in items from [Furnace Supply] containers that every furnace on the line"
+                    + " can cook (a label on the head narrows that), and only while the line is empty or holds the same item.");
+            List<ItemStack> held = HopperLines.contents(line);
+            if (!held.isEmpty()) {
+                java.util.Set<Material> types = new java.util.LinkedHashSet<>();
+                held.forEach(st -> types.add(st.getType()));
+                if (types.size() > 1) {
+                    say(player, NamedTextColor.YELLOW, "It holds more than one item (" + list(new ArrayList<>(types))
+                            + "): golems wait until it's down to one.");
+                } else {
+                    Material only = types.iterator().next();
+                    String why = feeder.lineRefuses(hopper.getWorld(), line, only);
+                    say(player, why == null ? NamedTextColor.WHITE : NamedTextColor.YELLOW, "It holds "
+                            + pretty(only).toLowerCase(java.util.Locale.ROOT) + (why == null ? ": golems add more of it." : ": " + why + "."));
+                }
+            }
+        }
+        if (!line.fuel().isEmpty()) {
+            String why = feeder.fuelLineRefuses(line);
+            if (why != null) {
+                say(player, NamedTextColor.YELLOW, "Golems won't fuel it now: " + why + ".");
+            } else {
+                FurnaceFeeder.FuelPick pick = feeder.bestFuelNear(hopper.getLocation().add(0.5, 0, 0.5), false);
+                if (pick == null) {
+                    say(player, NamedTextColor.YELLOW, "No [Fuel] container in golem range holds any furnace-fuel: golems won't fuel it.");
+                } else {
+                    int need = feeder.lineFuelNeeded(hopper.getWorld(), line, pick.type());
+                    say(player, NamedTextColor.WHITE, "Fuel: golems would use " + pretty(pick.type()).toLowerCase(java.util.Locale.ROOT)
+                            + (need > 0 ? " and bring " + need + " now." : "; there's enough for what's waiting."));
+                }
+            }
+        }
+    }
+
+    private String furnaces(org.bukkit.World world, java.util.Set<HomeFinder.Pos> where) {
+        List<String> parts = new ArrayList<>();
+        for (HomeFinder.Pos p : where) {
+            parts.add(pretty(world.getBlockAt(p.x(), p.y(), p.z()).getType()).toLowerCase(java.util.Locale.ROOT)
+                    + " at " + p.x() + "," + p.y() + "," + p.z());
+        }
+        return String.join(", ", parts);
+    }
+
     void checkChest(CommandSender player, Block block, ItemStack hand) {
         if (!(block.getState(false) instanceof Container container)) {
             say(player, NamedTextColor.RED, "No container at " + block.getX() + "," + block.getY() + "," + block.getZ() + ".");
@@ -144,6 +230,10 @@ final class ChestReports {
         }
         if (container instanceof org.bukkit.block.Furnace furnace) {
             furnaceReport(player, furnace);
+            return;
+        }
+        if (HopperLines.isHopper(block.getType())) {
+            hopperReport(player, block);
             return;
         }
         if (Returns.isCopperChest(block.getType())) {
@@ -192,6 +282,18 @@ final class ChestReports {
         }
         if (labels.overflow()) {
             say(player, NamedTextColor.AQUA, "  [Overflow] = takes items that have no matching chest in range");
+        }
+        if (labels.fuel()) {
+            say(player, NamedTextColor.AQUA, "  [Fuel] = golems take furnace fuel from here"
+                    + (labels.hasItemRules() ? "" : " (it takes nothing unless it also has an item label)"));
+        }
+        if (labels.supply()) {
+            say(player, NamedTextColor.AQUA, "  [Furnace Supply] = golems take items to cook from here"
+                    + (labels.hasItemRules() ? "" : " (it takes nothing unless it also has an item label)"));
+        }
+        if (plugin.furnaceFeeding() && HopperLines.feedsFurnace(block.getWorld(), halvesOf(block, inv))) {
+            say(player, NamedTextColor.AQUA, "A hopper under it feeds furnaces: golems never sort into it. Golems fill it only"
+                    + " with items to cook (or fuel) from [Furnace Supply] and [Fuel] containers; /cgc check on the hopper says what.");
         }
         for (String unknown : labels.unknown()) {
             say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");

@@ -176,6 +176,11 @@ public final class SortListener implements Listener {
             event.setAllowed(false); // a labelled furnace takes it: it goes there first
             return;
         }
+        if (block.getState(false) instanceof Container target && !Returns.isCopperChest(block.getType())
+                && HopperLines.feedsFurnace(block.getWorld(), HomeFinder.halvesOf(target.getInventory(), block))) {
+            event.setAllowed(false); // feeds a smelter through hoppers: never sort into it, even after the timeouts
+            return;
+        }
         if (!HomeFinder.isDestination(block.getType())) {
             if (HomeFinder.isVanillaTarget(block.getType())) {
                 event.setAllowed(false); // chests left out of destination-containers

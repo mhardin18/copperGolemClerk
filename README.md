@@ -30,8 +30,9 @@ that cover nearly every survival item; everything else is optional.
 - **Taller stacks** (a setting): golems reach chests up to 6 rows high (vanilla: 2).
 - **Barrels and shulker boxes** as destinations (a setting).
 - **Bigger loads** (a setting): carry up to 64 items a trip instead of 16.
-- **Golems run your furnaces:** label a furnace `[raw iron]` and golems feed it, fuel it
-  from your `[Fuel]` chest (charcoal before coal) and sort what comes out.
+- **Golems run your furnaces:** label a furnace `[raw iron]` (or build a hopper smelter)
+  and golems feed it from your `[Furnace Supply]` chest, fuel it from your `[Fuel]` chest
+  and sort what comes out.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
 
 **Golems that look after themselves**
@@ -155,6 +156,7 @@ several (`[ice][snow]`), and the chest takes anything any rule matches:
 | `[No Golems]`| nothing: golems leave it alone  |
 | `[Only Logs]`| on a copper chest: golems take only logs out |
 | `[Fuel]`    | golems take furnace fuel from it (furnace feeding) |
+| `[Furnace Supply]` | golems take items to cook from it (furnace feeding) |
 
 Case doesn't matter and spaces count as underscores. A group name wins over an
 item with the same name, and group names work singular or plural (`[Rail]` =
@@ -233,31 +235,55 @@ homeless aren't added.
 
 ### Golems run your furnaces
 
-Put a label on a furnace, smoker or blast furnace, the same way as on a chest (a sign
-or an item frame), and golems keep it going. Furnaces without a label are never touched.
+Golems keep furnaces, smokers and blast furnaces going: they bring items to cook and fuel,
+and take out what's done. Two kinds of furnace take part:
 
-**What goes in.** Only items the label covers *and* that kind of furnace can cook:
-`[raw iron]` on a blast furnace takes raw iron; `[food]` on a smoker takes only the raw
-food a smoker can cook, never bread or cooked meat. A golem carrying such an item takes
-it to the furnace before looking for a chest. Group labels can cover more than you
-expect (`[ores]` also covers ore blocks you mined with Silk Touch), so `/cgc check` on
-the furnace lists exactly which items golems will put in, and points out label entries
-that add nothing.
+- **A labelled furnace:** a sign or item frame on it, the same as on a chest, says what to
+  cook there (`[raw iron]`, `[sand]`, `[ores]`). Furnaces without a label (and not on a
+  hopper line) are never touched.
+- **A hopper smelter:** hoppers that lead into furnaces, directly or through more hoppers,
+  as you'd build by hand. Hoppers above a furnace feed its top (items to cook), hoppers
+  beside it feed its side (fuel). Golems deliver into the line's first hopper (or the chest
+  on top of it) when they can reach it, so one trip feeds every furnace along it. A chest
+  that sits on such a hopper line is never used for sorting.
+
+**Where items to cook come from.** Only from containers with a `[Furnace Supply]` sign: put
+the raw iron, sand or logs you want cooked there. Idle golems fetch from it and split each
+load between all the furnaces that take it, so they all cook at once. A copper chest with a
+`[Furnace Supply]` sign works too. What golems carry out of any other copper chest is sorted
+as usual and never goes into a furnace. Label a supply chest `[Furnace Supply] [raw iron]`
+to have golems also sort raw iron into it.
+
+**What goes in.** Only items that kind of furnace can cook: a smoker only takes food, a
+blast furnace ores and metal. A labelled furnace takes only what its label covers. A hopper
+line takes only what *every* furnace on it can cook (a label on its first hopper narrows
+that), and only while its hoppers are empty or already hold the same item, so a line never
+clogs with something a furnace can't use. `/cgc check` on a furnace or hopper says exactly
+what golems will put in, and why not.
 
 **What comes out.** An idle golem takes out what the furnace has made and sorts it like
-anything else. Items taken out of a furnace are never put back into one, so `[stone]`
-can't turn into an endless cobblestone → stone → smooth stone loop.
+anything else, unless a hopper under the furnace collects it. Furnaces on hopper lines are
+emptied too (`furnace-empty-hopper-lines: false` leaves them to you). Items taken out of a
+furnace are never put back into one, so `[stone]` can't turn into an endless cobblestone →
+stone → smooth stone loop.
 
-**Fuel.** Golems only take fuel from containers with a `[Fuel]` sign, so the coal in
-your other chests is never burned. They use the first fuel in `furnace-fuel` that a
-`[Fuel]` container in range holds (`[charcoal, coal]` by default: charcoal first), and
-bring only as much as the waiting items need: 8 raw iron get one piece of charcoal. A
-furnace still burning a fuel lower on the list isn't topped up with it; it switches
-once that runs out. A fuel someone else put in (not in `furnace-fuel`) is left alone.
-A `[Fuel]` chest with no other label never receives sorted items; label it
-`[Fuel] [charcoal]` to have golems fill it with charcoal too.
+**Fuel.** Golems only take fuel from containers with a `[Fuel]` sign, so the coal in your
+other chests is never burned. They use the first fuel in `furnace-fuel` that a `[Fuel]`
+container in range holds (`[charcoal, coal, lava_bucket]` by default), and bring only as
+much as the waiting items need: 8 raw iron get one piece of charcoal. A furnace still
+burning a fuel lower on the list isn't topped up with it; it switches once that runs out
+(hopper lines take any listed fuel). A fuel someone else put in (not in `furnace-fuel`) is
+left alone. Lava buckets leave an empty bucket in the furnace: golems take it out and refill
+it at a lava cauldron nearby (never from lava in the world), then put it back in a `[Fuel]`
+container; with no lava cauldron, the empty bucket is sorted like anything else. A `[Fuel]`
+chest with no other label never receives sorted items; label it `[Fuel] [charcoal]` to have
+golems fill it with the charcoal your furnaces make.
 
-`[No Golems]` and locked furnaces are left alone. Turn it all off with
+**Claims.** Golems only use furnaces, hoppers and `[Fuel]` and `[Furnace Supply]` containers
+in the claim their copper chest is in, or in a claim where that claim's owner has container
+trust (`furnace-trusted-claims: false` turns that off).
+
+`[No Golems]` and locked furnaces, hoppers and chests are left alone. Turn it all off with
 `furnace-feeding: false`.
 
 ### Golems give way to each other
@@ -541,8 +567,10 @@ with its line number and the old settings are kept.
 | `fetch-from-overflow` | `true` | A golem with nothing to do takes items that now have a home out of an `[Overflow]` chest and sorts them. |
 | `fetchers-per-overflow-chest` | `2` | How many golems may fetch from one overflow chest at a time (each a different item). |
 | `carry-amount` | `16` | Items a golem carries per trip, 1 to 64 (vanilla: 16). Items that stack to less (ender pearls 16, tools 1) are carried that many at most. |
-| `furnace-feeding` | `true` | Golems feed, empty and fuel furnaces, smokers and blast furnaces that have a label. Unlabelled furnaces are never touched. |
-| `furnace-fuel` | `[charcoal, coal]` | Fuels golems may put in, most preferred first. Taken only from containers with a `[Fuel]` sign, only as much as the waiting items need. Unknown names, items that don't burn and `lava_bucket` are reported and skipped. |
+| `furnace-feeding` | `true` | Golems feed, empty and fuel furnaces, smokers and blast furnaces that have a label or are on a hopper line, with items from `[Furnace Supply]` containers. |
+| `furnace-fuel` | `[charcoal, coal, lava_bucket]` | Fuels golems may put in, most preferred first. Taken only from containers with a `[Fuel]` sign, only as much as the waiting items need. Unknown names and items that don't burn are reported and skipped. |
+| `furnace-empty-hopper-lines` | `true` | Golems also empty furnaces fed by a hopper line (never one with a hopper under it). |
+| `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
 | `take-reach` | `2` | How many rows up golems take from copper chests and fetch from `[Overflow]` chests, 2 to 6. |
 

@@ -108,18 +108,29 @@ fetchers-per-overflow-chest: 2
 # that many at most. Higher means fewer trips for big sorting jobs.
 carry-amount: 16
 
-# Golems run furnaces, smokers and blast furnaces that have a label (a sign or item
-# frame, like a chest's), which says what to cook there: [raw iron], [sand]...
-# Unlabelled furnaces are left alone. Only items the label covers AND that kind of
-# furnace can cook go in (/cgc check on the furnace lists them). Idle golems take out
-# what's done and sort it; things taken out of a furnace never go back into one.
+# Golems run furnaces, smokers and blast furnaces: ones with a label (a sign or item frame,
+# like a chest's) saying what to cook there ([raw iron], [sand]...), and ones fed by a hopper
+# line (hoppers leading into the furnace's top or side). Items to cook come ONLY from
+# containers with a [Furnace Supply] sign; idle golems fetch from them and split each load
+# between the furnaces that take it. Only items that kind of furnace can cook go in (a hopper
+# line: what every furnace on it can cook, and only while it's empty or holds the same item).
+# Chests sitting on such a hopper line are never used for sorting. Idle golems take out
+# what's done and sort it, unless a hopper under the furnace collects it; things taken out
+# of a furnace never go back into one. /cgc check on a furnace or hopper explains it all.
 furnace-feeding: true
 # Fuel, most preferred first. Golems take fuel ONLY from containers with a [Fuel] sign,
 # use the first fuel in this list that one of them holds, and bring just enough for
-# what's waiting in the furnace. A furnace burning a fuel lower on the list is left to
-# burn out before it gets the better one. Fuel you put in yourself (not in this list)
-# is left alone.
-furnace-fuel: [charcoal, coal]
+# what's waiting. A furnace burning a fuel lower on the list is left to burn out before it
+# gets the better one (hopper lines take any of these). Fuel you put in yourself (not in
+# this list) is left alone. Empty buckets left by lava are refilled only at a lava cauldron
+# nearby and put back in a [Fuel] container (sorted like anything else if there's none).
+furnace-fuel: [charcoal, coal, lava_bucket]
+# Golems also empty furnaces fed by a hopper line (a hopper under a furnace still keeps them away).
+furnace-empty-hopper-lines: true
+# With GriefPrevention, golems use furnaces, hoppers and [Fuel]/[Furnace Supply] containers
+# in the claim their copper chest is in. true: also in claims where that claim's owner has
+# container trust.
+furnace-trusted-claims: true
 
 # /cgc find <item>: which containers near a player hold an item. By default players only
 # see containers inside GriefPrevention claims they own (never locked ones).

@@ -45,6 +45,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private GolemCarry carry;
     private volatile boolean furnaceFeeding = true;
     private volatile List<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
+    private volatile boolean furnaceEmptyHopperLines = true;
+    private volatile boolean furnaceTrustedClaims = true;
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -268,6 +270,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         HomeFinder.setDestinations(destinationSetting(config));
         furnaceFeeding = config.getBoolean("furnace-feeding", true);
         furnaceFuel = fuelSetting(config);
+        furnaceEmptyHopperLines = config.getBoolean("furnace-empty-hopper-lines", true);
+        furnaceTrustedClaims = config.getBoolean("furnace-trusted-claims", true);
         if (listener != null) {
             listener.furnaces().clear();
         }
@@ -381,6 +385,16 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return furnaceFeeding;
     }
 
+    /** furnace-empty-hopper-lines: golems empty furnaces fed by hopper lines (unless a hopper under them collects). */
+    boolean furnaceEmptyHopperLines() {
+        return furnaceEmptyHopperLines;
+    }
+
+    /** furnace-trusted-claims: golems also use furnaces and supplies in claims where their owner has container trust. */
+    boolean furnaceTrustedClaims() {
+        return furnaceTrustedClaims;
+    }
+
     /** furnace-fuel: what golems put into furnaces as fuel, most preferred first. */
     List<Material> furnaceFuel() {
         return furnaceFuel;
@@ -468,7 +482,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return traceGolems;
     }
 
-    /** furnace-fuel: fuels in order of preference (unknown names, non-fuels and buckets are warned about). */
+    /** furnace-fuel: fuels in order of preference (unknown names and non-fuels are warned about). */
     private List<Material> fuelSetting(YamlConfiguration config) {
         if (!config.isList("furnace-fuel")) {
             return FurnaceFeeder.defaultFuel();
@@ -480,8 +494,6 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 getLogger().warning("furnace-fuel: '" + raw + "' isn't an item; ignored.");
             } else if (!m.isFuel()) {
                 getLogger().warning("furnace-fuel: " + m.getKey().getKey() + " doesn't burn in a furnace; ignored.");
-            } else if (m == Material.LAVA_BUCKET) {
-                getLogger().warning("furnace-fuel: lava_bucket leaves an empty bucket in the fuel slot; ignored.");
             } else {
                 fuel.add(m);
             }
