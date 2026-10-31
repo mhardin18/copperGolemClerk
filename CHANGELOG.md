@@ -2,6 +2,8 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept, and new settings use their defaults until you add them.
 
+## 2.6.2 (Unreleased)
+
 ## 2.6.1 (2026-10-30)
 
 ### Fixed
