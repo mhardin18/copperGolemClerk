@@ -5,6 +5,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 ## Unreleased
 
 ### Fixed
+- The "While you were away, golems sorted N items" message counted the whole hour you left in, so items sorted while you were still online showed up as sorted while you were away (log off at 20:43 after a busy hour, and the next join reported that whole hour). It now notes the running count when you leave and reports only what was sorted after that.
 - `max-golems-per-claim` is now counted for each claim on its own, as documented. It used to add up all the claims of one owner, and golems in admin claims counted as unclaimed land (`max-golems-outside-claims`); admin claims now have their own limit too.
 - `/cgc golems` no longer lists a golem that was killed just before its chunk unloaded (for example `/kill` and then everyone leaving) as "not loaded". It used to stay in the list, and in `golems.yml`, for 30 days.
 

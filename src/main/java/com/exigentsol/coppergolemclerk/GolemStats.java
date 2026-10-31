@@ -60,6 +60,8 @@ final class GolemStats implements Listener {
     private final Map<String, Counts> owners = new HashMap<>();
     private final Map<Material, Long> items = new EnumMap<>(Material.class);
     private final Map<UUID, Long> leftAt = new HashMap<>();
+    /** Running totals when a player left: [their claims' total, the whole server's total]. */
+    private final Map<UUID, long[]> totalsAtLeave = new HashMap<>();
     private final Map<UUID, Last> lastDelivery = new HashMap<>();
     /** Full-chest alerts by owner: alert key -> when. */
     private final Map<String, Map<String, Long>> fullChests = new HashMap<>();
@@ -121,6 +123,40 @@ final class GolemStats implements Listener {
         for (var e : c.hourly.entrySet()) {
             if (e.getKey() >= fromHour) {
                 sum += e.getValue();
+            }
+        }
+        return sum;
+    }
+
+    private long allTotal() {
+        long sum = 0;
+        for (Counts c : owners.values()) {
+            sum += c.total;
+        }
+        return sum;
+    }
+
+    private long totalOf(String owner) {
+        Counts c = owners.get(owner);
+        return c == null ? 0 : c.total;
+    }
+
+    /**
+     * Items sorted since a player left. With the running total noted when they left, it's
+     * exact: the total now less that. Without it (stats.yml from an older version), only the
+     * whole hours after the one they left in count, so time they were still online never does.
+     */
+    static long sortedSince(long totalNow, Long totalAtLeave, Map<Long, Integer> hourly, long leftMillis) {
+        if (totalAtLeave != null) {
+            return Math.max(0, totalNow - totalAtLeave);
+        }
+        long firstHour = leftMillis / HOUR + 1;
+        long sum = 0;
+        if (hourly != null) {
+            for (var e : hourly.entrySet()) {
+                if (e.getKey() >= firstHour) {
+                    sum += e.getValue();
+                }
             }
         }
         return sum;
@@ -225,7 +261,9 @@ final class GolemStats implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
-        leftAt.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+        UUID id = event.getPlayer().getUniqueId();
+        leftAt.put(id, System.currentTimeMillis());
+        totalsAtLeave.put(id, new long[]{totalOf(id.toString()), allTotal()});
         dirty = true;
     }
 
@@ -240,12 +278,25 @@ final class GolemStats implements Listener {
         String away = left != null ? "While you were away" : "In the last day";
         String key = player.getUniqueId().toString();
         String message = null;
+        long[] atLeave = totalsAtLeave.get(player.getUniqueId());
         if (owners.containsKey(key) || fullChests.containsKey(key)) {
-            long n = since(owners.get(key), from);
+            Counts mine = owners.get(key);
+            long n = left == null ? since(mine, from)
+                    : sortedSince(totalOf(key), atLeave == null ? null : atLeave[0], mine == null ? null : mine.hourly, left);
             int full = fullFor(key, from);
             message = summary(away + ", golems sorted %s in your claims.", n, full);
         } else if (player.hasPermission(Alerts.PERMISSION) && (owners.containsKey(UNCLAIMED) || fullChests.containsKey(UNCLAIMED))) {
-            long n = allSince(from);
+            long n;
+            if (left == null) {
+                n = allSince(from);
+            } else if (atLeave != null) {
+                n = Math.max(0, allTotal() - atLeave[1]);
+            } else {
+                n = 0;
+                for (Counts c : owners.values()) {
+                    n += sortedSince(0, null, c.hourly, left);
+                }
+            }
             int full = fullFor(UNCLAIMED, from);
             message = summary(away + ", golems sorted %s on the server.", n, full);
         }
@@ -310,7 +361,12 @@ final class GolemStats implements Listener {
         if (l != null) {
             for (String id : l.getKeys(false)) {
                 try {
-                    leftAt.put(UUID.fromString(id), l.getLong(id));
+                    UUID uuid = UUID.fromString(id);
+                    leftAt.put(uuid, l.getLong(id));
+                    if (yaml.isSet("left-totals." + id + ".own")) {
+                        totalsAtLeave.put(uuid, new long[]{yaml.getLong("left-totals." + id + ".own"),
+                                yaml.getLong("left-totals." + id + ".all")});
+                    }
                 } catch (IllegalArgumentException ignored) {
                     // skip
                 }
@@ -334,6 +390,10 @@ final class GolemStats implements Listener {
         });
         items.forEach((m, n) -> yaml.set("items." + m.getKey().getKey(), n));
         leftAt.forEach((id, t) -> yaml.set("left." + id, t));
+        totalsAtLeave.forEach((id, t) -> {
+            yaml.set("left-totals." + id + ".own", t[0]);
+            yaml.set("left-totals." + id + ".all", t[1]);
+        });
         try {
             yaml.save(file);
             dirty = false;
