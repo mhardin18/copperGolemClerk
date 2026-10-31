@@ -63,8 +63,13 @@ golems carry them over by themselves.
 - **`/cgc find diamond`:** lists the chests near you that hold diamonds, nearest first
   (including diamonds inside shulker boxes), and the nearest few glow for a few seconds.
   By default it only looks in your own GriefPrevention claims, so nobody can use it to snoop.
-- **`/cgc check`** explains a chest you can open, **`/cgc overflow`** shows what's piling
-  up in your overflow chests, and **`/cgc stats`** shows what golems have sorted in your claims.
+- **`/cgc check`** explains a chest you can open: what its labels mean and what it takes.
+  Looking at nothing, it says which groups the item in your hand belongs to.
+- **`/cgc overflow`** shows what's piling up in the overflow chests near you, and what label
+  would give each item a home.
+- **`/cgc stats`** shows what golems have sorted in your claims today, in the last 7 days and all time.
+- **`/cgc golems`** lists your own golems and where they are, if the server allows it.
+- **`/cgc help`** lists the commands; `/cgc help <command>` explains one.
 - **Hold bamboo** to see a label over each golem saying what it's doing ("carrying 16 birch
   log", "fetching granite", "lost, walking home") and how weathered it is.
 - **Right-click a golem with bamboo** to switch that one golem back to plain vanilla sorting.
@@ -81,8 +86,8 @@ golems carry them over by themselves.
 - `/cgc stats` shows how much the golems have sorted, server-wide.
 - Players only see what they could open themselves; admins can see into every claim.
 - Optional golem limits cap how many golems in one claim use the plugin (off by default).
-- The plugin adds no measurable tick time: a working copper golem costs about 0.1 ms per tick
-  with or without it (measured with up to 200 golems).
+- Load tested with up to 200 golems: a working golem costs about 0.1 ms per tick, the same as
+  in vanilla.
 - Nearly every feature can be switched off or tuned in `config.yml`, and `/cgc reload`
   applies changes without a restart.
 - Only copper golems are affected. Iron and snow golems, villagers and other mobs are left
