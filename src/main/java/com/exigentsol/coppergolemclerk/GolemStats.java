@@ -60,6 +60,8 @@ final class GolemStats implements Listener {
     private final Map<String, Counts> owners = new HashMap<>();
     private final Map<Material, Long> items = new EnumMap<>(Material.class);
     private final Map<UUID, Long> leftAt = new HashMap<>();
+    /** Running totals when a player left: [their claims' total, the whole server's total]. */
+    private final Map<UUID, long[]> totalsAtLeave = new HashMap<>();
     private final Map<UUID, Last> lastDelivery = new HashMap<>();
     /** Full-chest alerts by owner: alert key -> when. */
     private final Map<String, Map<String, Long>> fullChests = new HashMap<>();
@@ -124,6 +126,24 @@ final class GolemStats implements Listener {
             }
         }
         return sum;
+    }
+
+    private long allTotal() {
+        long sum = 0;
+        for (Counts c : owners.values()) {
+            sum += c.total;
+        }
+        return sum;
+    }
+
+    private long totalOf(String owner) {
+        Counts c = owners.get(owner);
+        return c == null ? 0 : c.total;
+    }
+
+    /** Items sorted since a player left: the running total now less the one noted when they left. */
+    static long sortedSince(long totalNow, long totalAtLeave) {
+        return Math.max(0, totalNow - totalAtLeave);
     }
 
     private long allSince(long fromMillis) {
@@ -225,8 +245,23 @@ final class GolemStats implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
-        leftAt.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+        noteLeaving(event.getPlayer().getUniqueId());
+    }
+
+    private void noteLeaving(UUID id) {
+        leftAt.put(id, System.currentTimeMillis());
+        totalsAtLeave.put(id, new long[]{totalOf(id.toString()), allTotal()});
         dirty = true;
+    }
+
+    /**
+     * The server is stopping: everyone online is leaving now. Paper disconnects players only
+     * after plugins are disabled, so their quit would never be noted.
+     */
+    void everyoneLeaves() {
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            noteLeaving(player.getUniqueId());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -240,12 +275,17 @@ final class GolemStats implements Listener {
         String away = left != null ? "While you were away" : "In the last day";
         String key = player.getUniqueId().toString();
         String message = null;
+        long[] atLeave = totalsAtLeave.get(player.getUniqueId());
+        if (left != null && atLeave == null) {
+            return; // they left under an older version that noted no running total: no reliable count to give
+        }
         if (owners.containsKey(key) || fullChests.containsKey(key)) {
-            long n = since(owners.get(key), from);
+            Counts mine = owners.get(key);
+            long n = left == null ? since(mine, from) : sortedSince(totalOf(key), atLeave[0]);
             int full = fullFor(key, from);
             message = summary(away + ", golems sorted %s in your claims.", n, full);
         } else if (player.hasPermission(Alerts.PERMISSION) && (owners.containsKey(UNCLAIMED) || fullChests.containsKey(UNCLAIMED))) {
-            long n = allSince(from);
+            long n = left == null ? allSince(from) : sortedSince(allTotal(), atLeave[1]);
             int full = fullFor(UNCLAIMED, from);
             message = summary(away + ", golems sorted %s on the server.", n, full);
         }
@@ -310,7 +350,12 @@ final class GolemStats implements Listener {
         if (l != null) {
             for (String id : l.getKeys(false)) {
                 try {
-                    leftAt.put(UUID.fromString(id), l.getLong(id));
+                    UUID uuid = UUID.fromString(id);
+                    leftAt.put(uuid, l.getLong(id));
+                    if (yaml.isSet("left-totals." + id + ".own")) {
+                        totalsAtLeave.put(uuid, new long[]{yaml.getLong("left-totals." + id + ".own"),
+                                yaml.getLong("left-totals." + id + ".all")});
+                    }
                 } catch (IllegalArgumentException ignored) {
                     // skip
                 }
@@ -334,6 +379,10 @@ final class GolemStats implements Listener {
         });
         items.forEach((m, n) -> yaml.set("items." + m.getKey().getKey(), n));
         leftAt.forEach((id, t) -> yaml.set("left." + id, t));
+        totalsAtLeave.forEach((id, t) -> {
+            yaml.set("left-totals." + id + ".own", t[0]);
+            yaml.set("left-totals." + id + ".all", t[1]);
+        });
         try {
             yaml.save(file);
             dirty = false;

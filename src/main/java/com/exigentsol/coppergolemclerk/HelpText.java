@@ -55,6 +55,8 @@ final class HelpText {
                                     + " find-highlight-seconds (default 10).",
                             "Search for anything a sign label takes: an item (birch log), a group (logs), a pattern"
                                     + " (*_log) or a tag (#minecraft:logs).",
+                            "An item name finds just that item (torch: not copper or soul torches); an \"Also nearby\""
+                                    + " line then names other items with the word in their name, and *torch* finds them all.",
                             "It only looks in GriefPrevention claims you own (never locked containers); the server can"
                                     + " allow unclaimed containers and claims where you have container trust too.")),
             new Entry("stats", "/cgc stats", "/cgc stats",
