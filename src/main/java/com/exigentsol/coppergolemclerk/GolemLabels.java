@@ -157,6 +157,9 @@ final class GolemLabels implements Listener {
         if (!plugin.enabledIn(golem.getWorld())) {
             return "plugin off in this world";
         }
+        if (plugin.limits() != null && plugin.limits().isOver(golem.getUniqueId())) {
+            return "over the golem limit: vanilla";
+        }
         if (!plugin.manages(golem)) {
             return "vanilla mode";
         }
