@@ -5,6 +5,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 ## 2.6.2 (Unreleased)
 
 ### Changed
+- `/cgc find torch` finds only torches, as before, but now adds an "Also nearby" line naming other items near you with the word in their name (copper torch, soul torch...) and suggests `/cgc find *torch*` to find them all (`/cgc help find`, README and Hangar page say so too). Searches that already match by name, patterns, tags and groups that cover them get no hint.
 - README and Hangar page: the "For players" lists give every player command a line of its own (`find`, `check`, `overflow`, `stats`, `golems` where allowed, `help`); the README gets a "For admins" list like the Hangar page's; both say what the load test found (about 0.1 ms per golem per tick, as in vanilla).
 
 ### Fixed

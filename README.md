@@ -477,7 +477,10 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   many in each (items inside shulker boxes count too), and the nearest
   `find-highlight-count` (5) glow for you for `find-highlight-seconds` (10). Players can
   search once every 2 seconds. Search for anything a sign label takes: an item
-  (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). It
+  (`birch log`), a group (`logs`), a pattern (`*_log`) or a tag (`#minecraft:logs`). A word
+  that names one item finds just that item (`torch` is the torch, not copper or soul
+  torches); under the results, an "Also nearby" line lists other items near you with the
+  word in their name and suggests `*torch*` to find them all. It
   looks `find-radius` blocks (32) around you, sideways and up or down. **By default it only looks in GriefPrevention
   claims you own** (never in locked containers); nothing hints at anything else.
   `find-outside-own-claims: true` also lets players find things in unclaimed containers
