@@ -4,6 +4,9 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 
 ## 2.6.2 (Unreleased)
 
+### Fixed
+- The "While you were away, golems sorted N items" message counted the whole hour you left in, so items sorted while you were still online showed up as sorted while you were away (log off at 20:43 after a busy hour, and the next join reported that whole hour). It now notes the running count when you leave and reports only what was sorted after that.
+
 ## 2.6.1 (2026-10-30)
 
 ### Fixed
