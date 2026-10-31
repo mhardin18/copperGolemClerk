@@ -63,6 +63,7 @@ golems carry them over by themselves.
 - **`/cgc find diamond`:** lists the chests near you that hold diamonds, nearest first
   (including diamonds inside shulker boxes), and the nearest few glow for a few seconds.
   By default it only looks in your own GriefPrevention claims, so nobody can use it to snoop.
+  Search `torch` and it also tells you about the copper and soul torches nearby.
 - **`/cgc check`** explains a chest you can open: what its labels mean and what it takes.
   Looking at nothing, it says which groups the item in your hand belongs to.
 - **`/cgc overflow`** shows what's piling up in the overflow chests near you, and what label
