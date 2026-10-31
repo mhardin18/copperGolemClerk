@@ -37,16 +37,30 @@ that cover nearly every survival item; everything else is optional.
 - Golems **keep off trapdoors** and **stay out of portals**.
 - Every golem death is logged with its cause, so none go missing unexplained.
 
-**Tools for players and admins**
+**For players**
 - **`/cgc find <item>`:** which chests near you hold something, and the nearest glow for you.
   By default players only search their own GriefPrevention claims.
+- **`/cgc check`:** explains a chest you could open, or which groups the item in your hand is in.
+- **`/cgc overflow`:** what's piling up in the overflow chests near you, and what label would
+  give each item a home.
+- **`/cgc stats`:** what golems have sorted in your claims today, in the last 7 days and all time.
+- **`/cgc golems`:** your own golems and where they are (only with `golems-command-for-players`).
+- **`/cgc help`:** the commands, and `/cgc help <command>` for one.
 - **Full-chest alerts** to the claim owner, even if they're offline.
 - **Status labels:** hold bamboo to see what each golem is doing.
-- **`/cgc stats`**, a join summary of what golems sorted while you were away, and
-  **`/cgc check`** to explain any chest; admins also get **`/cgc golems`** to find every golem.
+- A **join summary** of what golems sorted while you were away.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
+
+**For admins**
+- **`/cgc check`** explains any chest: what its labels mean, what it takes, and anything
+  stopping golems from using it.
+- **`/cgc overflow`** lists what's in overflow chests and what label would give each item a home.
+- **`/cgc stats`** shows how much the golems have sorted, server-wide.
+- **`/cgc golems`** finds every golem: where it is, what it's carrying and whether it's lost.
 - **Golem limits** (optional, off by default): cap how many golems in one claim use the
   plugin.
+- **Load tested** with up to 200 golems: a working golem costs about 0.1 ms per tick, the same
+  as in vanilla.
 
 Every feature has a setting; see [Settings reference](#settings-reference).
 
