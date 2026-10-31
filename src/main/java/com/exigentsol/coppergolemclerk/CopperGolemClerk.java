@@ -191,6 +191,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             finder.save();
         }
         if (stats != null) {
+            stats.everyoneLeaves(); // players are disconnected after plugins stop: note them as leaving now
             stats.save();
         }
         if (labels != null) {

@@ -20,18 +20,11 @@ class StatsSummaryTest {
     }
 
     @Test
-    void sortedSinceUsesTheTotalWhenLeaving() {
-        // Left at 20:43 with 1,000 sorted so far; 1,005 now: 5 while away, however busy that hour was.
-        long left = 20 * 3_600_000L + 43 * 60_000L;
-        assertEquals(5, GolemStats.sortedSince(1005, 1000L, java.util.Map.of(20L, 961, 21L, 5), left));
-        assertEquals(0, GolemStats.sortedSince(1000, 1000L, java.util.Map.of(20L, 961), left));
-    }
-
-    @Test
-    void sortedSinceWithoutATotalSkipsTheHourTheyLeftIn() {
-        long left = 20 * 3_600_000L + 43 * 60_000L;
-        assertEquals(7, GolemStats.sortedSince(0, null, java.util.Map.of(19L, 50, 20L, 961, 21L, 7), left));
-        assertEquals(0, GolemStats.sortedSince(0, null, null, left));
+    void sortedSinceIsTheTotalNowLessTheTotalWhenLeaving() {
+        // Left with 1,000 sorted so far; 1,005 now: 5 while away, however busy the hour they left in was.
+        assertEquals(5, GolemStats.sortedSince(1005, 1000));
+        assertEquals(0, GolemStats.sortedSince(1000, 1000));
+        assertEquals(0, GolemStats.sortedSince(900, 1000)); // stats.yml reset meanwhile: never negative
     }
 
     @Test

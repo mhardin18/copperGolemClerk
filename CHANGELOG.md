@@ -9,7 +9,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 - README and Hangar page: the "For players" lists give every player command a line of its own (`find`, `check`, `overflow`, `stats`, `golems` where allowed, `help`); the README gets a "For admins" list like the Hangar page's; both say what the load test found (about 0.1 ms per golem per tick, as in vanilla).
 
 ### Fixed
-- The "While you were away, golems sorted N items" message counted the whole hour you left in, so items sorted while you were still online showed up as sorted while you were away (log off at 20:43 after a busy hour, and the next join reported that whole hour). It now notes the running count when you leave and reports only what was sorted after that.
+- The "While you were away, golems sorted N items" message counted items sorted while you were still online. It used the whole hour you left in, and a server stop or restart never noted you leaving at all (Paper disconnects players after plugins stop), so the next join counted everything since your last real logoff. It now notes the running count when you leave or the server stops, and reports only what was sorted after that. Players last seen under an older version get no count on their next join, rather than a wrong one.
 
 ## 2.6.1 (2026-10-30)
 
