@@ -187,7 +187,7 @@ final class ChestLabels {
     }
 
     private static void readFrames(Block block, List<ItemGroups.Rule> rules, List<String> names) {
-        Location center = block.getLocation().add(0.5, 0.5, 0.5);
+        Location center = block.getLocation().clone().add(0.5, 0.5, 0.5);
         // A frame on this block sits just outside one of its faces.
         for (ItemFrame frame : block.getWorld().getNearbyEntitiesByType(ItemFrame.class, center, 1.0)) {
             Block attachedTo = frame.getLocation().getBlock().getRelative(frame.getFacing().getOppositeFace());
@@ -228,17 +228,23 @@ final class ChestLabels {
      * DoubleChest holder (only a location in one half), so the other half is
      * also found from the block's own chest data.
      */
+    /** Where an inventory's block is. Unit tests swap this out (the test server reports the wrong height). */
+    static java.util.function.Function<Inventory, Location> locationOf = Inventory::getLocation;
+
+    /** An inventory's holder, without a snapshot. Unit tests swap this out (the test server lacks getHolder(false)). */
+    static java.util.function.Function<Inventory, InventoryHolder> holderOf = inv -> inv.getHolder(false);
+
     static List<Block> blocksOf(Inventory container) {
         List<Block> blocks = new ArrayList<>(2);
-        InventoryHolder holder = container.getHolder(false);
+        InventoryHolder holder = holderOf.apply(container);
         if (holder instanceof DoubleChest chest) {
             addBlock(blocks, chest.getLeftSide(false));
             addBlock(blocks, chest.getRightSide(false));
         } else {
             addBlock(blocks, holder);
         }
-        if (blocks.isEmpty() && container.getLocation() != null) {
-            blocks.add(container.getLocation().getBlock());
+        if (blocks.isEmpty() && locationOf.apply(container) != null) {
+            blocks.add(locationOf.apply(container).getBlock());
         }
         for (Block block : List.copyOf(blocks)) {
             Block other = connectedHalf(block);

@@ -178,8 +178,8 @@ final class GolemGreetings {
         if (other instanceof Snowman) {
             world.playSound(other.getLocation(), Sound.ENTITY_SNOW_GOLEM_AMBIENT, 0.8f, 1.0f);
         }
-        world.spawnParticle(Particle.HEART, golem.getLocation().add(0, golem.getHeight() + 0.3, 0), 2, 0.2, 0.1, 0.2);
-        world.spawnParticle(Particle.HEART, other.getLocation().add(0, other.getHeight() + 0.3, 0), 2, 0.3, 0.1, 0.3);
+        world.spawnParticle(Particle.HEART, golem.getLocation().clone().add(0, golem.getHeight() + 0.3, 0), 2, 0.2, 0.1, 0.2);
+        world.spawnParticle(Particle.HEART, other.getLocation().clone().add(0, other.getHeight() + 0.3, 0), 2, 0.3, 0.1, 0.3);
         // A second wave, still facing each other.
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (golem.isValid() && other.isValid()) {

@@ -307,6 +307,9 @@ final class HomeFinder {
     }
 
     /** Same, around any spot (for /cgc overflow). */
+    /** A chunk's block entities. Unit tests swap this out (the test server can't list them). */
+    static java.util.function.Function<org.bukkit.Chunk, BlockState[]> blockEntities = chunk -> chunk.getTileEntities(false);
+
     static List<BlockState> containersInRange(Location center, boolean riding, Predicate<Material> types) {
         List<BlockState> found = new ArrayList<>();
         World world = center.getWorld();
@@ -321,7 +324,7 @@ final class HomeFinder {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
-                for (BlockState state : world.getChunkAt(cx, cz).getTileEntities(false)) {
+                for (BlockState state : blockEntities.apply(world.getChunkAt(cx, cz))) {
                     if (!(state instanceof Container) || !types.test(state.getType())) {
                         continue;
                     }
@@ -334,7 +337,7 @@ final class HomeFinder {
             }
         }
         Location here = center;
-        found.sort(Comparator.comparingDouble(st -> st.getLocation().add(0.5, 0.5, 0.5).distanceSquared(here)));
+        found.sort(Comparator.comparingDouble(st -> st.getLocation().clone().add(0.5, 0.5, 0.5).distanceSquared(here)));
         return found;
     }
 
@@ -506,7 +509,7 @@ final class HomeFinder {
             if (above.getType().isOccluding()) {
                 return true;
             }
-            for (Cat cat : world.getNearbyEntitiesByType(Cat.class, above.getLocation().add(0.5, 0.5, 0.5), 0.5, 0.5, 0.5)) {
+            for (Cat cat : world.getNearbyEntitiesByType(Cat.class, above.getLocation().clone().add(0.5, 0.5, 0.5), 0.5, 0.5, 0.5)) {
                 if (cat.isSitting()) {
                     return true;
                 }
@@ -610,7 +613,7 @@ final class HomeFinder {
         if (Tag.SHULKER_BOXES.isTagged(state.getType())) {
             if (state.getBlockData() instanceof org.bukkit.block.data.Directional d) {
                 Block front = state.getBlock().getRelative(d.getFacing());
-                return !front.isPassable();
+                return !GolemTraffic.passable.test(front);
             }
             return false;
         }

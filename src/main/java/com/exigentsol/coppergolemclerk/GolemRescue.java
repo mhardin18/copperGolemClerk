@@ -265,17 +265,32 @@ final class GolemRescue {
         String name = golem.customName() == null ? "A copper golem"
                 : "Copper golem \"" + net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
                         .plainText().serialize(golem.customName()) + "\"";
-        if (plugin.lostGolemTeleportHome() && homeAt != null) {
-            Location from = golem.getLocation();
-            golem.teleport(target(world, home));
-            trouble.remove(id);
-            plugin.alerts().send("lost:" + id, homeAt, name + " " + what + "; teleported it back (from "
-                    + Alerts.at(from) + ").");
+        UUID owner = homeAt == null ? null : plugin.claims().ownerAt(homeAt);
+        if (plugin.lostGolemTeleportHome() && owner != null) {
+            // Only for owners allowed to have their golems teleported (LuckPerms for offline owners).
+            plugin.claims().hasPermission(owner, TELEPORT_PERMISSION, allowed -> {
+                if (allowed && golem.isValid() && plugin.manages(golem)) {
+                    Location from = golem.getLocation();
+                    golem.teleport(target(world, home));
+                    trouble.remove(id);
+                    plugin.alerts().send("lost:" + id, homeAt, name + " " + what + "; teleported it back (from "
+                            + Alerts.at(from) + ").");
+                } else {
+                    alertOnly(golem, id, homeAt, name, what);
+                }
+            });
             return;
         }
+        alertOnly(golem, id, homeAt, name, what);
+    }
+
+    private void alertOnly(CopperGolem golem, UUID id, Location homeAt, String name, String what) {
         trouble.put(id, what.replaceFirst("^is ", ""));
         plugin.alerts().send("lost:" + id, homeAt != null ? homeAt : golem.getLocation(), name + " " + what + ".");
     }
+
+    /** Lost golems in this player's claims may be teleported home (with lost-golem-teleport-home on). */
+    static final String TELEPORT_PERMISSION = "coppergolemclerk.teleport";
 
     /** Where to stand at home: beside the chest if there's room, else on it. */
     private static Location target(World world, Home home) {
@@ -304,6 +319,6 @@ final class GolemRescue {
     }
 
     private static double distance(Location at, Block b) {
-        return at.distance(b.getLocation().add(0.5, 0, 0.5));
+        return at.distance(b.getLocation().clone().add(0.5, 0, 0.5));
     }
 }

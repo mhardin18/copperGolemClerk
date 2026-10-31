@@ -152,6 +152,18 @@ final class GolemStats implements Listener {
         long now = System.currentTimeMillis();
         long today = startOfToday();
         long week = now - 7 * 24 * HOUR;
+        if (sender instanceof Player p && !p.hasPermission(Claims.ALL_CLAIMS) && plugin.claims().present()) {
+            // Players see their own claims only (without GriefPrevention there are no claims: the server's numbers).
+            Counts mine = owners.get(p.getUniqueId().toString());
+            if (mine == null || mine.total == 0) {
+                sender.sendMessage(Component.text("Golems haven't sorted anything in your claims yet.", NamedTextColor.YELLOW));
+                return;
+            }
+            sender.sendMessage(Component.text("Copper golems have sorted in your claims:", NamedTextColor.GOLD));
+            sender.sendMessage(line("today", since(mine, today)).append(line(", last 7 days", since(mine, week)))
+                    .append(line(", all time", mine.total)));
+            return;
+        }
         long all = owners.values().stream().mapToLong(c -> c.total).sum();
         sender.sendMessage(Component.text("Copper golems have sorted:", NamedTextColor.GOLD));
         sender.sendMessage(line("today", allSince(today)).append(line(", last 7 days", allSince(week)))

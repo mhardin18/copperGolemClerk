@@ -1,6 +1,5 @@
 package com.exigentsol.coppergolemclerk;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +29,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BlockStateMeta;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
@@ -40,26 +38,27 @@ import org.joml.Vector3f;
  * on a sign label), nearest first, counting items inside shulker boxes too. The containers
  * glow for you (only you) for find-highlight-seconds.
  *
- * Players only see containers they could open themselves: not locked, and with
- * GriefPrevention, unclaimed or in a claim where they have container trust. Nothing hints
- * at containers they can't open. Only coppergolemclerk.find.allclaims (and the console)
- * see into every claim.
+ * Players only see containers in GriefPrevention claims they own (find-outside-own-claims
+ * also allows unclaimed ones and claims where they have container trust), never locked
+ * ones. Nothing hints at the containers they can't see. Only coppergolemclerk.allclaims
+ * (and the console) see into every claim.
  */
 final class ItemFinder implements Listener {
 
     private static final int LIST_MAX = 10;
+    /** A player can search again after this long. */
+    private static final long COOLDOWN_MILLIS = 2_000;
 
     /** One container (both halves of a double chest) holding the item. */
     private record Hit(List<Block> blocks, Block first, String what, int count, int inShulkers, double distance) {
     }
 
+    /** Make a highlight invisible to everyone but the player it's shown to. Unit tests swap this out. */
+    static java.util.function.Consumer<BlockDisplay> hideFromOthers = d -> d.setVisibleByDefault(false);
+
     private final CopperGolemClerk plugin;
     private final Map<UUID, List<BlockDisplay>> highlights = new HashMap<>();
-    private boolean looked;
-    private boolean claimsUnknown;  // GriefPrevention is there but couldn't be read
-    private Object dataStore;      // GriefPrevention.instance.dataStore
-    private Method getClaimAt;     // DataStore.getClaimAt(Location, boolean, Claim)
-    private Method allowContainers; // Claim.allowContainers(Player): null if allowed, else the reason
+    private final Map<UUID, Long> lastSearch = new HashMap<>();
 
     ItemFinder(CopperGolemClerk plugin) {
         this.plugin = plugin;
@@ -67,12 +66,20 @@ final class ItemFinder implements Listener {
 
     /** Run /cgc find for this item text around a spot. */
     void find(CommandSender sender, String text, Location around) {
+        if (sender instanceof Player p && !p.hasPermission("coppergolemclerk.admin")) {
+            long now = System.currentTimeMillis();
+            Long last = lastSearch.get(p.getUniqueId());
+            if (last != null && now - last < COOLDOWN_MILLIS) {
+                throw new IllegalArgumentException("Wait a moment before searching again.");
+            }
+            lastSearch.put(p.getUniqueId(), now);
+        }
         ItemGroups.Rule rule = plugin.groups().signRule(text);
         if (rule == null) {
             throw new IllegalArgumentException("'" + text + "' isn't an item, group, pattern or tag.");
         }
         Predicate<Material> wanted = rule.test();
-        boolean seesAll = !(sender instanceof Player) || sender.hasPermission("coppergolemclerk.find.allclaims");
+        boolean seesAll = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS);
         Player player = sender instanceof Player p ? p : null;
         int radius = plugin.findRadius();
 
@@ -85,7 +92,7 @@ final class ItemFinder implements Listener {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
-                for (BlockState state : world.getChunkAt(cx, cz).getTileEntities(false)) {
+                for (BlockState state : HomeFinder.blockEntities.apply(world.getChunkAt(cx, cz))) {
                     if (!(state instanceof Container container) || seen.contains(state.getBlock())) {
                         continue;
                     }
@@ -104,11 +111,11 @@ final class ItemFinder implements Listener {
                     if (count[0] + count[1] == 0) {
                         continue;
                     }
-                    if (!seesAll && !mayOpen(player, state, block)) {
+                    if (!seesAll && !visible(player, state)) {
                         continue; // not theirs to look into: not even counted
                     }
                     hits.add(new Hit(blocks, block, describe(state, inventory), count[0] + count[1], count[1],
-                            block.getLocation().add(0.5, 0.5, 0.5).distance(around)));
+                            block.getLocation().clone().add(0.5, 0.5, 0.5).distance(around)));
                 }
             }
         }
@@ -153,14 +160,22 @@ final class ItemFinder implements Listener {
         String what = rule.meaning().equals("item") ? text.trim().toLowerCase().replace('_', ' ')
                 : text.trim() + " (" + rule.meaning() + ")";
         if (hits.isEmpty()) {
-            sender.sendMessage(Component.text("No " + what + " in containers within " + radius + " blocks"
-                    + (sender instanceof Player ? " that you can open." : "."), NamedTextColor.YELLOW));
+            String where = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS) ? "."
+                    : plugin.findOutsideOwnClaims() ? " that you can open." : " in your claims.";
+            sender.sendMessage(Component.text("No " + what + " in containers within " + radius + " blocks" + where,
+                    NamedTextColor.YELLOW));
+            if (sender instanceof Player && !sender.hasPermission(Claims.ALL_CLAIMS) && !plugin.findOutsideOwnClaims()
+                    && !plugin.claims().present()) {
+                sender.sendMessage(Component.text("/cgc find only looks in your own claims, and this server has no"
+                        + " GriefPrevention claims (an admin can set find-outside-own-claims: true).", NamedTextColor.GRAY));
+            }
             return;
         }
         int total = hits.stream().mapToInt(Hit::count).sum();
         sender.sendMessage(Component.text(total + " " + what + " in " + hits.size()
                 + (hits.size() == 1 ? " container" : " containers") + " within " + radius + " blocks"
-                + (sender instanceof Player ? " (glowing for " + plugin.findHighlightSeconds() + "s):" : ":"),
+                + (sender instanceof Player && plugin.findHighlightSeconds() > 0 && plugin.findHighlightCount() > 0
+                        ? glowNote(hits.size()) : ":"),
                 NamedTextColor.GOLD));
         for (int i = 0; i < Math.min(LIST_MAX, hits.size()); i++) {
             Hit hit = hits.get(i);
@@ -176,19 +191,26 @@ final class ItemFinder implements Listener {
         }
     }
 
-    /** Make the containers glow for this player only, for find-highlight-seconds. */
+    /** " (glowing for 10s):" or " (the nearest 5 glowing for 10s):" */
+    private String glowNote(int found) {
+        int glowing = Math.min(found, plugin.findHighlightCount());
+        return " (" + (glowing < found ? "the nearest " + glowing + " " : "") + "glowing for "
+                + plugin.findHighlightSeconds() + "s):";
+    }
+
+    /** Make the nearest find-highlight-count containers glow for this player only, for find-highlight-seconds. */
     private void highlight(Player player, List<Hit> hits) {
         clear(player.getUniqueId());
         int seconds = plugin.findHighlightSeconds();
-        if (seconds <= 0 || hits.isEmpty()) {
+        if (seconds <= 0 || plugin.findHighlightCount() <= 0 || hits.isEmpty()) {
             return;
         }
         List<BlockDisplay> shown = new ArrayList<>();
-        for (Hit hit : hits) {
+        for (Hit hit : hits.subList(0, Math.min(plugin.findHighlightCount(), hits.size()))) { // nearest first
             for (Block block : hit.blocks()) {
                 BlockDisplay display = block.getWorld().spawn(block.getLocation(), BlockDisplay.class, d -> {
                     d.setPersistent(false);
-                    d.setVisibleByDefault(false);
+                    hideFromOthers.accept(d);
                     d.setBlock(block.getBlockData());
                     d.setGlowing(true);
                     d.setGlowColorOverride(Color.LIME);
@@ -220,6 +242,7 @@ final class ItemFinder implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         clear(event.getPlayer().getUniqueId());
+        lastSearch.remove(event.getPlayer().getUniqueId());
     }
 
     /** Remove every highlight (plugin disabled). */
@@ -229,56 +252,19 @@ final class ItemFinder implements Listener {
         }
     }
 
-    /** Could this player open the container: not locked, and allowed by GriefPrevention (if installed). */
-    private boolean mayOpen(Player player, BlockState state, Block block) {
+    /**
+     * May this player see this container through /cgc find: not locked, and in a claim they
+     * own, or (with find-outside-own-claims) unclaimed or in a claim where they have container
+     * trust.
+     */
+    private boolean visible(Player player, BlockState state) {
         if (HomeFinder.isLocked(state)) {
             return false;
         }
-        if (!looked) {
-            findProtection();
+        Claims claims = plugin.claims();
+        if (claims.ownsClaimAt(player, state.getLocation())) {
+            return true;
         }
-        if (claimsUnknown) {
-            return false; // can't tell whose chests these are: don't show them
-        }
-        if (getClaimAt == null) {
-            return true; // no GriefPrevention
-        }
-        try {
-            Object claim = getClaimAt.invoke(dataStore, block.getLocation(), false, null);
-            if (claim == null) {
-                return true;
-            }
-            if (allowContainers == null) {
-                allowContainers = claim.getClass().getMethod("allowContainers", Player.class);
-            }
-            return allowContainers.invoke(claim, player) == null;
-        } catch (ReflectiveOperationException | RuntimeException e) {
-            return false; // can't tell: don't show other people's chests
-        }
-    }
-
-    private void findProtection() {
-        looked = true;
-        Plugin gp = plugin.getServer().getPluginManager().getPlugin("GriefPrevention");
-        if (gp == null || !gp.isEnabled()) {
-            return;
-        }
-        try {
-            Object instance = gp.getClass().getField("instance").get(null);
-            dataStore = instance.getClass().getField("dataStore").get(instance);
-            for (Method m : dataStore.getClass().getMethods()) {
-                if (m.getName().equals("getClaimAt") && m.getParameterCount() == 3
-                        && m.getParameterTypes()[0] == Location.class && m.getParameterTypes()[1] == boolean.class) {
-                    getClaimAt = m;
-                    break;
-                }
-            }
-            claimsUnknown = getClaimAt == null;
-        } catch (ReflectiveOperationException | RuntimeException e) {
-            plugin.getLogger().warning("Couldn't read GriefPrevention claims for /cgc find (" + e
-                    + "); players without coppergolemclerk.find.allclaims won't see any containers.");
-            getClaimAt = null;
-            claimsUnknown = true;
-        }
+        return plugin.findOutsideOwnClaims() && claims.mayOpen(player, state);
     }
 }

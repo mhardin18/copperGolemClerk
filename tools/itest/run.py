@@ -49,6 +49,9 @@ import suite_destinations  # noqa: E402,F401
 import suite_carry  # noqa: E402,F401
 import suite_furnace  # noqa: E402,F401
 import suite_find  # noqa: E402,F401
+import suite_edge26  # noqa: E402,F401
+import suite_claims  # noqa: E402,F401
+import suite_limits  # noqa: E402,F401
 import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the others)
 from rcon import from_properties  # noqa: E402
 
@@ -77,7 +80,7 @@ def run_batch(r, log, batch, keep):
     """Build a batch of scenarios, poll until each passes or times out. Returns results."""
     cells, checks, done, last = {}, {}, {}, None
     for i, s in batch:
-        cells[i] = arena.Cell(r, i, log, s["dimension"])
+        cells[i] = arena.Cell(r, i, log, s["dimension"], s.get("place"))
         cells[i].forceload(True)
     time.sleep(2)
     try:

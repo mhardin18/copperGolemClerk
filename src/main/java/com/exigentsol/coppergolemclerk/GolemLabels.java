@@ -136,7 +136,7 @@ final class GolemLabels implements Listener {
     }
 
     private Location spot(CopperGolem golem) {
-        return golem.getLocation().add(0, golem.getHeight() + HEIGHT, 0);
+        return golem.getLocation().clone().add(0, golem.getHeight() + HEIGHT, 0);
     }
 
     /** The label: what the golem is doing, then its copper if it has started to weather. */
@@ -156,6 +156,9 @@ final class GolemLabels implements Listener {
         UUID id = golem.getUniqueId();
         if (!plugin.enabledIn(golem.getWorld())) {
             return "plugin off in this world";
+        }
+        if (plugin.limits() != null && plugin.limits().isOver(golem.getUniqueId())) {
+            return "over the golem limit: vanilla";
         }
         if (!plugin.manages(golem)) {
             return "vanilla mode";

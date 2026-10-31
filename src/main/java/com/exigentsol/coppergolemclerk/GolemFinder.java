@@ -43,6 +43,8 @@ final class GolemFinder implements Listener {
     }
 
     private static final int MAX_NEAR = 10;
+    /** Without GriefPrevention, players' /cgc golems lists golems this close to them. */
+    private static final double PLAYER_RANGE_WITHOUT_CLAIMS = 48;
     private static final int MAX_ALL = 100;
 
     private final CopperGolemClerk plugin;
@@ -142,8 +144,19 @@ final class GolemFinder implements Listener {
         if (!(event.getEntity() instanceof CopperGolem golem)) {
             return;
         }
+        // A killed golem stays in the world for its death animation; if its chunk unloads then,
+        // it's removed as UNLOAD although it's gone for good.
+        boolean gone = golem.isDead() || golem.getHealth() <= 0;
         switch (event.getCause()) {
-            case UNLOAD, PLAYER_QUIT -> note(golem); // still exists (a golem changing world is noted again as it arrives)
+            case UNLOAD, PLAYER_QUIT -> {
+                if (gone) {
+                    if (seen.remove(golem.getUniqueId()) != null) {
+                        dirty = true;
+                    }
+                } else {
+                    note(golem); // still exists (a golem changing world is noted again as it arrives)
+                }
+            }
             default -> { // died, statue, /kill, removed by a plugin...
                 if (seen.remove(golem.getUniqueId()) != null) {
                     dirty = true;
@@ -191,6 +204,9 @@ final class GolemFinder implements Listener {
                     : distance(here, new Location(w, s.x() + 0.5, s.y(), s.z() + 0.5));
             rows.add(new Row(e.getKey(), null, s, d));
         }
+        if (player != null && !player.hasPermission(Claims.ALL_CLAIMS)) {
+            rows.removeIf(r -> !mine(player, r)); // players see their own golems only
+        }
         rows.sort(Comparator.comparingDouble(Row::distance)
                 .thenComparing(r -> r.seen() == null ? "" : r.seen().world())
                 .thenComparingInt(r -> r.seen() == null ? 0 : r.seen().x()));
@@ -200,7 +216,9 @@ final class GolemFinder implements Listener {
                 : spot != null ? "near " + spot.getBlockX() + " " + spot.getBlockY() + " " + spot.getBlockZ() + " in " + here.getWorld().getName()
                 : "in " + here.getWorld().getName();
         if (rows.isEmpty()) {
-            sender.sendMessage(Component.text("No copper golems " + scope + " that the plugin knows of.", NamedTextColor.YELLOW));
+            boolean ownOnly = player != null && !player.hasPermission(Claims.ALL_CLAIMS);
+            sender.sendMessage(Component.text("No copper golems " + scope + (ownOnly ? " in or belonging to your claims."
+                    : " that the plugin knows of."), NamedTextColor.YELLOW));
             return;
         }
         sender.sendMessage(Component.text("Copper golems " + scope + ": " + loaded + " loaded"
@@ -214,6 +232,30 @@ final class GolemFinder implements Listener {
             sender.sendMessage(Component.text("...and " + (rows.size() - max) + " more"
                     + (everywhere ? "." : ". /cgc golems all lists every one."), NamedTextColor.GRAY));
         }
+    }
+
+    /** A golem in a claim the player owns, or whose copper chest is in one (no GriefPrevention: near the player). */
+    private boolean mine(Player player, Row row) {
+        Claims claims = plugin.claims();
+        if (!claims.present()) {
+            // No GriefPrevention, so no claims: the golems near the player.
+            return row.distance() <= PLAYER_RANGE_WITHOUT_CLAIMS;
+        }
+        Location at = row.live() != null ? row.live().getLocation() : locationOf(row.seen());
+        if (at != null && claims.ownsClaimAt(player, at)) {
+            return true;
+        }
+        if (row.live() != null && plugin.rescue() != null) {
+            GolemRescue.Home home = plugin.rescue().homeOf(row.live());
+            World w = home == null ? null : plugin.getServer().getWorld(home.world());
+            return w != null && claims.ownsClaimAt(player, new Location(w, home.x(), home.y(), home.z()));
+        }
+        return false;
+    }
+
+    private Location locationOf(Seen s) {
+        World w = s == null ? null : plugin.getServer().getWorld(s.world());
+        return w == null ? null : new Location(w, s.x() + 0.5, s.y(), s.z() + 0.5);
     }
 
     private Component line(int n, Row row, Player player, boolean showWorld, Location here) {
@@ -236,7 +278,7 @@ final class GolemFinder implements Listener {
             out = out.append(Component.text("\"" + name + "\" ", NamedTextColor.WHITE));
         }
         Component where = Component.text(x + " " + y + " " + z + (showWorld ? " in " + world : ""), NamedTextColor.AQUA);
-        if (player != null) {
+        if (player != null && player.hasPermission("coppergolemclerk.admin")) { // the click runs /tp: admins only
             String tp = "/execute in " + plugin.getServer().getWorld(world).getKey() + " run tp @s "
                     + x + " " + (y + 1) + " " + z;
             where = where.clickEvent(ClickEvent.runCommand(tp))

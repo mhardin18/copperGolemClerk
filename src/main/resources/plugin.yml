@@ -3,20 +3,35 @@ version: '${version}'
 main: com.exigentsol.coppergolemclerk.CopperGolemClerk
 api-version: '26.3'
 description: Copper golems file your items properly - by group, by sign label, into overflow chests - and look after themselves.
-softdepend: [GriefPrevention]
+softdepend: [GriefPrevention, LuckPerms]
 permissions:
   coppergolemclerk.toggle:
     description: Switch a copper golem between this plugin's sorting and vanilla (right-click with golem-toggle-item).
     default: true
-  coppergolemclerk.alerts:
-    description: Hear alerts (full chests, lost golems) about places outside anyone's GriefPrevention claim.
-    default: op
   coppergolemclerk.find:
-    description: Use /cgc find to see which containers near you (that you could open) hold an item.
+    description: /cgc find - which containers in your own claims hold an item (find-outside-own-claims widens it).
     default: true
-  coppergolemclerk.find.allclaims:
-    description: /cgc find also looks into containers in other players' GriefPrevention claims, and locked ones.
+  coppergolemclerk.check:
+    description: /cgc check - explain a container you could open, or the item in your hand.
+    default: true
+  coppergolemclerk.overflow:
+    description: /cgc overflow - what's in the [Overflow] chests near you that you could open.
+    default: true
+  coppergolemclerk.stats:
+    description: /cgc stats - what golems have sorted in your own claims.
+    default: true
+  coppergolemclerk.golems:
+    description: /cgc golems - your own golems (only if golems-command-for-players is true).
+    default: true
+  coppergolemclerk.allclaims:
+    description: /cgc find, check, overflow, stats and golems see into every claim and locked containers.
     default: op
+  coppergolemclerk.alerts:
+    description: Receive alerts (full chests, lost golems) about places outside every claim, where there's no owner to tell; without GriefPrevention, every alert.
+    default: op
+  coppergolemclerk.teleport:
+    description: Lost golems belonging to this player's claims may be teleported home (only with lost-golem-teleport-home true).
+    default: false
   coppergolemclerk.admin:
-    description: Use every /cgc command (check, golems, overflow, stats, reload, version; find around any spot); hear about new releases.
+    description: Every /cgc command, including reload and version, positions and 'all'; hear about new releases.
     default: op

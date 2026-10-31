@@ -256,8 +256,8 @@ public final class SortListener implements Listener {
             return;
         }
         Inventory container = event.getContainerInventory();
-        if (container.getLocation() != null
-                && !HomeFinder.isDestination(container.getLocation().getBlock().getType())) {
+        if (ChestLabels.locationOf.apply(container) != null
+                && !HomeFinder.isDestination(ChestLabels.locationOf.apply(container).getBlock().getType())) {
             // Left out of destination-containers (a reload while the golem was on its way).
             event.setResult(Event.Result.DENY);
             return;
@@ -315,7 +315,7 @@ public final class SortListener implements Listener {
             homes.accepted(event.getEntity().getUniqueId());
             tidier.delivered(container);
             if (plugin.stats() != null) {
-                plugin.stats().delivered(event.getEntity(), container.getLocation(), held.getType(), held.getAmount(), true);
+                plugin.stats().delivered(event.getEntity(), ChestLabels.locationOf.apply(container), held.getType(), held.getAmount(), true);
             }
         }
 
@@ -424,7 +424,7 @@ public final class SortListener implements Listener {
     }
 
     private static String formatLocation(Inventory inv) {
-        var loc = inv.getLocation();
+        var loc = ChestLabels.locationOf.apply(inv);
         return loc == null ? "?" : loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
     }
 }

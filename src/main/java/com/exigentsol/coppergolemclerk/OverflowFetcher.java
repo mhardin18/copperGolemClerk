@@ -301,8 +301,8 @@ final class OverflowFetcher {
             endFetch(golem, now, false);
             return;
         }
-        Location center = block.getLocation().add(0.5, 0.5, 0.5);
-        if (golem.getLocation().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH + 0.5
+        Location center = block.getLocation().clone().add(0.5, 0.5, 0.5);
+        if (golem.getLocation().clone().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH + 0.5
                 || (plugin.takeReach() > Reach.VANILLA
                     && Reach.within(golem.getLocation(), world, fetch.halves(), plugin.takeReach()))) {
             takeItem(golem, block, inventory, fetch.type(), fetch.copper() ? "copper chest" : "overflow chest");
@@ -344,7 +344,7 @@ final class OverflowFetcher {
             // it turns into a statue, which drops only guaranteed items.
             equipment.setItemInMainHandDropChance(GUARANTEED_DROP);
             homes.startSearch(golem, type, block);
-            block.getWorld().playSound(block.getLocation().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
+            block.getWorld().playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
             if (plugin.debug()) {
                 plugin.getLogger().info(String.format("%s took %d %s from %s at %d,%d,%d",
                         golem.getType(), take, type, what, block.getX(), block.getY(), block.getZ()));
