@@ -30,7 +30,7 @@ def raw_chest(c, dx=4, dz=16):
     c.sign(dx, dz, "[raw iron]")
 
 
-@scenario("furnace-edge-furnace-broken-mid-feed", "furnace-edge", 180, "The labelled furnace is broken while a golem carries the supply's raw iron to it: the golem sorts it into the [raw iron] chest instead; none lost.")
+@scenario("furnace-edge-furnace-broken-mid-feed", "furnace-edge", 180, "The labelled furnace is broken while a golem carries the supply's raw iron to it: the golem puts it back in the supply (never sorted into the [raw iron] chest); none lost.")
 def _(c):
     supply(c)
     furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
@@ -42,7 +42,7 @@ def _(c):
     def check():
         t.fire_when(lambda: c.holding("raw_iron") > 0, lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:air"))
         return [(t.at is not None, "broke the furnace while the golem carried raw iron"),
-                expect(c, "raw", "raw_iron", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)"), no_errors(c)]
+                expect(c, "supply", "raw_iron", 16), expect(c, "raw", "raw_iron", 0), (c.holding() == 0, f"golem holding {c.holding()} (want 0)"), no_errors(c)]
     return check
 
 

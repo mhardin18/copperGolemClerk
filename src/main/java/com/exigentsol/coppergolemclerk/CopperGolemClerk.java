@@ -46,6 +46,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean furnaceFeeding = true;
     private volatile List<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
     private volatile boolean furnaceTrustedClaims = true;
+    private volatile int furnaceRefillBelow = 8;
+    private volatile int furnaceWaitSeconds = 20;
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -275,6 +277,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         furnaceFeeding = config.getBoolean("furnace-feeding", true);
         furnaceFuel = fuelSetting(config);
         furnaceTrustedClaims = config.getBoolean("furnace-trusted-claims", true);
+        furnaceRefillBelow = rangeSetting(config, "furnace-refill-below", 8, 0, 64);
+        furnaceWaitSeconds = rangeSetting(config, "furnace-wait-seconds", 20, 0, 300);
         if (listener != null) {
             listener.furnaces().clear();
         }
@@ -391,6 +395,16 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** furnace-trusted-claims: golems also use furnaces and supplies in claims where their owner has container trust. */
     boolean furnaceTrustedClaims() {
         return furnaceTrustedClaims;
+    }
+
+    /** furnace-refill-below: a furnace gets more to cook only once this many or fewer items are waiting in it. */
+    int furnaceRefillBelow() {
+        return furnaceRefillBelow;
+    }
+
+    /** furnace-wait-seconds: how long a golem waits at a full furnace before taking its load back to the supply. */
+    int furnaceWaitSeconds() {
+        return furnaceWaitSeconds;
     }
 
     /** furnace-fuel: what golems put into furnaces as fuel, most preferred first. */

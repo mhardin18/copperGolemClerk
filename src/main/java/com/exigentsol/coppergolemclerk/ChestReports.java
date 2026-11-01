@@ -203,11 +203,11 @@ final class ChestReports {
         if (labels.overflow()) {
             say(player, NamedTextColor.AQUA, "  [Overflow] = takes items that have no matching chest in range");
         }
-        if (labels.fuel()) {
+        if (labels.fuel() && plugin.furnaceFeeding()) {
             say(player, NamedTextColor.AQUA, "  [Fuel] = golems take furnace fuel from here"
                     + (labels.hasItemRules() ? "" : " (it takes nothing unless it also has an item label)"));
         }
-        if (labels.supply()) {
+        if (labels.supply() && plugin.furnaceFeeding()) {
             say(player, NamedTextColor.AQUA, "  [Furnace Supply] = golems take items to cook from here"
                     + (labels.hasItemRules() ? "" : " (it takes nothing unless it also has an item label)"));
         }
@@ -226,6 +226,11 @@ final class ChestReports {
             say(player, NamedTextColor.WHITE, labels.overflow()
                     ? "Takes items matching a label, plus items with no other home. What's inside doesn't matter."
                     : "Takes only items matching a label. What's inside doesn't matter.");
+        } else if (plugin.furnaceFeeding() && (labels.fuel() || labels.supply())) {
+            say(player, NamedTextColor.WHITE, "Golems never sort anything into it; they only take "
+                    + (labels.fuel() ? "fuel" : "items to cook") + " out of it.");
+        } else if (plugin.furnaceFeeding() && HopperLines.feedsFurnace(block.getWorld(), halvesOf(block, inv))) {
+            say(player, NamedTextColor.WHITE, "Golems never sort anything into it.");
         } else if (!labels.overflow()) {
             describeContents(player, inv);
         }

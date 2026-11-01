@@ -61,7 +61,7 @@ import org.bukkit.inventory.SmokingRecipe;
  */
 final class FurnaceFeeder {
 
-    enum Kind { FEED, EMPTY, FUEL_TAKE, FUEL_PUT, SUPPLY_TAKE, BUCKET_TAKE, BUCKET_FILL, FUEL_STORE }
+    enum Kind { FEED, FEED_WAIT, EMPTY, FUEL_TAKE, FUEL_PUT, SUPPLY_TAKE, SUPPLY_RETURN, BUCKET_TAKE, BUCKET_FILL, FUEL_STORE }
 
     /**
      * @param target  where the golem is going now (furnace, supply or fuel container, cauldron)
@@ -117,9 +117,11 @@ final class FurnaceFeeder {
         String item = pretty(job.type());
         return switch (job.kind()) {
             case FEED, FUEL_PUT -> "taking " + item + " to a furnace";
+            case FEED_WAIT -> "waiting for room in a furnace";
             case EMPTY -> "emptying a furnace";
             case FUEL_TAKE -> "fetching " + item + " for a furnace";
             case SUPPLY_TAKE -> "fetching " + item + " to cook";
+            case SUPPLY_RETURN -> "putting " + item + " back in the furnace supply";
             case BUCKET_TAKE -> "taking an empty bucket out of a furnace";
             case BUCKET_FILL -> "filling a bucket at a lava cauldron";
             case FUEL_STORE -> "taking a lava bucket to the fuel";
@@ -282,8 +284,9 @@ final class FurnaceFeeder {
         for (BlockState state : HomeFinder.containersInRange(golem, FurnaceFeeder::isFurnace)) {
             if (state instanceof Furnace furnace && usable(golem, furnace, now)) {
                 FurnaceInventory inventory = furnace.getInventory();
+                ItemStack waiting = inventory.getSmelting();
                 if (labelsOf(inventory).accepts(type) && canSmelt(state.getType(), type)
-                        && roomFor(inventory.getSmelting(), item)) {
+                        && roomFor(waiting, item) && (isEmpty(waiting) || waiting.getAmount() <= plugin.furnaceRefillBelow())) {
                     stops.add(HomeFinder.Pos.of(state.getBlock()));
                 }
             }
@@ -316,8 +319,28 @@ final class FurnaceFeeder {
             fromSupply.add(id);
             return true;
         }
+        if (fromSupply.contains(id) && returnToSupply(golem, held.getType(), now)) {
+            return true; // no furnace has room for it now: back into the supply, to wait there
+        }
         declined.put(id, Map.entry(held.getType(), now));
         return false;
+    }
+
+    /**
+     * Walk a golem holding items it fetched from a [Furnace Supply] back to that container
+     * (its search source) and put them back. False if there's no such container or no way there.
+     */
+    private boolean returnToSupply(CopperGolem golem, Material type, long now) {
+        HomeFinder.Search search = homes.searchOf(golem.getUniqueId());
+        if (search == null || search.source() == null || !golem.getWorld().getUID().equals(search.world())) {
+            return false;
+        }
+        Block supply = blockAt(golem.getWorld(), search.source());
+        if (!(supply.getState(false) instanceof Container c) || !labelsOf(c.getInventory()).supply()
+                || !ChestMatcher.hasRoom(golem.getEquipment().getItemInMainHand(), c.getInventory())) {
+            return false;
+        }
+        return start(golem, Kind.SUPPLY_RETURN, supply, null, type, null, now);
     }
 
     /** True if the copper chest this golem took its item from has a [Furnace Supply] sign. */
@@ -608,7 +631,7 @@ final class FurnaceFeeder {
         ItemStack held = golem.getEquipment().getItemInMainHand();
         boolean holdingIt = !held.isEmpty() && held.getType() == job.type();
         boolean ok = switch (job.kind()) {
-            case FEED, FUEL_PUT, FUEL_STORE, BUCKET_FILL -> holdingIt;
+            case FEED, FEED_WAIT, FUEL_PUT, FUEL_STORE, BUCKET_FILL, SUPPLY_RETURN -> holdingIt;
             case EMPTY, FUEL_TAKE, SUPPLY_TAKE, BUCKET_TAKE -> held.isEmpty();
         };
         if (!ok) {
@@ -619,6 +642,7 @@ final class FurnaceFeeder {
             golem.getPathfinder().stopPathfinding();
             return switch (job.kind()) {
                 case FEED -> feedAt(golem, job, target, held, now);
+                case FEED_WAIT -> waitAt(golem, job, target, held, now);
                 case FUEL_PUT -> {
                     putFuel(golem, target, held);
                     yield false;
@@ -633,11 +657,18 @@ final class FurnaceFeeder {
                 case SUPPLY_TAKE -> takeSupply(golem, target, job, now);
                 case BUCKET_TAKE -> takeBucket(golem, target, now);
                 case BUCKET_FILL -> fillBucket(golem, target, now);
-                case FUEL_STORE -> {
+                case FUEL_STORE, SUPPLY_RETURN -> {
                     store(golem, target, held);
                     yield false;
                 }
             };
+        }
+        if (job.kind() == Kind.FEED_WAIT) {
+            if (now - job.startedMillis() > plugin.furnaceWaitSeconds() * 1000L + GIVE_UP_AFTER_MILLIS) {
+                return afterFeeding(golem, job, now); // pushed away and never got back: move on
+            }
+            golem.getPathfinder().moveTo(job.walk(), 1.0);
+            return true;
         }
         if (now - job.startedMillis() > GIVE_UP_AFTER_MILLIS) {
             golem.getPathfinder().stopPathfinding();
@@ -666,6 +697,16 @@ final class FurnaceFeeder {
         List<HomeFinder.Pos> stops = job.stops();
         int share = Math.max(1, (int) Math.ceil(held.getAmount() / (double) stops.size()));
         int moved = putIntoFurnace(golem, block, held, share);
+        if (moved == 0 && stops.size() == 1 && plugin.furnaceWaitSeconds() > 0 && stillTakes(block, held)) {
+            // The last furnace is full for now (it filled while the golem walked over): wait for room.
+            jobs.put(golem.getUniqueId(), new Job(Kind.FEED_WAIT, job.world(), job.target(), null, job.type(),
+                    job.walk(), now, stops));
+            if (plugin.debug()) {
+                plugin.getLogger().info(golem.getType() + " waits up to " + plugin.furnaceWaitSeconds()
+                        + "s for room in the " + pretty(block.getType()) + " at " + at(block));
+            }
+            return true;
+        }
         if (moved > 0) {
             playPut(block);
             if (plugin.stats() != null) {
@@ -676,9 +717,58 @@ final class FurnaceFeeder {
             homes.forget(golem);
             return false;
         }
-        List<HomeFinder.Pos> next = stops.subList(1, stops.size());
-        // Nothing left to visit: what's left is sorted as usual (and returned to its supply if nothing takes it).
-        return !next.isEmpty() && startFeed(golem, job.type(), next, now);
+        return afterFeeding(golem, job, now);
+    }
+
+    /** After a stop: on to the next furnace of the load, or what's left goes back into the supply. */
+    private boolean afterFeeding(CopperGolem golem, Job job, long now) {
+        List<HomeFinder.Pos> next = job.stops().subList(1, job.stops().size());
+        if (!next.isEmpty() && startFeed(golem, job.type(), next, now)) {
+            return true;
+        }
+        return fromSupply.contains(golem.getUniqueId()) && returnToSupply(golem, job.type(), now);
+    }
+
+    /** Waiting beside a full furnace: put the load in once there's room, or give up after furnace-wait-seconds. */
+    private boolean waitAt(CopperGolem golem, Job job, Block block, ItemStack held, long now) {
+        if (!stillTakes(block, held)) {
+            return afterFeeding(golem, job, now); // broken, relabelled or locked meanwhile
+        }
+        int moved = putIntoFurnace(golem, block, held, held.getAmount());
+        if (moved > 0) {
+            playPut(block);
+            if (plugin.stats() != null) {
+                plugin.stats().delivered(golem, block.getLocation(), held.getType(), moved, false);
+            }
+            if (golem.getEquipment().getItemInMainHand().isEmpty()) {
+                homes.forget(golem);
+                return false;
+            }
+        }
+        if (now - job.startedMillis() >= plugin.furnaceWaitSeconds() * 1000L) {
+            return afterFeeding(golem, job, now);
+        }
+        return true; // keep waiting
+    }
+
+    /** True if the block is still a furnace golems may feed this item to (ignoring whether it has room). */
+    private boolean stillTakes(Block block, ItemStack held) {
+        return block.getState(false) instanceof Furnace f && !HomeFinder.isLocked(f)
+                && !labelsOf(f.getInventory()).noGolems() && labelsOf(f.getInventory()).accepts(held.getType())
+                && canSmelt(f.getType(), held.getType());
+    }
+
+    /** How many of this item the furnaces' input slots can still take, in all. */
+    private int roomIn(World world, List<HomeFinder.Pos> furnaces, ItemStack item) {
+        int room = 0;
+        for (HomeFinder.Pos p : furnaces) {
+            if (blockAt(world, p).getState(false) instanceof Furnace f) {
+                ItemStack slot = f.getInventory().getSmelting();
+                room += isEmpty(slot) ? item.getMaxStackSize()
+                        : slot.isSimilar(item) ? Math.max(0, slot.getMaxStackSize() - slot.getAmount()) : 0;
+            }
+        }
+        return room;
     }
 
     /** Into a furnace's input slot, at most `share`. Returns how many went in. */
@@ -810,15 +900,35 @@ final class FurnaceFeeder {
         if (!(sourceBlock.getState(false) instanceof Container container)) {
             return false;
         }
-        ItemStack taken = takeOut(container.getInventory(), job.type(), GolemCarry.amountFor(job.type(), plugin.carryAmount()));
+        ItemStack sample = null;
+        for (ItemStack s : container.getInventory().getStorageContents()) {
+            if (s != null && s.getType() == job.type()) {
+                sample = s.clone();
+                break;
+            }
+        }
+        if (sample == null) {
+            return false; // emptied meanwhile
+        }
+        sample.setAmount(1);
+        List<HomeFinder.Pos> stops = feedStops(golem, sample, now);
+        int room = roomIn(golem.getWorld(), stops, sample);
+        int want = Math.min(room, GolemCarry.amountFor(job.type(), plugin.carryAmount()));
+        if (want <= 0) {
+            return false; // no furnace has room now: leave it in the supply
+        }
+        ItemStack taken = takeOut(container.getInventory(), job.type(), want);
         if (taken == null) {
             return false;
         }
         hand(golem, taken);
         fromSupply.add(golem.getUniqueId());
-        homes.startSearch(golem, taken.getType(), sourceBlock); // left over: sorted, or back to the supply
-        List<HomeFinder.Pos> stops = feedStops(golem, taken, now);
-        return !stops.isEmpty() && startFeed(golem, job.type(), stops, now);
+        homes.startSearch(golem, taken.getType(), sourceBlock); // anything left over goes back here
+        stops = feedStops(golem, taken, now);
+        if (!stops.isEmpty() && startFeed(golem, job.type(), stops, now)) {
+            return true;
+        }
+        return returnToSupply(golem, job.type(), now);
     }
 
     /** At a furnace with an empty bucket in its fuel slot: take it, then refill it at a lava cauldron (or sort it). */

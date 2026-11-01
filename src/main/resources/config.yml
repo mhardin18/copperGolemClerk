@@ -116,6 +116,9 @@ carry-amount: 16
 # furnace lists them). Idle golems take out what's done and sort it, unless a hopper under
 # the furnace collects it; things taken out of a furnace never go back into one. A chest
 # sitting on a hopper that leads into a furnace (a hand-built smelter) is never sorted into.
+# false turns ALL of this off: golems leave every furnace alone, [Fuel] and [Furnace Supply]
+# signs mean nothing (those chests are sorted into like any other), and chests on a
+# smelter's hopper are ordinary chests again (golems may sort random items into them).
 furnace-feeding: true
 # Fuel, most preferred first. Golems take fuel ONLY from containers with a [Fuel] sign,
 # use the first fuel in this list that one of them holds, and bring just enough for
@@ -124,6 +127,21 @@ furnace-feeding: true
 # this list) is left alone. Empty buckets left by lava are refilled only at a lava cauldron
 # nearby and put back in a [Fuel] container (sorted like anything else if there's none).
 furnace-fuel: [charcoal, coal, lava_bucket]
+# When golems top a furnace up: only once this many items or fewer are left waiting in it
+# (0 to 64). At the default 8 a furnace has about 80 seconds of cooking left (40 for a smoker
+# or blast furnace), plenty of time for a golem to bring a full load, so each trip carries a
+# real load. Lower (0 = only when empty) means fewer trips but a furnace can sit idle for a
+# moment while a golem walks over. Higher means more, smaller trips; at 64 golems top up after
+# every single item, walking back and forth all the time (busy golems, wasted trips and a
+# little more server work), which is what this setting is there to stop.
+furnace-refill-below: 8
+# If a furnace has filled up by the time a golem gets there (another golem or a player got
+# there first), the golem waits beside it this many seconds (0 to 300) for an item or two to
+# finish, then puts the rest in, and takes whatever still doesn't fit back to the
+# [Furnace Supply] it came from. 0 = take it straight back, which can turn into a loop of
+# fetching and returning the same items as the furnace frees up. Very long waits keep that
+# golem standing there doing nothing else (no sorting) for the whole time.
+furnace-wait-seconds: 20
 # With GriefPrevention, golems use furnaces and [Fuel]/[Furnace Supply] containers
 # in the claim their copper chest is in. true: also in claims where that claim's owner has
 # container trust.
