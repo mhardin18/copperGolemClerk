@@ -1,4 +1,4 @@
-# Copper Golem Clerk
+# ![](https://raw.githubusercontent.com/mhardin18/copperGolemClerk/main/docs/copper-golem.png) Copper Golem Clerk
 
 **Now hiring: storage clerks.** Must be small, shiny and good with chests. Pay is one copper
 block and a pumpkin. Your new clerks sort the way you would: birch logs in with the oak logs,
@@ -15,9 +15,9 @@ https://github.com/mhardin18/copperGolemClerk/issues
 
 ---
 
-## What your golems learn
+## 🎓 What your golems learn
 
-### 📦 Sort by kind, not just by exact item
+### 🧩 Sort by kind, not just by exact item
 A golem carrying spruce planks uses your chest of oak planks. Stews go with the food,
 swords with the weapons, every colour of wool together. Groups are plain lists in the
 config, so you can change them or make your own.
@@ -91,7 +91,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 
 ---
 
-## For players
+## 🎮 For players
 
 - **`/cgc find diamond`:** lists the chests near you that hold diamonds, nearest first
   (including diamonds inside shulker boxes), and the nearest few glow for a few seconds.
@@ -113,7 +113,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
   if you were offline at the time), and get a summary of what your golems sorted while you
   were away.
 
-## For admins
+## 🛠️ For admins
 
 - `/cgc check` explains any chest: what its labels mean, what it takes, and anything
   stopping golems from using it.
@@ -131,7 +131,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 
 ---
 
-## Getting started
+## ▶️ Getting started
 
 1. Drop the jar into `plugins/` and restart.
 2. Place a copper chest and fill it with mixed items.
@@ -140,7 +140,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 4. Build a copper golem (a carved pumpkin on a copper block) next to the copper chest.
 5. Stay nearby (golems only work in loaded chunks) and watch them file everything.
 
-## Requirements
+## ✅ Requirements
 
 - **Paper 26.3**, build 190 or newer (Spigot and Bukkit aren't supported: the plugin uses Paper's golem events)
 - **Java 25**
@@ -149,7 +149,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
   there. Without it, alerts go to ops, and players' `/cgc find` finds nothing until an
   admin allows it.
 
-## Permissions
+## 🔑 Permissions
 
 All permissions are standard nodes, so they work with LuckPerms or any other permissions plugin.
 
@@ -162,7 +162,7 @@ All permissions are standard nodes, so they work with LuckPerms or any other per
 | `coppergolemclerk.alerts` | op | alerts about things outside any claim, where there's no owner to tell |
 | `coppergolemclerk.admin` | op | all `/cgc` commands |
 
-## Links
+## 🌐 Links
 
 - Full documentation and every setting: [README on GitHub](https://github.com/mhardin18/copperGolemClerk#readme)
 - Changelog: [CHANGELOG.md](https://github.com/mhardin18/copperGolemClerk/blob/main/CHANGELOG.md)

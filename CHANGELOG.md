@@ -11,6 +11,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 
 ### Changed
 - The Hangar page text moved from `docs/hangar.md` to `docs/FullDescription.md`.
+- Hangar page: an icon for every section, and a pixel-art copper golem (`docs/copper-golem.png`) beside the title.
 
 ### Fixed
 - `max-golems-per-claim` is now counted for each claim on its own, as documented. It used to add up all the claims of one owner, and golems in admin claims counted as unclaimed land (`max-golems-outside-claims`); admin claims now have their own limit too.
