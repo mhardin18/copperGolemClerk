@@ -45,7 +45,6 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private GolemCarry carry;
     private volatile boolean furnaceFeeding = true;
     private volatile List<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
-    private volatile boolean furnaceEmptyHopperLines = true;
     private volatile boolean furnaceTrustedClaims = true;
     private volatile long homelessRetryMillis;
     private SortListener listener;
@@ -274,7 +273,6 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         HomeFinder.setDestinations(destinationSetting(config));
         furnaceFeeding = config.getBoolean("furnace-feeding", true);
         furnaceFuel = fuelSetting(config);
-        furnaceEmptyHopperLines = config.getBoolean("furnace-empty-hopper-lines", true);
         furnaceTrustedClaims = config.getBoolean("furnace-trusted-claims", true);
         if (listener != null) {
             listener.furnaces().clear();
@@ -387,11 +385,6 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** furnace-feeding: golems feed, fuel and empty labelled furnaces. */
     boolean furnaceFeeding() {
         return furnaceFeeding;
-    }
-
-    /** furnace-empty-hopper-lines: golems empty furnaces fed by hopper lines (unless a hopper under them collects). */
-    boolean furnaceEmptyHopperLines() {
-        return furnaceEmptyHopperLines;
     }
 
     /** furnace-trusted-claims: golems also use furnaces and supplies in claims where their owner has container trust. */

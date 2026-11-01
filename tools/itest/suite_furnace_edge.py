@@ -46,23 +46,6 @@ def _(c):
     return check
 
 
-@scenario("furnace-edge-hopper-broken-mid-feed", "furnace-edge", 180, "A smelter's hopper is broken while a golem carries raw iron to it: it's sorted into the [raw iron] chest; none lost.")
-def _(c):
-    supply(c)
-    furnace(c, "furnace", 8, 10)
-    hopper(c, "hopper", 8, 10, "down")
-    raw_chest(c)
-    c.golem(4, 10)
-    x, y, z = c.abs(8, 10, 1)
-    t = Trigger()
-
-    def check():
-        t.fire_when(lambda: c.holding("raw_iron") > 0, lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:air"))
-        return [(t.at is not None, "broke the hopper while the golem carried raw iron"),
-                expect(c, "raw", "raw_iron", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)"), no_errors(c)]
-    return check
-
-
 @scenario("furnace-edge-supply-emptied-before-arrival", "furnace-edge", 90, "The supply chest is emptied after a golem sets off for it: the golem gives up quietly, nothing is invented, the furnace stays empty.")
 def _(c):
     supply(c)
@@ -150,26 +133,6 @@ def _(c):
     return check
 
 
-@scenario("furnace-edge-hopper-loop", "furnace-edge", 150, "Four hoppers pushing round in a circle, one with a hopper under it into a furnace: /cgc check answers, and golems feed it without hanging.")
-def _(c):
-    supply(c)
-    furnace(c, "furnace", 8, 10, fuel=("coal", 16), dy=-1)
-    hopper(c, "a", 8, 10, "east", dy=1)
-    hopper(c, "b", 9, 10, "south", dy=1)
-    hopper(c, "c", 9, 11, "west", dy=1)
-    hopper(c, "d", 8, 11, "north", dy=1)
-    hopper(c, "into", 8, 10, "down", dy=0)
-    c.chest("ingots", 4, 16, [("iron_ingot", 1)])
-    c.golem(4, 10)
-    x, y, z = c.abs(8, 10, 1)
-
-    def check():
-        reply = re.sub(r"§.", "", c.r.cmd(f"cgc check {x} {y} {z}"))
-        return [("Feeds the top (items to cook) of: furnace at" in reply, f"/cgc check: {reply.strip()[:200]}"),
-                expect(c, "supply", "raw_iron", 0), iron_conserved(c, 17), no_errors(c)]
-    return check
-
-
 @scenario("furnace-edge-full-furnace", "furnace-edge", 60, "A labelled furnace whose input already holds 64 raw iron: golems leave the supply alone.")
 def _(c):
     supply(c)
@@ -217,27 +180,6 @@ def _(c):
     return lambda: [expect(c, "supply", "raw_iron", 0), iron_conserved(c, 33), no_errors(c)]
 
 
-@scenario("furnace-edge-many-lines", "furnace-edge", 90, "24 hopper smelters, a supply of 27 kinds nothing can cook, and 4 idle golems: nothing is fetched, the server keeps up, no errors.")
-def _(c):
-    nothing = ["dirt", "oak_door", "glass", "oak_planks", "white_wool", "bricks", "obsidian", "torch", "ladder",
-               "chest", "furnace", "hopper", "rail", "lever", "string", "feather", "bone", "arrow", "bow", "book",
-               "paper", "map", "clock", "compass", "bucket", "bowl", "shears"]
-    c.chest("supply", 18, 10, [(n, 1) for n in nothing])
-    c.sign(18, 10, "[Furnace Supply]")
-    for i in range(24):
-        dx, dz = 2 + (i % 6) * 2, 4 + (i // 6) * 3
-        furnace(c, f"f{i}", dx, dz, fuel=("coal", 1))
-        hopper(c, f"h{i}", dx, dz, "down")
-    for dz in (2, 8, 14, 19):
-        c.golem(16, dz)
-
-    def check():
-        lag = [l for l in c.log_lines() if "Can't keep up" in l]
-        return [(c.elapsed() > 60, "watched 60s"), expect(c, "supply", "*", 27), (not lag, f"server kept up; got: {lag[:1]}"),
-                no_errors(c)]
-    return check
-
-
 @scenario("furnace-edge-output-no-home", "furnace-edge", 60, "A labelled furnace holding cracked stone bricks that no chest in range would take (and no copper chest to return them to): golems leave them in the furnace instead of carrying them forever.")
 def _(c):
     furnace(c, "furnace", 8, 10, result=("cracked_stone_bricks", 10), label="[stone bricks]")
@@ -246,3 +188,37 @@ def _(c):
     c.golem(4, 10)
     return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "furnace", "cracked_stone_bricks", 10),
                     (c.holding() == 0, f"golem holding {c.holding()} (want 0)"), no_errors(c)]
+
+
+@scenario("furnace-edge-chest-on-hopper-loop", "furnace-edge", 150, "A chest on four hoppers pushing round in a circle (no furnace): working out whether it feeds a smelter doesn't hang, and it's an ordinary destination.")
+def _(c):
+    c.chest("copper", 2, 10, [("dirt", 16)], block="waxed_copper_chest")
+    hopper(c, "a", 8, 10, "east", dy=0)
+    hopper(c, "b", 9, 10, "south", dy=0)
+    hopper(c, "c", 9, 11, "west", dy=0)
+    hopper(c, "d", 8, 11, "north", dy=0)
+    c.chest("top", 8, 10, dy=1)
+    c.golem(4, 10)
+    loop = ("a", "b", "c", "d", "top")
+    return lambda: [(sum(c.count(n, "dirt") for n in loop) == 16, f"{sum(c.count(n, 'dirt') for n in loop)} dirt in the chest and loop (want 16)"),
+                    no_errors(c)]
+
+
+@scenario("furnace-edge-many-furnaces", "furnace-edge", 90, "24 labelled furnaces, a supply of 27 kinds none of them can cook, and 4 idle golems: nothing is fetched, the server keeps up, no errors.")
+def _(c):
+    nothing = ["dirt", "oak_door", "glass", "oak_planks", "white_wool", "bricks", "obsidian", "torch", "ladder",
+               "chest", "furnace", "hopper", "rail", "lever", "string", "feather", "bone", "arrow", "bow", "book",
+               "paper", "map", "clock", "compass", "bucket", "bowl", "shears"]
+    c.chest("supply", 18, 10, [(n, 1) for n in nothing])
+    c.sign(18, 10, "[Furnace Supply]")
+    for i in range(24):
+        dx, dz = 2 + (i % 6) * 2, 4 + (i // 6) * 3
+        furnace(c, f"f{i}", dx, dz, fuel=("coal", 1), label="[raw iron]")
+    for dz in (2, 8, 14, 19):
+        c.golem(16, dz)
+
+    def check():
+        lag = [l for l in c.log_lines() if "Can't keep up" in l]
+        return [(c.elapsed() > 60, "watched 60s"), expect(c, "supply", "*", 27), (not lag, f"server kept up; got: {lag[:1]}"),
+                no_errors(c)]
+    return check

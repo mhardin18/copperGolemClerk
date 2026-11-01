@@ -1,6 +1,6 @@
 """furnace: golems feed, empty and fuel furnaces (furnace-feeding).
 
-Labelled furnaces and hopper lines (hoppers leading into a furnace's top or side) take part.
+Only labelled furnaces take part. Chests on hoppers that lead into a furnace are never sorted into.
 Items to cook come only from [Furnace Supply] containers; fuel only from [Fuel] containers.
 
 Furnace slots: container.0 = input, container.1 = fuel, container.2 = result.
@@ -156,61 +156,41 @@ def _(c):
     return lambda: [expect(c, "stone", "stone", 9), (slot(c, "furnace", 0) == "", f"furnace input: '{slot(c, 'furnace', 0)}' (want empty)")]
 
 
-# ---- hopper lines
+# ---- hand-built smelters (chests on hoppers into furnaces)
 
-@scenario("line-feeds-unlabelled-furnace", "furnace", 150, "A hopper on top of an unlabelled furnace: golems put the supply's raw iron into the hopper and it cooks.")
+@scenario("smelter-chest-on-side-hopper-not-sorted-into", "furnace", 150, "An empty chest on a hopper that feeds a furnace's side (its fuel), through a second hopper: never sorted into.")
+def _(c):
+    c.chest("copper", 2, 10, [("dirt", 16)], block="waxed_copper_chest")
+    furnace(c, "furnace", 8, 10)
+    hopper(c, "side", 9, 10, "west", dy=0)     # into the furnace's side
+    hopper(c, "feed", 10, 10, "west", dy=0)    # into that hopper
+    c.chest("feeder", 10, 10, dy=1)            # on the second hopper
+    c.chest("empty", 16, 10)
+    c.golem(4, 10)
+    return lambda: [expect(c, "empty", "dirt", 16), expect(c, "feeder", "dirt", 0)]
+
+
+@scenario("chest-on-plain-hopper-still-sorted-into", "furnace", 150, "A chest on a hopper that leads into another chest (not a furnace) is an ordinary destination: the dirt goes there.")
+def _(c):
+    c.chest("copper", 2, 10, [("dirt", 16)], block="waxed_copper_chest")
+    c.chest("below", 8, 10, dy=-1)
+    hopper(c, "hopper", 8, 10, "down", dy=0)
+    c.chest("top", 8, 10, dy=1)
+    c.golem(4, 10)
+    return lambda: [(c.count("top", "dirt") + c.count("hopper", "dirt") + c.count("below", "dirt") == 16,
+                     f"top {c.count('top', 'dirt')} + hopper {c.count('hopper', 'dirt')} + below {c.count('below', 'dirt')} (want 16)")]
+
+
+@scenario("hopper-not-fed", "furnace", 60, "An unlabelled furnace with a hopper on top: golems never put the supply's raw iron into the hopper (they only feed labelled furnaces).")
 def _(c):
     supply(c)
     furnace(c, "furnace", 8, 10, fuel=("coal", 16))
     hopper(c, "hopper", 8, 10, "down")
-    c.chest("ingots", 4, 16, [("iron_ingot", 1)])
-    c.golem(4, 10)
-    return lambda: [expect(c, "supply", "raw_iron", 0),
-                    (cooked(c, "furnace") + c.count("hopper", "raw_iron") + c.total("iron_ingot") - 1 == 16,
-                     f"furnace {cooked(c, 'furnace')}, hopper {c.count('hopper', 'raw_iron')}, ingots {c.total('iron_ingot') - 1} (want 16 in all)")]
-
-
-@scenario("line-feeds-two-furnaces", "furnace", 180, "One hopper line over two furnaces sunk into the floor (a top hopper that pushes on and is pulled from): one delivery into its head feeds both.")
-def _(c):
-    supply(c)
-    furnace(c, "f1", 8, 10, fuel=("coal", 16), dy=-1)
-    furnace(c, "f2", 10, 10, fuel=("coal", 16), dy=-1)
-    hopper(c, "head", 8, 10, "east", dy=1)     # head: pushes east...
-    hopper(c, "mid", 9, 10, "east", dy=1)
-    hopper(c, "end", 10, 10, "down", dy=1)
-    hopper(c, "f2top", 10, 10, "down", dy=0)   # ...into f2
-    hopper(c, "f1top", 8, 10, "down", dy=0)    # and is pulled from by the hopper on f1
-    seen = set()
-
-    def check():
-        for name in ("f1", "f2"):
-            if cooked(c, name) > 0:
-                seen.add(name)
-        return [(seen == {"f1", "f2"}, f"furnaces that got raw iron: {sorted(seen)} (want both)"),
-                expect(c, "supply", "raw_iron", 0)]
-    c.golem(4, 10)
-    return check
-
-
-@scenario("line-never-clogs", "furnace", 60, "A hopper line still holding sand (its furnace is full): golems don't add the supply's raw iron to it.")
-def _(c):
-    supply(c)
-    furnace(c, "furnace", 8, 10, input=("sand", 64))   # full and unfuelled: the hopper can't push
-    hopper(c, "hopper", 8, 10, "down", items=[("sand", 5)])
     c.golem(4, 10)
     return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "supply", "raw_iron", 16), expect(c, "hopper", "raw_iron", 0)]
 
 
-@scenario("line-takes-only-what-all-can-cook", "furnace", 60, "A hopper line into a smoker: golems never put the supply's raw iron into it (a smoker can't cook it).")
-def _(c):
-    supply(c)
-    furnace(c, "smoker", 8, 10, block="smoker", fuel=("coal", 16))
-    hopper(c, "hopper", 8, 10, "down")
-    c.golem(4, 10)
-    return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "supply", "raw_iron", 16), expect(c, "hopper", "raw_iron", 0)]
-
-
-@scenario("line-feeder-chest-not-sorted-into", "furnace", 150, "An empty chest on a hopper that feeds a furnace (a hand-built smelter): a golem with dirt uses the other empty chest, never the smelter's.")
+@scenario("smelter-chest-not-sorted-into", "furnace", 150, "An empty chest on a hopper that feeds a furnace (a hand-built smelter): a golem with dirt uses the other empty chest, never the smelter's.")
 def _(c):
     c.chest("copper", 2, 10, [("dirt", 16)], block="waxed_copper_chest")
     furnace(c, "furnace", 8, 10)
@@ -219,69 +199,6 @@ def _(c):
     c.chest("empty", 16, 10)
     c.golem(4, 10)
     return lambda: [expect(c, "empty", "dirt", 16), expect(c, "feeder", "dirt", 0)]
-
-
-@scenario("line-feeder-chest-filled-from-supply", "furnace", 150, "A chest on top of a smelter's hopper is the line's head: golems put the supply's raw iron into it.")
-def _(c):
-    supply(c)
-    furnace(c, "furnace", 8, 10, fuel=("coal", 16))
-    hopper(c, "hopper", 8, 10, "down")
-    c.chest("feeder", 8, 10, dy=2)
-    c.chest("ingots", 4, 16, [("iron_ingot", 1)])
-    c.golem(4, 10)
-    return lambda: [expect(c, "supply", "raw_iron", 0),
-                    (cooked(c, "furnace") + c.count("feeder", "raw_iron") + c.count("hopper", "raw_iron") + c.total("iron_ingot") - 1 == 16,
-                     f"furnace {cooked(c, 'furnace')}, feeder {c.count('feeder', 'raw_iron')}, ingots {c.total('iron_ingot') - 1} (want 16 in all)")]
-
-
-@scenario("line-fuel-just-enough", "furnace", 150, "8 raw iron in an unlabelled furnace with a hopper into its side: golems put exactly 1 charcoal from the [Fuel] chest into that hopper.")
-def _(c):
-    furnace(c, "furnace", 8, 10, input=("raw_iron", 8))
-    hopper(c, "side", 9, 10, "west", dy=0)
-    c.chest("fuelchest", 14, 14, [("charcoal", 32)])
-    c.sign(14, 14, "[Fuel]")
-    c.golem(4, 10)
-    t = Trigger()
-
-    def check():
-        t.fire_when(lambda: c.count("fuelchest", "charcoal") < 32, lambda: None)
-        settled = t.at is not None and t.since() > 15 and c.holding("charcoal") == 0
-        return [(settled, "fuel delivered and the golem's hands empty for 15s"), expect(c, "fuelchest", "charcoal", 31)]
-    return check
-
-
-@scenario("option-furnace-empty-hopper-lines-off", "furnace", 60, "furnace-empty-hopper-lines: false: an unlabelled furnace on a hopper line keeps its ingots.", alone=True)
-def _(c):
-    set_options(c, furnace_empty_hopper_lines="false")
-    furnace(c, "furnace", 8, 10, result=("iron_ingot", 10))
-    hopper(c, "hopper", 8, 10, "down")
-    c.chest("ingots", 14, 10, [("iron_ingot", 1)])
-    c.golem(4, 10)
-    return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "ingots", "iron_ingot", 1), expect(c, "furnace", "iron_ingot", 10)]
-
-
-@scenario("line-furnace-emptied", "furnace", 150, "An unlabelled furnace on a hopper line (no hopper under it): golems take out its ingots and sort them.")
-def _(c):
-    furnace(c, "furnace", 8, 10, result=("iron_ingot", 10))
-    hopper(c, "hopper", 8, 10, "down")
-    c.chest("ingots", 14, 10, [("iron_ingot", 1)])
-    c.golem(4, 10)
-    return lambda: [expect(c, "ingots", "iron_ingot", 11), expect(c, "furnace", "iron_ingot", 0)]
-
-
-@scenario("check-hopper-report", "furnace", 30, "/cgc check on a smelter's hopper: which furnace it feeds, through the top, and what golems put in.")
-def _(c):
-    furnace(c, "furnace", 8, 10, block="blast_furnace")
-    hopper(c, "hopper", 8, 10, "down")
-    x, y, z = c.abs(8, 10, 1)
-
-    def check():
-        reply = re.sub(r"§.", "", c.r.cmd(f"cgc check {x} {y} {z}"))
-        def has(t):
-            return t in reply, f"says '{t}'" + ("" if t in reply else f"; got: {reply.strip()[:400]}")
-        return [has("It's the head of its line"), has("Feeds the top (items to cook) of: blast furnace at"),
-                has("Golems put in items from [Furnace Supply] containers")]
-    return check
 
 
 # ---- settings
