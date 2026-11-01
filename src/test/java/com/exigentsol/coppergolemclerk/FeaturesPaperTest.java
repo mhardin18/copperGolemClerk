@@ -225,6 +225,38 @@ class FeaturesPaperTest extends PaperTest {
         assertTrue(out.toString().contains("today 21"), out.toString());
     }
 
+    @Test
+    void joinSummaryCountsOnlyWhatWasSortedAfterLeaving() {
+        PlayerMock staff = server.addPlayer();
+        staff.setOp(true); // has coppergolemclerk.alerts, and keeps it across a reconnect
+        var golem = server.addPlayer(); // stands in for a golem: only its id matters here (MockBukkit can't tick golems)
+        Location chest = new Location(world, 5, FLOOR, 5);
+        plugin.stats().delivered(golem, chest, Material.OAK_LOG, 100, false); // sorted while they were online
+        staff.disconnect();
+        plugin.stats().delivered(golem, chest, Material.DIRT, 7, false);
+        drain(staff);
+        staff.reconnect();
+        server.getScheduler().performTicks(61);
+        String said = drain(staff);
+        assertTrue(said.contains("While you were away, golems sorted 7 items on the server."), said);
+    }
+
+    @Test
+    void joinSummaryAfterAServerStopCountsFromTheStop() {
+        PlayerMock staff = server.addPlayer();
+        staff.setOp(true); // has coppergolemclerk.alerts, and keeps it across a reconnect
+        var golem = server.addPlayer(); // stands in for a golem: only its id matters here (MockBukkit can't tick golems)
+        Location chest = new Location(world, 5, FLOOR, 5);
+        plugin.stats().delivered(golem, chest, Material.OAK_LOG, 100, false);
+        plugin.stats().everyoneLeaves(); // what onDisable does: in a real stop the kick that follows is never seen
+        plugin.stats().delivered(golem, chest, Material.DIRT, 3, false); // sorted after the restart
+        drain(staff);
+        plugin.stats().onJoin(new org.bukkit.event.player.PlayerJoinEvent(staff, net.kyori.adventure.text.Component.empty()));
+        server.getScheduler().performTicks(61);
+        String said = drain(staff);
+        assertTrue(said.contains("While you were away, golems sorted 3 items on the server."), said);
+    }
+
     // ---- alerts
 
     @Test

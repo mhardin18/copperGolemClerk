@@ -141,25 +141,9 @@ final class GolemStats implements Listener {
         return c == null ? 0 : c.total;
     }
 
-    /**
-     * Items sorted since a player left. With the running total noted when they left, it's
-     * exact: the total now less that. Without it (stats.yml from an older version), only the
-     * whole hours after the one they left in count, so time they were still online never does.
-     */
-    static long sortedSince(long totalNow, Long totalAtLeave, Map<Long, Integer> hourly, long leftMillis) {
-        if (totalAtLeave != null) {
-            return Math.max(0, totalNow - totalAtLeave);
-        }
-        long firstHour = leftMillis / HOUR + 1;
-        long sum = 0;
-        if (hourly != null) {
-            for (var e : hourly.entrySet()) {
-                if (e.getKey() >= firstHour) {
-                    sum += e.getValue();
-                }
-            }
-        }
-        return sum;
+    /** Items sorted since a player left: the running total now less the one noted when they left. */
+    static long sortedSince(long totalNow, long totalAtLeave) {
+        return Math.max(0, totalNow - totalAtLeave);
     }
 
     private long allSince(long fromMillis) {
@@ -261,10 +245,23 @@ final class GolemStats implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
-        UUID id = event.getPlayer().getUniqueId();
+        noteLeaving(event.getPlayer().getUniqueId());
+    }
+
+    private void noteLeaving(UUID id) {
         leftAt.put(id, System.currentTimeMillis());
         totalsAtLeave.put(id, new long[]{totalOf(id.toString()), allTotal()});
         dirty = true;
+    }
+
+    /**
+     * The server is stopping: everyone online is leaving now. Paper disconnects players only
+     * after plugins are disabled, so their quit would never be noted.
+     */
+    void everyoneLeaves() {
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            noteLeaving(player.getUniqueId());
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -279,24 +276,16 @@ final class GolemStats implements Listener {
         String key = player.getUniqueId().toString();
         String message = null;
         long[] atLeave = totalsAtLeave.get(player.getUniqueId());
+        if (left != null && atLeave == null) {
+            return; // they left under an older version that noted no running total: no reliable count to give
+        }
         if (owners.containsKey(key) || fullChests.containsKey(key)) {
             Counts mine = owners.get(key);
-            long n = left == null ? since(mine, from)
-                    : sortedSince(totalOf(key), atLeave == null ? null : atLeave[0], mine == null ? null : mine.hourly, left);
+            long n = left == null ? since(mine, from) : sortedSince(totalOf(key), atLeave[0]);
             int full = fullFor(key, from);
             message = summary(away + ", golems sorted %s in your claims.", n, full);
         } else if (player.hasPermission(Alerts.PERMISSION) && (owners.containsKey(UNCLAIMED) || fullChests.containsKey(UNCLAIMED))) {
-            long n;
-            if (left == null) {
-                n = allSince(from);
-            } else if (atLeave != null) {
-                n = Math.max(0, allTotal() - atLeave[1]);
-            } else {
-                n = 0;
-                for (Counts c : owners.values()) {
-                    n += sortedSince(0, null, c.hourly, left);
-                }
-            }
+            long n = left == null ? allSince(from) : sortedSince(allTotal(), atLeave[1]);
             int full = fullFor(UNCLAIMED, from);
             message = summary(away + ", golems sorted %s on the server.", n, full);
         }

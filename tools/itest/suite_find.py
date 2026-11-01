@@ -98,3 +98,37 @@ def _(c):
     set_options(c, find_enabled="false")
     c.chest("a", 12, 10, [("birch_log", 2)])
     return lambda: [has(find(c, "birch_log"), "/cgc find is turned off on this server")]
+
+
+@scenario("find-related-hint", "find", 30, "/cgc find torch counts only torches, then names the copper and soul torches nearby and suggests *torch*.")
+def _(c):
+    c.chest("a", 12, 10, [("torch", 5), ("copper_torch", 7)])
+    c.chest("b", 14, 10, [("soul_torch", 3)])
+
+    def check():
+        reply = find(c, "torch")
+        return [has(reply, "5 torch in 1 container"),
+                has(reply, "Also nearby: 7 copper torch, 3 soul torch. /cgc find *torch* finds everything with \"torch\" in its name.")]
+    return check
+
+
+@scenario("find-related-hint-when-none", "find", 30, "/cgc find torch with only copper torches nearby: none found, and the hint names the copper torches.")
+def _(c):
+    c.chest("a", 12, 10, [("copper_torch", 7)])
+
+    def check():
+        reply = find(c, "torch")
+        return [has(reply, "No torch in containers"), has(reply, "Also nearby: 7 copper torch.")]
+    return check
+
+
+@scenario("find-no-hint-when-covered", "find", 30, "No hint when the search already covers every name match: /cgc find *torch and /cgc find logs.")
+def _(c):
+    c.chest("a", 12, 10, [("torch", 5), ("copper_torch", 7), ("oak_log", 4)])
+
+    def check():
+        pattern = find(c, "*torch")
+        group = find(c, "logs")
+        return [has(pattern, "12 *torch"), ("Also nearby" not in pattern, "no hint for *torch"),
+                ("Also nearby" not in group, f"no hint for logs; got: {group.strip()[:200]}")]
+    return check

@@ -79,6 +79,8 @@ final class ItemFinder implements Listener {
             throw new IllegalArgumentException("'" + text + "' isn't an item, group, pattern or tag.");
         }
         Predicate<Material> wanted = rule.test();
+        Predicate<Material> related = relatedTo(text, rule);
+        Map<Material, Integer> relatedCounts = new java.util.EnumMap<>(Material.class);
         boolean seesAll = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS);
         Player player = sender instanceof Player p ? p : null;
         int radius = plugin.findRadius();
@@ -108,11 +110,16 @@ final class ItemFinder implements Listener {
                     }
                     seen.addAll(blocks);
                     int[] count = count(inventory, wanted);
-                    if (count[0] + count[1] == 0) {
+                    Map<Material, Integer> others = related == null ? Map.of() : countByType(inventory, related);
+                    if (count[0] + count[1] == 0 && others.isEmpty()) {
                         continue;
                     }
                     if (!seesAll && !visible(player, state)) {
                         continue; // not theirs to look into: not even counted
+                    }
+                    others.forEach((type, n) -> relatedCounts.merge(type, n, Integer::sum));
+                    if (count[0] + count[1] == 0) {
+                        continue;
                     }
                     hits.add(new Hit(blocks, block, describe(state, inventory), count[0] + count[1], count[1],
                             block.getLocation().clone().add(0.5, 0.5, 0.5).distance(around)));
@@ -121,8 +128,76 @@ final class ItemFinder implements Listener {
         }
         hits.sort((a, b) -> Double.compare(a.distance(), b.distance()));
         report(sender, text, rule, hits, radius, around);
+        hint(sender, text, relatedCounts);
         if (player != null) {
             highlight(player, hits);
+        }
+    }
+
+    /**
+     * Other items with the search words in their name, for a search that took the text as one
+     * item or a group: "torch" is the torch item, so copper, soul and redstone torches are left
+     * out. Null when the search already matched by name (or was a pattern, tag or @kind).
+     */
+    static Predicate<Material> relatedTo(String text, ItemGroups.Rule rule) {
+        String trimmed = text.trim();
+        if (trimmed.contains("*") || trimmed.startsWith("#") || trimmed.startsWith("@")
+                || rule.meaning().startsWith("items with")) {
+            return null;
+        }
+        String[] words = ItemGroups.words(trimmed);
+        Predicate<Material> wanted = rule.test();
+        return m -> m.isItem() && !wanted.test(m) && ItemGroups.containsWords(m.name(), words);
+    }
+
+    /** How many of each item this predicate takes are in the inventory, shulker boxes included. */
+    private static Map<Material, Integer> countByType(Inventory inventory, Predicate<Material> which) {
+        Map<Material, Integer> found = new java.util.EnumMap<>(Material.class);
+        for (ItemStack stack : inventory.getStorageContents()) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
+            }
+            if (which.test(stack.getType())) {
+                found.merge(stack.getType(), stack.getAmount(), Integer::sum);
+            }
+            if (stack.getItemMeta() instanceof BlockStateMeta meta && meta.hasBlockState()
+                    && meta.getBlockState() instanceof ShulkerBox box) {
+                for (ItemStack inner : box.getInventory().getContents()) {
+                    if (inner != null && !inner.isEmpty() && which.test(inner.getType())) {
+                        found.merge(inner.getType(), inner.getAmount(), Integer::sum);
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
+    /** "Also nearby: 264 copper torch, 24 redstone torch. /cgc find *torch* finds every kind." */
+    static String hintText(String text, Map<Material, Integer> related) {
+        if (related.isEmpty()) {
+            return null;
+        }
+        List<Map.Entry<Material, Integer>> entries = new ArrayList<>(related.entrySet());
+        entries.sort((a, b) -> b.getValue() != a.getValue().intValue() ? b.getValue() - a.getValue()
+                : a.getKey().name().compareTo(b.getKey().name()));
+        List<String> parts = new ArrayList<>();
+        for (int i = 0; i < Math.min(5, entries.size()); i++) {
+            parts.add(entries.get(i).getValue() + " " + name(entries.get(i).getKey()));
+        }
+        String more = entries.size() > 5 ? " and " + (entries.size() - 5) + " more kinds" : "";
+        String pattern = "*" + String.join("_", ItemGroups.words(text)) + "*";
+        return "Also nearby: " + String.join(", ", parts) + more + ". /cgc find " + pattern
+                + " finds everything with \"" + text.trim() + "\" in its name.";
+    }
+
+    private static String name(Material type) {
+        return type.getKey().getKey().replace('_', ' ');
+    }
+
+    private void hint(CommandSender sender, String text, Map<Material, Integer> related) {
+        String line = hintText(text, related);
+        if (line != null) {
+            sender.sendMessage(Component.text(line, NamedTextColor.GRAY));
         }
     }
 

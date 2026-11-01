@@ -5,18 +5,22 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 ## 2.7.0 (in progress)
 
 ### New
+- Golems run your furnaces: label a furnace, smoker or blast furnace like a chest (`[raw iron]`) and golems keep it going. Items to cook come only from `[Furnace Supply]` containers, and each load is split between all the labelled furnaces that take it. Fuel comes only from `[Fuel]` containers (`furnace-fuel`, default charcoal, coal, then lava buckets, whose empty buckets are refilled at a lava cauldron), just enough for what's waiting. Golems take out what's done and sort it, unless a hopper under the furnace collects it or nothing in range would take it. A chest sitting on a hopper that leads into a furnace (a hand-built smelter) is never used for sorting. With GriefPrevention, golems use only furnaces and containers in their copper chest's claim, or where its owner has container trust (`furnace-trusted-claims`). `/cgc check` on a furnace explains what golems will do and why.
 - `/cgc label`: suggests a sign label for the chest you're looking at, from what's in it (the item's own label, the most specific group its items share, or the group most of them fit and which items don't); on a labelled chest it says whether everything matches. It only suggests; you place the sign. Players get suggestions for containers they could open (`coppergolemclerk.label`, everyone by default).
 - `/cgc storage`: how full the storage around you is, by label (or by contents for unlabelled chests), fullest first, with full and nearly full ones flagged, plus `[Overflow]` chests, empty chests left and items waiting in copper chests. Players see only containers they could open (`coppergolemclerk.storage`, everyone by default).
 
-## 2.6.0 (unreleased)
-
-### New
-- Golems run your furnaces: label a furnace, smoker or blast furnace like a chest (`[raw iron]`) and golems keep it going. Items to cook come only from `[Furnace Supply]` containers, and each load is split between all the labelled furnaces that take it. Fuel comes only from `[Fuel]` containers (`furnace-fuel`, default charcoal, coal, then lava buckets, whose empty buckets are refilled at a lava cauldron), just enough for what's waiting. Golems take out what's done and sort it, unless a hopper under the furnace collects it or nothing in range would take it. A chest sitting on a hopper that leads into a furnace (a hand-built smelter) is never used for sorting. With GriefPrevention, golems use only furnaces and containers in their copper chest's claim, or where its owner has container trust (`furnace-trusted-claims`). `/cgc check` on a furnace explains what golems will do and why.
-
 ### Fixed
-- The "While you were away, golems sorted N items" message counted the whole hour you left in, so items sorted while you were still online showed up as sorted while you were away (log off at 20:43 after a busy hour, and the next join reported that whole hour). It now notes the running count when you leave and reports only what was sorted after that.
 - `max-golems-per-claim` is now counted for each claim on its own, as documented. It used to add up all the claims of one owner, and golems in admin claims counted as unclaimed land (`max-golems-outside-claims`); admin claims now have their own limit too.
 - `/cgc golems` no longer lists a golem that was killed just before its chunk unloaded (for example `/kill` and then everyone leaving) as "not loaded". It used to stay in the list, and in `golems.yml`, for 30 days.
+
+## 2.6.2 (2026-10-31)
+
+### Changed
+- `/cgc find torch` finds only torches, as before, but now adds an "Also nearby" line naming other items near you with the word in their name (copper torch, soul torch...) and suggests `/cgc find *torch*` to find them all (`/cgc help find`, README and Hangar page say so too). Searches that already match by name, patterns, tags and groups that cover them get no hint.
+- README and Hangar page: the "For players" lists give every player command a line of its own (`find`, `check`, `overflow`, `stats`, `golems` where allowed, `help`); the README gets a "For admins" list like the Hangar page's; both say what the load test found (about 0.1 ms per golem per tick, as in vanilla).
+
+### Fixed
+- The "While you were away, golems sorted N items" message counted items sorted while you were still online. It used the whole hour you left in, and a server stop or restart never noted you leaving at all (Paper disconnects players after plugins stop), so the next join counted everything since your last real logoff. It now notes the running count when you leave or the server stops, and reports only what was sorted after that. Players last seen under an older version get no count on their next join, rather than a wrong one.
 
 ## 2.6.1 (2026-10-30)
 
