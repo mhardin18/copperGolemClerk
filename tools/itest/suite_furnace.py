@@ -115,6 +115,48 @@ def _(c):
     return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "supply", "raw_iron", 16), expect(c, "smoker", "raw_iron", 0)]
 
 
+@scenario("supply-takes-only-what-fits", "furnace", 90, "The [logs] furnace holds 8 unburnt oak logs (room for 56): a golem fetches one load and puts it all in; nothing is sorted into the [logs] chest.")
+def _(c):
+    supply(c, items=[("oak_log", 16)])
+    furnace(c, "furnace", 8, 10, input=("oak_log", 8), label="[logs]")
+    c.chest("logs", 4, 16, [("birch_log", 1)])
+    c.sign(4, 16, "[logs]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "furnace", "oak_log", 24), expect(c, "supply", "oak_log", 0),
+                    expect(c, "logs", "oak_log", 0), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
+
+
+@scenario("supply-leftover-goes-back", "furnace", 150, "The unfuelled furnace fills up while a golem carries supply logs to it: after waiting for room, the golem puts them back in the supply chest, not in the [logs] chest.")
+def _(c):
+    supply(c, items=[("oak_log", 16)])
+    furnace(c, "furnace", 8, 10, label="[logs]")
+    c.chest("logs", 4, 16, [("birch_log", 1)])
+    c.sign(4, 16, "[logs]")
+    c.golem(4, 4)
+    x, y, z = c.abs(8, 10)
+    t = Trigger()
+
+    def check():
+        t.fire_when(lambda: c.holding("oak_log") > 0 and c.count("furnace", "oak_log") == 0,
+                    lambda: c.r.cmd(f"item replace block {x} {y} {z} container.0 with minecraft:oak_log 64"))
+        return [(t.at is not None, "filled the furnace while the golem carried logs"), expect(c, "supply", "oak_log", 16),
+                expect(c, "logs", "oak_log", 0), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
+    return check
+
+
+@scenario("check-supply-chest", "furnace", 30, "/cgc check on an empty [Furnace Supply] chest says golems never sort into it (not 'golems put an item here').")
+def _(c):
+    c.chest("supply", 8, 10)
+    c.sign(8, 10, "[Furnace Supply]")
+    x, y, z = c.abs(8, 10)
+
+    def check():
+        reply = re.sub(r"§.", "", c.r.cmd(f"cgc check {x} {y} {z}"))
+        return [("Golems never sort anything into it" in reply, f"says golems never sort into it; got: {reply.strip()[:300]}"),
+                ("golems put an item here" not in reply, "doesn't say golems put items here")]
+    return check
+
+
 @scenario("supply-chest-not-a-destination", "furnace", 150, "An empty [Furnace Supply] chest never gets sorted items: a golem with dirt (no dirt chest) uses the other empty chest.")
 def _(c):
     c.chest("copper", 2, 10, [("dirt", 16)], block="waxed_copper_chest")
