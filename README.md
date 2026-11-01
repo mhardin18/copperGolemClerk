@@ -263,7 +263,9 @@ clogs with something a furnace can't use. `/cgc check` on a furnace or hopper sa
 what golems will put in, and why not.
 
 **What comes out.** An idle golem takes out what the furnace has made and sorts it like
-anything else, unless a hopper under the furnace collects it. Furnaces on hopper lines are
+anything else, unless a hopper under the furnace collects it. If no chest in range would
+take it (and there's no copper chest to return it to), it stays in the furnace rather than
+in a golem's hands. Furnaces on hopper lines are
 emptied too (`furnace-empty-hopper-lines: false` leaves them to you). Items taken out of a
 furnace are never put back into one, so `[stone]` can't turn into an endless cobblestone →
 stone → smooth stone loop.

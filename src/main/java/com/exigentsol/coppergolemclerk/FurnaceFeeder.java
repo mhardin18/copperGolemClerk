@@ -297,7 +297,8 @@ final class FurnaceFeeder {
     /** True if any hopper faces into this furnace's side: a fuel line fuels it. */
     static boolean fedFuelByHopper(Block furnace) {
         for (BlockFace side : SIDES) {
-            if (furnace.getRelative(side).getBlockData() instanceof org.bukkit.block.data.type.Hopper h
+            Block beside = HopperLines.next(furnace, side);
+            if (beside != null && beside.getBlockData() instanceof org.bukkit.block.data.type.Hopper h
                     && h.getFacing() == side.getOppositeFace()) {
                 return true;
             }
@@ -434,6 +435,11 @@ final class FurnaceFeeder {
 
     /** Every furnace and line in range that takes this item now, nearest first, at most one per item carried. */
     List<Stop> feedStops(CopperGolem golem, ItemStack item, long now) {
+        return feedStops(golem, item, now, Integer.MAX_VALUE);
+    }
+
+    /** feedStops, stopping once `enough` are found (to ask whether anything takes an item at all). */
+    private List<Stop> feedStops(CopperGolem golem, ItemStack item, long now, int enough) {
         List<Stop> stops = new ArrayList<>();
         Material type = item.getType();
         for (BlockState state : HomeFinder.containersInRange(golem, FurnaceFeeder::isFurnace)) {
@@ -446,7 +452,11 @@ final class FurnaceFeeder {
             }
         }
         World world = golem.getWorld();
-        for (HopperLines.Line line : linesNear(golem.getLocation(), golem.isInsideVehicle())) {
+        for (HopperLines.Line line : stops.size() >= enough ? List.<HopperLines.Line>of()
+                : linesNear(golem.getLocation(), golem.isInsideVehicle())) {
+            if (stops.size() >= enough) {
+                break;
+            }
             if (line.input().isEmpty() || lineClosed(world, line) != null || lineRefuses(world, line, type) != null) {
                 continue;
             }
@@ -574,7 +584,7 @@ final class FurnaceFeeder {
         }
         for (Furnace furnace : toEmpty) {
             ItemStack result = furnace.getInventory().getResult();
-            if (!isEmpty(result) && !collectedByHopper(furnace.getBlock())
+            if (!isEmpty(result) && !collectedByHopper(furnace.getBlock()) && hasHome(golem, result)
                     && start(golem, Kind.EMPTY, furnace.getBlock(), null, result.getType(), null, now)) {
                 return;
             }
@@ -584,7 +594,7 @@ final class FurnaceFeeder {
         fuelled.addAll(onFuelLines);
         for (Furnace furnace : fuelled) {
             ItemStack fuel = furnace.getInventory().getFuel();
-            if (!isEmpty(fuel) && fuel.getType() == Material.BUCKET
+            if (!isEmpty(fuel) && fuel.getType() == Material.BUCKET && (lavaCauldron(golem) != null || hasHome(golem, fuel))
                     && start(golem, Kind.BUCKET_TAKE, furnace.getBlock(), null, Material.BUCKET, null, now)) {
                 return;
             }
@@ -638,6 +648,17 @@ final class FurnaceFeeder {
         startSupply(golem, now);
     }
 
+    /**
+     * True if the golem could put this item somewhere once it's taken out (a chest that takes
+     * it, an [Overflow] or empty chest, or a copper chest to return it to); otherwise it would
+     * hold it for good, so the item is left where it is.
+     */
+    private boolean hasHome(CopperGolem golem, ItemStack item) {
+        ItemStack one = item.clone();
+        one.setAmount(1);
+        return homes.anyHomeFor(golem, one) || !HomeFinder.containersInRange(golem, Returns::isCopperChest).isEmpty();
+    }
+
     /** Fetch something from a [Furnace Supply] container that a furnace or line in range takes. */
     private void startSupply(CopperGolem golem, long now) {
         Map<Material, Boolean> wanted = new EnumMap<>(Material.class);
@@ -657,7 +678,7 @@ final class FurnaceFeeder {
                         || (Returns.isCopperChest(state.getType()) && !returns.mayTake(inventory, s.getType()))) {
                     continue;
                 }
-                boolean wants = wanted.computeIfAbsent(s.getType(), t -> !feedStops(golem, s, now).isEmpty());
+                boolean wants = wanted.computeIfAbsent(s.getType(), t -> !feedStops(golem, s, now, 1).isEmpty());
                 if (wants && start(golem, Kind.SUPPLY_TAKE, state.getBlock(), null, s.getType(), null, now)) {
                     return;
                 }
@@ -804,6 +825,10 @@ final class FurnaceFeeder {
             return false;
         }
         World world = golem.getWorld();
+        if (!world.isChunkLoaded(job.target().x() >> 4, job.target().z() >> 4)) {
+            golem.getPathfinder().stopPathfinding();
+            return false; // its target's chunk unloaded: drop the job (anything in hand is sorted as usual)
+        }
         Block target = blockAt(world, job.target());
         ItemStack held = golem.getEquipment().getItemInMainHand();
         boolean holdingIt = !held.isEmpty() && held.getType() == job.type();

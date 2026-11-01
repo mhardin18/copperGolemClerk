@@ -69,6 +69,21 @@ final class HopperLines {
         return type == Material.HOPPER;
     }
 
+    /** True if the block's chunk is loaded: lines are never followed into unloaded chunks (no sync loads). */
+    static boolean loaded(Block block) {
+        return block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4);
+    }
+
+    /** The neighbouring block, or null if its chunk isn't loaded. */
+    static Block next(Block block, BlockFace face) {
+        int x = block.getX() + face.getModX();
+        int z = block.getZ() + face.getModZ();
+        if (!block.getWorld().isChunkLoaded(x >> 4, z >> 4)) {
+            return null;
+        }
+        return block.getRelative(face);
+    }
+
     /** A block items can sit in on a line: a hopper, or a chest, barrel and the like (not a furnace or copper chest). */
     private static boolean holdsItems(Block block) {
         Material type = block.getType();
@@ -97,8 +112,10 @@ final class HopperLines {
             Block block = queue.poll();
             nodes.add(block);
             if (block.getBlockData() instanceof Hopper hopper) {
-                Block out = block.getRelative(hopper.getFacing());
-                if (FurnaceFeeder.isFurnace(out.getType())) {
+                Block out = next(block, hopper.getFacing());
+                if (out == null) {
+                    // an unloaded chunk: the line is followed no further that way
+                } else if (FurnaceFeeder.isFurnace(out.getType())) {
                     (hopper.getFacing() == BlockFace.DOWN ? input : fuel).add(HomeFinder.Pos.of(out));
                 } else if (isHopper(out.getType()) && seen.add(HomeFinder.Pos.of(out))) {
                     queue.add(out);
@@ -122,9 +139,9 @@ final class HopperLines {
             found.add(above);
         }
         for (BlockFace side : SIDES) {
-            Block next = block.getRelative(side);
-            if (next.getBlockData() instanceof Hopper h && h.getFacing() == side.getOppositeFace()) {
-                found.add(next);
+            Block beside = next(block, side);
+            if (beside != null && beside.getBlockData() instanceof Hopper h && h.getFacing() == side.getOppositeFace()) {
+                found.add(beside);
             }
         }
         return found;
