@@ -170,7 +170,7 @@ several (`[ice][snow]`), and the chest takes anything any rule matches:
 | `[Overflow]`| anything with no other home      |
 | `[No Golems]`| nothing: golems leave it alone  |
 | `[Only Logs]`| on a copper chest: golems take only logs out |
-| `[Fuel]`    | golems take furnace fuel from it (furnace feeding) |
+| `[Fuel]` or `[Fuels]` | golems take furnace fuel from it (furnace feeding) |
 | `[Furnace Supply]` | golems take items to cook from it (furnace feeding) |
 
 Case doesn't matter and spaces count as underscores. A group name wins over an

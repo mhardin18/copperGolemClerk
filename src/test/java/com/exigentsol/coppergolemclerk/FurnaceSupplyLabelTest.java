@@ -5,13 +5,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-/** [Furnace Supply]: any case, singular or plural, spaces, dashes or underscores. */
+/** [Fuel] / [Fuels] and [Furnace Supply]: any case, singular or plural (supply: spaces, dashes or underscores). */
 class FurnaceSupplyLabelTest {
 
     @Test
     void anyCaseSingularOrPlural() {
         for (String text : new String[] {"Furnace Supply", "furnace supplies", "FURNACE-SUPPLY", "furnaces supply", " furnace_supply "}) {
             assertTrue(ChestLabels.isFurnaceSupply(text), text);
+        }
+    }
+
+    @Test
+    void fuelOrFuels() {
+        for (String text : new String[] {"Fuel", "fuel", "FUELS", "Fuels", " fuel "}) {
+            assertTrue(ChestLabels.isFuel(text), text);
+        }
+        for (String text : new String[] {"fuel chest", "furnace fuel", "fueled", "coal"}) {
+            assertFalse(ChestLabels.isFuel(text), text);
         }
     }
 

@@ -53,6 +53,7 @@ golems carry them over by themselves.
 Label a furnace `[raw iron]` and golems keep it cooking: items
 from your `[Furnace Supply]` chest, fuel from your `[Fuel]` chest (just enough for what's
 waiting), and what's done sorted away. Nothing else from your storage goes in a furnace.
+Sign spellings: `[Fuel]` or `[Fuels]`; `[Furnace Supply]` or `[Furnace Supplies]` (any case).
 
 ### 🦺 Look after themselves
 - A golem that falls down a shaft or wanders off **walks back home**; one that's stuck gets
