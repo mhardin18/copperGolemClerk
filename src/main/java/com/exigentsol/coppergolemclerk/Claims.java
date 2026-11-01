@@ -29,6 +29,8 @@ final class Claims {
     private Method getClaimAt;      // DataStore.getClaimAt(Location, boolean, Claim)
     private Method getOwnerID;      // Claim.getOwnerID()
     private Method allowContainers; // Claim.allowContainers(Player): null if allowed, else the reason
+    private Method checkPermission; // Claim.checkPermission(UUID, ClaimPermission, Event): null if allowed
+    private Object containerPermission; // ClaimPermission.Container
 
     Claims(CopperGolemClerk plugin) {
         this.plugin = plugin;
@@ -120,6 +122,40 @@ final class Claims {
                 allowContainers = claim.getClass().getMethod("allowContainers", Player.class);
             }
             return allowContainers.invoke(claim, player) == null;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return false;
+        }
+    }
+
+    /**
+     * True if this player (online or not) has container trust in the claim here, or owns it.
+     * False where there's no claim or GriefPrevention can't be read.
+     */
+    boolean hasContainerTrust(UUID player, Location place) {
+        Object claim = claimAt(place);
+        if (claim == null || player == null) {
+            return false;
+        }
+        try {
+            if (player.equals(ownerAt(place))) {
+                return true;
+            }
+            if (checkPermission == null) {
+                for (Method m : claim.getClass().getMethods()) {
+                    if (m.getName().equals("checkPermission") && m.getParameterCount() == 3
+                            && m.getParameterTypes()[0] == UUID.class) {
+                        checkPermission = m;
+                        @SuppressWarnings({"unchecked", "rawtypes"})
+                        Object container = Enum.valueOf((Class) m.getParameterTypes()[1], "Container");
+                        containerPermission = container;
+                        break;
+                    }
+                }
+                if (checkPermission == null) {
+                    return false;
+                }
+            }
+            return checkPermission.invoke(claim, player, containerPermission, null) == null; // null = allowed
         } catch (ReflectiveOperationException | RuntimeException e) {
             return false;
         }

@@ -63,6 +63,12 @@ final class OverflowFetcher {
         this.returns = returns;
     }
 
+    private FurnaceFeeder furnaces;
+
+    void setFurnaces(FurnaceFeeder furnaces) {
+        this.furnaces = furnaces;
+    }
+
     boolean isFetching(UUID golem) {
         return fetching.containsKey(golem);
     }
@@ -75,7 +81,7 @@ final class OverflowFetcher {
 
     /** Runs every second. */
     void tick() {
-        if (!plugin.fetchFromOverflow() && plugin.takeReach() <= Reach.VANILLA) {
+        if (!plugin.fetchFromOverflow() && plugin.takeReach() <= Reach.VANILLA && !plugin.furnaceFeeding()) {
             stopAll();
             return;
         }
@@ -115,7 +121,8 @@ final class OverflowFetcher {
     }
 
     private void maybeStartFetch(CopperGolem golem, long now) {
-        if (!isIdle(golem) || plugin.rescue().isRescuing(golem.getUniqueId())) {
+        if (!isIdle(golem) || plugin.rescue().isRescuing(golem.getUniqueId())
+                || (furnaces != null && furnaces.isBusy(golem.getUniqueId()))) {
             return;
         }
         // Anything to take from a copper chest? Then it's not idle. Copper chests above vanilla's
@@ -145,6 +152,12 @@ final class OverflowFetcher {
         if (high != null) {
             startCopperFetch(golem, high, highHalves, now);
             return;
+        }
+        if (furnaces != null) {
+            furnaces.findWork(golem); // empty or fuel a labelled furnace before re-sorting overflow
+            if (furnaces.isBusy(golem.getUniqueId())) {
+                return;
+            }
         }
         if (!plugin.fetchFromOverflow()) {
             return;

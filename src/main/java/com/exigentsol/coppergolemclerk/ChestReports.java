@@ -43,6 +43,100 @@ final class ChestReports {
 
     // ---- /cgc check (looking at a chest)
 
+    /** /cgc check on a furnace, smoker or blast furnace: exactly what golems put in, take out and burn. */
+    private void furnaceReport(CommandSender player, org.bukkit.block.Furnace furnace) {
+        String kind = pretty(furnace.getType()).toLowerCase(java.util.Locale.ROOT);
+        if (!plugin.furnaceFeeding()) {
+            say(player, NamedTextColor.YELLOW, "Furnace feeding is off (furnace-feeding: false): golems leave furnaces alone.");
+            return;
+        }
+        FurnaceFeeder feeder = plugin.sortListener().furnaces();
+        ChestLabels.Labels labels = feeder.labelsOf(furnace.getInventory());
+        if (labels.noGolems()) {
+            say(player, NamedTextColor.AQUA, "[No Golems] sign: golems leave this " + kind + " alone.");
+            return;
+        }
+        if (!labels.hasItemRules()) {
+            say(player, NamedTextColor.AQUA, "No label: golems leave this " + kind + " alone. Put a sign on it saying what to"
+                    + " cook, like [raw iron], and golems will run it.");
+            for (String unknown : labels.unknown()) {
+                say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+            }
+            return;
+        }
+        if (HomeFinder.isLocked(furnace)) {
+            say(player, NamedTextColor.RED, "It's locked: golems leave it alone.");
+            return;
+        }
+        // In: what the labels cover that this kind of furnace can cook.
+        java.util.Set<Material> cookable = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < labels.rules().size(); i++) {
+            ItemGroups.Rule rule = labels.rules().get(i);
+            List<Material> covered = plugin.groups().itemsMatching(rule.test());
+            List<Material> ok = covered.stream().filter(m -> feeder.canSmelt(furnace.getType(), m)).toList();
+            cookable.addAll(ok);
+            String name = labels.names().get(i);
+            if (ok.isEmpty()) {
+                say(player, NamedTextColor.RED, "  " + name + ": nothing it covers can be cooked in a " + kind + ", so it adds nothing");
+            } else if (ok.size() < covered.size()) {
+                say(player, NamedTextColor.GRAY, "  " + name + ": " + ok.size() + " of its " + covered.size()
+                        + " items can be cooked in a " + kind + "; only those go in");
+            }
+        }
+        for (String unknown : labels.unknown()) {
+            say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+        }
+        if (cookable.isEmpty()) {
+            say(player, NamedTextColor.YELLOW, "Golems put nothing into it: its labels cover nothing a " + kind + " can cook.");
+        } else {
+            List<String> names = cookable.stream().map(m -> m.getKey().getKey().replace('_', ' ')).toList();
+            say(player, NamedTextColor.AQUA, "Golems put into it (" + names.size() + (names.size() == 1 ? " item" : " items")
+                    + "): " + String.join(", ", names.subList(0, Math.min(15, names.size())))
+                    + (names.size() > 15 ? ", and " + (names.size() - 15) + " more" : "") + ".");
+        }
+        if (FurnaceFeeder.collectedByHopper(furnace.getBlock())) {
+            say(player, NamedTextColor.AQUA, "A hopper under it collects what it makes, so golems leave the output to it.");
+        } else {
+            say(player, NamedTextColor.AQUA, "Golems take out whatever it makes and sort it (never back into a furnace).");
+        }
+        say(player, NamedTextColor.AQUA, "Items to cook come only from [Furnace Supply] containers.");
+
+        // Fuel.
+        List<String> order = plugin.furnaceFuel().stream().map(m -> m.getKey().getKey().replace('_', ' ')).toList();
+        say(player, NamedTextColor.AQUA, "Fuel: only from containers with a [Fuel] sign, first available of: "
+                + (order.isEmpty() ? "(furnace-fuel is empty)" : String.join(", ", order)) + ".");
+        FurnaceFeeder.FuelPick pick = feeder.bestFuelNear(furnace.getLocation().add(0.5, 0, 0.5), false);
+        if (pick == null) {
+            say(player, NamedTextColor.YELLOW, "No [Fuel] container in golem range holds any of those: golems won't fuel it.");
+        } else {
+            Block src = pick.source();
+            say(player, NamedTextColor.WHITE, "Golems would use " + pretty(pick.type()).toLowerCase(java.util.Locale.ROOT)
+                    + " from the container at " + src.getX() + "," + src.getY() + "," + src.getZ() + ".");
+        }
+        var in = furnace.getInventory();
+        ItemStack waiting = in.getSmelting();
+        ItemStack fuel = in.getFuel();
+        String now = (waiting == null || waiting.isEmpty() ? "nothing waiting" : waiting.getAmount() + " "
+                + pretty(waiting.getType()).toLowerCase(java.util.Locale.ROOT) + " waiting")
+                + ", fuel: " + (fuel == null || fuel.isEmpty() ? "none" : fuel.getAmount() + " "
+                + pretty(fuel.getType()).toLowerCase(java.util.Locale.ROOT));
+        if (fuel != null && !fuel.isEmpty() && !plugin.furnaceFuel().contains(fuel.getType())) {
+            now += " (not in furnace-fuel: golems leave its fuel to you)";
+        } else if (pick != null) {
+            int need = feeder.fuelNeeded(furnace, pick.type());
+            if (fuel != null && !fuel.isEmpty() && fuel.getType() != pick.type()) {
+                now += "; golems wait for it to burn out, then switch to " + pretty(pick.type()).toLowerCase(java.util.Locale.ROOT);
+            } else {
+                now += need > 0 ? "; golems will bring " + need + " more" : "; enough fuel for what's waiting";
+            }
+        }
+        say(player, NamedTextColor.WHITE, "Now: " + now + ".");
+    }
+
+    private static java.util.Set<HomeFinder.Pos> halvesOf(Block block, Inventory inv) {
+        return HomeFinder.halvesOf(inv, block);
+    }
+
     void checkChest(CommandSender player, Block block, ItemStack hand) {
         if (!(block.getState(false) instanceof Container container)) {
             say(player, NamedTextColor.RED, "No container at " + block.getX() + "," + block.getY() + "," + block.getZ() + ".");
@@ -56,6 +150,10 @@ final class ChestReports {
 
         if (!plugin.enabledIn(block.getWorld())) {
             say(player, NamedTextColor.YELLOW, "Copper Golem Clerk is off in this world (disabled-worlds): golems act as in vanilla here.");
+            return;
+        }
+        if (container instanceof org.bukkit.block.Furnace furnace) {
+            furnaceReport(player, furnace);
             return;
         }
         if (Returns.isCopperChest(block.getType())) {
@@ -104,6 +202,17 @@ final class ChestReports {
         }
         if (labels.overflow()) {
             say(player, NamedTextColor.AQUA, "  [Overflow] = takes items that have no matching chest in range");
+        }
+        if (labels.fuel()) {
+            say(player, NamedTextColor.AQUA, "  [Fuel] = golems take furnace fuel from here"
+                    + (labels.hasItemRules() ? "" : " (it takes nothing unless it also has an item label)"));
+        }
+        if (labels.supply()) {
+            say(player, NamedTextColor.AQUA, "  [Furnace Supply] = golems take items to cook from here"
+                    + (labels.hasItemRules() ? "" : " (it takes nothing unless it also has an item label)"));
+        }
+        if (plugin.furnaceFeeding() && HopperLines.feedsFurnace(block.getWorld(), halvesOf(block, inv))) {
+            say(player, NamedTextColor.AQUA, "A hopper under it leads into a furnace (a smelter): golems never sort anything into it.");
         }
         for (String unknown : labels.unknown()) {
             say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
