@@ -133,7 +133,7 @@ final class ChestLabels {
                                     noGolems = true;
                                     continue;
                                 }
-                                if (inner.toLowerCase(Locale.ROOT).equals("fuel")) {
+                                if (isFuel(inner)) {
                                     fuel = true; // golems take furnace fuel from here
                                     continue;
                                 }
@@ -179,6 +179,12 @@ final class ChestLabels {
     /** The [Only ...] filter on this copper chest (NONE-like if there's none). Only signs are read. */
     static Labels filterOf(Inventory container, CopperGolemClerk plugin) {
         return plugin.signLabels() ? of(container, plugin.groups(), false, true) : Labels.NONE;
+    }
+
+    /** "Fuel" or "Fuels", any case. */
+    static boolean isFuel(String text) {
+        String lower = text.trim().toLowerCase(Locale.ROOT);
+        return lower.equals("fuel") || lower.equals("fuels");
     }
 
     /** "Furnace Supply", "furnace supplies", "FURNACE-SUPPLY": any case, singular or plural. */

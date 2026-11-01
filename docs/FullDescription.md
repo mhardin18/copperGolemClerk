@@ -54,6 +54,34 @@ Label a furnace `[raw iron]` and golems keep it cooking: items
 from your `[Furnace Supply]` chest, fuel from your `[Fuel]` chest (just enough for what's
 waiting), and what's done sorted away. Nothing else from your storage goes in a furnace.
 
+**What to write on a furnace.** Any label a chest takes works on a furnace, a smoker or a
+blast furnace (a sign or an item frame). Golems only ever put in what that kind of furnace
+can cook, so a broad label is safe: a smoker labelled `[food]` gets raw meat and fish, never
+bread.
+
+| Label on the furnace | What golems put in | Example |
+| --- | --- | --- |
+| `[*]` | anything that furnace can cook | a furnace: ores, sand, logs, raw food...; a smoker: raw food only |
+| A group | the group's items that it can cook | `[ores]` ore blocks (Silk Touch) and ancient debris · `[ingots and gems]` raw iron, gold and copper · `[food]` raw meat, fish, potatoes · `[logs]` logs and wood (charcoal) · `[stone]` cobblestone and stone bricks · `[dirt and sand]` sand, red sand, clay |
+| One item | just that item | `[raw iron]` · `[sand]` · `[cobblestone]` · `[clay ball]` · `[wet sponge]` · `[cactus]` |
+| A pattern | items whose names match | `[raw_*]` raw metal · `[*_ore]` ore blocks · `[*log]` logs |
+| A tag | items in a Minecraft tag | `[#minecraft:logs]` · `[#minecraft:sand]` |
+| An item frame | the framed item | a frame holding raw gold |
+
+Not on a furnace: `[Furnace]` (that's the furnace item, which nothing cooks), `[Fuel]` and
+`[Furnace Supply]` (those go on chests). `/cgc check` on a furnace lists exactly what its
+label lets in.
+
+**Signs for the chests that feed it.**
+
+| Sign on a chest or barrel | What it does | Spellings that work (any case) |
+| --- | --- | --- |
+| `[Furnace Supply]` | golems take items to cook from it | `[Furnace Supply]`, `[Furnace Supplies]`, `[Furnaces Supply]`, `[Furnace-Supply]`, `[Furnace_Supply]` |
+| `[Fuel]` | golems take fuel from it (charcoal, then coal, then lava buckets) | `[Fuel]`, `[Fuels]` |
+
+Neither chest receives sorted items unless it also has an item label: `[Fuel] [charcoal]` or
+`[Furnace Supply] [raw iron]` on one sign.
+
 ### 🦺 Look after themselves
 - A golem that falls down a shaft or wanders off **walks back home**; one that's stuck gets
   reported, with where it is.
