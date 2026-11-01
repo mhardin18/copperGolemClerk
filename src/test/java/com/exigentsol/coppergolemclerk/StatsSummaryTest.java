@@ -20,6 +20,14 @@ class StatsSummaryTest {
     }
 
     @Test
+    void sortedSinceIsTheTotalNowLessTheTotalWhenLeaving() {
+        // Left with 1,000 sorted so far; 1,005 now: 5 while away, however busy the hour they left in was.
+        assertEquals(5, GolemStats.sortedSince(1005, 1000));
+        assertEquals(0, GolemStats.sortedSince(1000, 1000));
+        assertEquals(0, GolemStats.sortedSince(900, 1000)); // stats.yml reset meanwhile: never negative
+    }
+
+    @Test
     void nothingToSay() {
         assertNull(GolemStats.summary(T, 0, 0));
     }
