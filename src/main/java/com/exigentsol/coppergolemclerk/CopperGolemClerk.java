@@ -46,8 +46,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean furnaceFeeding = true;
     private volatile List<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
     private volatile boolean furnaceTrustedClaims = true;
-    private volatile int furnaceRefillBelow = 8;
+    private volatile int furnaceRefillBelow = 16;
     private volatile int furnaceWaitSeconds = 20;
+    private volatile int furnaceTakeOutAt = 8;
+    private volatile int furnaceFuelAhead = 16;
+    private volatile int furnaceSplitMin = 8;
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -277,8 +280,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         furnaceFeeding = config.getBoolean("furnace-feeding", true);
         furnaceFuel = fuelSetting(config);
         furnaceTrustedClaims = config.getBoolean("furnace-trusted-claims", true);
-        furnaceRefillBelow = rangeSetting(config, "furnace-refill-below", 8, 0, 64);
+        furnaceRefillBelow = rangeSetting(config, "furnace-refill-below", 16, 0, 64);
         furnaceWaitSeconds = rangeSetting(config, "furnace-wait-seconds", 20, 0, 300);
+        furnaceTakeOutAt = rangeSetting(config, "furnace-take-out-at", 8, 1, 64);
+        furnaceFuelAhead = rangeSetting(config, "furnace-fuel-ahead", 16, 0, 64);
+        furnaceSplitMin = rangeSetting(config, "furnace-split-min", 8, 1, 64);
         if (listener != null) {
             listener.furnaces().clear();
         }
@@ -400,6 +406,21 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** furnace-refill-below: a furnace gets more to cook only once this many or fewer items are waiting in it. */
     int furnaceRefillBelow() {
         return furnaceRefillBelow;
+    }
+
+    /** furnace-take-out-at: golems take out what a furnace made once this many are ready (or it has stopped). */
+    int furnaceTakeOutAt() {
+        return furnaceTakeOutAt;
+    }
+
+    /** furnace-fuel-ahead: fuel golems bring also covers this many more items than are waiting. */
+    int furnaceFuelAhead() {
+        return furnaceFuelAhead;
+    }
+
+    /** furnace-split-min: each furnace a load is split between gets at least this many items. */
+    int furnaceSplitMin() {
+        return furnaceSplitMin;
     }
 
     /** furnace-wait-seconds: how long a golem waits at a full furnace before taking its load back to the supply. */

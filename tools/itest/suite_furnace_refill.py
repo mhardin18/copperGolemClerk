@@ -28,9 +28,9 @@ def fill_when_carrying(c, xyz, t, amount=64):
                 lambda: c.r.cmd(f"item replace block {x} {y} {z} container.0 with minecraft:oak_log {amount}"))
 
 
-@scenario("refill-waits-above-threshold", "furnace-refill", 60, "A [logs] furnace with 9 logs waiting (furnace-refill-below 8): golems leave the supply alone.")
+@scenario("refill-waits-above-threshold", "furnace-refill", 60, "A [logs] furnace with 17 logs waiting (furnace-refill-below 16): golems leave the supply alone.")
 def _(c):
-    room(c, input=("oak_log", 9))
+    room(c, input=("oak_log", 17))
     return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "supply", "oak_log", 16), no_errors(c)]
 
 
