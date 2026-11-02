@@ -729,6 +729,22 @@ cd copperGolemClerk
 The jar is written to `build/libs/CopperGolemClerk-<version>.jar`. Install it as
 described in [Install](#install).
 
+### Adding a setting
+
+A new setting needs all of these, or `./gradlew build` fails (`ConfigDocsTest`) and says
+what's missing:
+
+1. A line in `src/main/resources/config.yml`, with its own comment right above it: what it
+   does, its range and default, and what raising or lowering it does. Servers that upgrade
+   get the setting added to their `config.yml` from there, comment included.
+2. A row in the [settings reference](#settings-reference) in this README, and a mention in
+   the section that describes the feature.
+3. A line in `CHANGELOG.md` under the version that adds it, naming it in backticks.
+
+Also update `docs/FullDescription.md` (the Hangar page) when the setting changes what
+players or server owners see. A setting kept out of `config.yml` on purpose (a test hook)
+is listed in `ConfigDocsTest.HIDDEN` with the reason.
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
