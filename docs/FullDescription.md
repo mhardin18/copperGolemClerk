@@ -30,8 +30,7 @@ We checked.)
 - **Only what you label:** unlabelled furnaces are left alone, and nothing from the rest of your
   storage wanders into a fire.
 
-Also new: when you upgrade, any new settings appear in your `config.yml` with an explanation of
-each. Details are under "Run your furnaces" below.
+Details are under "Run your furnaces" below.
 
 I'm always open to new ideas for this plugin. Open an enhancement request on GitHub:
 https://github.com/mhardin18/copperGolemClerk/issues
