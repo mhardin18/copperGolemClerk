@@ -90,7 +90,10 @@ defaults work as-is: about 50 groups that cover nearly every survival item. Afte
 the file, run `/cgc reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
-kept. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
+kept, and any settings new in that version are added to it at startup, each with the
+comment that explains it, in the same place as in a fresh config. Settings already in
+your file are never changed. The old file is saved as `config-before-<version>.yml`, and the
+console lists what was added. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
 you don't want to keep the config).
 
 ### Upgrading from SmartCopperGolems

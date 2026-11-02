@@ -114,6 +114,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     + " and restart, or golems are handled twice.");
         }
         saveDefaultConfig();
+        addMissingSettings();
         loadSettings();
         stats = new GolemStats(this);
         getServer().getPluginManager().registerEvents(stats, this);
@@ -159,6 +160,47 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getPluginManager().registerEvents(updates, this);
         updates.configure(updateCheck, updateCheckUrl);
         registerCommand("coppergolemclerk", "Copper Golem Clerk: smart copper golem sorting", List.of("cgc"), new Command());
+    }
+
+    /**
+     * After an upgrade: add the settings this version has that config.yml doesn't, each with
+     * the comment that explains it, keeping everything already there as it is. The old file
+     * is kept as config-before-<version>.yml. A config.yml with a YAML error is left alone.
+     */
+    private void addMissingSettings() {
+        File config = new File(getDataFolder(), "config.yml");
+        try (java.io.InputStream in = getResource("config.yml")) {
+            if (in == null || !config.isFile()) {
+                return;
+            }
+            String shipped = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
+            String raw = java.nio.file.Files.readString(config.toPath());
+            boolean crlf = raw.contains("\r\n");
+            String current = crlf ? raw.replace("\r\n", "\n") : raw;
+            try {
+                new org.bukkit.configuration.file.YamlConfiguration().loadFromString(current);
+            } catch (org.bukkit.configuration.InvalidConfigurationException e) {
+                return; // loadSettings reports the error; don't touch a file the owner is fixing
+            }
+            ConfigUpgrade.Result result = ConfigUpgrade.addMissing(current, shipped);
+            if (result.added().isEmpty()) {
+                return;
+            }
+            String version = getPluginMeta().getVersion();
+            File backup = new File(getDataFolder(), "config-before-" + version + ".yml");
+            if (backup.exists()) {
+                backup = new File(getDataFolder(), "config-before-" + version + "-" + System.currentTimeMillis() + ".yml");
+            }
+            java.nio.file.Files.copy(config.toPath(), backup.toPath());
+            String text = crlf ? result.text().replace("\n", "\r\n") : result.text();
+            java.nio.file.Files.writeString(config.toPath(), text);
+            getLogger().info("Added " + result.added().size() + " new setting" + (result.added().size() == 1 ? "" : "s")
+                    + " to config.yml, with their defaults and an explanation of each: " + String.join(", ", result.added())
+                    + ". Your other settings are unchanged; the old file is " + backup.getName() + ".");
+        } catch (IOException e) {
+            getLogger().warning("Couldn't add new settings to config.yml (" + e.getMessage()
+                    + "); their defaults apply. See the config.yml in the jar for what they do.");
+        }
     }
 
     /** This plugin's name before 2.0; its settings lived in plugins/SmartCopperGolems/. */

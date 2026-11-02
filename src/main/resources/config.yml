@@ -7,6 +7,9 @@
 #
 # Every setting below has a default, so a setting missing from this file still
 # works. The README lists them all: https://github.com/mhardin18/copperGolemClerk
+# When you upgrade the plugin, settings new in that version are added to this file
+# at startup, each with its explanation; the settings you have are left as they are,
+# and the old file is kept as config-before-<version>.yml.
 #
 # Use /cgc reload after editing this file (no restart needed).
 
@@ -49,7 +52,12 @@ matching-chest-timeout-seconds: 30
 # items first, and skip the chest if only "no home" items are left. The mark
 # lasts homeless-retry-minutes, or until /cgc reload. Add a home for
 # the item (a group, a label, an [Overflow] chest), then reload.
+# false: golems hold an item with no home forever, as vanilla golems do.
 return-unsortable-items: true
+# How long a returned item stays marked "no home" for its copper chest (minutes, 1 or more). While
+# marked, golems take other items from that chest first and skip it if only "no home" items
+# are left. Lower means golems retry sooner (more wasted trips if it still has no home);
+# higher means a home you add later is used only after this long (or after /cgc reload).
 homeless-retry-minutes: 5
 
 # Set to false to stop golems from ever using empty chests. Put one item into
@@ -148,18 +156,20 @@ furnace-wait-seconds: 20
 furnace-trusted-claims: true
 
 # /cgc find <item>: which containers near a player hold an item. By default players only
-# see containers inside GriefPrevention claims they own (never locked ones).
-# find-outside-own-claims: true also shows unclaimed containers and claims where they have
-# container trust; other players' claims stay hidden either way. Without GriefPrevention
-# there are no claims, so players find nothing unless this is true.
-# coppergolemclerk.allclaims (ops) sees everything. find-enabled: false turns the command
-# off. find-radius: how far it looks (1 to 64 blocks, sideways and up/down).
-# find-highlight-count: how many of the containers it finds glow for the player who asked,
-# nearest first (0 to 30; 0 = no glow). find-highlight-seconds: how long they glow (0 = no glow).
+# see containers inside GriefPrevention claims they own (never locked ones);
+# coppergolemclerk.allclaims (ops) sees everything. false turns the command off.
 find-enabled: true
+# true: /cgc find also shows unclaimed containers and claims where the player has container
+# trust; other players' claims stay hidden either way. Without GriefPrevention there are no
+# claims, so players find nothing unless this is true.
 find-outside-own-claims: false
+# How far /cgc find looks (1 to 64 blocks, sideways and up/down). Bigger finds more but
+# checks more blocks each time someone uses it.
 find-radius: 32
+# How many of the containers /cgc find finds glow for the player who asked, nearest first
+# (0 to 30; 0 = no glow).
 find-highlight-count: 5
+# How long those containers glow, in seconds (0 = no glow).
 find-highlight-seconds: 10
 
 # Golems give way to each other instead of getting stuck nose to nose. When a
@@ -191,10 +201,10 @@ update-check: true
 # Raise these (up to 6) for taller stacks of chests: golems walk to the foot of the
 # stack and the plugin moves the items for them. They need floor to stand on in
 # front of the chest.
-#   deliver-reach: chests golems put items into (labelled, matching, [Overflow], empty)
-#   take-reach:    copper chests golems take items from, and [Overflow] chests that
-#                  idle golems fetch from
+# deliver-reach: chests golems put items into (labelled, matching, [Overflow], empty), 2 to 6.
 deliver-reach: 2
+# take-reach: copper chests golems take items from, and [Overflow] chests that idle golems
+# fetch from (2 to 6 rows, like deliver-reach). Above 2 the plugin does the taking.
 take-reach: 2
 
 # Which containers golems put items into. Vanilla golems only use chests and trapped
@@ -222,8 +232,10 @@ status-labels: true
 
 # A copper golem with nothing to do walks over to say hello to an iron or snow
 # golem within 16 blocks, then goes back to its routine. It doesn't follow them,
-# and waits greet-cooldown-minutes before greeting again.
+# and waits greet-cooldown-minutes before greeting again. false: no greetings.
 greet-other-golems: true
+# How long a golem waits after greeting before it greets again (minutes). Lower means more
+# visits (purely for show; any work that turns up ends a visit).
 greet-cooldown-minutes: 5
 
 # Lost golems: each golem remembers the copper chest it last took items from. If it ends
@@ -275,14 +287,14 @@ tidy-chests: true
 # folder name, e.g. [world_nether, world_the_end].
 disabled-worlds: []
 
-# Golem limits: how many copper golems in one GriefPrevention claim (max-golems-per-claim;
-# each claim on its own, admin claims too), or on unclaimed land in one world
-# (max-golems-outside-claims; without GriefPrevention that's every golem in the world), use
-# this plugin. The oldest golems keep it; the newest over the limit sort like vanilla, and the
-# claim owner (or players with coppergolemclerk.alerts) is told. 0 = no limit.
-# Each working golem costs about 0.1 ms per tick with or without this plugin, so golems over
-# the limit still cost the same tick time (see the README).
+# Golem limits: how many copper golems in one GriefPrevention claim (each claim on its own,
+# admin claims too) use this plugin. The oldest golems keep it; the newest over the limit
+# sort like vanilla, and the claim owner (or players with coppergolemclerk.alerts) is told.
+# 0 = no limit. Each working golem costs about 0.1 ms per tick with or without this plugin,
+# so golems over the limit still cost the same tick time (see the README).
 max-golems-per-claim: 0
+# The same limit for copper golems on unclaimed land, per world (without GriefPrevention
+# that's every golem in the world). 0 = no limit.
 max-golems-outside-claims: 0
 
 # Let players use /cgc golems to list their own golems (in claims they own, or whose
