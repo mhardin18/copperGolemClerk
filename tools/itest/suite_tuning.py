@@ -41,6 +41,7 @@ class Sampler(threading.Thread):
         self.trips = {}
         self.idle = {n: 0 for n in furnaces}
         self.unlit = {n: 0 for n in furnaces}
+        self.wasted = {n: 0 for n in furnaces}  # burning with nothing to cook: fuel thrown away
         self.stop = False
 
     @staticmethod
@@ -66,11 +67,14 @@ class Sampler(threading.Thread):
                         t[1] += now[1]
                     self.hands[tag] = now
                 for name, (x, y, z) in self.furnaces.items():
-                    if "Slot: 0b" not in self.r.cmd(f"data get block {x} {y} {z} Items"):
+                    empty = "Slot: 0b" not in self.r.cmd(f"data get block {x} {y} {z} Items")
+                    if empty:
                         self.idle[name] += 1
                     lit = re.search(r"data: (\d+)", self.r.cmd(f"data get block {x} {y} {z} lit_time_remaining"))
                     if not lit or lit.group(1) == "0":
                         self.unlit[name] += 1
+                    elif empty:
+                        self.wasted[name] += 1
             except Exception:
                 pass
             time.sleep(1)
@@ -120,7 +124,7 @@ def measure(c, name, tags, furnace_names, inputs, overflow=("overflow",)):
                 "per_min": round(cooked / (TUNE_SECONDS / 60), 1),
                 "trips": {k: {"n": v[0], "avg": round(v[1] / v[0], 1)} for k, v in sorted(sampler.trips.items())},
                 "trips_per_item": round(sum(v[0] for v in sampler.trips.values()) / max(1, cooked), 2),
-                "idle_s": sampler.idle, "unlit_s": sampler.unlit,
+                "idle_s": sampler.idle, "unlit_s": sampler.unlit, "wasted_burn_s": sampler.wasted,
                 "heat_per_item": round(heat / max(1, cooked), 2),
                 "overflow_left": sum(c.count(o, it) for o in overflow if o in c.chests for it in outputs),
                 "supply_left": sum(c.total(i) for i in inputs),
@@ -204,10 +208,29 @@ def lava_smelter(c, name, n):
     return measure(c, name, tags, ["f1", "f2", "f3"], ["raw_iron"], overflow=())
 
 
+def small_lava(c, name, n):
+    """Three furnaces and only 40 raw iron to cook, [Fuel] with 6 lava buckets and charcoal: a
+    bucket (100 items) would mostly burn with nothing to cook."""
+    for i, fname in enumerate(("f1", "f2", "f3")):
+        furnace(c, fname, 4 + i * 3, 4, label="[*]")
+    c.chest("supply", 16, 4, [("raw_iron", 40)])
+    c.sign(16, 4, "[Furnace Supply]")
+    c.chest("fuel", 16, 8, [("lava_bucket", 1)] * 6 + [("charcoal", 64)])
+    c.sign(16, 8, "[Fuel]")
+    c.chest("ingots", 6, 18, [("iron_ingot", 1)])
+    c.sign(6, 18, "[iron ingot]")
+    c.chest("buckets", 18, 18, [("bucket", 1)])
+    c.sign(18, 18, "[bucket]")
+    c.chest("copper", 2, 12, block="waxed_copper_chest")
+    tags = golems(c, n, row=14)
+    return measure(c, name, tags, ["f1", "f2", "f3"], ["raw_iron"], overflow=())
+
+
 DESC = "Manual tuning layout (tools/itest/tune.py): measured for 6 minutes, prints a TUNE line."
 for g in (1, 2, 3, 5, 7, 10):
     scenario(f"tune-big-{g}g", "tuning", TUNE_SECONDS + 120, DESC, manual=True)(lambda c, g=g: big_smelter(c, f"big-{g}g", g))
     scenario(f"tune-survival-{g}g", "tuning", TUNE_SECONDS + 120, DESC, manual=True)(lambda c, g=g: survival_smelter(c, f"survival-{g}g", g))
     scenario(f"tune-one-{g}g", "tuning", TUNE_SECONDS + 120, DESC, manual=True)(lambda c, g=g: survival_smelter(c, f"one-{g}g", g, one_furnace=True))
     scenario(f"tune-lava-{g}g", "tuning", TUNE_SECONDS + 120, DESC, manual=True)(lambda c, g=g: lava_smelter(c, f"lava-{g}g", g))
+    scenario(f"tune-lavasmall-{g}g", "tuning", TUNE_SECONDS + 120, DESC, manual=True)(lambda c, g=g: small_lava(c, f"lavasmall-{g}g", g))
     scenario(f"tune-survlava-{g}g", "tuning", TUNE_SECONDS + 120, DESC, manual=True)(lambda c, g=g: survival_smelter(c, f"survlava-{g}g", g, lava=True))
