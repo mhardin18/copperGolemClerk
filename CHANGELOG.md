@@ -1,8 +1,8 @@
 # Changelog
 
-All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup with their explanations, and the explanations of the settings you have are brought up to date (before that, new settings used their defaults until you added them).
+All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup with their explanations, and the explanations of the settings you have are brought up to date (before that, new settings used their defaults until you added them).
 
-## 3.0.0 (in progress)
+## 3.0.0 (2026-11-02)
 
 A major release, "The Furnaces Are Alive": golems now run your furnaces (feeding, fueling and emptying them), and your `config.yml` is kept up to date with every new setting and its explanation when you upgrade.
 
@@ -15,6 +15,7 @@ A major release, "The Furnaces Are Alive": golems now run your furnaces (feeding
 - `/cgc storage`: how full the storage around you is, by label (or by contents for unlabelled chests), fullest first, with full and nearly full ones flagged, plus `[Overflow]` chests, empty chests left and items waiting in copper chests. Players see only containers they could open (`coppergolemclerk.storage`, everyone by default).
 
 ### Changed
+- Golems fetching from an `[Overflow]` chest take up to `carry-amount` of an item across several stacks; they used to take only the first stack (3 of 3 + 5 ingots, for example).
 - `config.yml` and the README explain `debug` (every decision the plugin logs, and that it changes nothing golems do) and `trace-golems` (how often it logs) in full.
 - The build checks that every setting is documented: in `config.yml` with its own comment (so upgrades add it with its explanation), in the README settings reference and, for settings new since this changelog started, in the CHANGELOG. "Adding a setting" in the README lists the steps.
 - Documentation explains what `*` (any letters in the item's name: `[*sand]`, `[sand*]`, `[*]` for everything), `#` (a Minecraft item tag: `[#logs]`) and `@` (`[@fuel]`) do on a sign, with examples, including that `[*]` on a chest is picked before `[Overflow]`.
