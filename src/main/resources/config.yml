@@ -127,22 +127,51 @@ carry-amount: 16
 # false turns ALL of this off: golems leave every furnace alone, [Fuel] and [Furnace Supply]
 # signs mean nothing (those chests are sorted into like any other), and chests on a
 # smelter's hopper are ordinary chests again (golems may sort random items into them).
+# An idle golem picks its furnace job in this order: empty a furnace whose output slot is
+# full (it has stopped), take out an empty lava bucket, bring fuel, bring items to cook to
+# a furnace running low, and last take out finished items (see furnace-take-out-at).
+# Two golems never take the same job at the same furnace.
 furnace-feeding: true
 # Fuel, most preferred first. Golems take fuel ONLY from containers with a [Fuel] sign,
-# use the first fuel in this list that one of them holds, and bring just enough for
-# what's waiting. A furnace burning a fuel lower on the list is left to burn out before it
-# gets the better one. Fuel you put in yourself (not in
-# this list) is left alone. Empty buckets left by lava are refilled only at a lava cauldron
-# nearby and put back in a [Fuel] container (sorted like anything else if there's none).
+# use the first fuel in this list that one of them holds, and bring enough for what's
+# waiting plus furnace-fuel-ahead. A furnace burning a fuel lower on the list is left to burn
+# out before it gets the better one. Fuel you put in yourself (not in this list) is left
+# alone. Fuel a golem couldn't put in (the furnace got fuelled meanwhile) goes back to a
+# [Fuel] container. Empty buckets left by lava are refilled only at a lava cauldron nearby
+# and put back in a [Fuel] container (sorted like anything else if there's none).
 furnace-fuel: [charcoal, coal, lava_bucket]
+# Fuel golems bring also covers this many MORE items than are waiting (0 to 64), so the
+# next load of items to cook doesn't need a fuel trip of its own. Golems only fetch fuel
+# when what's waiting isn't covered; this only changes how much they bring then. One
+# charcoal or coal cooks 8 items: at the default 16, a furnace with 8 items waiting gets 3
+# charcoal instead of 1. 0 = just enough for what's waiting (about one fuel trip after
+# every load, and a furnace can go out between them). Higher means fewer fuel trips, but
+# more fuel sits in furnaces' fuel slots instead of the [Fuel] chest (it isn't lost: it
+# burns once there's something to cook). Set it about the same as carry-amount.
+furnace-fuel-ahead: 16
 # When golems top a furnace up: only once this many items or fewer are left waiting in it
-# (0 to 64). At the default 8 a furnace has about 80 seconds of cooking left (40 for a smoker
-# or blast furnace), plenty of time for a golem to bring a full load, so each trip carries a
-# real load. Lower (0 = only when empty) means fewer trips but a furnace can sit idle for a
-# moment while a golem walks over. Higher means more, smaller trips; at 64 golems top up after
-# every single item, walking back and forth all the time (busy golems, wasted trips and a
-# little more server work), which is what this setting is there to stop.
-furnace-refill-below: 8
+# (0 to 64). At the default 16 a furnace has about 160 seconds of cooking left (80 for a
+# smoker or blast furnace): time for a golem that is busy elsewhere (sorting, fuel, emptying
+# other furnaces) to get there before it runs dry. Lower (0 = only when empty) means a
+# furnace can sit idle while golems are busy; 8 is enough with one golem and one furnace.
+# Higher means more, smaller trips; at 64 golems top up after every single item, walking
+# back and forth all the time (busy golems, wasted trips and a little more server work).
+furnace-refill-below: 16
+# Each furnace a load is split between gets at least this many items (1 to 64). A golem
+# carrying 16 (carry-amount) splits it between 2 furnaces at the default 8, and if more are
+# running low, the emptiest get it; the rest get the next load. 1 = split a load between up
+# to one furnace per item (16 furnaces get 1 each), so all of them start at once but each
+# runs low again soon and needs another trip. Set it to carry-amount to always take a whole
+# load to one furnace.
+furnace-split-min: 8
+# Golems take what a furnace made out once this many are ready (1 to 64), or sooner when
+# the furnace won't make more for now (nothing left to cook, or no fire and no fuel), or
+# its output slot is full. Only matters for furnaces without a hopper under them. At the
+# default 8 one trip carries 8 or more; 1 = take out every single item as it's done (a
+# golem walks to the furnace for each one, and has less time for refills and sorting).
+# Higher means fewer trips but finished items wait longer in the furnace; a full output
+# slot (64) stops the furnace, so golems always empty a full one first.
+furnace-take-out-at: 8
 # If a furnace has filled up by the time a golem gets there (another golem or a player got
 # there first), the golem waits beside it this many seconds (0 to 300) for an item or two to
 # finish, then puts the rest in, and takes whatever still doesn't fit back to the

@@ -127,7 +127,8 @@ final class ChestReports {
             if (fuel != null && !fuel.isEmpty() && fuel.getType() != pick.type()) {
                 now += "; golems wait for it to burn out, then switch to " + pretty(pick.type()).toLowerCase(java.util.Locale.ROOT);
             } else {
-                now += need > 0 ? "; golems will bring " + need + " more" : "; enough fuel for what's waiting";
+                now += need > 0 ? "; golems will bring " + need + " more (for what's waiting plus "
+                        + plugin.furnaceFuelAhead() + " more items, furnace-fuel-ahead)" : "; enough fuel for what's waiting";
             }
         }
         say(player, NamedTextColor.WHITE, "Now: " + now + ".");

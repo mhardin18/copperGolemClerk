@@ -289,7 +289,7 @@ def _(c):
                     expect(c, "fuelchest", "coal", 32)]
 
 
-@scenario("fuel-just-enough", "furnace", 150, "8 raw iron waiting: golems bring exactly 1 charcoal (it cooks 8), not a whole load.")
+@scenario("fuel-just-enough", "furnace", 150, "8 raw iron waiting: golems bring exactly 3 charcoal (8 waiting + 16 furnace-fuel-ahead = 24 items), not a whole load.")
 def _(c):
     fuel_setup(c, [("charcoal", 32)])
     t = Trigger()
@@ -298,11 +298,11 @@ def _(c):
         t.fire_when(lambda: c.count("fuelchest", "charcoal") < 32, lambda: None)
         settled = t.at is not None and t.since() > 15 and c.holding("charcoal") == 0
         return [(settled, "fuel delivered and the golem's hands empty for 15s"),
-                expect(c, "fuelchest", "charcoal", 31)]
+                expect(c, "fuelchest", "charcoal", 29)]
     return check
 
 
-@scenario("fuel-just-enough-20", "furnace", 150, "20 raw iron waiting: golems bring 3 charcoal (8 + 8 + 4).")
+@scenario("fuel-just-enough-20", "furnace", 150, "20 raw iron waiting: golems bring 5 charcoal (20 + 16 ahead = 36 items).")
 def _(c):
     fuel_setup(c, [("charcoal", 32)], raw=20)
     t = Trigger()
@@ -311,7 +311,7 @@ def _(c):
         t.fire_when(lambda: c.count("fuelchest", "charcoal") < 32, lambda: None)
         settled = t.at is not None and t.since() > 15 and c.holding("charcoal") == 0
         return [(settled, "fuel delivered and the golem's hands empty for 15s"),
-                expect(c, "fuelchest", "charcoal", 29)]
+                expect(c, "fuelchest", "charcoal", 27)]
     return check
 
 
@@ -392,7 +392,7 @@ def _(c):
                 has(reply, "first available of: charcoal, coal, lava bucket"),
                 has(reply, "Items to cook come only from [Furnace Supply] containers."),
                 has(reply, "Golems would use coal from the container at"),
-                has(reply, "8 raw iron waiting, fuel: none; golems will bring 1 more"),
+                has(reply, "8 raw iron waiting, fuel: none; golems will bring 3 more"),
                 has(plain, "No label: golems leave this furnace alone")]
     return check
 
