@@ -167,8 +167,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     /**
      * After an upgrade: add the settings this version has that config.yml doesn't, each with
-     * the comment that explains it, keeping everything already there as it is. The old file
-     * is kept as config-before-<version>.yml. A config.yml with a YAML error is left alone.
+     * the comment that explains it, and bring the explanation above the other settings up to
+     * date; values are never changed. The old file is kept as config-before-<version>.yml.
+     * A config.yml with a YAML error is left alone.
      */
     private void addMissingSettings() {
         File config = new File(getDataFolder(), "config.yml");
@@ -186,7 +187,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 return; // loadSettings reports the error; don't touch a file the owner is fixing
             }
             ConfigUpgrade.Result result = ConfigUpgrade.addMissing(current, shipped);
-            if (result.added().isEmpty()) {
+            if (!result.changed()) {
                 return;
             }
             String version = getPluginMeta().getVersion();
@@ -197,9 +198,16 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             java.nio.file.Files.copy(config.toPath(), backup.toPath());
             String text = crlf ? result.text().replace("\n", "\r\n") : result.text();
             java.nio.file.Files.writeString(config.toPath(), text);
-            getLogger().info("Added " + result.added().size() + " new setting" + (result.added().size() == 1 ? "" : "s")
-                    + " to config.yml, with their defaults and an explanation of each: " + String.join(", ", result.added())
-                    + ". Your other settings are unchanged; the old file is " + backup.getName() + ".");
+            if (!result.added().isEmpty()) {
+                getLogger().info("Added " + result.added().size() + " new setting" + (result.added().size() == 1 ? "" : "s")
+                        + " to config.yml, with their defaults and an explanation of each: " + String.join(", ", result.added()) + ".");
+            }
+            if (!result.explained().isEmpty()) {
+                getLogger().info("Updated the explanation above " + result.explained().size() + " setting"
+                        + (result.explained().size() == 1 ? "" : "s") + " in config.yml to this version's: "
+                        + String.join(", ", result.explained()) + ". Their values are unchanged.");
+            }
+            getLogger().info("Your settings' values are unchanged; the old file is " + backup.getName() + ".");
         } catch (IOException e) {
             getLogger().warning("Couldn't add new settings to config.yml (" + e.getMessage()
                     + "); their defaults apply. See the config.yml in the jar for what they do.");

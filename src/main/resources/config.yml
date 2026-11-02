@@ -8,8 +8,11 @@
 # Every setting below has a default, so a setting missing from this file still
 # works. The README lists them all: https://github.com/mhardin18/copperGolemClerk
 # When you upgrade the plugin, settings new in that version are added to this file
-# at startup, each with its explanation; the settings you have are left as they are,
-# and the old file is kept as config-before-<version>.yml.
+# at startup, each with its explanation, and the explanation above every other setting
+# is replaced with the new version's. Your values are never changed. Keep notes of your
+# own at the end of a setting's line (carry-amount: 32  # our farm): those stay; a
+# comment on its own line above a setting is replaced. The old file is kept as
+# config-before-<version>.yml.
 #
 # Use /cgc reload after editing this file (no restart needed).
 
@@ -339,11 +342,25 @@ max-golems-outside-claims: 0
 # Off by default: only admins can use it.
 golems-command-for-players: false
 
-# Log every sort decision to the console. Useful while setting up groups.
+# true: write a line to the server console (and logs/latest.log) for every decision the
+# plugin makes, with the reason. It doesn't change what golems do, and players never see
+# it. It covers which chests a golem may go to and why a delivery is accepted or refused
+# (label, group, exact match, [Overflow], empty chest); furnace jobs (fetching supply or
+# fuel, putting items in, taking output out, waiting, giving up on a furnace it can't
+# reach); [Overflow] fetches and items returned to their copper chest; and golems giving
+# way, greeting, topping up a carry, reaching higher chests, avoiding portals, being
+# switched to vanilla, tidying chests, and update checks. Use it while setting up groups
+# and labels or when golems do something unexpected, then turn it off: it's several lines
+# per golem per delivery, which fills the log fast with many golems. /cgc reload applies
+# it without a restart. For each golem's every move, see trace-golems.
 debug: false
 
-# Diagnostics: log each golem's state, position and held item when they change.
-# Very chatty; leave off unless you're investigating what golems are doing.
+# true: once a second, log each copper golem's animation state, block position, held item
+# and whether it's walking somewhere, whenever any of those changed (so up to a line a
+# second per walking golem), plus a reminder line every 5 seconds while it carries
+# something. Even chattier than debug: turn it on only to follow exactly what golems are
+# doing (for example during long pauses), and off again after. It doesn't change what
+# golems do.
 trace-golems: false
 
 # Each group is a list of entries. An item can be in more than one group.
