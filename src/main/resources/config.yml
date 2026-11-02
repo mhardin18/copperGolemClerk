@@ -209,8 +209,9 @@ furnace-refill-below: 16
 # load to one furnace.
 furnace-split-min: 8
 # Golems take what a furnace made out once this many are ready (1 to 64), or sooner when
-# the furnace won't make more for now (nothing left to cook, or no fire and no fuel), or
-# its output slot is full. Only matters for furnaces without a hopper under them. At the
+# the furnace won't make more for now: nothing left to cook, or not burning (out of fuel, or
+# its output slot holds something else, like an item a player left there, so it can't
+# light), or its output slot is full. Only matters for furnaces without a hopper under them. At the
 # default 8 one trip carries 8 or more; 1 = take out every single item as it's done (a
 # golem walks to the furnace for each one, and has less time for refills and sorting).
 # Higher means fewer trips but finished items wait longer in the furnace; a full output

@@ -329,8 +329,9 @@ will put in, and points out label entries that add nothing.
 
 **What comes out.** An idle golem takes out what the furnace has made and sorts it like
 anything else, unless a hopper under the furnace collects it. It waits until 8 are ready
-(`furnace-take-out-at`) so a trip is worth it, unless the furnace has stopped (nothing left
-to cook, out of fuel, or its output slot is full). Golems do the urgent jobs first: a furnace
+(`furnace-take-out-at`) so a trip is worth it, unless the furnace has stopped: nothing left
+to cook, out of fuel, its output slot full, or its output slot holding something else (an item
+a player left there), which keeps it from lighting until that's taken out. Golems do the urgent jobs first: a furnace
 with a full output slot, then fuel, then items to cook for furnaces running low, and only
 then taking out finished items. If no chest in range would
 take it (and there's no copper chest to return it to), it stays in the furnace rather than

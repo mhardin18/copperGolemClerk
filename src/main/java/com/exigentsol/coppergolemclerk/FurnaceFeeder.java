@@ -526,7 +526,10 @@ final class FurnaceFeeder {
         return false;
     }
 
-    /** True if enough is ready to be worth a trip (furnace-take-out-at), or the furnace won't make more for now. */
+    /**
+     * True if enough is ready to be worth a trip (furnace-take-out-at), or the furnace won't make
+     * more for now: nothing left to cook, or not burning (out of fuel, or its output slot is blocked).
+     */
     private boolean worthTakingOut(Furnace furnace, ItemStack result) {
         if (result.getAmount() >= Math.min(plugin.furnaceTakeOutAt(), result.getMaxStackSize())) {
             return true;
@@ -535,9 +538,13 @@ final class FurnaceFeeder {
         if (isEmpty(inventory.getSmelting())) {
             return true; // nothing left to cook
         }
-        ItemStack fuel = inventory.getFuel();
-        boolean fuelled = !isEmpty(fuel) && fuel.getType() != Material.BUCKET;
-        return furnace.getBurnTime() <= 0 && !fuelled; // out of fuel: nothing more until it gets some
+        if (furnace.getBurnTime() > 0) {
+            return false; // still cooking
+        }
+        // Not burning with something to cook: out of fuel (nothing more until it gets some), or it has
+        // fuel and still won't light because the output slot holds something it can't add to (an item a
+        // player left there, or a different result): either way, take it out.
+        return true;
     }
 
     /**
