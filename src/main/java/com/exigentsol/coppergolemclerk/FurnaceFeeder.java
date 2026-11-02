@@ -469,8 +469,7 @@ final class FurnaceFeeder {
             }
         }
         // 3. Fuel.
-        FuelPick pick = null;
-        boolean looked = false;
+        Map<Material, Block> sources = null;
         for (Furnace furnace : furnaces) {
             FurnaceInventory inventory = furnace.getInventory();
             ItemStack fuel = inventory.getFuel();
@@ -480,13 +479,13 @@ final class FurnaceFeeder {
             if (!isEmpty(fuel) && !plugin.furnaceFuel().contains(fuel.getType())) {
                 continue; // someone put in a fuel that isn't in furnace-fuel (or an empty bucket): leave it
             }
-            if (!looked) {
-                pick = bestFuel(golem); // the same for every furnace in range
-                looked = true;
+            if (sources == null) {
+                sources = fuelSources(golem, golem.getLocation(), golem.isInsideVehicle()); // the same for every furnace
             }
-            if (pick == null) {
+            if (sources.isEmpty()) {
                 break; // no [Fuel] container in range has any furnace-fuel
             }
+            FuelPick pick = pickFor(sources, () -> backlogOf(furnace, golem.getLocation(), golem.isInsideVehicle(), golem));
             if (!isEmpty(fuel) && fuel.getType() != pick.type()) {
                 continue; // burning a fuel lower on the list: let it run out, then switch
             }
@@ -588,25 +587,138 @@ final class FurnaceFeeder {
     record FuelPick(Material type, Block source) {
     }
 
-    private FuelPick bestFuel(CopperGolem golem) {
+    /** The furnace-fuel items some [Fuel] container around this spot holds, in furnace-fuel order, each with the nearest such container. */
+    private Map<Material, Block> fuelSources(CopperGolem golem, Location at, boolean riding) {
+        Map<Material, Block> sources = new java.util.LinkedHashMap<>();
         for (Material type : plugin.furnaceFuel()) {
-            Block source = fuelSource(golem, golem.getLocation(), golem.isInsideVehicle(), type);
+            Block source = fuelSource(golem, at, riding, type);
             if (source != null) {
-                return new FuelPick(type, source);
+                sources.put(type, source);
             }
         }
-        return null;
+        return sources;
     }
 
-    /** The fuel highest on furnace-fuel that a [Fuel] container around this spot holds (for /cgc check). */
-    FuelPick bestFuelNear(Location at, boolean riding) {
-        for (Material type : plugin.furnaceFuel()) {
-            Block source = fuelSource(null, at, riding, type);
-            if (source != null) {
-                return new FuelPick(type, source);
+    /** The fuel to bring; the backlog is only worked out when it matters (lava up next and another fuel there). */
+    private FuelPick pickFor(Map<Material, Block> sources, java.util.function.IntSupplier backlog) {
+        List<Material> available = List.copyOf(sources.keySet());
+        int min = plugin.furnaceLavaMinItems();
+        Material type = chooseFuel(available, min, min); // as if the backlog were big enough
+        if (type == Material.LAVA_BUCKET && chooseFuel(available, 0, min) != Material.LAVA_BUCKET) {
+            type = chooseFuel(available, backlog.getAsInt(), min);
+        }
+        return type == null ? null : new FuelPick(type, sources.get(type));
+    }
+
+    /**
+     * The fuel for a furnace with this backlog (see backlog): the first available one in
+     * furnace-fuel order, except that lava buckets are skipped while the backlog is under
+     * lavaMin and another fuel is available (a lit furnace burns its fuel out even with
+     * nothing left to cook, and one bucket lasts 100 items). Null if none is available.
+     */
+    static Material chooseFuel(List<Material> available, int backlog, int lavaMin) {
+        Material lava = null;
+        for (Material type : available) {
+            if (type == Material.LAVA_BUCKET && backlog < lavaMin) {
+                lava = lava == null ? type : lava; // only if nothing else is there
+                continue;
+            }
+            return type;
+        }
+        return lava;
+    }
+
+    /** The fuel golems would bring this furnace, from around this spot (for /cgc check). */
+    FuelPick bestFuelNear(Furnace furnace, Location at, boolean riding) {
+        return pickFor(fuelSources(null, at, riding), () -> backlogOf(furnace, at, riding, null));
+    }
+
+    /** True if lava buckets would be skipped for this furnace because its backlog is under furnace-lava-min-items. */
+    boolean lavaSkipped(Furnace furnace, Location at, boolean riding) {
+        Map<Material, Block> sources = fuelSources(null, at, riding);
+        FuelPick pick = pickFor(sources, () -> backlogOf(furnace, at, riding, null));
+        return pick != null && pick.type() != Material.LAVA_BUCKET && sources.containsKey(Material.LAVA_BUCKET)
+                && List.copyOf(sources.keySet()).indexOf(Material.LAVA_BUCKET) < List.copyOf(sources.keySet()).indexOf(pick.type());
+    }
+
+    /**
+     * How many items a furnace will cook from here on, as far as golems can tell: what's
+     * waiting in it, what other golems are bringing it, and its share of the items in
+     * [Furnace Supply] containers in range that it takes (shared evenly with the other
+     * labelled furnaces in range that take them). The golem that asks (null for /cgc check)
+     * isn't counted as bringing anything.
+     */
+    int backlogOf(Furnace furnace, Location at, boolean riding, Entity asking) {
+        ItemStack waiting = furnace.getInventory().getSmelting();
+        int inTransit = 0;
+        HomeFinder.Pos pos = HomeFinder.Pos.of(furnace.getBlock());
+        for (Map.Entry<UUID, Job> e : jobs.entrySet()) {
+            Job job = e.getValue();
+            if ((asking != null && e.getKey().equals(asking.getUniqueId())) || job.stops() == null || !job.stops().contains(pos)) {
+                continue;
+            }
+            if (job.kind() == Kind.FEED || job.kind() == Kind.FEED_WAIT) {
+                int held = plugin.getServer().getEntity(e.getKey()) instanceof CopperGolem g
+                        ? g.getEquipment().getItemInMainHand().getAmount() : 0;
+                inTransit += held / job.stops().size();
+            } else if (job.kind() == Kind.SUPPLY_TAKE) {
+                inTransit += GolemCarry.amountFor(job.type(), plugin.carryAmount()) / job.stops().size();
             }
         }
-        return null;
+        Map<Material, Integer> supply = new EnumMap<>(Material.class);
+        List<Furnace> takers = new ArrayList<>();
+        for (BlockState state : HomeFinder.containersInRange(at, riding, t -> !HopperLines.isHopper(t))) {
+            if (state instanceof Furnace f) {
+                ChestLabels.Labels labels = labelsOf(f.getInventory());
+                if (labels.hasItemRules() && !labels.noGolems() && !HomeFinder.isLocked(f)) {
+                    takers.add(f);
+                }
+                continue;
+            }
+            if (!(state instanceof Container container) || HomeFinder.isLocked(state)) {
+                continue;
+            }
+            Inventory inventory = container.getInventory();
+            ChestLabels.Labels labels = labelsOf(inventory);
+            if (!labels.supply() || labels.noGolems() || (asking != null && !claimAllows(asking, state.getBlock()))) {
+                continue;
+            }
+            for (ItemStack s : inventory.getStorageContents()) {
+                if (s != null && !s.isEmpty()) {
+                    supply.merge(s.getType(), s.getAmount(), Integer::sum);
+                }
+            }
+        }
+        Map<Material, Integer> takerCount = new EnumMap<>(Material.class);
+        for (Material type : supply.keySet()) {
+            int n = 0;
+            for (Furnace f : takers) {
+                if (takes(f, type)) {
+                    n++;
+                }
+            }
+            takerCount.put(type, n);
+        }
+        return backlog(isEmpty(waiting) ? 0 : waiting.getAmount(), inTransit, supply, takerCount, t -> takes(furnace, t));
+    }
+
+    private boolean takes(Furnace furnace, Material type) {
+        return labelsOf(furnace.getInventory()).accepts(type) && canSmelt(furnace.getType(), type);
+    }
+
+    /**
+     * A furnace's backlog: waiting + inTransit + for each supply item it takes, that count
+     * divided by how many furnaces in range take it (at least this one).
+     */
+    static int backlog(int waiting, int inTransit, Map<Material, Integer> supply, Map<Material, Integer> takers,
+                       java.util.function.Predicate<Material> takes) {
+        int total = waiting + inTransit;
+        for (Map.Entry<Material, Integer> e : supply.entrySet()) {
+            if (takes.test(e.getKey())) {
+                total += e.getValue() / Math.max(1, takers.getOrDefault(e.getKey(), 1));
+            }
+        }
+        return total;
     }
 
     /** The nearest container in range with a [Fuel] sign holding this fuel (not locked or [No Golems]). */

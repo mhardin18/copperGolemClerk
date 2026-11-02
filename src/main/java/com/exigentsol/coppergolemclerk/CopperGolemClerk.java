@@ -52,6 +52,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile int furnaceWaitSeconds = 20;
     private volatile int furnaceTakeOutAt = 8;
     private volatile int furnaceFuelAhead = 16;
+    private volatile int furnaceLavaMinItems = 100;
     private volatile int furnaceSplitMin = 8;
     private volatile long homelessRetryMillis;
     private SortListener listener;
@@ -338,6 +339,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         furnaceWaitSeconds = rangeSetting(config, "furnace-wait-seconds", 20, 0, 300);
         furnaceTakeOutAt = rangeSetting(config, "furnace-take-out-at", 8, 1, 64);
         furnaceFuelAhead = rangeSetting(config, "furnace-fuel-ahead", 16, 0, 64);
+        furnaceLavaMinItems = rangeSetting(config, "furnace-lava-min-items", 100, 0, 1000);
         furnaceSplitMin = rangeSetting(config, "furnace-split-min", 8, 1, 64);
         if (listener != null) {
             listener.furnaces().clear();
@@ -481,6 +483,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** furnace-fuel-ahead: fuel golems bring also covers this many more items than are waiting. */
     int furnaceFuelAhead() {
         return furnaceFuelAhead;
+    }
+
+    /** furnace-lava-min-items: lava buckets go in only for a backlog of this many items or more (if another fuel is there). */
+    int furnaceLavaMinItems() {
+        return furnaceLavaMinItems;
     }
 
     /** furnace-split-min: each furnace a load is split between gets at least this many items. */

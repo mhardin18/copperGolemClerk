@@ -345,7 +345,12 @@ when the fuel in the furnace won't cook what's waiting, and then bring enough fo
 raw iron waiting get 3 charcoal. Only one golem at a time brings fuel to a furnace, and fuel
 a golem couldn't put in goes back to a `[Fuel]` container. A furnace still
 burning a fuel lower on the list isn't topped up with it; it switches once that runs out. A
-fuel someone else put in (not in `furnace-fuel`) is left alone. Lava buckets leave an empty
+fuel someone else put in (not in `furnace-fuel`) is left alone. A lava bucket lasts 100 items,
+and a lit furnace burns its fuel out even with nothing left to cook, so golems use lava only
+for a furnace with a backlog of 100 or more items (`furnace-lava-min-items`) when another fuel
+is there too: what's waiting in it, what other golems are bringing, and its share of the
+matching items in `[Furnace Supply]` containers in range. For a smaller backlog they bring
+just enough charcoal or coal instead. `/cgc check` on the furnace shows its backlog. Lava buckets leave an empty
 bucket in the furnace: golems take it out and refill it at a lava cauldron nearby (never from
 lava in the world), then put it back in a `[Fuel]` container. A cauldron that dripping lava
 keeps refilling (pointed dripstone hanging over it, within 11 blocks, with a lava source on
@@ -665,6 +670,7 @@ with its line number and the old settings are kept.
 | `carry-amount` | `16` | Items a golem carries per trip, 1 to 64 (vanilla: 16). Items that stack to less (ender pearls 16, tools 1) are carried that many at most. |
 | `furnace-feeding` | `true` | Golems feed, empty and fuel furnaces, smokers and blast furnaces that have a label, with items from `[Furnace Supply]` containers. Unlabelled furnaces are never touched. `false` turns off everything furnace-related: furnaces are left alone, `[Fuel]` and `[Furnace Supply]` signs mean nothing, and chests on a smelter's hopper are ordinary chests again. |
 | `furnace-fuel` | `[charcoal, coal, lava_bucket]` | Fuels golems may put in, most preferred first. Taken only from containers with a `[Fuel]` sign. Unknown names and items that don't burn are reported and skipped. |
+| `furnace-lava-min-items` | `100` | Lava buckets go in only when the furnace's backlog (waiting + on the way + its share of the matching `[Furnace Supply]` items) is at least this many items (0 to 1000), when a `[Fuel]` container also has another fuel; a bucket lasts 100 items and burns out even with nothing to cook. 0 = lava whenever it's its turn in `furnace-fuel`. |
 | `furnace-fuel-ahead` | `16` | Fuel golems bring covers what's waiting plus this many more items (0 to 64), so the next load doesn't need a fuel trip of its own. 0 = just enough for what's waiting (a fuel trip after nearly every load); higher = fewer trips, more fuel sitting in fuel slots. |
 | `furnace-refill-below` | `16` | A furnace gets more to cook only once this many items or fewer are left in it (0 to 64). Lower (0 = only when empty) can leave furnaces idle while golems are busy; 64 = top up after every item (many wasted trips). |
 | `furnace-split-min` | `8` | Each furnace a load is split between gets at least this many items (1 to 64); the emptiest furnaces go first. 1 = up to one furnace per item (more, smaller trips); carry-amount = whole loads to one furnace. |
