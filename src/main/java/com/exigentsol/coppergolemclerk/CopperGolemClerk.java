@@ -41,6 +41,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean returnUnsortableItems;
     private volatile boolean fetchFromOverflow;
     private volatile int fetchersPerOverflowChest;
+    private volatile int overflowFetchMin = 8;
+    private volatile int overflowFetchWaitSeconds = 120;
     private volatile int carryAmount = GolemCarry.VANILLA;
     private GolemCarry carry;
     private volatile boolean furnaceFeeding = true;
@@ -249,6 +251,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         returnUnsortableItems = config.getBoolean("return-unsortable-items", true);
         fetchFromOverflow = config.getBoolean("fetch-from-overflow", true);
         fetchersPerOverflowChest = Math.max(1, config.getInt("fetchers-per-overflow-chest", 2));
+        overflowFetchMin = rangeSetting(config, "overflow-fetch-min", 8, 1, 64);
+        overflowFetchWaitSeconds = rangeSetting(config, "overflow-fetch-wait-seconds", 120, 0, 3600);
         carryAmount = config.getInt("carry-amount", GolemCarry.VANILLA);
         if (carryAmount < 1 || carryAmount > 64) {
             getLogger().warning("carry-amount must be 1 to 64 (it's " + carryAmount + "); using "
@@ -287,6 +291,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         furnaceSplitMin = rangeSetting(config, "furnace-split-min", 8, 1, 64);
         if (listener != null) {
             listener.furnaces().clear();
+            listener.fetcher().clear();
         }
         takeReach = reachSetting(config, "take-reach");
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
@@ -378,6 +383,16 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     boolean signLabels() {
         return signLabels;
+    }
+
+    /** overflow-fetch-min: from a hopper-fed [Overflow] chest, golems fetch an item once this many are there. */
+    int overflowFetchMin() {
+        return overflowFetchMin;
+    }
+
+    /** overflow-fetch-wait-seconds: ...or once it has waited this long. */
+    int overflowFetchWaitSeconds() {
+        return overflowFetchWaitSeconds;
     }
 
     int fetchersPerOverflowChest() {

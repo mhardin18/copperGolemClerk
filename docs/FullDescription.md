@@ -39,7 +39,9 @@ item, the most specific one wins: `[stews]` beats `[food]` for a bowl of stew.
 
 ### ♻️ An overflow chest that empties itself
 Items with no home land in your `[Overflow]` chest. Add a chest for them later and idle
-golems carry them over by themselves.
+golems carry them over by themselves. If a hopper fills the overflow chest (a smelter's
+output), golems wait until 8 of an item have built up, or 2 minutes, instead of walking
+over for every ingot.
 
 ### 🗄️ Bigger storage rooms
 - **Tidy** as they go: partial stacks merged, like items kept together.

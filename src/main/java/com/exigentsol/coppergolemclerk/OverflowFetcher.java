@@ -56,6 +56,8 @@ final class OverflowFetcher {
     private final Returns returns;
     private final Map<UUID, Fetch> fetching = new HashMap<>();
     private final Map<UUID, Long> nextCheck = new HashMap<>();
+    /** Hopper-fed overflow chests: when each item was first seen waiting there (or last fetched). */
+    private final Map<Set<HomeFinder.Pos>, Map<Material, Long>> waitingSince = new HashMap<>();
 
     OverflowFetcher(CopperGolemClerk plugin, HomeFinder homes, Returns returns) {
         this.plugin = plugin;
@@ -186,7 +188,8 @@ final class OverflowFetcher {
                     || HomeFinder.isWaterlogged(golem.getWorld(), halves)) {
                 continue; // vanilla golems can't open it, so they can't take from it either
             }
-            Material type = itemWithHome(golem, inventory, claimed, labels);
+            boolean hopperFed = HopperLines.fedByHopper(golem.getWorld(), halves);
+            Material type = itemWithHome(golem, inventory, claimed, labels, hopperFed ? halves : null, now);
             if (type != null) {
                 Block block = state.getBlock();
                 Location target = targetFor(golem, halves);
@@ -259,16 +262,36 @@ final class OverflowFetcher {
 
     /**
      * First item type in this overflow chest that a chest in range would now
-     * accept, skipping items another golem is already fetching.
+     * accept, skipping items another golem is already fetching. hopperFed (the chest's
+     * halves, or null): a hopper fills this chest a little at a time, so an item is only
+     * fetched once overflow-fetch-min of it are there or it has waited
+     * overflow-fetch-wait-seconds.
      */
     private Material itemWithHome(CopperGolem golem, Inventory overflow, Set<Material> claimed,
-                                  ChestLabels.Labels labels) {
+                                  ChestLabels.Labels labels, Set<HomeFinder.Pos> hopperFed, long now) {
+        Map<Material, Integer> totals = new java.util.EnumMap<>(Material.class);
+        for (ItemStack stack : overflow.getStorageContents()) {
+            if (stack != null && !stack.isEmpty()) {
+                totals.merge(stack.getType(), stack.getAmount(), Integer::sum);
+            }
+        }
+        Map<Material, Long> since = null;
+        if (hopperFed != null) {
+            since = waitingSince.computeIfAbsent(hopperFed, k -> new java.util.EnumMap<>(Material.class));
+            since.keySet().retainAll(totals.keySet()); // gone from the chest: forget it
+            for (Material type : totals.keySet()) {
+                since.putIfAbsent(type, now);
+            }
+        }
         Set<Material> seen = EnumSet.noneOf(Material.class);
         List<ItemStack> candidates = new ArrayList<>();
         for (ItemStack stack : overflow.getStorageContents()) {
             if (stack == null || stack.isEmpty() || claimed.contains(stack.getType())
                     || !seen.add(stack.getType())) {
                 continue;
+            }
+            if (since != null && !worthFetching(stack, totals.get(stack.getType()), since.get(stack.getType()), now)) {
+                continue; // a hopper is still filling this in: wait for a fuller trip
             }
             if (labels.hasItemRules() && labels.accepts(stack.getType())) {
                 continue; // a chest signed e.g. [logs] and [Overflow]: its logs are already home
@@ -284,6 +307,17 @@ final class OverflowFetcher {
             }
         }
         return null;
+    }
+
+    /** For a hopper-fed overflow chest: enough of the item for a worthwhile trip, or it has waited long enough. */
+    private boolean worthFetching(ItemStack stack, int total, Long since, long now) {
+        int min = Math.min(plugin.overflowFetchMin(), GolemCarry.amountFor(stack.getType(), plugin.carryAmount()));
+        return total >= min || since == null || now - since >= plugin.overflowFetchWaitSeconds() * 1000L;
+    }
+
+    /** Settings changed: start the waits over. */
+    void clear() {
+        waitingSince.clear();
     }
 
     private void continueFetch(CopperGolem golem, Fetch fetch, long now) {
@@ -306,6 +340,10 @@ final class OverflowFetcher {
                 || (plugin.takeReach() > Reach.VANILLA
                     && Reach.within(golem.getLocation(), world, fetch.halves(), plugin.takeReach()))) {
             takeItem(golem, block, inventory, fetch.type(), fetch.copper() ? "copper chest" : "overflow chest");
+            Map<Material, Long> since = waitingSince.get(fetch.halves());
+            if (since != null && inventory.contains(fetch.type())) {
+                since.put(fetch.type(), now); // what's left starts a new wait (no trip right after for a few)
+            }
             fetching.remove(id);
             golem.getPathfinder().stopPathfinding();
             return;
@@ -322,18 +360,28 @@ final class OverflowFetcher {
         golem.getPathfinder().moveTo(fetch.target(), 1.0);
     }
 
+    /** Take up to carry-amount of the item, from as many stacks of it as that needs (only ones that stack together). */
     private void takeItem(CopperGolem golem, Block block, Inventory inventory, Material type, String what) {
         ItemStack[] contents = inventory.getStorageContents();
-        for (int slot = 0; slot < contents.length; slot++) {
+        int want = GolemCarry.amountFor(type, plugin.carryAmount());
+        ItemStack taken = null;
+        for (int slot = 0; slot < contents.length && (taken == null || taken.getAmount() < want); slot++) {
             ItemStack stack = contents[slot];
-            if (stack == null || stack.getType() != type) {
+            if (stack == null || stack.getType() != type || (taken != null && !stack.isSimilar(taken))) {
                 continue;
             }
-            int take = Math.min(stack.getAmount(), GolemCarry.amountFor(type, plugin.carryAmount()));
-            ItemStack taken = stack.clone();
-            taken.setAmount(take);
+            int got = taken == null ? 0 : taken.getAmount();
+            int take = Math.min(stack.getAmount(), want - got);
+            if (taken == null) {
+                taken = stack.clone();
+                taken.setAmount(0);
+            }
+            taken.setAmount(got + take);
             stack.setAmount(stack.getAmount() - take);
             inventory.setItem(slot, stack.getAmount() > 0 ? stack : null);
+        }
+        if (taken != null) {
+            int take = taken.getAmount();
 
             EntityEquipment equipment = golem.getEquipment();
             if (plugin.carry() != null) {
