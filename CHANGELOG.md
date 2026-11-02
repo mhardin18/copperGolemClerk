@@ -1,8 +1,10 @@
 # Changelog
 
-All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 2.7.0 on, settings new in a version are added to it at startup with their explanations (before that, new settings used their defaults until you added them).
+All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup with their explanations, and the explanations of the settings you have are brought up to date (before that, new settings used their defaults until you added them).
 
-## 2.7.0 (in progress)
+## 3.0.0 (in progress)
+
+A major release: golems now run your furnaces (feeding, fueling and emptying them), and your `config.yml` is kept up to date with every new setting and its explanation when you upgrade.
 
 ### New
 - Upgrading brings your `config.yml` up to date: at startup, any setting the new version has that your file doesn't is added, with its default and the comment that explains it, in the same place as in a fresh config, and the comment above every setting you already have is replaced with the new version's explanation. Your values are never changed, and a note at the end of a setting's line stays; the old file is kept as `config-before-<version>.yml`, and the console lists what was added and which explanations changed. A `config.yml` with a YAML error is left alone.

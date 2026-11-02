@@ -126,7 +126,7 @@ fetchers-per-overflow-chest: 2
 # once this many of it are there (1 to 64), so they don't walk over for every ingot the
 # hopper drops in. Items that stack to less than this (ender pearls, tools) are fetched
 # once a full carry of them is there. Overflow chests without a hopper feeding them are
-# emptied right away as usual. 1 = no waiting (a trip for every item, as before 2.7.0);
+# emptied right away as usual. 1 = no waiting (a trip for every item, as before 3.0.0);
 # carry-amount (16) = only full trips; anything above carry-amount works like carry-amount.
 # See also overflow-fetch-wait-seconds.
 overflow-fetch-min: 8
