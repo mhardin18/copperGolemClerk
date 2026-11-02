@@ -699,8 +699,8 @@ with its line number and the old settings are kept.
 |---|---|---|
 | `disabled-worlds` | `[]` | Worlds (by folder name) where the plugin does nothing and golems behave as in vanilla, e.g. `[world_nether, world_the_end]`. |
 | `update-check` | `true` | Check GitHub weekly for a newer release; log it and tell admins on join. Nothing is downloaded. |
-| `debug` | `false` | Log every sorting decision. Useful while setting up groups and labels. |
-| `trace-golems` | `false` | Log each golem's state, position and held item whenever they change. Very chatty. |
+| `debug` | `false` | Write every decision the plugin makes to the console, with the reason: chest choices and accept/refuse, furnace jobs, `[Overflow]` fetches, returns, giving way, greetings, carry top-ups, reach, portals, mode toggles, tidying, update checks. Changes nothing golems do; players never see it. Several lines per golem per delivery, so turn it off after setting up or investigating. |
+| `trace-golems` | `false` | Once a second, log each golem's state, position, held item and whether it's walking, when any of those changed (up to a line a second per walking golem). Even chattier than `debug`; for following exactly what golems do. |
 
 ## Permissions
 

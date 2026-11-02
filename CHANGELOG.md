@@ -12,6 +12,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 - `/cgc storage`: how full the storage around you is, by label (or by contents for unlabelled chests), fullest first, with full and nearly full ones flagged, plus `[Overflow]` chests, empty chests left and items waiting in copper chests. Players see only containers they could open (`coppergolemclerk.storage`, everyone by default).
 
 ### Changed
+- `config.yml` and the README explain `debug` (every decision the plugin logs, and that it changes nothing golems do) and `trace-golems` (how often it logs) in full.
 - The build checks that every setting is documented: in `config.yml` with its own comment (so upgrades add it with its explanation), in the README settings reference and, for settings new since this changelog started, in the CHANGELOG. "Adding a setting" in the README lists the steps.
 - Documentation explains what `*` (any letters in the item's name: `[*sand]`, `[sand*]`, `[*]` for everything), `#` (a Minecraft item tag: `[#logs]`) and `@` (`[@fuel]`) do on a sign, with examples, including that `[*]` on a chest is picked before `[Overflow]`.
 - The Hangar page text moved from `docs/hangar.md` to `docs/FullDescription.md`.
