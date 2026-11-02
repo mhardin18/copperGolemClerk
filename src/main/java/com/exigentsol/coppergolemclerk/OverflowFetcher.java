@@ -277,8 +277,10 @@ final class OverflowFetcher {
         }
         Map<Material, Long> since = null;
         if (hopperFed != null) {
-            since = waitingSince.computeIfAbsent(hopperFed, k -> new java.util.EnumMap<>(Material.class));
-            since.keySet().retainAll(totals.keySet()); // gone from the chest: forget it
+            Map<Material, Long> waits = waitingSince.computeIfAbsent(hopperFed, k -> new java.util.EnumMap<>(Material.class));
+            // Gone from the chest a while: forget it. Just fetched: keep it, so the next item's wait counts from then.
+            waits.keySet().removeIf(t -> !totals.containsKey(t) && now - waits.get(t) > plugin.overflowFetchWaitSeconds() * 1000L);
+            since = waits;
             for (Material type : totals.keySet()) {
                 since.putIfAbsent(type, now);
             }
@@ -341,8 +343,10 @@ final class OverflowFetcher {
                     && Reach.within(golem.getLocation(), world, fetch.halves(), plugin.takeReach()))) {
             takeItem(golem, block, inventory, fetch.type(), fetch.copper() ? "copper chest" : "overflow chest");
             Map<Material, Long> since = waitingSince.get(fetch.halves());
-            if (since != null && inventory.contains(fetch.type())) {
-                since.put(fetch.type(), now); // what's left starts a new wait (no trip right after for a few)
+            if (since != null) {
+                // The wait starts again now, for what's left and for what the hopper brings next (else an
+                // old start time would make the next single item look like it had waited long enough).
+                since.put(fetch.type(), now);
             }
             fetching.remove(id);
             golem.getPathfinder().stopPathfinding();

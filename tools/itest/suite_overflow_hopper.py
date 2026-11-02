@@ -58,6 +58,22 @@ def _(c):
     return waits_then_fetches(c, 3, 5)
 
 
+@scenario("overflow-hopper-wait-restarts", "overflow-hopper", 150, "A hopper-fed [Overflow] chest: 8 copper ingots are fetched; one more dropped in right after waits (it isn't fetched within 40s).")
+def _(c):
+    room(c, 8, hopper="above")
+    t = Trigger()
+    early = []
+
+    def check():
+        t.fire_when(lambda: c.count("ingots", "copper_ingot") >= 9, lambda: add_ingots(c, 1))
+        if t.at is not None and t.since() < 40 and c.count("overflow", "copper_ingot") == 0:
+            early.append(round(t.since()))
+        return [(t.at is not None, "the first 8 were fetched, then 1 more dropped in"),
+                (not early, f"the single ingot was fetched {early[0]}s later" if early else "the single ingot waited"),
+                (t.at is not None and t.since() > 40, "watched it for 40s"), no_errors(c)]
+    return check
+
+
 @scenario("overflow-hopper-facing-away-fetched", "overflow-hopper", 90, "A hopper beside the [Overflow] chest facing away (it doesn't fill it): 3 copper ingots are fetched right away.")
 def _(c):
     room(c, 3, hopper="side-out")
