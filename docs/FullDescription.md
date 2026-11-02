@@ -59,8 +59,8 @@ golems carry them over by themselves.
 
 ### 🔥 Run your furnaces
 Label a furnace `[raw iron]` and golems keep it cooking: items
-from your `[Furnace Supply]` chest, fuel from your `[Fuel]` chest (just enough for what's
-waiting), and what's done sorted away. Nothing else from your storage goes in a furnace.
+from your `[Furnace Supply]` chest, fuel from your `[Fuel]` chest (enough for what's
+waiting and the next load), and what's done sorted away. Nothing else from your storage goes in a furnace.
 
 **What to write on a furnace.** Any label a chest takes works on a furnace, a smoker or a
 blast furnace (a sign or an item frame). Golems only ever put in what that kind of furnace
