@@ -285,7 +285,8 @@ def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     furnace(c, "furnace", 8, 4, fuel=("coal", 8), label="[raw iron]")
     supply(c, dx=16, dz=14, items=[("raw_iron", 16)])
-    walls = [(15, 14), (17, 14), (16, 13), (16, 15)]
+    # Around the chest and its sign (the sign is on the north side, at dz 13): keep the sign, wall in both.
+    walls = [(15, 14), (17, 14), (16, 15), (15, 13), (17, 13), (16, 12)]
     for dx, dz in walls:
         c.block(dx, dz, "glass")
         c.block(dx, dz, "glass", dy=1)
