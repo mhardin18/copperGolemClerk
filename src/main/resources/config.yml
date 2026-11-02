@@ -69,8 +69,16 @@ item-frame-labels: true
 # top) and write rules on it, one per line, in square brackets:
 #   [logs]           a group from the list below
 #   [oak log]        one item (spaces or underscores, any capitalization)
-#   [*_ORE]          a name pattern
-#   [#planks]        an item tag
+#   [*_ORE]          a name pattern: * stands for any letters (or none) in the item's ID,
+#                    and the whole ID must fit. [*sand] = IDs ending in sand (sand, red
+#                    sand, soul sand; not sandstone), [sand*] = starting with sand (sand,
+#                    sandstone...), [*sand*] = containing it. [*] alone = every item: on a
+#                    chest that's picked before [Overflow] and empty chests (use
+#                    [Overflow] for a catch-all); on a furnace, anything it can cook.
+#   [#planks]        an item tag: # then a vanilla or datapack tag name ([#logs] or
+#                    [#minecraft:logs]). An unknown tag, or a bare [#], matches nothing.
+#   [@edible]        a property: @edible, @fuel (burns in a furnace) or @record
+# A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
 # If a word is both a group and an item, the group wins: [stone] = stone group.
 # Group names work singular or plural: [Rail] = rails, [ore] = ores,
@@ -300,7 +308,7 @@ trace-golems: false
 # Each group is a list of entries. An item can be in more than one group.
 # Entry formats:
 #   DIAMOND            one item (minecraft:diamond also works)
-#   *_ORE              name pattern; * matches anything
+#   *_ORE              name pattern; * matches any letters (or none), whole ID must fit
 #   #minecraft:logs    a vanilla or datapack item tag (#logs also works)
 #   @edible            items you can eat
 #   @fuel              items that burn in a furnace

@@ -31,11 +31,19 @@ item, the most specific one wins: `[stews]` beats `[food]` for a bowl of stew.
 |---|---|
 | `[logs]` | anything in the logs group |
 | `[oak log]` | just oak logs |
-| `[*_ORE]` | every ore block |
-| `[#planks]` | everything in a Minecraft item tag |
+| `[*_ORE]` | every ore block (`*` = any letters) |
+| `[*sand]` | items whose name ends in sand: sand, red sand, soul sand |
+| `[#planks]` | everything in a Minecraft item tag (`#` = a tag) |
+| `[*]` | any item at all (picked before `[Overflow]`: use that for a catch-all) |
 | `[Overflow]` | a catch-all for things with no home |
 | `[No Golems]` | golems keep out |
 | `[Only Logs]` | on a copper chest: golems take only the logs out |
+
+**`*` and `#` on a sign.** A `*` stands for any letters, or none, in the item's name, and
+the whole name has to fit: `[*sand]` ends in sand (sand, red sand, soul sand, not
+sandstone), `[sand*]` starts with it (sand, sandstone, its slabs and stairs), `[*sand*]`
+contains it. `[*]` alone is every item. A `#` names a Minecraft item tag: `[#logs]` or
+`[#minecraft:logs]`, datapack tags too. `[@edible]`, `[@fuel]` and `[@record]` work as well.
 
 ### ♻️ An overflow chest that empties itself
 Items with no home land in your `[Overflow]` chest. Add a chest for them later and idle
