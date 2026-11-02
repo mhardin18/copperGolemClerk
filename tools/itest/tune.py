@@ -74,8 +74,9 @@ def main(batches_path, results_path):
             stop, samples = threading.Event(), []
             t = threading.Thread(target=watch, args=(stop, samples), daemon=True)
             t.start()
+            env = dict(os.environ, TUNE_SECONDS=str(batch.get("seconds", 360)))
             out = subprocess.run([sys.executable, "-I", os.path.join(HERE, "run.py")] + batch["scenarios"],
-                                 capture_output=True, text=True).stdout
+                                 capture_output=True, text=True, env=env).stdout
             stop.set()
             t.join(5)
             lines = [json.loads(l[l.index("TUNE ") + 5:]) for l in out.splitlines() if "TUNE {" in l]

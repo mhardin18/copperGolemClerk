@@ -146,7 +146,7 @@ carry-amount: 16
 # Golems run furnaces, smokers and blast furnaces that have a label (a sign or item frame,
 # like a chest's) saying what to cook there: [raw iron], [sand]... Unlabelled furnaces are
 # left alone. Items to cook come ONLY from containers with a [Furnace Supply] sign; idle
-# golems fetch from them and split each load between the labelled furnaces that take it.
+# golems fetch from them and split each load between up to 2 labelled furnaces that take it.
 # Only items the label covers AND that kind of furnace can cook go in (/cgc check on the
 # furnace lists them). Idle golems take out what's done and sort it, unless a hopper under
 # the furnace collects it; things taken out of a furnace never go back into one. A chest
@@ -201,12 +201,15 @@ furnace-lava-min-items: 100
 # Higher means more, smaller trips; at 64 golems top up after every single item, walking
 # back and forth all the time (busy golems, wasted trips and a little more server work).
 furnace-refill-below: 16
-# Each furnace a load is split between gets at least this many items (1 to 64). A golem
-# carrying 16 (carry-amount) splits it between 2 furnaces at the default 8, and if more are
-# running low, the emptiest get it; the rest get the next load. 1 = split a load between up
-# to one furnace per item (16 furnaces get 1 each), so all of them start at once but each
-# runs low again soon and needs another trip. Set it to carry-amount to always take a whole
-# load to one furnace.
+# A load is split between 2 furnaces only if each gets at least this many items (1 to 64);
+# otherwise it all goes into one. A load never goes to more than 2 furnaces: while a golem
+# carries a load, the other golems leave its furnaces alone, so a load spread over many
+# furnaces kept them waiting (in tests, carry-amount 64 over 6 furnaces cooked 20% less).
+# At the default 8, a golem carrying 16 (carry-amount) splits it 8 + 8; if more furnaces are
+# running low, the emptiest get it and the rest get the next load. Lower than half of
+# carry-amount changes nothing; set it above half of carry-amount (9 or more at the default
+# 16) to always take a whole load to one furnace: fewer stops per trip, but furnaces start
+# one at a time.
 furnace-split-min: 8
 # Golems take what a furnace made out once this many are ready (1 to 64), or sooner when
 # the furnace won't make more for now: nothing left to cook, or not burning (out of fuel, or

@@ -12,6 +12,7 @@ the settings for each batch). Each layout runs TUNE_SECONDS and prints one line
   supply_left   items still to cook (supply chests, furnace inputs, golems' hands)
 """
 import json
+import os
 import re
 import threading
 import time
@@ -22,7 +23,7 @@ from rcon import from_properties
 from suite_furnace import furnace, hopper
 from suite_lava import drip_cauldron
 
-TUNE_SECONDS = 360
+TUNE_SECONDS = int(os.environ.get("TUNE_SECONDS", "360"))  # tune.py sets it per batch ("seconds")
 
 COOKS = {"raw_iron": "iron_ingot", "raw_gold": "gold_ingot", "raw_copper": "copper_ingot", "sand": "glass",
          "potato": "baked_potato", "beef": "cooked_beef", "cobblestone": "stone"}
@@ -106,6 +107,14 @@ def measure(c, name, tags, furnace_names, inputs, overflow=("overflow",)):
             end_fuel = totals(c, list(FUEL_HEAT))
             cooked = sum(end_out[o] - start_out[o] for o in outputs)
             heat = sum((start_fuel[f] - end_fuel[f]) * FUEL_HEAT[f] for f in FUEL_HEAT)
+            # Fuel still burning at the end isn't used yet: take off each furnace's remaining burn time
+            # (in items: a furnace cooks one per 200 ticks, a blast furnace or smoker one per 100).
+            for fname in furnace_names:
+                x, y, z = c.chests[fname][0]
+                left = re.search(r"data: (\d+)", c.r.cmd(f"data get block {x} {y} {z} lit_time_remaining"))
+                total = re.search(r"data: (\d+)", c.r.cmd(f"data get block {x} {y} {z} cooking_total_time"))
+                if left and total and int(total.group(1)) > 0:
+                    heat -= int(left.group(1)) / int(total.group(1))
             result = {
                 "layout": name, "golems": len(tags), "furnaces": len(furnace_names), "cooked": cooked,
                 "per_min": round(cooked / (TUNE_SECONDS / 60), 1),

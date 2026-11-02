@@ -81,6 +81,12 @@ final class FurnaceFeeder {
     private static final long SKIP_AFTER_GIVING_UP_MILLIS = 60_000;
     private static final long OFFER_COOLDOWN_MILLIS = 5_000;
     private static final double REACH = 2.5;
+    /**
+     * Most furnaces one load is split between. A golem's load claims its furnaces until it's
+     * delivered (other golems leave them alone), so a big load spread over many furnaces kept the
+     * other golems waiting: with carry-amount 64, 20% fewer items cooked in tests.
+     */
+    static final int MAX_STOPS = 2;
     /** How far a golem looks for a lava cauldron to refill a bucket (sideways; 4 up and down). */
     private static final int CAULDRON_RANGE = 16;
 
@@ -287,8 +293,9 @@ final class FurnaceFeeder {
 
     /**
      * The labelled furnaces in range that take this item now and that no other golem is already
-     * fetching or bringing a load for. A load is split so each furnace gets at least furnace-split-min items:
-     * with more furnaces than that allows, the emptiest ones get it. Nearest first.
+     * fetching or bringing a load for. A load goes to at most MAX_STOPS furnaces, each getting at
+     * least furnace-split-min items: with more furnaces than that allows, the emptiest ones get it.
+     * Nearest first.
      */
     List<HomeFinder.Pos> feedStops(CopperGolem golem, ItemStack item, long now) {
         List<HomeFinder.Pos> stops = new ArrayList<>();
@@ -308,7 +315,7 @@ final class FurnaceFeeder {
             }
         }
         // containersInRange is nearest first already.
-        int max = Math.max(1, item.getAmount() / plugin.furnaceSplitMin());
+        int max = Math.clamp(item.getAmount() / plugin.furnaceSplitMin(), 1, MAX_STOPS);
         if (stops.size() <= max) {
             return stops;
         }
