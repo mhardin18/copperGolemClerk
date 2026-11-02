@@ -132,9 +132,11 @@ Groups are defined in `config.yml` (and you can edit them) using:
 | Entry           | Meaning                                    |
 |-----------------|--------------------------------------------|
 | `DIAMOND`       | one item                                   |
-| `*_ORE`         | name pattern                               |
-| `#minecraft:logs` | vanilla or datapack item tag             |
+| `*_ORE`         | name pattern: `*` matches any run of letters (or none) in the item's ID |
+| `#minecraft:logs` | vanilla or datapack item tag (`#logs` also works) |
 | `@edible`, `@fuel`, `@record` | item properties              |
+
+The same forms work on signs; see [`*` patterns, `#` tags and `@` properties](#-patterns--tags-and--properties).
 
 ### Smarter use of empty chests
 
@@ -184,6 +186,43 @@ no group and no item, it matches items with that word in their name (`[carpet]`
 `[Terracotta]`, `[Shulker Box]`, `[Candle]` and `[Bundle]` take the plain item and
 every colour, while `[Red Terracotta]` takes only red. For one exact item that
 shares a group's name, use a framed item instead.
+
+#### `*` patterns, `#` tags and `@` properties
+
+A label that starts with `#` or `@`, or has a `*` in it, is never read as a group name
+or a word search: it means exactly this.
+
+**`*` matches any run of letters, or none, in the item's ID** (the name in `/give`, like
+`red_sand`; spaces count as underscores, case doesn't matter). The whole ID has to fit:
+
+| Sign | Matches | Examples |
+|---|---|---|
+| `[*sand]` | IDs that **end** in `sand` | sand, red sand, soul sand, suspicious sand (not sandstone) |
+| `[sand*]` | IDs that **start** with `sand` | sand, sandstone, sandstone slab, stairs and wall |
+| `[*sand*]` | IDs that **contain** `sand` | all of the above plus red, cut and chiseled sandstone |
+| `[*_ore]` | every ore block | coal ore, deepslate iron ore, nether gold ore... |
+| `[raw_*]` | IDs that start with `raw_` | raw iron, gold and copper, and their blocks |
+| `[*]` | **every item** | see below |
+
+`[*]` on its own matches everything. On a furnace that means "anything this furnace
+can cook". On a chest it takes any item, and because it's a label, golems pick it
+before chests that only match by what's in them, and before `[Overflow]` and empty
+chests (a label that covers fewer items, like `[logs]`, still wins). For a catch-all
+that's used only when nothing else fits, use `[Overflow]` instead.
+
+**`#` means a Minecraft item tag:** `[#minecraft:logs]` or just `[#logs]` (`minecraft:`
+is assumed) takes every item in that tag, including tags added by datapacks
+(`[#mypack:gems]`). The [Minecraft Wiki](https://minecraft.wiki/w/Item_tag_(Java_Edition))
+lists the vanilla tags. An unknown tag, or `[#]` with no name, matches nothing.
+
+**`@` means a property:** `[@edible]` (anything you can eat), `[@fuel]` (anything that
+burns in a furnace), `[@record]` (music discs).
+
+A pattern, tag or property counts as specific as the number of items it matches:
+`[*_ore]` (18 items) beats `[@fuel]` (every log, plank and wooden item, and more). If a line
+matches no item at all, golems ignore it and `/cgc check` on the chest says it "matches no
+group or item, so it's ignored". The same
+three forms work in the `groups:` lists in `config.yml` and after `[Only ...]`.
 
 A `[No Golems]` sign (any case, `[no golem]` works too) keeps golems away from a
 chest completely: they never put anything into it, and on a copper chest they never

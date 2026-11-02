@@ -12,6 +12,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 - `/cgc storage`: how full the storage around you is, by label (or by contents for unlabelled chests), fullest first, with full and nearly full ones flagged, plus `[Overflow]` chests, empty chests left and items waiting in copper chests. Players see only containers they could open (`coppergolemclerk.storage`, everyone by default).
 
 ### Changed
+- Documentation explains what `*` (any letters in the item's name: `[*sand]`, `[sand*]`, `[*]` for everything), `#` (a Minecraft item tag: `[#logs]`) and `@` (`[@fuel]`) do on a sign, with examples, including that `[*]` on a chest is picked before `[Overflow]`.
 - The Hangar page text moved from `docs/hangar.md` to `docs/FullDescription.md`.
 - Hangar page: an icon for every section, and a pixel-art copper golem (`docs/copper-golem.png`) beside the title.
 
