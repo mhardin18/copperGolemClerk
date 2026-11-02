@@ -30,6 +30,8 @@ that cover nearly every survival item; everything else is optional.
 - **Taller stacks** (a setting): golems reach chests up to 6 rows high (vanilla: 2).
 - **Barrels and shulker boxes** as destinations (a setting).
 - **Bigger loads** (a setting): carry up to 64 items a trip instead of 16.
+- **Golems run your furnaces:** label a furnace `[raw iron]` and golems feed it from your
+  `[Furnace Supply]` chest, fuel it from your `[Fuel]` chest and sort what comes out.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
 
 **Golems that look after themselves**
@@ -43,6 +45,8 @@ that cover nearly every survival item; everything else is optional.
 - **`/cgc check`:** explains a chest you could open, or which groups the item in your hand is in.
 - **`/cgc overflow`:** what's piling up in the overflow chests near you, and what label would
   give each item a home.
+- **`/cgc label`:** what to write on a chest's sign, from what's in it.
+- **`/cgc storage`:** how full the storage around you is, by label, fullest first.
 - **`/cgc stats`:** what golems have sorted in your claims today, in the last 7 days and all time.
 - **`/cgc golems`:** your own golems and where they are (only with `golems-command-for-players`).
 - **`/cgc help`:** the commands, and `/cgc help <command>` for one.
@@ -86,7 +90,14 @@ defaults work as-is: about 50 groups that cover nearly every survival item. Afte
 the file, run `/cgc reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
-kept. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
+kept and brought up to date at startup: settings new in that version are added, each with
+the comment that explains it, in the same place as in a fresh config, and the comment above
+every other setting is replaced with the new version's explanation. Your values are never
+changed, and a note at the end of a setting's line (`carry-amount: 32  # our farm`) stays;
+a comment on its own line above a setting is replaced. The old file is saved as
+`config-before-<version>.yml`, and the console lists what was added and which explanations
+changed. If config.yml can't be written (its permissions), the console says so and new settings
+simply use their defaults; a config.yml with a YAML error is left alone. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
 you don't want to keep the config).
 
 ### Upgrading from SmartCopperGolems
@@ -125,9 +136,11 @@ Groups are defined in `config.yml` (and you can edit them) using:
 | Entry           | Meaning                                    |
 |-----------------|--------------------------------------------|
 | `DIAMOND`       | one item                                   |
-| `*_ORE`         | name pattern                               |
-| `#minecraft:logs` | vanilla or datapack item tag             |
+| `*_ORE`         | name pattern: `*` matches any run of letters (or none) in the item's ID |
+| `#minecraft:logs` | vanilla or datapack item tag (`#logs` also works) |
 | `@edible`, `@fuel`, `@record` | item properties              |
+
+The same forms work on signs; see [`*` patterns, `#` tags and `@` properties](#-patterns--tags-and--properties).
 
 ### Smarter use of empty chests
 
@@ -166,6 +179,8 @@ several (`[ice][snow]`), and the chest takes anything any rule matches:
 | `[Overflow]`| anything with no other home      |
 | `[No Golems]`| nothing: golems leave it alone  |
 | `[Only Logs]`| on a copper chest: golems take only logs out |
+| `[Fuel]` or `[Fuels]` | golems take furnace fuel from it (furnace feeding) |
+| `[Furnace Supply]` | golems take items to cook from it (furnace feeding) |
 
 Case doesn't matter and spaces count as underscores. A group name wins over an
 item with the same name, and group names work singular or plural (`[Rail]` =
@@ -175,6 +190,43 @@ no group and no item, it matches items with that word in their name (`[carpet]`
 `[Terracotta]`, `[Shulker Box]`, `[Candle]` and `[Bundle]` take the plain item and
 every colour, while `[Red Terracotta]` takes only red. For one exact item that
 shares a group's name, use a framed item instead.
+
+#### `*` patterns, `#` tags and `@` properties
+
+A label that starts with `#` or `@`, or has a `*` in it, is never read as a group name
+or a word search: it means exactly this.
+
+**`*` matches any run of letters, or none, in the item's ID** (the name in `/give`, like
+`red_sand`; spaces count as underscores, case doesn't matter). The whole ID has to fit:
+
+| Sign | Matches | Examples |
+|---|---|---|
+| `[*sand]` | IDs that **end** in `sand` | sand, red sand, soul sand, suspicious sand (not sandstone) |
+| `[sand*]` | IDs that **start** with `sand` | sand, sandstone, sandstone slab, stairs and wall |
+| `[*sand*]` | IDs that **contain** `sand` | all of the above plus red, cut and chiseled sandstone |
+| `[*_ore]` | every ore block | coal ore, deepslate iron ore, nether gold ore... |
+| `[raw_*]` | IDs that start with `raw_` | raw iron, gold and copper, and their blocks |
+| `[*]` | **every item** | see below |
+
+`[*]` on its own matches everything. On a furnace that means "anything this furnace
+can cook". On a chest it takes any item, and because it's a label, golems pick it
+before chests that only match by what's in them, and before `[Overflow]` and empty
+chests (a label that covers fewer items, like `[logs]`, still wins). For a catch-all
+that's used only when nothing else fits, use `[Overflow]` instead.
+
+**`#` means a Minecraft item tag:** `[#minecraft:logs]` or just `[#logs]` (`minecraft:`
+is assumed) takes every item in that tag, including tags added by datapacks
+(`[#mypack:gems]`). The [Minecraft Wiki](https://minecraft.wiki/w/Item_tag_(Java_Edition))
+lists the vanilla tags. An unknown tag, or `[#]` with no name, matches nothing.
+
+**`@` means a property:** `[@edible]` (anything you can eat), `[@fuel]` (anything that
+burns in a furnace), `[@record]` (music discs).
+
+A pattern, tag or property counts as specific as the number of items it matches:
+`[*_ore]` (18 items) beats `[@fuel]` (every log, plank and wooden item, and more). If a line
+matches no item at all, golems ignore it and `/cgc check` on the chest says it "matches no
+group or item, so it's ignored". The same
+three forms work in the `groups:` lists in `config.yml` and after `[Only ...]`.
 
 A `[No Golems]` sign (any case, `[no golem]` works too) keeps golems away from a
 chest completely: they never put anything into it, and on a copper chest they never
@@ -233,6 +285,14 @@ over on their own. Items with no home are left in overflow, and so are items in
 an overflow chest golems can't open (locked, blocked or waterlogged). Golems never walk
 to an empty copper chest.
 
+An `[Overflow]` chest that a hopper fills (a hopper above it facing down, or beside it
+facing into it, such as the output chest of a smelter) gets a few at a time. So golems
+don't walk over for every ingot, they fetch an item from such a chest only once 8 of it
+have built up (`overflow-fetch-min`), or once it has waited 2 minutes
+(`overflow-fetch-wait-seconds`) so the last few still get sorted. Overflow chests no
+hopper feeds are emptied right away, as before. `/cgc overflow` mentions when a hopper
+fills the chest.
+
 ### Bigger loads
 
 Vanilla golems carry 16 items per trip. `carry-amount` (1 to 64, default 16) changes
@@ -241,6 +301,82 @@ item from that chest, or puts the extra back if the setting is under 16. An item
 stacks to less (16 ender pearls, one tool) is carried that many at most. At 64 a big
 sorting job needs a quarter of the trips. Items held back by `[Only ...]` or returned as
 homeless aren't added.
+
+### Golems run your furnaces
+
+Put a label on a furnace, smoker or blast furnace, the same way as on a chest (a sign or an
+item frame), saying what to cook there (`[raw iron]`, `[sand]`, `[ores]`), and golems keep
+it going: they bring items to cook and fuel, and take out what's done. Furnaces without a
+label are never touched.
+
+**Where items to cook come from.** Only from containers with a `[Furnace Supply]` sign: put
+the raw iron, sand or logs you want cooked there. Idle golems fetch from it and split each
+load between up to 2 labelled furnaces that take it, at least 8 items each (`furnace-split-min`;
+when more furnaces are running low, the emptiest get it first). A load never goes to more than
+2 furnaces: the furnaces of a load in transit are left to that golem, so a big load spread
+over many furnaces kept other golems waiting. A furnace is topped up once
+it's running low (`furnace-refill-below`, 16 items), and golems take only as much as the
+furnaces have room for. A golem never brings a load to a furnace another golem is already
+bringing one to. A golem whose furnace filled up before it got there waits for room
+(`furnace-wait-seconds`, 20), then puts anything left back in the supply chest; nothing
+taken from a supply is ever sorted elsewhere. A copper chest
+with a `[Furnace Supply]` sign works too. What golems carry out of any other copper chest is
+sorted as usual and never goes into a furnace. Label a supply chest `[Furnace Supply] [raw
+iron]` to have golems also sort raw iron into it.
+
+**What goes in.** Only items the label covers *and* that kind of furnace can cook: `[raw
+iron]` on a blast furnace takes raw iron; `[food]` on a smoker takes only the raw food a
+smoker can cook. Group labels can cover more than you expect (`[ores]` also covers ore blocks
+you mined with Silk Touch), so `/cgc check` on the furnace lists exactly which items golems
+will put in, and points out label entries that add nothing.
+
+**What comes out.** An idle golem takes out what the furnace has made and sorts it like
+anything else, unless a hopper under the furnace collects it. It waits until 8 are ready
+(`furnace-take-out-at`) so a trip is worth it, unless the furnace has stopped: nothing left
+to cook, out of fuel, its output slot full, or its output slot holding something else (an item
+a player left there), which keeps it from lighting until that's taken out. Golems do the urgent jobs first: a furnace
+with a full output slot, then fuel, then items to cook for furnaces running low, and only
+then taking out finished items. If no chest in range would
+take it (and there's no copper chest to return it to), it stays in the furnace rather than
+in a golem's hands. Items taken out of a furnace are never put back into one, so `[stone]`
+can't turn into an endless cobblestone → stone → smooth stone loop.
+
+**Fuel.** Golems only take fuel from containers with a `[Fuel]` sign, so the coal in your
+other chests is never burned. They use the first fuel in `furnace-fuel` that a `[Fuel]`
+container in range holds (`[charcoal, coal, lava_bucket]` by default). They fetch fuel only
+when the fuel in the furnace won't cook what's waiting, and then bring enough for that plus
+16 more items (`furnace-fuel-ahead`), so the next load doesn't need its own fuel trip: 8
+raw iron waiting get 3 charcoal. Only one golem at a time brings fuel to a furnace, and fuel
+a golem couldn't put in goes back to a `[Fuel]` container. A furnace still
+burning a fuel lower on the list isn't topped up with it; it switches once that runs out. A
+fuel someone else put in (not in `furnace-fuel`) is left alone. A lava bucket lasts 100 items,
+and a lit furnace burns its fuel out even with nothing left to cook, so golems use lava only
+for a furnace with a backlog of 100 or more items (`furnace-lava-min-items`) when another fuel
+is there too: what's waiting in it, what other golems are bringing, and its share of the
+matching items in `[Furnace Supply]` containers in range. For a smaller backlog they bring
+just enough charcoal or coal instead. `/cgc check` on the furnace shows its backlog. Lava buckets leave an empty
+bucket in the furnace: golems take it out and refill it at a lava cauldron nearby (never from
+lava in the world), then put it back in a `[Fuel]` container. A cauldron that dripping lava
+keeps refilling (pointed dripstone hanging over it, within 11 blocks, with a lava source on
+top of the block the dripstone hangs from) is worth waiting for: until it's full, golems put
+the empty buckets in a `[Fuel]` container, and an idle golem takes one to the cauldron as
+soon as it fills and brings the lava bucket back. With no such cauldron nearby and none full,
+the empty bucket is sorted like anything else. A `[Fuel]` chest with no other label never
+receives sorted items; label it `[Fuel] [charcoal]` to have golems fill it with the charcoal
+your furnaces make.
+
+**Hand-built smelters.** A chest sitting on a hopper that leads into a furnace (directly or
+through more hoppers) is never used for sorting, so golems don't fill your smelter's input
+or fuel chest with random items. Golems don't feed hoppers; label the furnaces themselves if
+you want golems to run them.
+
+**Claims.** Golems only use furnaces and `[Fuel]` and `[Furnace Supply]` containers in the
+claim their copper chest is in, or in a claim where that claim's owner has container trust
+(`furnace-trusted-claims: false` turns that off).
+
+`[No Golems]` and locked furnaces and chests are left alone. Turn it all off with
+`furnace-feeding: false`: then furnaces, `[Fuel]` and `[Furnace Supply]` signs and smelter
+chests are all treated as if the feature didn't exist.
 
 ### Golems give way to each other
 
@@ -401,7 +537,8 @@ after they close it).
 
 Two settings cap how many copper golems use this plugin (both 0, no limit, by default):
 
-- `max-golems-per-claim`: golems in one GriefPrevention claim.
+- `max-golems-per-claim`: golems in one GriefPrevention claim. Each claim has its own limit, even
+  when one player owns several; admin claims too. A subdivision counts with its claim.
 - `max-golems-outside-claims`: golems on unclaimed land, per world (without
   GriefPrevention, every golem in the world).
 
@@ -441,7 +578,7 @@ release list. `/cgc version` checks right away. Turn it off with `update-check: 
 
 ## Commands
 
-Alias `/cgc`. Players can use `help`, `find`, `check`, `overflow` and `stats` (and `golems`,
+Alias `/cgc`. Players can use `help`, `find`, `check`, `label`, `overflow`, `storage` and `stats` (and `golems`,
 if `golems-command-for-players` is on), and only ever see their own claims or containers
 they could open; see [Permissions](#permissions). Everything else, and the forms with a
 position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
@@ -454,6 +591,10 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   golems from using it (a block on top, a lock, a hopper feeding a copper chest, full).
   Players can only check containers they could open.
 - `/cgc check` while not looking at a chest: which groups the item in your hand belongs to.
+- `/cgc label` while looking at a chest: what to write on its sign, from what's in it. One kind of item: its own
+  label, then its groups; several kinds: the most specific group they all share; no shared group: the group most
+  of them fit, and which items don't. On a labelled chest it says whether everything in it matches. It only
+  suggests: you place the sign. Players only get suggestions for containers they could open.
 - `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
   items with no chest (with a sign label to use for each group), items whose chest is
   full, and items golems will move on their own. Players see only the `[Overflow]` chests
@@ -472,6 +613,10 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   there are no claims, so everyone sees the server's numbers. With `join-summary` (on by
   default) players are told when they join what golems sorted in their claims while they
   were away and how many of their chests filled up. Numbers are kept in `stats.yml`.
+- `/cgc storage`: how full the storage around you is. Containers within golem range (32 blocks sideways, 8 up
+  or down) are grouped by label, or for unlabelled ones by what they hold, fullest first, with full and nearly
+  full (90%) ones flagged; then `[Overflow]` chests, how many empty chests are left for new kinds of items, and
+  how many items are waiting in copper chests. Players only see containers they could open.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 - `/cgc find <item>`: which containers near you hold an item, nearest first, with how
   many in each (items inside shulker boxes count too), and the nearest
@@ -524,7 +669,18 @@ with its line number and the old settings are kept.
 |---|---|---|
 | `fetch-from-overflow` | `true` | A golem with nothing to do takes items that now have a home out of an `[Overflow]` chest and sorts them. |
 | `fetchers-per-overflow-chest` | `2` | How many golems may fetch from one overflow chest at a time (each a different item). |
+| `overflow-fetch-min` | `8` | From an `[Overflow]` chest a hopper fills, golems fetch an item only once this many are there (1 to 64). 1 = a trip for every item; carry-amount = only full trips. Chests no hopper feeds are emptied right away. |
+| `overflow-fetch-wait-seconds` | `120` | From an `[Overflow]` chest a hopper fills, golems also fetch an item once it has waited this long (0 to 3600), even with fewer than `overflow-fetch-min`, so the last few still get sorted. 0 = no waiting. |
 | `carry-amount` | `16` | Items a golem carries per trip, 1 to 64 (vanilla: 16). Items that stack to less (ender pearls 16, tools 1) are carried that many at most. |
+| `furnace-feeding` | `true` | Golems feed, empty and fuel furnaces, smokers and blast furnaces that have a label, with items from `[Furnace Supply]` containers. Unlabelled furnaces are never touched. `false` turns off everything furnace-related: furnaces are left alone, `[Fuel]` and `[Furnace Supply]` signs mean nothing, and chests on a smelter's hopper are ordinary chests again. |
+| `furnace-fuel` | `[charcoal, coal, lava_bucket]` | Fuels golems may put in, most preferred first. Taken only from containers with a `[Fuel]` sign. Unknown names and items that don't burn are reported and skipped. |
+| `furnace-lava-min-items` | `100` | Lava buckets go in only when the furnace's backlog (waiting + on the way + its share of the matching `[Furnace Supply]` items) is at least this many items (0 to 1000), when a `[Fuel]` container also has another fuel; a bucket lasts 100 items and burns out even with nothing to cook. 0 = lava whenever it's its turn in `furnace-fuel`. |
+| `furnace-fuel-ahead` | `16` | Fuel golems bring covers what's waiting plus this many more items (0 to 64), so the next load doesn't need a fuel trip of its own. 0 = just enough for what's waiting (a fuel trip after nearly every load); higher = fewer trips, more fuel sitting in fuel slots. |
+| `furnace-refill-below` | `16` | A furnace gets more to cook only once this many items or fewer are left in it (0 to 64). Lower (0 = only when empty) can leave furnaces idle while golems are busy; 64 = top up after every item (many wasted trips). |
+| `furnace-split-min` | `8` | A load is split between 2 furnaces (never more) only if each gets at least this many items (1 to 64); the emptiest furnaces go first. Above half of `carry-amount` = whole loads to one furnace. |
+| `furnace-take-out-at` | `8` | Golems take finished items out once this many are ready (1 to 64), or sooner when the furnace has stopped. 1 = a trip for every item; higher = fewer trips, items wait longer. Furnaces with a hopper under them are never emptied by golems. |
+| `furnace-wait-seconds` | `20` | How long a golem waits at a furnace that filled up before it arrived (0 to 300), before taking the rest back to the `[Furnace Supply]`. 0 = straight back (can loop); long waits keep that golem idle. |
+| `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
 | `take-reach` | `2` | How many rows up golems take from copper chests and fetch from `[Overflow]` chests, 2 to 6. |
 
@@ -539,7 +695,7 @@ with its line number and the old settings are kept.
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its copper chest, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
-| `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit). The oldest keep it; the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
+| `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit). Each claim (admin claims too) has its own limit. The oldest keep it; the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
 | `max-golems-outside-claims` | `0` | The same for unclaimed land, per world (without GriefPrevention: every golem in the world). |
 | `log-golem-deaths` | `true` | Log every copper golem death (cause, place, what it held) and every other removal (statue, `/kill`). |
 
@@ -567,8 +723,8 @@ with its line number and the old settings are kept.
 |---|---|---|
 | `disabled-worlds` | `[]` | Worlds (by folder name) where the plugin does nothing and golems behave as in vanilla, e.g. `[world_nether, world_the_end]`. |
 | `update-check` | `true` | Check GitHub weekly for a newer release; log it and tell admins on join. Nothing is downloaded. |
-| `debug` | `false` | Log every sorting decision. Useful while setting up groups and labels. |
-| `trace-golems` | `false` | Log each golem's state, position and held item whenever they change. Very chatty. |
+| `debug` | `false` | Write every decision the plugin makes to the console, with the reason: chest choices and accept/refuse, furnace jobs, `[Overflow]` fetches, returns, giving way, greetings, carry top-ups, reach, portals, mode toggles, tidying, update checks. Changes nothing golems do; players never see it. Several lines per golem per delivery, so turn it off after setting up or investigating. |
+| `trace-golems` | `false` | Once a second, log each golem's state, position, held item and whether it's walking, when any of those changed (up to a line a second per walking golem). Even chattier than `debug`; for following exactly what golems do. |
 
 ## Permissions
 
@@ -576,7 +732,9 @@ with its line number and the old settings are kept.
 |---|---|---|
 | `coppergolemclerk.find` | everyone | `/cgc find`: containers in your own claims (wider with `find-outside-own-claims`). |
 | `coppergolemclerk.check` | everyone | `/cgc check` on containers you could open, or the item in your hand. |
+| `coppergolemclerk.label` | everyone | `/cgc label`: a sign label suggestion for a container you could open. |
 | `coppergolemclerk.overflow` | everyone | `/cgc overflow`: the `[Overflow]` chests near you that you could open. |
+| `coppergolemclerk.storage` | everyone | `/cgc storage`: how full the containers near you that you could open are. |
 | `coppergolemclerk.stats` | everyone | `/cgc stats`: what golems sorted in your claims. |
 | `coppergolemclerk.golems` | everyone | `/cgc golems`: your own golems. Only works if `golems-command-for-players` is `true` (it's `false` by default). |
 | `coppergolemclerk.toggle` | everyone | Switching golems between the plugin and vanilla with the toggle item (with GriefPrevention, only where you may build). |
@@ -597,6 +755,23 @@ cd copperGolemClerk
 
 The jar is written to `build/libs/CopperGolemClerk-<version>.jar`. Install it as
 described in [Install](#install).
+
+### Adding a setting
+
+A new setting needs all of these, or `./gradlew build` fails (`ConfigDocsTest`) and says
+what's missing:
+
+1. A line in `src/main/resources/config.yml`, with its own comment right above it: what it
+   does, its range and default, and what raising or lowering it does. Servers that upgrade
+   get the setting added to their `config.yml` from there, comment included, and a changed
+   comment replaces the old one above that setting in their file.
+2. A row in the [settings reference](#settings-reference) in this README, and a mention in
+   the section that describes the feature.
+3. A line in `CHANGELOG.md` under the version that adds it, naming it in backticks.
+
+Also update `docs/FullDescription.md` (the Hangar page) when the setting changes what
+players or server owners see. A setting kept out of `config.yml` on purpose (a test hook)
+is listed in `ConfigDocsTest.HIDDEN` with the reason.
 
 ## Changelog
 

@@ -144,8 +144,19 @@ final class GolemFinder implements Listener {
         if (!(event.getEntity() instanceof CopperGolem golem)) {
             return;
         }
+        // A killed golem stays in the world for its death animation; if its chunk unloads then,
+        // it's removed as UNLOAD although it's gone for good.
+        boolean gone = golem.isDead() || golem.getHealth() <= 0;
         switch (event.getCause()) {
-            case UNLOAD, PLAYER_QUIT -> note(golem); // still exists (a golem changing world is noted again as it arrives)
+            case UNLOAD, PLAYER_QUIT -> {
+                if (gone) {
+                    if (seen.remove(golem.getUniqueId()) != null) {
+                        dirty = true;
+                    }
+                } else {
+                    note(golem); // still exists (a golem changing world is noted again as it arrives)
+                }
+            }
             default -> { // died, statue, /kill, removed by a plugin...
                 if (seen.remove(golem.getUniqueId()) != null) {
                     dirty = true;

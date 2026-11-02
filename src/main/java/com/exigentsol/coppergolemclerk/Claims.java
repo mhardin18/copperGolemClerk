@@ -29,6 +29,8 @@ final class Claims {
     private Method getClaimAt;      // DataStore.getClaimAt(Location, boolean, Claim)
     private Method getOwnerID;      // Claim.getOwnerID()
     private Method allowContainers; // Claim.allowContainers(Player): null if allowed, else the reason
+    private Method checkPermission; // Claim.checkPermission(UUID, ClaimPermission, Event): null if allowed
+    private Object containerPermission; // ClaimPermission.Container
 
     Claims(CopperGolemClerk plugin) {
         this.plugin = plugin;
@@ -50,6 +52,30 @@ final class Claims {
             return getClaimAt.invoke(dataStore, place, true, null);
         } catch (ReflectiveOperationException | RuntimeException e) {
             return null;
+        }
+    }
+
+    /**
+     * Which claim a spot is in, as "claim:<id>" for the top-level claim (a subdivision counts as
+     * its parent), or null (unclaimed, or no GriefPrevention).
+     */
+    String claimKeyAt(Location place) {
+        Object claim = claimAt(place);
+        if (claim == null) {
+            return null;
+        }
+        try {
+            for (int depth = 0; depth < 8; depth++) {
+                Object parent = claim.getClass().getField("parent").get(claim);
+                if (parent == null) {
+                    break;
+                }
+                claim = parent;
+            }
+            Object id = claim.getClass().getMethod("getID").invoke(claim);
+            return "claim:" + (id != null ? id : "@" + System.identityHashCode(claim));
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return "claim:@" + System.identityHashCode(claim);
         }
     }
 
@@ -96,6 +122,40 @@ final class Claims {
                 allowContainers = claim.getClass().getMethod("allowContainers", Player.class);
             }
             return allowContainers.invoke(claim, player) == null;
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return false;
+        }
+    }
+
+    /**
+     * True if this player (online or not) has container trust in the claim here, or owns it.
+     * False where there's no claim or GriefPrevention can't be read.
+     */
+    boolean hasContainerTrust(UUID player, Location place) {
+        Object claim = claimAt(place);
+        if (claim == null || player == null) {
+            return false;
+        }
+        try {
+            if (player.equals(ownerAt(place))) {
+                return true;
+            }
+            if (checkPermission == null) {
+                for (Method m : claim.getClass().getMethods()) {
+                    if (m.getName().equals("checkPermission") && m.getParameterCount() == 3
+                            && m.getParameterTypes()[0] == UUID.class) {
+                        checkPermission = m;
+                        @SuppressWarnings({"unchecked", "rawtypes"})
+                        Object container = Enum.valueOf((Class) m.getParameterTypes()[1], "Container");
+                        containerPermission = container;
+                        break;
+                    }
+                }
+                if (checkPermission == null) {
+                    return false;
+                }
+            }
+            return checkPermission.invoke(claim, player, containerPermission, null) == null; // null = allowed
         } catch (ReflectiveOperationException | RuntimeException e) {
             return false;
         }

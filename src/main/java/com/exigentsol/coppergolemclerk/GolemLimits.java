@@ -13,7 +13,8 @@ import org.bukkit.entity.CopperGolem;
 
 /**
  * max-golems-per-claim / max-golems-outside-claims: how many copper golems in one
- * GriefPrevention claim (or on unclaimed land in one world) use the plugin. The oldest golems
+ * GriefPrevention claim (each claim on its own, admin claims too; a subdivision counts with its
+ * claim), or on unclaimed land in one world, use the plugin. The oldest golems
  * keep it; the newest ones over the limit sort like vanilla, and the claim owner is told.
  * Recounted every few seconds; 0 means no limit.
  */
@@ -40,9 +41,8 @@ final class GolemLimits {
             over = Set.of();
             return;
         }
-        // Group the golems the plugin would otherwise manage: by claim owner, or by world when unclaimed.
+        // Group the golems the plugin would otherwise manage: by claim, or by world when unclaimed.
         Map<String, List<CopperGolem>> buckets = new HashMap<>();
-        Map<String, UUID> owners = new HashMap<>();
         for (World world : plugin.getServer().getWorlds()) {
             if (!plugin.enabledIn(world)) {
                 continue;
@@ -51,12 +51,9 @@ final class GolemLimits {
                 if (plugin.modes() != null && plugin.modes().isVanilla(golem)) {
                     continue; // switched to vanilla by a player: doesn't count
                 }
-                UUID owner = plugin.claims().ownerAt(golem.getLocation());
-                String key = owner != null ? "claim:" + owner : "world:" + world.getName();
+                String claim = plugin.claims().claimKeyAt(golem.getLocation());
+                String key = claim != null ? claim : "world:" + world.getName();
                 buckets.computeIfAbsent(key, k -> new ArrayList<>()).add(golem);
-                if (owner != null) {
-                    owners.put(key, owner);
-                }
             }
         }
         Set<UUID> now = new HashSet<>();
@@ -74,7 +71,9 @@ final class GolemLimits {
             }
             if (plugin.alerts() != null) {
                 CopperGolem first = golems.get(limit);
-                String where = claimed ? "your claim" : "unclaimed land in " + first.getWorld().getName();
+                String where = !claimed ? "unclaimed land in " + first.getWorld().getName()
+                        : plugin.claims().ownerAt(first.getLocation()) != null ? "your claim"
+                        : "the admin claim at " + first.getLocation().getBlockX() + ", " + first.getLocation().getBlockZ();
                 plugin.alerts().send("limit:" + e.getKey(), first.getLocation(), "There are " + golems.size()
                         + " copper golems in " + where + "; only " + limit + " use Copper Golem Clerk ("
                         + (claimed ? "max-golems-per-claim" : "max-golems-outside-claims")

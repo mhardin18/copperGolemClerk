@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.exigentsol"
-version = "2.6.2"
+version = "3.0.0"
 
 repositories {
     mavenCentral()

@@ -354,7 +354,8 @@ final class HomeFinder {
             Inventory inventory = ((Container) state).getInventory();
             Set<Pos> halves = halvesOf(inventory, state.getBlock());
             if (cannotOpen(golem.getWorld(), state, halves) || isWaterlogged(golem.getWorld(), halves) || isLocked(state)
-                    || feedsCopperChest(golem.getWorld(), halves)) {
+                    || feedsCopperChest(golem.getWorld(), halves)
+                    || (plugin.furnaceFeeding() && HopperLines.feedsFurnace(golem.getWorld(), halves))) {
                 continue;
             }
             if (!isVanillaTarget(state.getType()) && pluginRow(golem.getWorld(), halves) == Integer.MAX_VALUE) {
@@ -404,6 +405,9 @@ final class HomeFinder {
             }
             if (feedsCopperChest(world(golem), halves)) {
                 continue; // an input chest for a copper chest: refilling it would loop items forever
+            }
+            if (plugin.furnaceFeeding() && HopperLines.feedsFurnace(world(golem), halves)) {
+                continue; // feeds a smelter through hoppers: only furnace feeding puts things in it
             }
             if (refuses(state.getType(), held.getType())) {
                 continue; // a shulker box can't hold a shulker box
@@ -565,6 +569,17 @@ final class HomeFinder {
      * queue behind its own unfinished interaction for up to a minute), not stuck,
      * so its item shouldn't be returned yet.
      */
+    /**
+     * True if a chest in this golem's range would take the item: a matching one or an
+     * [Overflow] chest with room, or an empty chest (with allow-empty-chests). Used before the
+     * plugin hands a golem something it would otherwise have to hold forever.
+     */
+    boolean anyHomeFor(Entity golem, ItemStack item) {
+        Homes homes = scan(golem, item);
+        return !homes.allMatching().isEmpty() || !homes.overflow().isEmpty()
+                || (plugin.allowEmptyChests() && !homes.empty().isEmpty());
+    }
+
     boolean waitingNearHome(Entity golem, ItemStack held) {
         Homes homes = scan(golem, held);
         Location at = golem.getLocation();

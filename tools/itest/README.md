@@ -11,6 +11,7 @@ then removes everything and the force-loads.
     python3 -I tools/itest/run.py core world          # suites or scenario names (substring match)
     python3 -I tools/itest/run.py server-restart      # manual: asks you to restart the server
     python3 -I tools/itest/run.py soak                # manual: ~15-minute soak test
+    python3 -I tools/itest/run.py smelter-replica     # manual: 6 minutes of a copied smelter; prints trips and idle furnaces
     python3 -I tools/itest/run.py --list              # what each scenario checks
     python3 -I tools/itest/run.py --keep              # leave the arenas up to inspect
 
@@ -37,6 +38,7 @@ error or exception in the server log during a scenario fails it.
 | dimensions | sorting, overflow, fetching, returns, giving way and `/cgc check` in the Nether and the End |
 | reach | chests stacked above vanilla's reach: delivering and taking with `deliver-reach` / `take-reach` raised, and at the default |
 | greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit |
+| limits | `max-golems-per-claim` / `max-golems-outside-claims`: the newest golem over a limit sorts like vanilla and the owner is told; under the limit, unclaimed land, vanilla-mode golems not counted, bad values |
 | modes | golems switched to vanilla (sort like vanilla, no marker), antenna markers through switches, unloads and statues; iron and snow golems untouched |
 
 Scenarios that change something server-wide (config, reloads, tick timing) run one at a

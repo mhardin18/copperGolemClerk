@@ -41,8 +41,19 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean returnUnsortableItems;
     private volatile boolean fetchFromOverflow;
     private volatile int fetchersPerOverflowChest;
+    private volatile int overflowFetchMin = 8;
+    private volatile int overflowFetchWaitSeconds = 120;
     private volatile int carryAmount = GolemCarry.VANILLA;
     private GolemCarry carry;
+    private volatile boolean furnaceFeeding = true;
+    private volatile List<Material> furnaceFuel = FurnaceFeeder.defaultFuel();
+    private volatile boolean furnaceTrustedClaims = true;
+    private volatile int furnaceRefillBelow = 16;
+    private volatile int furnaceWaitSeconds = 20;
+    private volatile int furnaceTakeOutAt = 8;
+    private volatile int furnaceFuelAhead = 16;
+    private volatile int furnaceLavaMinItems = 100;
+    private volatile int furnaceSplitMin = 8;
     private volatile long homelessRetryMillis;
     private SortListener listener;
     private GolemTraffic traffic;
@@ -63,6 +74,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean statusLabelsEverywhere;
     private GolemFinder finder;
     private ItemFinder itemFinder;
+    private LabelAdvisor labelAdvisor;
+    private StorageReport storageReport;
     private GolemLimits limits;
     private volatile int maxGolemsPerClaim;
     private volatile int maxGolemsOutsideClaims;
@@ -107,6 +120,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     + " and restart, or golems are handled twice.");
         }
         saveDefaultConfig();
+        addMissingSettings();
         loadSettings();
         stats = new GolemStats(this);
         getServer().getPluginManager().registerEvents(stats, this);
@@ -143,6 +157,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getPluginManager().registerEvents(finder, this);
         getServer().getScheduler().runTaskTimer(this, finder::tick, 20 * 30, 20 * 30);
         itemFinder = new ItemFinder(this);
+        labelAdvisor = new LabelAdvisor(this);
+        storageReport = new StorageReport(this);
         limits = new GolemLimits(this);
         getServer().getScheduler().runTaskTimer(this, limits::tick, 100, 100);
         getServer().getPluginManager().registerEvents(itemFinder, this);
@@ -150,6 +166,63 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getPluginManager().registerEvents(updates, this);
         updates.configure(updateCheck, updateCheckUrl);
         registerCommand("coppergolemclerk", "Copper Golem Clerk: smart copper golem sorting", List.of("cgc"), new Command());
+    }
+
+    /**
+     * After an upgrade: add the settings this version has that config.yml doesn't, each with
+     * the comment that explains it, and bring the explanation above the other settings up to
+     * date; values are never changed. The old file is kept as config-before-<version>.yml.
+     * A config.yml with a YAML error is left alone.
+     */
+    private void addMissingSettings() {
+        File config = new File(getDataFolder(), "config.yml");
+        try (java.io.InputStream in = getResource("config.yml")) {
+            if (in == null || !config.isFile()) {
+                return;
+            }
+            String shipped = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).replace("\r\n", "\n");
+            String raw = java.nio.file.Files.readString(config.toPath());
+            boolean crlf = raw.contains("\r\n");
+            String current = crlf ? raw.replace("\r\n", "\n") : raw;
+            try {
+                new org.bukkit.configuration.file.YamlConfiguration().loadFromString(current);
+            } catch (org.bukkit.configuration.InvalidConfigurationException e) {
+                return; // loadSettings reports the error; don't touch a file the owner is fixing
+            }
+            ConfigUpgrade.Result result = ConfigUpgrade.addMissing(current, shipped);
+            if (!result.changed()) {
+                return;
+            }
+            if (!java.nio.file.Files.isWritable(config.toPath())) {
+                getLogger().warning("config.yml can't be written (check its permissions), so it wasn't brought up to date: "
+                        + (result.added().isEmpty() ? "" : "new settings " + String.join(", ", result.added())
+                        + " use their defaults; ") + "see the config.yml in the jar for what each setting does.");
+                return;
+            }
+            String version = getPluginMeta().getVersion();
+            File backup = new File(getDataFolder(), "config-before-" + version + ".yml");
+            if (backup.exists()) {
+                backup = new File(getDataFolder(), "config-before-" + version + "-" + System.currentTimeMillis() + ".yml");
+            }
+            java.nio.file.Files.copy(config.toPath(), backup.toPath());
+            String text = crlf ? result.text().replace("\n", "\r\n") : result.text();
+            java.nio.file.Files.writeString(config.toPath(), text);
+            if (!result.added().isEmpty()) {
+                boolean one = result.added().size() == 1;
+                getLogger().info("Added " + result.added().size() + " new setting" + (one ? "" : "s") + " to config.yml, with "
+                        + (one ? "its default and an explanation" : "their defaults and an explanation of each") + ": "
+                        + String.join(", ", result.added()) + ".");
+            }
+            if (!result.explained().isEmpty()) {
+                getLogger().info("Updated the explanation above " + result.explained().size() + " setting"
+                        + (result.explained().size() == 1 ? "" : "s") + " in config.yml to this version's: "
+                        + String.join(", ", result.explained()) + ". Their values are unchanged.");
+            }
+            getLogger().info("Your settings' values are unchanged; the old file is " + backup.getName() + ".");
+        } catch (IOException e) {
+            getLogger().warning("Couldn't bring config.yml up to date (" + e.getClass().getSimpleName() + ": " + e.getMessage()
+                    + "); new settings use their defaults. See the config.yml in the jar for what they do.");
+        }
     }
 
     /** This plugin's name before 2.0; its settings lived in plugins/SmartCopperGolems/. */
@@ -237,6 +310,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         returnUnsortableItems = config.getBoolean("return-unsortable-items", true);
         fetchFromOverflow = config.getBoolean("fetch-from-overflow", true);
         fetchersPerOverflowChest = Math.max(1, config.getInt("fetchers-per-overflow-chest", 2));
+        overflowFetchMin = rangeSetting(config, "overflow-fetch-min", 8, 1, 64);
+        overflowFetchWaitSeconds = rangeSetting(config, "overflow-fetch-wait-seconds", 120, 0, 3600);
         carryAmount = config.getInt("carry-amount", GolemCarry.VANILLA);
         if (carryAmount < 1 || carryAmount > 64) {
             getLogger().warning("carry-amount must be 1 to 64 (it's " + carryAmount + "); using "
@@ -265,6 +340,19 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         deliverReach = reachSetting(config, "deliver-reach");
         HomeFinder.setDestinations(destinationSetting(config));
+        furnaceFeeding = config.getBoolean("furnace-feeding", true);
+        furnaceFuel = fuelSetting(config);
+        furnaceTrustedClaims = config.getBoolean("furnace-trusted-claims", true);
+        furnaceRefillBelow = rangeSetting(config, "furnace-refill-below", 16, 0, 64);
+        furnaceWaitSeconds = rangeSetting(config, "furnace-wait-seconds", 20, 0, 300);
+        furnaceTakeOutAt = rangeSetting(config, "furnace-take-out-at", 8, 1, 64);
+        furnaceFuelAhead = rangeSetting(config, "furnace-fuel-ahead", 16, 0, 64);
+        furnaceLavaMinItems = rangeSetting(config, "furnace-lava-min-items", 100, 0, 1000);
+        furnaceSplitMin = rangeSetting(config, "furnace-split-min", 8, 1, 64);
+        if (listener != null) {
+            listener.furnaces().clear();
+            listener.fetcher().clear();
+        }
         takeReach = reachSetting(config, "take-reach");
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
@@ -357,6 +445,16 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return signLabels;
     }
 
+    /** overflow-fetch-min: from a hopper-fed [Overflow] chest, golems fetch an item once this many are there. */
+    int overflowFetchMin() {
+        return overflowFetchMin;
+    }
+
+    /** overflow-fetch-wait-seconds: ...or once it has waited this long. */
+    int overflowFetchWaitSeconds() {
+        return overflowFetchWaitSeconds;
+    }
+
     int fetchersPerOverflowChest() {
         return fetchersPerOverflowChest;
     }
@@ -368,6 +466,51 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     GolemCarry carry() {
         return carry;
+    }
+
+    /** furnace-feeding: golems feed, fuel and empty labelled furnaces. */
+    boolean furnaceFeeding() {
+        return furnaceFeeding;
+    }
+
+    /** furnace-trusted-claims: golems also use furnaces and supplies in claims where their owner has container trust. */
+    boolean furnaceTrustedClaims() {
+        return furnaceTrustedClaims;
+    }
+
+    /** furnace-refill-below: a furnace gets more to cook only once this many or fewer items are waiting in it. */
+    int furnaceRefillBelow() {
+        return furnaceRefillBelow;
+    }
+
+    /** furnace-take-out-at: golems take out what a furnace made once this many are ready (or it has stopped). */
+    int furnaceTakeOutAt() {
+        return furnaceTakeOutAt;
+    }
+
+    /** furnace-fuel-ahead: fuel golems bring also covers this many more items than are waiting. */
+    int furnaceFuelAhead() {
+        return furnaceFuelAhead;
+    }
+
+    /** furnace-lava-min-items: lava buckets go in only for a backlog of this many items or more (if another fuel is there). */
+    int furnaceLavaMinItems() {
+        return furnaceLavaMinItems;
+    }
+
+    /** furnace-split-min: each furnace a load is split between gets at least this many items. */
+    int furnaceSplitMin() {
+        return furnaceSplitMin;
+    }
+
+    /** furnace-wait-seconds: how long a golem waits at a full furnace before taking its load back to the supply. */
+    int furnaceWaitSeconds() {
+        return furnaceWaitSeconds;
+    }
+
+    /** furnace-fuel: what golems put into furnaces as fuel, most preferred first. */
+    List<Material> furnaceFuel() {
+        return furnaceFuel;
     }
 
     /** max-golems-per-claim: golems in one claim that use the plugin (0 = no limit). */
@@ -450,6 +593,25 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     boolean traceGolems() {
         return traceGolems;
+    }
+
+    /** furnace-fuel: fuels in order of preference (unknown names and non-fuels are warned about). */
+    private List<Material> fuelSetting(YamlConfiguration config) {
+        if (!config.isList("furnace-fuel")) {
+            return FurnaceFeeder.defaultFuel();
+        }
+        java.util.LinkedHashSet<Material> fuel = new java.util.LinkedHashSet<>();
+        for (String raw : config.getStringList("furnace-fuel")) {
+            Material m = Material.matchMaterial(raw.trim().replace(' ', '_'));
+            if (m == null || !m.isItem()) {
+                getLogger().warning("furnace-fuel: '" + raw + "' isn't an item; ignored.");
+            } else if (!m.isFuel()) {
+                getLogger().warning("furnace-fuel: " + m.getKey().getKey() + " doesn't burn in a furnace; ignored.");
+            } else {
+                fuel.add(m);
+            }
+        }
+        return List.copyOf(fuel);
     }
 
     /** A whole-number setting kept within min..max; out-of-range values are warned about and clamped. */
@@ -624,7 +786,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return switch (sub) {
             case "find" -> "coppergolemclerk.find";
             case "check" -> "coppergolemclerk.check";
+            case "label" -> "coppergolemclerk.label";
             case "overflow" -> "coppergolemclerk.overflow";
+            case "storage" -> "coppergolemclerk.storage";
             case "stats" -> "coppergolemclerk.stats";
             case "golems" -> "coppergolemclerk.golems";
             case "", "help", "?" -> null;
@@ -731,6 +895,28 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                             + (names.isEmpty() ? "no groups (exact-match sorting only)" : String.join(", ", names)),
                             NamedTextColor.AQUA));
                 }
+                case "label" -> {
+                    Block at = blockArg(sender, args);
+                    if (at != null) {
+                        labelAdvisor.report(sender, at);
+                        return;
+                    }
+                    if (!(sender instanceof Player player)) {
+                        sender.sendMessage(Component.text("From the console: /cgc label <x> <y> <z> [world]", NamedTextColor.RED));
+                        return;
+                    }
+                    Block target = player.getTargetBlockExact(6);
+                    if (target == null || !(target.getState(false) instanceof Container)) {
+                        sender.sendMessage(Component.text("Look at a chest to get a label suggestion for it.", NamedTextColor.YELLOW));
+                        return;
+                    }
+                    if (!player.hasPermission(Claims.ALL_CLAIMS) && !claims.mayOpen(player, target)) {
+                        sender.sendMessage(Component.text("You can't open that container (locked, or in someone else's"
+                                + " claim), so you can't get a label for it either.", NamedTextColor.RED));
+                        return;
+                    }
+                    labelAdvisor.report(player, target);
+                }
                 case "overflow" -> {
                     Block at = blockArg(sender, args);
                     if (at != null) {
@@ -740,6 +926,17 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         reports.overflow(player, player.getLocation(), state -> all || claims.mayOpen(player, state));
                     } else {
                         sender.sendMessage(Component.text("From the console: /cgc overflow <x> <y> <z> [world]", NamedTextColor.RED));
+                    }
+                }
+                case "storage" -> {
+                    Block at = blockArg(sender, args);
+                    if (at != null) {
+                        storageReport.report(sender, at.getLocation(), state -> true);
+                    } else if (sender instanceof Player player) {
+                        boolean all = player.hasPermission(Claims.ALL_CLAIMS);
+                        storageReport.report(player, player.getLocation(), state -> all || claims.mayOpen(player, state));
+                    } else {
+                        sender.sendMessage(Component.text("From the console: /cgc storage <x> <y> <z> [world]", NamedTextColor.RED));
                     }
                 }
                 case "version" -> updates.report(sender);
@@ -882,7 +1079,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
         @Override
         public boolean canUse(CommandSender sender) {
-            for (String sub : List.of("find", "check", "overflow", "stats", "golems")) {
+            for (String sub : List.of("find", "check", "label", "overflow", "storage", "stats", "golems")) {
                 if (mayUse(sender, sub)) {
                     return true;
                 }

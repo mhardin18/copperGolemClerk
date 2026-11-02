@@ -47,9 +47,18 @@ import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
 import suite_destinations  # noqa: E402,F401
 import suite_carry  # noqa: E402,F401
+import suite_furnace  # noqa: E402,F401
+import suite_furnace_edge  # noqa: E402,F401
+import suite_furnace_refill  # noqa: E402,F401
+import suite_furnace_trips  # noqa: E402,F401
+import suite_overflow_hopper  # noqa: E402,F401
+import suite_lava  # noqa: E402,F401
+import suite_tuning  # noqa: E402,F401
+import suite_edge30  # noqa: E402,F401
 import suite_find  # noqa: E402,F401
 import suite_edge26  # noqa: E402,F401
 import suite_claims  # noqa: E402,F401
+import suite_limits  # noqa: E402,F401
 import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the others)
 from rcon import from_properties  # noqa: E402
 

@@ -1,4 +1,4 @@
-# Copper Golem Clerk
+# ![](https://raw.githubusercontent.com/mhardin18/copperGolemClerk/main/docs/copper-golem.png) Copper Golem Clerk
 
 **Now hiring: storage clerks.** Must be small, shiny and good with chests. Pay is one copper
 block and a pumpkin. Your new clerks sort the way you would: birch logs in with the oak logs,
@@ -10,14 +10,40 @@ claims, full-chest alerts for claim owners, optional golem limits per claim, and
 every feature tunable in one config file. They never ask for a raise and never complain about the
 cobblestone.
 
+## 🔥 New in 3.0.0: The Furnaces Are Alive
+
+Your clerks have been promoted to the kitchen. Put a sign like `[raw iron]` on a furnace, smoker
+or blast furnace, and golems keep it cooking. They bring what needs cooking from your
+`[Furnace Supply]` chest and fuel from your `[Fuel]` chest. Then they carry the ingots, glass
+and steak off to wherever they belong. No hopper towers, no standing around waiting for the
+last stack of sand, and nobody burns the coal you were saving. (They don't eat the steak.
+We checked.)
+
+- **Fed on time:** a furnace gets topped up when it runs low, a full load at a time, so it
+  doesn't sit idle while you're off mining.
+- **Fuel with common sense:** charcoal first, then coal. Lava buckets go in only when there's a
+  big pile to cook, so a bucket that lasts 100 items isn't burnt on eight ingots.
+- **Lava on tap:** put a cauldron under pointed dripstone with lava above it, and golems refill
+  your empty buckets as it fills.
+- **Emptied for you:** finished items go into your storage, or a hopper under the furnace takes
+  them, if you'd rather.
+- **Only what you label:** unlabelled furnaces are left alone, and nothing from the rest of your
+  storage wanders into a fire.
+
+Details are under "Run your furnaces" below.
+
 I'm always open to new ideas for this plugin. Open an enhancement request on GitHub:
 https://github.com/mhardin18/copperGolemClerk/issues
 
+Bug reports go there too, though you won't need to: there are no bugs. None. You can trust me
+on that. (If a golem does something odd anyway, it's a feature I haven't documented yet, and
+I'd love to hear about it so I can correct that detail.)
+
 ---
 
-## What your golems learn
+## 🎓 What your golems learn
 
-### 📦 Sort by kind, not just by exact item
+### 🧩 Sort by kind, not just by exact item
 A golem carrying spruce planks uses your chest of oak planks. Stews go with the food,
 swords with the weapons, every colour of wool together. Groups are plain lists in the
 config, so you can change them or make your own.
@@ -31,15 +57,25 @@ item, the most specific one wins: `[stews]` beats `[food]` for a bowl of stew.
 |---|---|
 | `[logs]` | anything in the logs group |
 | `[oak log]` | just oak logs |
-| `[*_ORE]` | every ore block |
-| `[#planks]` | everything in a Minecraft item tag |
+| `[*_ORE]` | every ore block (`*` = any letters) |
+| `[*sand]` | items whose name ends in sand: sand, red sand, soul sand |
+| `[#planks]` | everything in a Minecraft item tag (`#` = a tag) |
+| `[*]` | any item at all (picked before `[Overflow]`: use that for a catch-all) |
 | `[Overflow]` | a catch-all for things with no home |
 | `[No Golems]` | golems keep out |
 | `[Only Logs]` | on a copper chest: golems take only the logs out |
 
+**`*` and `#` on a sign.** A `*` stands for any letters, or none, in the item's name, and
+the whole name has to fit: `[*sand]` ends in sand (sand, red sand, soul sand, not
+sandstone), `[sand*]` starts with it (sand, sandstone, its slabs and stairs), `[*sand*]`
+contains it. `[*]` alone is every item. A `#` names a Minecraft item tag: `[#logs]` or
+`[#minecraft:logs]`, datapack tags too. `[@edible]`, `[@fuel]` and `[@record]` work as well.
+
 ### ♻️ An overflow chest that empties itself
 Items with no home land in your `[Overflow]` chest. Add a chest for them later and idle
-golems carry them over by themselves.
+golems carry them over by themselves. If a hopper fills the overflow chest (a smelter's
+output), golems wait until 8 of an item have built up, or 2 minutes, instead of walking
+over for every ingot.
 
 ### 🗄️ Bigger storage rooms
 - **Tidy** as they go: partial stacks merged, like items kept together.
@@ -48,6 +84,39 @@ golems carry them over by themselves.
   - reach chests stacked up to **6 high** (vanilla: 2);
   - carry up to **64 items** a trip (vanilla: 16);
   - use **barrels and shulker boxes** as well as chests.
+
+### 🔥 Run your furnaces
+Label a furnace `[raw iron]` and golems keep it cooking: items
+from your `[Furnace Supply]` chest, fuel from your `[Fuel]` chest (enough for what's
+waiting and the next load), and what's done sorted away. Nothing else from your storage goes in a furnace.
+
+**What to write on a furnace.** Any label a chest takes works on a furnace, a smoker or a
+blast furnace (a sign or an item frame). Golems only ever put in what that kind of furnace
+can cook, so a broad label is safe: a smoker labelled `[food]` gets raw meat and fish, never
+bread.
+
+| Label on the furnace | What golems put in | Example |
+| --- | --- | --- |
+| `[*]` | anything that furnace can cook | a furnace: ores, sand, logs, raw food...; a smoker: raw food only |
+| A group | the group's items that it can cook | `[ores]` ore blocks (Silk Touch) and ancient debris · `[ingots and gems]` raw iron, gold and copper · `[food]` raw meat, fish, potatoes · `[logs]` logs and wood (charcoal) · `[stone]` cobblestone and stone bricks · `[dirt and sand]` sand, red sand, clay |
+| One item | just that item | `[raw iron]` · `[sand]` · `[cobblestone]` · `[clay ball]` · `[wet sponge]` · `[cactus]` |
+| A pattern | items whose names match | `[raw_*]` raw metal · `[*_ore]` ore blocks · `[*log]` logs |
+| A tag | items in a Minecraft tag | `[#minecraft:logs]` · `[#minecraft:sand]` |
+| An item frame | the framed item | a frame holding raw gold |
+
+Not on a furnace: `[Furnace]` (that's the furnace item, which nothing cooks), `[Fuel]` and
+`[Furnace Supply]` (those go on chests). `/cgc check` on a furnace lists exactly what its
+label lets in.
+
+**Signs for the chests that feed it.**
+
+| Sign on a chest or barrel | What it does | Spellings that work (any case) |
+| --- | --- | --- |
+| `[Furnace Supply]` | golems take items to cook from it | `[Furnace Supply]`, `[Furnace Supplies]`, `[Furnaces Supply]`, `[Furnace-Supply]`, `[Furnace_Supply]` |
+| `[Fuel]` | golems take fuel from it (charcoal, then coal, then lava buckets, which go in only when a furnace has 100 or more items to cook; empty buckets go back here to wait for a lava cauldron that dripstone refills) | `[Fuel]`, `[Fuels]` |
+
+Neither chest receives sorted items unless it also has an item label: `[Fuel] [charcoal]` or
+`[Furnace Supply] [raw iron]` on one sign.
 
 ### 🦺 Look after themselves
 - A golem that falls down a shaft or wanders off **walks back home**; one that's stuck gets
@@ -58,7 +127,7 @@ golems carry them over by themselves.
 
 ---
 
-## For players
+## 🎮 For players
 
 - **`/cgc find diamond`:** lists the chests near you that hold diamonds, nearest first
   (including diamonds inside shulker boxes), and the nearest few glow for a few seconds.
@@ -68,6 +137,8 @@ golems carry them over by themselves.
   Looking at nothing, it says which groups the item in your hand belongs to.
 - **`/cgc overflow`** shows what's piling up in the overflow chests near you, and what label
   would give each item a home.
+- **`/cgc label`** suggests what to write on a chest's sign, from what's in it.
+- **`/cgc storage`** shows how full the storage around you is, by label, fullest first.
 - **`/cgc stats`** shows what golems have sorted in your claims today, in the last 7 days and all time.
 - **`/cgc golems`** lists your own golems and where they are, if the server allows it.
 - **`/cgc help`** lists the commands; `/cgc help <command>` explains one.
@@ -78,7 +149,7 @@ golems carry them over by themselves.
   if you were offline at the time), and get a summary of what your golems sorted while you
   were away.
 
-## For admins
+## 🛠️ For admins
 
 - `/cgc check` explains any chest: what its labels mean, what it takes, and anything
   stopping golems from using it.
@@ -96,7 +167,7 @@ golems carry them over by themselves.
 
 ---
 
-## Getting started
+## ▶️ Getting started
 
 1. Drop the jar into `plugins/` and restart.
 2. Place a copper chest and fill it with mixed items.
@@ -105,7 +176,7 @@ golems carry them over by themselves.
 4. Build a copper golem (a carved pumpkin on a copper block) next to the copper chest.
 5. Stay nearby (golems only work in loaded chunks) and watch them file everything.
 
-## Requirements
+## ✅ Requirements
 
 - **Paper 26.3**, build 190 or newer (Spigot and Bukkit aren't supported: the plugin uses Paper's golem events)
 - **Java 25**
@@ -114,7 +185,7 @@ golems carry them over by themselves.
   there. Without it, alerts go to ops, and players' `/cgc find` finds nothing until an
   admin allows it.
 
-## Permissions
+## 🔑 Permissions
 
 All permissions are standard nodes, so they work with LuckPerms or any other permissions plugin.
 
@@ -127,7 +198,7 @@ All permissions are standard nodes, so they work with LuckPerms or any other per
 | `coppergolemclerk.alerts` | op | alerts about things outside any claim, where there's no owner to tell |
 | `coppergolemclerk.admin` | op | all `/cgc` commands |
 
-## Links
+## 🌐 Links
 
 - Full documentation and every setting: [README on GitHub](https://github.com/mhardin18/copperGolemClerk#readme)
 - Changelog: [CHANGELOG.md](https://github.com/mhardin18/copperGolemClerk/blob/main/CHANGELOG.md)

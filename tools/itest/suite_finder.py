@@ -109,6 +109,34 @@ def _(c):
     return check
 
 
+# Away from the platforms, so its chunk can be unloaded without touching them.
+UNLOAD_SPOT = (-4000, 150, -4000)
+
+
+@scenario("golems-killed-then-unloaded", "finder", 60, "A golem killed just before its chunk unloads (still in its death animation) is forgotten, not listed as 'not loaded'.", alone=True)
+def _(c):
+    x, y, z = UNLOAD_SPOT
+    c.r.cmd(f"forceload add {x} {z}")
+    c.r.cmd(f"setblock {x} {y - 1} {z} minecraft:stone")
+    c.r.cmd(f'summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} {{CustomName:"itest-ku-doomed",NoAI:1b}}')
+    t = Trigger()
+
+    def reply():
+        return re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z}"))
+
+    def kill_and_unload():
+        c.r.cmd('kill @e[type=copper_golem,name="itest-ku-doomed"]')
+        c.r.cmd(f"forceload remove {x} {z}")  # in the same tick, during the death animation
+
+    def check():
+        listed = line_of(reply(), "itest-ku-doomed")
+        t.fire_when(lambda: listed is not None, kill_and_unload)
+        if t.since() < 5:
+            return [(False, "waiting to see it listed, then killing it and unloading its chunk")]
+        return [(listed is None, f"no longer listed (got {listed!r})")]
+    return check
+
+
 @scenario("golems-saved-to-file", "finder", 75, "Golem positions are saved to golems.yml (every 30 seconds), so they survive a restart.")
 def _(c):
     named(c, 6, 10, "itest-fs-saved", ",NoAI:1b")

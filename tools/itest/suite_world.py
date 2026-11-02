@@ -42,16 +42,18 @@ def _(c):
     return check
 
 
-@scenario("overflow-gone-during-fetch", "world", 120, "The overflow chest is destroyed while a golem walks to fetch from it; the golem gives up cleanly.")
+@scenario("overflow-gone-during-fetch", "world", 180, "The overflow chest is destroyed while a golem walks to fetch from it; the golem gives up cleanly.")
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     c.chest("overflow", 18, 4, [("granite", 16)])
     c.sign(18, 4, "[Overflow]")
     c.chest("stone", 10, 16, [("andesite", 1)])
-    # A wall with a gap at the far end makes the walk to the overflow chest about 30 blocks,
-    # so even a busy test run destroys the chest before the golem gets there.
+    # A wall with a gap makes the walk to the overflow chest about 20 blocks: long enough that
+    # the chest is destroyed before the golem gets there (it's removed within a few seconds of
+    # the fetch starting), short enough that the pathfinder always finds the way. A 30-block
+    # walk was only found from some spots, so the fetch sometimes never started.
     x, y, z = c.abs(12, 0)
-    _, _, z2 = c.abs(12, 17)
+    _, _, z2 = c.abs(12, 12)
     c.run(f"fill {x} {y} {z} {x} {y + 2} {z2} minecraft:glass")
     c.golem(4, 10)
     t = Trigger()
