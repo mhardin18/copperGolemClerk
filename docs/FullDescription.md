@@ -37,7 +37,7 @@ https://github.com/mhardin18/copperGolemClerk/issues
 
 Bug reports go there too, though you won't need to: there are no bugs. None. You can trust me
 on that. (If a golem does something odd anyway, it's a feature I haven't documented yet, and
-I'd love to hear about it so I can fix it.)
+I'd love to hear about it so I can correct that detail.)
 
 ---
 
