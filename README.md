@@ -347,8 +347,12 @@ a golem couldn't put in goes back to a `[Fuel]` container. A furnace still
 burning a fuel lower on the list isn't topped up with it; it switches once that runs out. A
 fuel someone else put in (not in `furnace-fuel`) is left alone. Lava buckets leave an empty
 bucket in the furnace: golems take it out and refill it at a lava cauldron nearby (never from
-lava in the world), then put it back in a `[Fuel]` container; with no lava cauldron, the
-empty bucket is sorted like anything else. A `[Fuel]` chest with no other label never
+lava in the world), then put it back in a `[Fuel]` container. A cauldron that dripping lava
+keeps refilling (pointed dripstone hanging over it, within 11 blocks, with a lava source on
+top of the block the dripstone hangs from) is worth waiting for: until it's full, golems put
+the empty buckets in a `[Fuel]` container, and an idle golem takes one to the cauldron as
+soon as it fills and brings the lava bucket back. With no such cauldron nearby and none full,
+the empty bucket is sorted like anything else. A `[Fuel]` chest with no other label never
 receives sorted items; label it `[Fuel] [charcoal]` to have golems fill it with the charcoal
 your furnaces make.
 

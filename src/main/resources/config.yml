@@ -165,7 +165,11 @@ furnace-feeding: true
 # out before it gets the better one. Fuel you put in yourself (not in this list) is left
 # alone. Fuel a golem couldn't put in (the furnace got fuelled meanwhile) goes back to a
 # [Fuel] container. Empty buckets left by lava are refilled only at a lava cauldron nearby
-# and put back in a [Fuel] container (sorted like anything else if there's none).
+# (never from lava in the world) and put back in a [Fuel] container. A cauldron that dripping
+# lava refills (pointed dripstone hanging over it, with lava on top of the block the
+# dripstone hangs from) is waited for: until it's full, empty buckets go into a [Fuel]
+# container, and an idle golem fills one as soon as it is. With no such cauldron nearby and
+# none full, an empty bucket is sorted like anything else.
 furnace-fuel: [charcoal, coal, lava_bucket]
 # Fuel golems bring also covers this many MORE items than are waiting (0 to 64), so the
 # next load of items to cook doesn't need a fuel trip of its own. Golems only fetch fuel
