@@ -193,6 +193,12 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             if (!result.changed()) {
                 return;
             }
+            if (!java.nio.file.Files.isWritable(config.toPath())) {
+                getLogger().warning("config.yml can't be written (check its permissions), so it wasn't brought up to date: "
+                        + (result.added().isEmpty() ? "" : "new settings " + String.join(", ", result.added())
+                        + " use their defaults; ") + "see the config.yml in the jar for what each setting does.");
+                return;
+            }
             String version = getPluginMeta().getVersion();
             File backup = new File(getDataFolder(), "config-before-" + version + ".yml");
             if (backup.exists()) {
@@ -214,8 +220,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             }
             getLogger().info("Your settings' values are unchanged; the old file is " + backup.getName() + ".");
         } catch (IOException e) {
-            getLogger().warning("Couldn't add new settings to config.yml (" + e.getMessage()
-                    + "); their defaults apply. See the config.yml in the jar for what they do.");
+            getLogger().warning("Couldn't bring config.yml up to date (" + e.getClass().getSimpleName() + ": " + e.getMessage()
+                    + "); new settings use their defaults. See the config.yml in the jar for what they do.");
         }
     }
 

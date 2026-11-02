@@ -96,7 +96,8 @@ every other setting is replaced with the new version's explanation. Your values 
 changed, and a note at the end of a setting's line (`carry-amount: 32  # our farm`) stays;
 a comment on its own line above a setting is replaced. The old file is saved as
 `config-before-<version>.yml`, and the console lists what was added and which explanations
-changed. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
+changed. If config.yml can't be written (its permissions), the console says so and new settings
+simply use their defaults; a config.yml with a YAML error is left alone. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
 you don't want to keep the config).
 
 ### Upgrading from SmartCopperGolems

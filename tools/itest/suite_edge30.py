@@ -273,3 +273,125 @@ def _(c):
     c.golem(4, 10)
     return lambda: [(c.count("furnace", "raw_iron") + c.count("furnace", "iron_ingot") > 0, "the furnace got raw iron"),
                     (c.count("fuelchest", "charcoal") < 32, "and charcoal"), no_errors(c)]
+
+
+# ---- round 2: after tuning (no-path retry, the 2-furnace cap, lava with many golems)
+
+from suite_lava import FAST_TICKS, bucket_chest, drip_cauldron, fuel_chest  # noqa: E402
+
+
+@scenario("edge30-supply-walled-then-opened", "edge30", 120, "The [Furnace Supply] is walled in with glass (no path), then opened after 15s: a golem fetches from it within 25s of opening (it retries after 10s, not a minute).")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    furnace(c, "furnace", 8, 4, fuel=("coal", 8), label="[raw iron]")
+    supply(c, dx=16, dz=14, items=[("raw_iron", 16)])
+    walls = [(15, 14), (17, 14), (16, 13), (16, 15)]
+    for dx, dz in walls:
+        c.block(dx, dz, "glass")
+        c.block(dx, dz, "glass", dy=1)
+    c.block(16, 14, "glass", dy=1)
+    c.golem(4, 10)
+    t, got = Trigger(), []
+
+    def opened():
+        for dx, dz in walls:
+            c.block(dx, dz, "air")
+            c.block(dx, dz, "air", dy=1)
+        c.block(16, 14, "air", dy=1)
+
+    def check():
+        t.fire_when(lambda: c.elapsed() > 15, opened)
+        if t.at is not None and not got and c.count("supply", "raw_iron") < 16:
+            got.append(t.since())
+        return [(t.at is not None, "opened the walls after 15s"),
+                (bool(got) and got[0] < 25, f"fetched {got[0]:.0f}s after opening (want under 25)" if got else "not fetched yet"),
+                no_errors(c)]
+    return check
+
+
+@scenario("edge30-cap-two-golems-three-furnaces", "edge30", 150, "carry-amount 64, 2 golems, three empty [raw iron] furnaces and 128 raw iron: every furnace gets some (a load goes to at most 2, so the second golem feeds the third); none lost.", alone=True)
+def _(c):
+    from suite_furnace import cooked
+    set_options(c, carry_amount="64")
+    supply(c, dx=16, dz=10, items=[("raw_iron", 64), ("raw_iron", 64)])
+    for name, dz in (("f1", 4), ("f2", 10), ("f3", 16)):
+        furnace(c, name, 8, dz, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
+    c.golem(4, 8)
+    c.golem(4, 12)
+    seen = set()
+
+    def check():
+        for n in ("f1", "f2", "f3"):
+            if cooked(c, n) > 0:
+                seen.add(n)
+        return [(seen == {"f1", "f2", "f3"}, f"furnaces that got raw iron: {sorted(seen)} (want all 3)"),
+                iron_conserved(c, 128), no_errors(c)]
+    return check
+
+
+@scenario("edge30-lava-ten-golems", "edge30", 240, "Fast random ticks: 10 golems, 4 empty buckets in [Fuel], one dripstone cauldron: all 4 end up as lava buckets in [Fuel]; no bucket lost or duplicated.", alone=True)
+def _(c):
+    c.run(f"gamerule random_tick_speed {FAST_TICKS}")
+    c.cleanup.append("gamerule random_tick_speed 3")
+    drip_cauldron(c, 10, 4)
+    fuel_chest(c, [("bucket", 4)])
+    bucket_chest(c)
+    for i in range(10):
+        c.golem(2 + i * 2 % 16, 10 + (i // 8) * 3)
+
+    def check():
+        buckets = c.total("bucket") + c.total("lava_bucket")
+        return [expect(c, "fuelchest", "lava_bucket", 4), (buckets == 5, f"{buckets} buckets in all (want 5: 4 + the one in the bucket chest)"),
+                no_errors(c)]
+    return check
+
+
+@scenario("edge30-lava-two-cauldrons-one-full", "edge30", 120, "Two dripstone cauldrons, the nearer one empty and the farther one full, and an empty bucket in [Fuel]: a golem fills it at the full one.")
+def _(c):
+    drip_cauldron(c, 6, 4)
+    c.chests["cauldron_near"] = c.chests.pop("cauldron")
+    drip_cauldron(c, 16, 4, full=True)
+    fuel_chest(c, [("bucket", 1)], dx=8, dz=12)
+    bucket_chest(c)
+    c.golem(6, 10)
+    return lambda: [expect(c, "fuelchest", "lava_bucket", 1), expect(c, "fuelchest", "bucket", 0), no_errors(c)]
+
+
+@scenario("edge30-lava-fuel-barrel", "edge30", 120, "A barrel with a [Fuel] sign holding an empty bucket, and a full dripstone cauldron: the bucket is filled and put back in the barrel.")
+def _(c):
+    drip_cauldron(c, 10, 4, full=True)
+    c.chest("fuelchest", 14, 10, [("bucket", 1)], block="barrel")
+    c.sign(14, 10, "[Fuel]")
+    bucket_chest(c)
+    c.golem(6, 10)
+    return lambda: [expect(c, "fuelchest", "lava_bucket", 1), no_errors(c)]
+
+
+@scenario("edge30-lava-player-filled-cauldron", "edge30", 120, "No dripstone: a plain lava cauldron (filled by a player) and an empty bucket waiting in [Fuel]: a golem fills it there.")
+def _(c):
+    c.block(10, 4, "lava_cauldron")
+    fuel_chest(c, [("bucket", 1)])
+    bucket_chest(c)
+    c.golem(6, 10)
+    return lambda: [expect(c, "fuelchest", "lava_bucket", 1), no_errors(c)]
+
+
+@scenario("edge30-lava-feeding-off", "edge30", 60, "furnace-feeding false: empty buckets in [Fuel] next to a full lava cauldron stay as they are.", alone=True)
+def _(c):
+    set_options(c, furnace_feeding="false")
+    drip_cauldron(c, 10, 4, full=True)
+    fuel_chest(c, [("bucket", 2)])
+    c.golem(6, 10)
+    return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "fuelchest", "bucket", 2), no_errors(c)]
+
+
+@scenario("edge30-smoker-output-blocked", "edge30", 150, "A [food] smoker with raw beef and coal whose output holds 3 cobblestone (it can't cook): golems take the cobblestone out and it cooks again.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    furnace(c, "smoker", 8, 10, block="smoker", input=("beef", 16), fuel=("coal", 4), result=("cobblestone", 3), label="[food]")
+    c.chest("cobble", 14, 16, [("cobblestone", 1)])
+    c.sign(14, 16, "[cobblestone]")
+    c.chest("food", 14, 4, [("cooked_beef", 1)])
+    c.sign(14, 4, "[cooked beef]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "cobble", "cobblestone", 4), (c.total("cooked_beef") > 1, "it cooks again: cooked beef made"), no_errors(c)]

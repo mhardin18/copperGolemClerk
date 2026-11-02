@@ -2,7 +2,7 @@
 run.py scenario). Only for pluginDev: it restarts mcd once per case, about 5 minutes apart
 (mcd allows 3 restarts in 10 minutes), and puts config.yml back after each.
 
-    python3 -I tools/itest/cfg_upgrade_test.py
+    python3 -I tools/itest/cfg_upgrade_test.py [read_only ...]   # all cases, or those whose name contains a word
 
 Cases: Windows line endings with settings missing; a YAML error (file left untouched); a
 read-only config.yml (warning, defaults apply); an old SmartCopperGolems config carried over
@@ -85,9 +85,10 @@ def case_read_only(original):
     log = restart()
     after = open(CONFIG).read()
     os.chmod(CONFIG, 0o664)
-    warned = [l for l in log if "Couldn't add new settings" in l or "Couldn't" in l]
-    return [(bool(warned), f"warned: {warned[0][:160] if warned else 'no warning'}"),
-            ("carry-amount" not in after, "file unchanged (no carry-amount added)"),
+    warned = [l for l in log if "can't be written" in l]
+    return [(bool(warned), f"warned: {warned[0][:200] if warned else 'no warning'}"),
+            (re.search(r"(?m)^carry-amount:", after) is None, "file unchanged (no carry-amount added)"),
+            (not any(f.startswith("config-before-") for f in os.listdir(DIR)), "no backup written"),
             (any("Enabling CopperGolemClerk" in l for l in log), "plugin still enabled")]
 
 
@@ -105,7 +106,9 @@ def main():
     original = open(CONFIG).read()
     results = []
     try:
-        for i, case in enumerate((case_crlf, case_yaml_error, case_read_only, case_old_name)):
+        cases = [c for c in (case_crlf, case_yaml_error, case_read_only, case_old_name)
+                 if len(sys.argv) < 2 or any(a in c.__name__ for a in sys.argv[1:])]
+        for i, case in enumerate(cases):
             if i:
                 time.sleep(SPACING)
             try:
