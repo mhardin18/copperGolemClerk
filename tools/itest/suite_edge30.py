@@ -168,8 +168,12 @@ def _(c):
     def check():
         t.fire_when(lambda: c.holding("charcoal") > 0, lambda: c.r.cmd("coppergolemclerk reload"))
         settled = t.at is not None and t.since() > 30 and c.holding() == 0
+        # The furnace cooks while this runs and burns a charcoal for every 8 items: count those as accounted for.
+        burnt = -(-c.total("iron_ingot") // 8)
+        have = c.total("charcoal")
         return [(t.at is not None, "reloaded while the golem carried charcoal"), (settled, "hands empty 30s later"),
-                conserved(c, "charcoal", 8), expect(c, "overflow", "charcoal", 0), no_errors(c)]
+                (have + burnt >= 8 and have <= 8, f"{have} charcoal left + {burnt} burnt (want 8: none lost or duplicated)"),
+                expect(c, "overflow", "charcoal", 0), no_errors(c)]
     return check
 
 

@@ -127,7 +127,8 @@ def _(c):
     t = Trigger()
 
     def check():
-        t.fire_when(lambda: logged(c, "BUCKET_FILL"), lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:cauldron"))
+        t.fire_when(lambda: any("(BUCKET_FILL)" in l and c.in_cell(l) for l in c.log_lines()),
+                    lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:cauldron"))
         return [(t.at is not None, "emptied the cauldron as the golem set off for it"),
                 expect(c, "buckets", "bucket", 2), (c.total("lava_bucket") == 0, "no lava bucket was made"), no_errors(c)]
     return check
