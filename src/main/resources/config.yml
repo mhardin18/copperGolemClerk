@@ -8,8 +8,11 @@
 # Every setting below has a default, so a setting missing from this file still
 # works. The README lists them all: https://github.com/mhardin18/copperGolemClerk
 # When you upgrade the plugin, settings new in that version are added to this file
-# at startup, each with its explanation; the settings you have are left as they are,
-# and the old file is kept as config-before-<version>.yml.
+# at startup, each with its explanation, and the explanation above every other setting
+# is replaced with the new version's. Your values are never changed. Keep notes of your
+# own at the end of a setting's line (carry-amount: 32  # our farm): those stay; a
+# comment on its own line above a setting is replaced. The old file is kept as
+# config-before-<version>.yml.
 #
 # Use /cgc reload after editing this file (no restart needed).
 

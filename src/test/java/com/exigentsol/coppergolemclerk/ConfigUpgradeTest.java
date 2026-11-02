@@ -38,7 +38,7 @@ class ConfigUpgradeTest {
     void nothingMissingChangesNothing() throws IOException {
         String text = shipped();
         ConfigUpgrade.Result result = ConfigUpgrade.addMissing(text, text);
-        assertTrue(result.added().isEmpty());
+        assertTrue(result.added().isEmpty() && result.explained().isEmpty());
         assertEquals(text, result.text());
     }
 
@@ -78,11 +78,31 @@ class ConfigUpgradeTest {
     }
 
     @Test
-    void aShortOldConfigKeepsItsCommentsAndGetsEverythingElse() throws Exception {
+    void outdatedOrMissingExplanationsAreBroughtUpToDate() throws Exception {
+        String old = shipped()
+                .replaceFirst("(?m)(^#.*\\n)+(?=carry-amount:)", "# old words about carrying\n")
+                .replaceFirst("(?m)(^#.*\\n)+(?=find-radius:)", "")
+                .replace("carry-amount: 16", "carry-amount: 32  # we like big loads");
+        ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped());
+        assertTrue(result.added().isEmpty());
+        assertEquals(List.of("carry-amount", "find-radius"), result.explained());
+        String text = result.text();
+        assertTrue(!text.contains("old words about carrying"), "the old explanation is replaced");
+        assertTrue(text.contains("# How many items a golem carries per trip"));
+        assertTrue(text.contains("# How far /cgc find looks"));
+        assertTrue(text.contains("carry-amount: 32  # we like big loads"), "the value and its end-of-line note stay");
+        assertEquals(32, yaml(text).getInt("carry-amount"));
+        assertTrue(ConfigUpgrade.addMissing(text, shipped()).explained().isEmpty(), "a second run changes nothing");
+    }
+
+    @Test
+    void aShortOldConfigKeepsItsValuesAndGetsEverythingElse() throws Exception {
         String old = "# my server's settings\nmatch-mode: any   # I like any\ngroups:\n  stuff:\n    - DIRT\n";
         ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped());
         String text = result.text();
-        assertTrue(text.startsWith("# my server's settings\nmatch-mode: any   # I like any\n"), "the owner's lines stay first and unchanged");
+        assertTrue(text.contains("\nmatch-mode: any   # I like any\n"), "the owner's value and end-of-line note stay");
+        assertTrue(text.contains("# How a chest qualifies for a group match:"), "match-mode gets its explanation");
+        assertTrue(result.explained().contains("match-mode"));
         assertTrue(text.contains("groups:\n  stuff:\n    - DIRT\n"), "the owner's groups stay");
         YamlConfiguration config = yaml(text);
         assertEquals("any", config.getString("match-mode"));

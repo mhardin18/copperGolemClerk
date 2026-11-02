@@ -8,20 +8,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Adds settings a newer version brought to an older config.yml, as text, so the server
- * owner's values, comments and layout stay exactly as they were. Each added setting comes
- * with the comment that explains it in the config.yml shipped in the jar, and goes in the
- * same place as there (after the setting before it).
+ * Brings an older config.yml up to date, as text, so the server owner's values and layout
+ * stay exactly as they were:
+ * - settings a newer version brought are added, each with the comment that explains it in
+ *   the config.yml shipped in the jar, in the same place as there (after the setting before it);
+ * - the comment right above each setting the file already has is replaced with the shipped
+ *   one when it differs (an older explanation, or none), so every setting is explained as
+ *   this version works. The value lines are never touched, nor a note at the end of a line.
  *
- * Only top-level settings are looked at: one the file has is never touched, even if its
- * default or its explanation changed since (the owner's value wins).
+ * Only top-level settings are looked at; nested lines (the groups) are left as they are.
  */
 final class ConfigUpgrade {
 
     private static final Pattern KEY = Pattern.compile("^([A-Za-z0-9][A-Za-z0-9_-]*):");
 
-    /** The new text and the settings added to it (empty if nothing was missing). */
-    record Result(String text, List<String> added) {
+    /** The new text, the settings added to it, and the settings whose explanation was brought up to date. */
+    record Result(String text, List<String> added, List<String> explained) {
+        boolean changed() {
+            return !added.isEmpty() || !explained.isEmpty();
+        }
     }
 
     /** One top-level setting of the shipped config: its comment lines and its lines (key plus anything nested). */
@@ -58,11 +63,40 @@ final class ConfigUpgrade {
             }
             previous = setting.key();
         }
-        if (added.isEmpty()) {
-            return new Result(current, added);
+        List<String> explained = new ArrayList<>();
+        for (Setting setting : settings) {
+            if (!added.contains(setting.key()) && !setting.comment().isEmpty() && explain(lines, setting)) {
+                explained.add(setting.key());
+            }
+        }
+        if (added.isEmpty() && explained.isEmpty()) {
+            return new Result(current, added, explained);
         }
         String text = String.join("\n", lines) + (endsWithNewline ? "\n" : "");
-        return new Result(text, added);
+        return new Result(text, added, explained);
+    }
+
+    /** Put the shipped comment right above a setting the file has, if what's there differs. True if it changed. */
+    private static boolean explain(List<String> lines, Setting setting) {
+        int line = lineOf(lines, setting.key());
+        if (line < 0) {
+            return false;
+        }
+        int start = line;
+        while (start > 0 && lines.get(start - 1).startsWith("#")) {
+            start--;
+        }
+        List<String> now = lines.subList(start, line);
+        if (now.equals(setting.comment())) {
+            return false;
+        }
+        List<String> block = new ArrayList<>(setting.comment());
+        if (now.isEmpty() && start > 0 && !lines.get(start - 1).isBlank()) {
+            block.add(0, ""); // a blank line before a commented setting, as in the shipped file
+        }
+        now.clear();
+        lines.addAll(start, block);
+        return true;
     }
 
     /** The top-level keys a config's lines set. */

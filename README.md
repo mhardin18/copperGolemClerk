@@ -90,10 +90,13 @@ defaults work as-is: about 50 groups that cover nearly every survival item. Afte
 the file, run `/cgc reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
-kept, and any settings new in that version are added to it at startup, each with the
-comment that explains it, in the same place as in a fresh config. Settings already in
-your file are never changed. The old file is saved as `config-before-<version>.yml`, and the
-console lists what was added. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
+kept and brought up to date at startup: settings new in that version are added, each with
+the comment that explains it, in the same place as in a fresh config, and the comment above
+every other setting is replaced with the new version's explanation. Your values are never
+changed, and a note at the end of a setting's line (`carry-amount: 32  # our farm`) stays;
+a comment on its own line above a setting is replaced. The old file is saved as
+`config-before-<version>.yml`, and the console lists what was added and which explanations
+changed. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
 you don't want to keep the config).
 
 ### Upgrading from SmartCopperGolems
@@ -736,7 +739,8 @@ what's missing:
 
 1. A line in `src/main/resources/config.yml`, with its own comment right above it: what it
    does, its range and default, and what raising or lowering it does. Servers that upgrade
-   get the setting added to their `config.yml` from there, comment included.
+   get the setting added to their `config.yml` from there, comment included, and a changed
+   comment replaces the old one above that setting in their file.
 2. A row in the [settings reference](#settings-reference) in this README, and a mention in
    the section that describes the feature.
 3. A line in `CHANGELOG.md` under the version that adds it, naming it in backticks.
