@@ -203,6 +203,23 @@ def _(c):
     return lambda: [(sorted(logs_in(c)) == [0, 0, 16], f"logs in the furnaces: {logs_in(c)} (want one with 16)"), no_errors(c)]
 
 
+@scenario("supply-one-golem-per-load", "furnace-trips", 150, "Three idle golems, one empty [logs] furnace, 32 logs in the supply: two loads of 16 go in, and only two trips to the supply are started (no golem walks there for nothing).")
+def _(c):
+    supply(c, items=[("oak_log", 16), ("oak_log", 16)])
+    furnace(c, "furnace", 8, 10, label="[logs]")
+    for dz in (4, 10, 16):
+        c.golem(3, dz)
+    t = Trigger()
+
+    def check():
+        trips = [l for l in c.log_lines() if "(SUPPLY_TAKE)" in l and c.in_cell(l)]
+        t.fire_when(lambda: c.count("furnace", "oak_log") == 32, lambda: None)
+        return [(t.at is not None and t.since() > 10, "furnace got 32 logs, then 10s more"),
+                (len(trips) == 2, f"{len(trips)} trips to the supply started (want 2)"),
+                expect(c, "supply", "oak_log", 0), no_errors(c)]
+    return check
+
+
 @scenario("refill-at-16-default", "furnace-trips", 90, "A [logs] furnace with 16 logs waiting (furnace-refill-below 16): golems top it up.")
 def _(c):
     supply(c, items=[("oak_log", 16)])
@@ -272,8 +289,7 @@ class Sampler(threading.Thread):
                 f"seconds not burning: {self.unlit}; over {self.samples} samples")
 
 
-@scenario("smelter-replica", "furnace-trips", SMELTER_SECONDS + 60, "Manual: a copy of the survival smelter (2 furnaces on hoppers into an [Overflow] double chest, a third without a hopper, [Furnace Supply] and [Fuel] double chests, 2 golems), measured for 6 minutes.", manual=True)
-def _(c):
+def smelter(c, name, golems=2, furnaces=("furnaceW", "furnaceE", "furnace3")):
     # Row along x at dz 4, like survival's z -8001 row (x -1361..-1354 -> dx 2..9).
     c.double_chest("supply", 3, 4, [("raw_copper", 64)] * 4 + [("raw_copper", 47), ("raw_gold", 3), ("raw_iron", 11)])
     c.sign(3, 4, "[Furnace Supply]")
@@ -281,18 +297,20 @@ def _(c):
     furnace(c, "furnaceW", 4, 4, dy=1, label="[*]")
     c.double_chest("overflow", 6, 4)
     c.sign(6, 4, "[Overflow]")
-    hopper(c, "hopperE", 7, 4, "west", dy=0)
-    furnace(c, "furnaceE", 7, 4, dy=1, label="[*]")
+    if "furnaceE" in furnaces:
+        hopper(c, "hopperE", 7, 4, "west", dy=0)
+        furnace(c, "furnaceE", 7, 4, dy=1, label="[*]")
     c.double_chest("fuel", 9, 4, [("charcoal", 64)] * 3 + [("charcoal", 35)])
     c.sign(9, 4, "[Fuel]")
     # The third furnace (-1353,70,-8011): no hopper, 10 blocks in.
-    furnace(c, "furnace3", 10, 14, label="[*]")
+    if "furnace3" in furnaces:
+        furnace(c, "furnace3", 10, 14, label="[*]")
     c.chest("copper", 10, 12, block="waxed_copper_chest")
     c.chest("ingots", 14, 14, [("copper_ingot", 1)])
     c.sign(14, 14, "[ingots and gems]")
-    c.golem(6, 9)
-    c.golem(8, 9)
-    sampler = Sampler(c, {n: c.chests[n][0] for n in ("furnaceW", "furnaceE", "furnace3")})
+    for i in range(golems):
+        c.golem(6 + 2 * i, 9)
+    sampler = Sampler(c, {n: c.chests[n][0] for n in furnaces})
     sampler.start()
 
     def check():
@@ -300,8 +318,23 @@ def _(c):
         if done:
             sampler.stop = True
             stray = c.count("overflow", "charcoal")
-            print(f"  smelter-replica: {sampler.report()}; charcoal in [Overflow]: {stray}; "
+            print(f"  {name}: {sampler.report()}; charcoal in [Overflow]: {stray}; "
                   f"raw copper left in supply: {c.count('supply', 'raw_copper')}; "
                   f"copper ingots in the ingot chest: {c.count('ingots', 'copper_ingot') - 1}", flush=True)
         return [(done, f"measured for {SMELTER_SECONDS}s"), no_errors(c)]
     return check
+
+
+@scenario("smelter-replica", "furnace-trips", SMELTER_SECONDS + 60, "Manual: a copy of the survival smelter (2 furnaces on hoppers into an [Overflow] double chest, a third without a hopper, [Furnace Supply] and [Fuel] double chests, 2 golems), measured for 6 minutes.", manual=True)
+def _(c):
+    return smelter(c, "smelter-replica")
+
+
+@scenario("smelter-replica-3-golems", "furnace-trips", SMELTER_SECONDS + 60, "Manual: the same smelter with 3 golems, measured for 6 minutes.", manual=True)
+def _(c):
+    return smelter(c, "smelter-replica-3-golems", golems=3)
+
+
+@scenario("smelter-replica-1-furnace", "furnace-trips", SMELTER_SECONDS + 60, "Manual: the same smelter with only the west furnace and 3 golems, measured for 6 minutes.", manual=True)
+def _(c):
+    return smelter(c, "smelter-replica-1-furnace", golems=3, furnaces=("furnaceW",))

@@ -66,7 +66,8 @@ final class FurnaceFeeder {
     /**
      * @param target  where the golem is going now (furnace, supply or fuel container, cauldron)
      * @param furnace for fuel jobs: the furnace the fuel is for; else null
-     * @param stops   for FEED: the furnaces still to visit, the current one first
+     * @param stops   for FEED: the furnaces still to visit, the current one first; for SUPPLY_TAKE: the
+     *                furnaces the load is meant for (claimed, so other golems leave them alone)
      */
     private record Job(Kind kind, UUID world, HomeFinder.Pos target, HomeFinder.Pos furnace, Material type,
                        Location walk, long startedMillis, List<HomeFinder.Pos> stops) {
@@ -281,7 +282,7 @@ final class FurnaceFeeder {
 
     /**
      * The labelled furnaces in range that take this item now and that no other golem is already
-     * bringing a load to. A load is split so each furnace gets at least furnace-split-min items:
+     * fetching or bringing a load for. A load is split so each furnace gets at least furnace-split-min items:
      * with more furnaces than that allows, the emptiest ones get it. Nearest first.
      */
     List<HomeFinder.Pos> feedStops(CopperGolem golem, ItemStack item, long now) {
@@ -295,7 +296,7 @@ final class FurnaceFeeder {
                 HomeFinder.Pos pos = HomeFinder.Pos.of(state.getBlock());
                 if (labelsOf(inventory).accepts(type) && canSmelt(state.getType(), type)
                         && roomFor(waiting, item) && (isEmpty(waiting) || waiting.getAmount() <= plugin.furnaceRefillBelow())
-                        && !takenByOther(golem.getUniqueId(), pos, Kind.FEED, Kind.FEED_WAIT)) {
+                        && !takenByOther(golem.getUniqueId(), pos, Kind.SUPPLY_TAKE, Kind.FEED, Kind.FEED_WAIT)) {
                     stops.add(pos);
                     waitingIn.put(pos, isEmpty(waiting) ? 0 : waiting.getAmount());
                 }
@@ -315,7 +316,8 @@ final class FurnaceFeeder {
 
     /**
      * True if another golem is on one of these jobs at this furnace (for a fuel job, fuel for
-     * it; for a load, the furnace is one of its stops), so this golem leaves it to them.
+     * it; for a load, or a trip to the supply for one, the furnace is one of its stops), so this
+     * golem leaves it to them.
      */
     private boolean takenByOther(UUID me, HomeFinder.Pos furnace, Kind... kinds) {
         for (Map.Entry<UUID, Job> e : jobs.entrySet()) {
@@ -535,7 +537,7 @@ final class FurnaceFeeder {
 
     /** Fetch something from a [Furnace Supply] container that a labelled furnace in range takes. True if the golem set off. */
     private boolean startSupply(CopperGolem golem, long now) {
-        Map<Material, Boolean> wanted = new EnumMap<>(Material.class);
+        Map<Material, List<HomeFinder.Pos>> wanted = new EnumMap<>(Material.class);
         for (BlockState state : HomeFinder.containersInRange(golem, t -> !isFurnace(t) && !HopperLines.isHopper(t))) {
             if (!(state instanceof Container container) || HomeFinder.isLocked(state)
                     || gaveUpOn(golem.getUniqueId(), HomeFinder.Pos.of(state.getBlock()), now)) {
@@ -551,8 +553,13 @@ final class FurnaceFeeder {
                         || (Returns.isCopperChest(state.getType()) && !returns.mayTake(inventory, s.getType()))) {
                     continue;
                 }
-                boolean wants = wanted.computeIfAbsent(s.getType(), t -> !feedStops(golem, s, now).isEmpty());
-                if (wants && start(golem, Kind.SUPPLY_TAKE, state.getBlock(), null, s.getType(), null, now)) {
+                // The furnaces a load would go to; the job claims them, so other golems don't set off for them too.
+                List<HomeFinder.Pos> stops = wanted.computeIfAbsent(s.getType(), t -> {
+                    ItemStack load = s.clone();
+                    load.setAmount(GolemCarry.amountFor(t, plugin.carryAmount()));
+                    return feedStops(golem, load, now);
+                });
+                if (!stops.isEmpty() && start(golem, Kind.SUPPLY_TAKE, state.getBlock(), null, s.getType(), stops, now)) {
                     return true;
                 }
             }
