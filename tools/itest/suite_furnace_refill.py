@@ -8,7 +8,7 @@ from suite_furnace_edge import no_errors, logged
 from suite_options import set_options
 
 
-def room(c, input=None, golem_at=(4, 4), supply_at=(19, 19)):
+def room(c, input=None, golem_at=(4, 4), supply_at=(16, 17)):
     # The supply is far from the furnace, so the 3-second check catches the golem carrying (the "fills up meanwhile" scenarios).
     supply(c, dx=supply_at[0], dz=supply_at[1], items=[("oak_log", 16)])
     furnace(c, "furnace", 8, 10, input=input, label="[logs]")
