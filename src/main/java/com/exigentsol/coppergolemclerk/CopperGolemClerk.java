@@ -202,8 +202,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             String text = crlf ? result.text().replace("\n", "\r\n") : result.text();
             java.nio.file.Files.writeString(config.toPath(), text);
             if (!result.added().isEmpty()) {
-                getLogger().info("Added " + result.added().size() + " new setting" + (result.added().size() == 1 ? "" : "s")
-                        + " to config.yml, with their defaults and an explanation of each: " + String.join(", ", result.added()) + ".");
+                boolean one = result.added().size() == 1;
+                getLogger().info("Added " + result.added().size() + " new setting" + (one ? "" : "s") + " to config.yml, with "
+                        + (one ? "its default and an explanation" : "their defaults and an explanation of each") + ": "
+                        + String.join(", ", result.added()) + ".");
             }
             if (!result.explained().isEmpty()) {
                 getLogger().info("Updated the explanation above " + result.explained().size() + " setting"
