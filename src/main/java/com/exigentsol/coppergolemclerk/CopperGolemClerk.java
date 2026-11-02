@@ -52,6 +52,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile int furnaceWaitSeconds = 20;
     private volatile int furnaceTakeOutAt = 8;
     private volatile int furnaceFuelAhead = 16;
+    private volatile int furnaceLavaMinItems = 100;
     private volatile int furnaceSplitMin = 8;
     private volatile long homelessRetryMillis;
     private SortListener listener;
@@ -192,6 +193,12 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             if (!result.changed()) {
                 return;
             }
+            if (!java.nio.file.Files.isWritable(config.toPath())) {
+                getLogger().warning("config.yml can't be written (check its permissions), so it wasn't brought up to date: "
+                        + (result.added().isEmpty() ? "" : "new settings " + String.join(", ", result.added())
+                        + " use their defaults; ") + "see the config.yml in the jar for what each setting does.");
+                return;
+            }
             String version = getPluginMeta().getVersion();
             File backup = new File(getDataFolder(), "config-before-" + version + ".yml");
             if (backup.exists()) {
@@ -201,8 +208,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             String text = crlf ? result.text().replace("\n", "\r\n") : result.text();
             java.nio.file.Files.writeString(config.toPath(), text);
             if (!result.added().isEmpty()) {
-                getLogger().info("Added " + result.added().size() + " new setting" + (result.added().size() == 1 ? "" : "s")
-                        + " to config.yml, with their defaults and an explanation of each: " + String.join(", ", result.added()) + ".");
+                boolean one = result.added().size() == 1;
+                getLogger().info("Added " + result.added().size() + " new setting" + (one ? "" : "s") + " to config.yml, with "
+                        + (one ? "its default and an explanation" : "their defaults and an explanation of each") + ": "
+                        + String.join(", ", result.added()) + ".");
             }
             if (!result.explained().isEmpty()) {
                 getLogger().info("Updated the explanation above " + result.explained().size() + " setting"
@@ -211,8 +220,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             }
             getLogger().info("Your settings' values are unchanged; the old file is " + backup.getName() + ".");
         } catch (IOException e) {
-            getLogger().warning("Couldn't add new settings to config.yml (" + e.getMessage()
-                    + "); their defaults apply. See the config.yml in the jar for what they do.");
+            getLogger().warning("Couldn't bring config.yml up to date (" + e.getClass().getSimpleName() + ": " + e.getMessage()
+                    + "); new settings use their defaults. See the config.yml in the jar for what they do.");
         }
     }
 
@@ -338,6 +347,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         furnaceWaitSeconds = rangeSetting(config, "furnace-wait-seconds", 20, 0, 300);
         furnaceTakeOutAt = rangeSetting(config, "furnace-take-out-at", 8, 1, 64);
         furnaceFuelAhead = rangeSetting(config, "furnace-fuel-ahead", 16, 0, 64);
+        furnaceLavaMinItems = rangeSetting(config, "furnace-lava-min-items", 100, 0, 1000);
         furnaceSplitMin = rangeSetting(config, "furnace-split-min", 8, 1, 64);
         if (listener != null) {
             listener.furnaces().clear();
@@ -481,6 +491,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** furnace-fuel-ahead: fuel golems bring also covers this many more items than are waiting. */
     int furnaceFuelAhead() {
         return furnaceFuelAhead;
+    }
+
+    /** furnace-lava-min-items: lava buckets go in only for a backlog of this many items or more (if another fuel is there). */
+    int furnaceLavaMinItems() {
+        return furnaceLavaMinItems;
     }
 
     /** furnace-split-min: each furnace a load is split between gets at least this many items. */

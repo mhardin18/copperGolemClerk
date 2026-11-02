@@ -20,6 +20,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.block.Furnace;
+import org.bukkit.block.data.type.Speleothem;
 import org.bukkit.entity.CopperGolem;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.BlastingRecipe;
@@ -57,11 +58,15 @@ import org.bukkit.inventory.SmokingRecipe;
  * (furnace-trusted-claims) in a claim where that claim's owner has container trust.
  *
  * Golems walk to a spot beside the block (Paper's pathfinder) and the plugin moves the items. A
- * golem that can't get there within 30 seconds gives up on that block for a minute.
+ * golem that can't get there within 30 seconds gives up on that block for a minute; one that
+ * finds no path to it at all tries again after 10 seconds.
  */
 final class FurnaceFeeder {
 
-    enum Kind { FEED, FEED_WAIT, EMPTY, FUEL_TAKE, FUEL_PUT, SUPPLY_TAKE, SUPPLY_RETURN, BUCKET_TAKE, BUCKET_FILL, FUEL_STORE }
+    enum Kind { FEED, FEED_WAIT, EMPTY, FUEL_TAKE, FUEL_PUT, SUPPLY_TAKE, SUPPLY_RETURN, BUCKET_TAKE, BUCKET_FETCH, BUCKET_FILL, FUEL_STORE }
+
+    /** Where an empty bucket a golem holds goes next. */
+    enum BucketPlan { FILL, STORE, SORT }
 
     /**
      * @param target  where the golem is going now (furnace, supply or fuel container, cauldron)
@@ -75,8 +80,19 @@ final class FurnaceFeeder {
 
     private static final long GIVE_UP_AFTER_MILLIS = 30_000;
     private static final long SKIP_AFTER_GIVING_UP_MILLIS = 60_000;
+    /**
+     * No walkable spot next to a block right now (often just after a golem spawns, teleports or
+     * lands): try it again soon. Skipping it a full minute left furnaces idle in tests.
+     */
+    private static final long SKIP_AFTER_NO_PATH_MILLIS = 10_000;
     private static final long OFFER_COOLDOWN_MILLIS = 5_000;
     private static final double REACH = 2.5;
+    /**
+     * Most furnaces one load is split between. A golem's load claims its furnaces until it's
+     * delivered (other golems leave them alone), so a big load spread over many furnaces kept the
+     * other golems waiting: with carry-amount 64, 20% fewer items cooked in tests.
+     */
+    static final int MAX_STOPS = 2;
     /** How far a golem looks for a lava cauldron to refill a bucket (sideways; 4 up and down). */
     private static final int CAULDRON_RANGE = 16;
 
@@ -124,6 +140,7 @@ final class FurnaceFeeder {
             case SUPPLY_TAKE -> "fetching " + item + " to cook";
             case SUPPLY_RETURN -> "putting " + item + " back in the furnace supply";
             case BUCKET_TAKE -> "taking an empty bucket out of a furnace";
+            case BUCKET_FETCH -> "fetching an empty bucket to fill with lava";
             case BUCKET_FILL -> "filling a bucket at a lava cauldron";
             case FUEL_STORE -> "putting " + item + " back with the fuel";
         };
@@ -282,8 +299,9 @@ final class FurnaceFeeder {
 
     /**
      * The labelled furnaces in range that take this item now and that no other golem is already
-     * fetching or bringing a load for. A load is split so each furnace gets at least furnace-split-min items:
-     * with more furnaces than that allows, the emptiest ones get it. Nearest first.
+     * fetching or bringing a load for. A load goes to at most MAX_STOPS furnaces, each getting at
+     * least furnace-split-min items: with more furnaces than that allows, the emptiest ones get it.
+     * Nearest first.
      */
     List<HomeFinder.Pos> feedStops(CopperGolem golem, ItemStack item, long now) {
         List<HomeFinder.Pos> stops = new ArrayList<>();
@@ -303,7 +321,7 @@ final class FurnaceFeeder {
             }
         }
         // containersInRange is nearest first already.
-        int max = Math.max(1, item.getAmount() / plugin.furnaceSplitMin());
+        int max = Math.clamp(item.getAmount() / plugin.furnaceSplitMin(), 1, MAX_STOPS);
         if (stops.size() <= max) {
             return stops;
         }
@@ -445,15 +463,26 @@ final class FurnaceFeeder {
         // 2. Take out empty buckets (lava bucket fuel): they block the fuel slot.
         for (Furnace furnace : furnaces) {
             ItemStack fuel = furnace.getInventory().getFuel();
-            if (!isEmpty(fuel) && fuel.getType() == Material.BUCKET && (lavaCauldron(golem) != null || hasHome(golem, fuel))
+            if (!isEmpty(fuel) && fuel.getType() == Material.BUCKET
+                    && (lavaCauldron(golem) != null || hasHome(golem, fuel)
+                        || (dripCauldron(golem) != null && fuelStore(golem, fuel) != null))
                     && !takenByOther(id, HomeFinder.Pos.of(furnace.getBlock()), Kind.BUCKET_TAKE)
                     && start(golem, Kind.BUCKET_TAKE, furnace.getBlock(), null, Material.BUCKET, null, now)) {
                 return;
             }
         }
+        // 2b. An empty bucket waiting in a [Fuel] container and a lava cauldron full again: go and fill it.
+        Block bucketSource = fuelSource(golem, golem.getLocation(), golem.isInsideVehicle(), Material.BUCKET);
+        if (bucketSource != null) {
+            Block full = lavaCauldron(golem);
+            if (full != null && claimAllows(golem, full)
+                    && !takenByOther(id, HomeFinder.Pos.of(full), Kind.BUCKET_FETCH, Kind.BUCKET_FILL)
+                    && start(golem, Kind.BUCKET_FETCH, bucketSource, HomeFinder.Pos.of(full), Material.BUCKET, null, now)) {
+                return;
+            }
+        }
         // 3. Fuel.
-        FuelPick pick = null;
-        boolean looked = false;
+        Map<Material, Block> sources = null;
         for (Furnace furnace : furnaces) {
             FurnaceInventory inventory = furnace.getInventory();
             ItemStack fuel = inventory.getFuel();
@@ -463,13 +492,13 @@ final class FurnaceFeeder {
             if (!isEmpty(fuel) && !plugin.furnaceFuel().contains(fuel.getType())) {
                 continue; // someone put in a fuel that isn't in furnace-fuel (or an empty bucket): leave it
             }
-            if (!looked) {
-                pick = bestFuel(golem); // the same for every furnace in range
-                looked = true;
+            if (sources == null) {
+                sources = fuelSources(golem, golem.getLocation(), golem.isInsideVehicle()); // the same for every furnace
             }
-            if (pick == null) {
+            if (sources.isEmpty()) {
                 break; // no [Fuel] container in range has any furnace-fuel
             }
+            FuelPick pick = pickFor(sources, () -> backlogOf(furnace, golem.getLocation(), golem.isInsideVehicle(), golem));
             if (!isEmpty(fuel) && fuel.getType() != pick.type()) {
                 continue; // burning a fuel lower on the list: let it run out, then switch
             }
@@ -510,7 +539,10 @@ final class FurnaceFeeder {
         return false;
     }
 
-    /** True if enough is ready to be worth a trip (furnace-take-out-at), or the furnace won't make more for now. */
+    /**
+     * True if enough is ready to be worth a trip (furnace-take-out-at), or the furnace won't make
+     * more for now: nothing left to cook, or not burning (out of fuel, or its output slot is blocked).
+     */
     private boolean worthTakingOut(Furnace furnace, ItemStack result) {
         if (result.getAmount() >= Math.min(plugin.furnaceTakeOutAt(), result.getMaxStackSize())) {
             return true;
@@ -519,9 +551,13 @@ final class FurnaceFeeder {
         if (isEmpty(inventory.getSmelting())) {
             return true; // nothing left to cook
         }
-        ItemStack fuel = inventory.getFuel();
-        boolean fuelled = !isEmpty(fuel) && fuel.getType() != Material.BUCKET;
-        return furnace.getBurnTime() <= 0 && !fuelled; // out of fuel: nothing more until it gets some
+        if (furnace.getBurnTime() > 0) {
+            return false; // still cooking
+        }
+        // Not burning with something to cook: out of fuel (nothing more until it gets some), or it has
+        // fuel and still won't light because the output slot holds something it can't add to (an item a
+        // player left there, or a different result): either way, take it out.
+        return true;
     }
 
     /**
@@ -571,25 +607,138 @@ final class FurnaceFeeder {
     record FuelPick(Material type, Block source) {
     }
 
-    private FuelPick bestFuel(CopperGolem golem) {
+    /** The furnace-fuel items some [Fuel] container around this spot holds, in furnace-fuel order, each with the nearest such container. */
+    private Map<Material, Block> fuelSources(CopperGolem golem, Location at, boolean riding) {
+        Map<Material, Block> sources = new java.util.LinkedHashMap<>();
         for (Material type : plugin.furnaceFuel()) {
-            Block source = fuelSource(golem, golem.getLocation(), golem.isInsideVehicle(), type);
+            Block source = fuelSource(golem, at, riding, type);
             if (source != null) {
-                return new FuelPick(type, source);
+                sources.put(type, source);
             }
         }
-        return null;
+        return sources;
     }
 
-    /** The fuel highest on furnace-fuel that a [Fuel] container around this spot holds (for /cgc check). */
-    FuelPick bestFuelNear(Location at, boolean riding) {
-        for (Material type : plugin.furnaceFuel()) {
-            Block source = fuelSource(null, at, riding, type);
-            if (source != null) {
-                return new FuelPick(type, source);
+    /** The fuel to bring; the backlog is only worked out when it matters (lava up next and another fuel there). */
+    private FuelPick pickFor(Map<Material, Block> sources, java.util.function.IntSupplier backlog) {
+        List<Material> available = List.copyOf(sources.keySet());
+        int min = plugin.furnaceLavaMinItems();
+        Material type = chooseFuel(available, min, min); // as if the backlog were big enough
+        if (type == Material.LAVA_BUCKET && chooseFuel(available, 0, min) != Material.LAVA_BUCKET) {
+            type = chooseFuel(available, backlog.getAsInt(), min);
+        }
+        return type == null ? null : new FuelPick(type, sources.get(type));
+    }
+
+    /**
+     * The fuel for a furnace with this backlog (see backlog): the first available one in
+     * furnace-fuel order, except that lava buckets are skipped while the backlog is under
+     * lavaMin and another fuel is available (a lit furnace burns its fuel out even with
+     * nothing left to cook, and one bucket lasts 100 items). Null if none is available.
+     */
+    static Material chooseFuel(List<Material> available, int backlog, int lavaMin) {
+        Material lava = null;
+        for (Material type : available) {
+            if (type == Material.LAVA_BUCKET && backlog < lavaMin) {
+                lava = lava == null ? type : lava; // only if nothing else is there
+                continue;
+            }
+            return type;
+        }
+        return lava;
+    }
+
+    /** The fuel golems would bring this furnace, from around this spot (for /cgc check). */
+    FuelPick bestFuelNear(Furnace furnace, Location at, boolean riding) {
+        return pickFor(fuelSources(null, at, riding), () -> backlogOf(furnace, at, riding, null));
+    }
+
+    /** True if lava buckets would be skipped for this furnace because its backlog is under furnace-lava-min-items. */
+    boolean lavaSkipped(Furnace furnace, Location at, boolean riding) {
+        Map<Material, Block> sources = fuelSources(null, at, riding);
+        FuelPick pick = pickFor(sources, () -> backlogOf(furnace, at, riding, null));
+        return pick != null && pick.type() != Material.LAVA_BUCKET && sources.containsKey(Material.LAVA_BUCKET)
+                && List.copyOf(sources.keySet()).indexOf(Material.LAVA_BUCKET) < List.copyOf(sources.keySet()).indexOf(pick.type());
+    }
+
+    /**
+     * How many items a furnace will cook from here on, as far as golems can tell: what's
+     * waiting in it, what other golems are bringing it, and its share of the items in
+     * [Furnace Supply] containers in range that it takes (shared evenly with the other
+     * labelled furnaces in range that take them). The golem that asks (null for /cgc check)
+     * isn't counted as bringing anything.
+     */
+    int backlogOf(Furnace furnace, Location at, boolean riding, Entity asking) {
+        ItemStack waiting = furnace.getInventory().getSmelting();
+        int inTransit = 0;
+        HomeFinder.Pos pos = HomeFinder.Pos.of(furnace.getBlock());
+        for (Map.Entry<UUID, Job> e : jobs.entrySet()) {
+            Job job = e.getValue();
+            if ((asking != null && e.getKey().equals(asking.getUniqueId())) || job.stops() == null || !job.stops().contains(pos)) {
+                continue;
+            }
+            if (job.kind() == Kind.FEED || job.kind() == Kind.FEED_WAIT) {
+                int held = plugin.getServer().getEntity(e.getKey()) instanceof CopperGolem g
+                        ? g.getEquipment().getItemInMainHand().getAmount() : 0;
+                inTransit += held / job.stops().size();
+            } else if (job.kind() == Kind.SUPPLY_TAKE) {
+                inTransit += GolemCarry.amountFor(job.type(), plugin.carryAmount()) / job.stops().size();
             }
         }
-        return null;
+        Map<Material, Integer> supply = new EnumMap<>(Material.class);
+        List<Furnace> takers = new ArrayList<>();
+        for (BlockState state : HomeFinder.containersInRange(at, riding, t -> !HopperLines.isHopper(t))) {
+            if (state instanceof Furnace f) {
+                ChestLabels.Labels labels = labelsOf(f.getInventory());
+                if (labels.hasItemRules() && !labels.noGolems() && !HomeFinder.isLocked(f)) {
+                    takers.add(f);
+                }
+                continue;
+            }
+            if (!(state instanceof Container container) || HomeFinder.isLocked(state)) {
+                continue;
+            }
+            Inventory inventory = container.getInventory();
+            ChestLabels.Labels labels = labelsOf(inventory);
+            if (!labels.supply() || labels.noGolems() || (asking != null && !claimAllows(asking, state.getBlock()))) {
+                continue;
+            }
+            for (ItemStack s : inventory.getStorageContents()) {
+                if (s != null && !s.isEmpty()) {
+                    supply.merge(s.getType(), s.getAmount(), Integer::sum);
+                }
+            }
+        }
+        Map<Material, Integer> takerCount = new EnumMap<>(Material.class);
+        for (Material type : supply.keySet()) {
+            int n = 0;
+            for (Furnace f : takers) {
+                if (takes(f, type)) {
+                    n++;
+                }
+            }
+            takerCount.put(type, n);
+        }
+        return backlog(isEmpty(waiting) ? 0 : waiting.getAmount(), inTransit, supply, takerCount, t -> takes(furnace, t));
+    }
+
+    private boolean takes(Furnace furnace, Material type) {
+        return labelsOf(furnace.getInventory()).accepts(type) && canSmelt(furnace.getType(), type);
+    }
+
+    /**
+     * A furnace's backlog: waiting + inTransit + for each supply item it takes, that count
+     * divided by how many furnaces in range take it (at least this one).
+     */
+    static int backlog(int waiting, int inTransit, Map<Material, Integer> supply, Map<Material, Integer> takers,
+                       java.util.function.Predicate<Material> takes) {
+        int total = waiting + inTransit;
+        for (Map.Entry<Material, Integer> e : supply.entrySet()) {
+            if (takes.test(e.getKey())) {
+                total += e.getValue() / Math.max(1, takers.getOrDefault(e.getKey(), 1));
+            }
+        }
+        return total;
     }
 
     /** The nearest container in range with a [Fuel] sign holding this fuel (not locked or [No Golems]). */
@@ -626,6 +775,65 @@ final class FurnaceFeeder {
 
     /** The nearest lava cauldron around the golem, or null. */
     private static Block lavaCauldron(Entity golem) {
+        return nearestCauldron(golem, b -> b.getType() == Material.LAVA_CAULDRON);
+    }
+
+    /** The nearest cauldron around the golem that dripping lava fills (see isLavaDripCauldron), full or not; or null. */
+    private static Block dripCauldron(Entity golem) {
+        return nearestCauldron(golem, FurnaceFeeder::isLavaDripCauldron);
+    }
+
+    /** Whether a block lets lava drip through; a seam so unit tests (MockBukkit lacks isPassable) can stand in. */
+    static java.util.function.Predicate<Block> dripsThrough = Block::isPassable;
+
+    /** How far above a cauldron a pointed dripstone's tip can be and still drip into it (vanilla's 11). */
+    static final int DRIP_REACH = 11;
+
+    /**
+     * True if dripping lava keeps this cauldron filling: it's a cauldron (empty or holding
+     * lava) with pointed dripstone hanging above it, with only air (or other blocks you can
+     * see through, like torches) in between, within 11 blocks, and a lava source on top of
+     * the block that dripstone hangs from. That's how vanilla refills a lava cauldron.
+     */
+    static boolean isLavaDripCauldron(Block cauldron) {
+        if (cauldron.getType() != Material.CAULDRON && cauldron.getType() != Material.LAVA_CAULDRON) {
+            return false;
+        }
+        Block b = null;
+        for (int up = 1; up <= DRIP_REACH; up++) { // the tip is 1 to 11 blocks above the cauldron
+            Block above = cauldron.getRelative(0, up, 0);
+            if (above.getType() == Material.POINTED_DRIPSTONE) {
+                b = above;
+                break;
+            }
+            if (!dripsThrough.test(above)) {
+                return false;
+            }
+        }
+        if (b == null
+                || (b.getBlockData() instanceof Speleothem tip && tip.getVerticalDirection() != BlockFace.DOWN)) {
+            return false; // no dripstone, or one pointing up (a stalagmite)
+        }
+        for (int i = 0; i < DRIP_REACH && b.getType() == Material.POINTED_DRIPSTONE; i++) {
+            b = b.getRelative(BlockFace.UP);
+        }
+        // b is now the block the dripstone hangs from; the lava sits on top of it.
+        return b.getType() != Material.POINTED_DRIPSTONE && b.getRelative(BlockFace.UP).getType() == Material.LAVA;
+    }
+
+    /**
+     * Where an empty bucket goes: to a full lava cauldron to be filled; else, when dripping
+     * lava will fill a cauldron nearby and a [Fuel] container has room, into that container to
+     * wait; else it's sorted like anything else.
+     */
+    static BucketPlan bucketPlan(boolean fullCauldron, boolean dripCauldron, boolean fuelRoom) {
+        if (fullCauldron) {
+            return BucketPlan.FILL;
+        }
+        return dripCauldron && fuelRoom ? BucketPlan.STORE : BucketPlan.SORT;
+    }
+
+    private static Block nearestCauldron(Entity golem, java.util.function.Predicate<Block> wanted) {
         Block at = golem.getLocation().getBlock();
         Block best = null;
         int bestDist = Integer.MAX_VALUE;
@@ -635,7 +843,7 @@ final class FurnaceFeeder {
                     int d = dx * dx + dy * dy + dz * dz;
                     if (d < bestDist) {
                         Block b = at.getRelative(dx, dy, dz);
-                        if (b.getWorld().isChunkLoaded(b.getX() >> 4, b.getZ() >> 4) && b.getType() == Material.LAVA_CAULDRON) {
+                        if (b.getWorld().isChunkLoaded(b.getX() >> 4, b.getZ() >> 4) && wanted.test(b)) {
                             bestDist = d;
                             best = b;
                         }
@@ -660,7 +868,7 @@ final class FurnaceFeeder {
                 debugStart(golem, block);
                 return true;
             }
-            giveUp(golem, stops.get(i), now);
+            noPath(golem, block, now);
         }
         return false;
     }
@@ -671,7 +879,7 @@ final class FurnaceFeeder {
         Reach.Spot spot = spotFor(golem, walkTo);
         if (spot == null) {
             if (kind != Kind.FUEL_TAKE) {
-                giveUp(golem, HomeFinder.Pos.of(walkTo), now);
+                noPath(golem, walkTo, now);
             }
             return false; // try another source or furnace next time
         }
@@ -715,7 +923,7 @@ final class FurnaceFeeder {
         boolean holdingIt = !held.isEmpty() && held.getType() == job.type();
         boolean ok = switch (job.kind()) {
             case FEED, FEED_WAIT, FUEL_PUT, FUEL_STORE, BUCKET_FILL, SUPPLY_RETURN -> holdingIt;
-            case EMPTY, FUEL_TAKE, SUPPLY_TAKE, BUCKET_TAKE -> held.isEmpty();
+            case EMPTY, FUEL_TAKE, SUPPLY_TAKE, BUCKET_TAKE, BUCKET_FETCH -> held.isEmpty();
         };
         if (!ok) {
             golem.getPathfinder().stopPathfinding();
@@ -736,6 +944,7 @@ final class FurnaceFeeder {
                 case FUEL_TAKE -> takeFuel(golem, target, job, now);
                 case SUPPLY_TAKE -> takeSupply(golem, target, job, now);
                 case BUCKET_TAKE -> takeBucket(golem, target, now);
+                case BUCKET_FETCH -> fetchBucket(golem, target, job, now);
                 case BUCKET_FILL -> fillBucket(golem, target, now);
                 case FUEL_STORE, SUPPLY_RETURN -> {
                     store(golem, target, held);
@@ -1018,7 +1227,7 @@ final class FurnaceFeeder {
         return returnToSupply(golem, job.type(), now);
     }
 
-    /** At a furnace with an empty bucket in its fuel slot: take it, then refill it at a lava cauldron (or sort it). */
+    /** At a furnace with an empty bucket in its fuel slot: take it, then refill it, put it in [Fuel] to wait, or sort it. */
     private boolean takeBucket(CopperGolem golem, Block block, long now) {
         if (!(block.getState(false) instanceof Furnace furnace)) {
             return false;
@@ -1029,17 +1238,52 @@ final class FurnaceFeeder {
         }
         furnace.getInventory().setFuel(null);
         hand(golem, fuel.clone());
-        homes.startSearch(golem, Material.BUCKET, block); // if it isn't refilled, it's sorted like anything else
-        Block cauldron = lavaCauldron(golem);
-        return cauldron != null && claimAllows(golem, cauldron)
-                && start(golem, Kind.BUCKET_FILL, cauldron, null, Material.BUCKET, null, now);
+        homes.startSearch(golem, Material.BUCKET, block); // if it isn't refilled or stored, it's sorted like anything else
+        return refillOrStore(golem, golem.getEquipment().getItemInMainHand(), now);
+    }
+
+    /** At a [Fuel] container holding an empty bucket: take one, then fill it at the lava cauldron. */
+    private boolean fetchBucket(CopperGolem golem, Block source, Job job, long now) {
+        if (!(source.getState(false) instanceof Container container)) {
+            return false;
+        }
+        Block cauldron = blockAt(golem.getWorld(), job.furnace());
+        if (cauldron.getType() != Material.LAVA_CAULDRON) {
+            return false; // emptied meanwhile: leave the bucket where it is
+        }
+        ItemStack bucket = takeOut(container.getInventory(), Material.BUCKET, 1);
+        if (bucket == null) {
+            return false;
+        }
+        hand(golem, bucket);
+        homes.startSearch(golem, Material.BUCKET, source);
+        return start(golem, Kind.BUCKET_FILL, cauldron, null, Material.BUCKET, null, now) || refillOrStore(golem, bucket, now);
+    }
+
+    /** A golem holding an empty bucket: off to a full lava cauldron, or to a [Fuel] container to wait (bucketPlan). */
+    private boolean refillOrStore(CopperGolem golem, ItemStack bucket, long now) {
+        Block full = lavaCauldron(golem);
+        boolean canFill = full != null && claimAllows(golem, full)
+                && !takenByOther(golem.getUniqueId(), HomeFinder.Pos.of(full), Kind.BUCKET_FETCH, Kind.BUCKET_FILL);
+        if (canFill && start(golem, Kind.BUCKET_FILL, full, null, Material.BUCKET, null, now)) {
+            return true;
+        }
+        Block drip = dripCauldron(golem);
+        Block store = drip == null ? null : fuelStore(golem, bucket);
+        if (bucketPlan(false, drip != null && claimAllows(golem, drip), store != null) == BucketPlan.STORE) {
+            return start(golem, Kind.FUEL_STORE, store, null, Material.BUCKET, null, now);
+        }
+        return false; // sorted like anything else
     }
 
     /** At a lava cauldron: fill the bucket, then put it in a [Fuel] container (or sort it). */
     private boolean fillBucket(CopperGolem golem, Block cauldron, long now) {
         ItemStack held = golem.getEquipment().getItemInMainHand();
-        if (cauldron.getType() != Material.LAVA_CAULDRON || held.getAmount() != 1) {
-            return false; // emptied meanwhile: the bucket is sorted
+        if (held.getAmount() != 1) {
+            return false; // more than one: sorted like anything else
+        }
+        if (cauldron.getType() != Material.LAVA_CAULDRON) {
+            return refillOrStore(golem, held, now); // emptied meanwhile: another one, or back in [Fuel] to wait
         }
         cauldron.setType(Material.CAULDRON);
         cauldron.getWorld().playSound(cauldron.getLocation().add(0.5, 0.5, 0.5), Sound.ITEM_BUCKET_FILL_LAVA, 0.8f, 1f);
@@ -1090,6 +1334,16 @@ final class FurnaceFeeder {
         EntityEquipment equipment = golem.getEquipment();
         equipment.setItemInMainHand(item);
         equipment.setItemInMainHandDropChance(GolemCarry.GUARANTEED_DROP);
+    }
+
+    /** No walkable spot by this block right now: skip it briefly (SKIP_AFTER_NO_PATH_MILLIS). */
+    private void noPath(CopperGolem golem, Block block, long now) {
+        failed.computeIfAbsent(golem.getUniqueId(), k -> new HashMap<>())
+                .put(HomeFinder.Pos.of(block), now + SKIP_AFTER_NO_PATH_MILLIS);
+        if (plugin.debug()) {
+            plugin.getLogger().info(golem.getType() + " has no path to the " + pretty(block.getType()) + " at " + at(block)
+                    + " right now; trying again in " + SKIP_AFTER_NO_PATH_MILLIS / 1000 + "s");
+        }
     }
 
     private void giveUp(Entity golem, HomeFinder.Pos what, long now) {

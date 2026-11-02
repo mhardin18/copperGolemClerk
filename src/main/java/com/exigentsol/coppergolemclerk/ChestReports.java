@@ -105,7 +105,15 @@ final class ChestReports {
         List<String> order = plugin.furnaceFuel().stream().map(m -> m.getKey().getKey().replace('_', ' ')).toList();
         say(player, NamedTextColor.AQUA, "Fuel: only from containers with a [Fuel] sign, first available of: "
                 + (order.isEmpty() ? "(furnace-fuel is empty)" : String.join(", ", order)) + ".");
-        FurnaceFeeder.FuelPick pick = feeder.bestFuelNear(furnace.getLocation().add(0.5, 0, 0.5), false);
+        Location fuelAt = furnace.getLocation().add(0.5, 0, 0.5);
+        FurnaceFeeder.FuelPick pick = feeder.bestFuelNear(furnace, fuelAt, false);
+        int backlog = feeder.backlogOf(furnace, fuelAt, false, null);
+        say(player, NamedTextColor.AQUA, "Backlog: about " + backlog + " item" + (backlog == 1 ? "" : "s")
+                + " to cook here (waiting, on the way, and its share of the [Furnace Supply] items it takes).");
+        if (feeder.lavaSkipped(furnace, fuelAt, false)) {
+            say(player, NamedTextColor.GRAY, "Lava buckets are used only for a backlog of " + plugin.furnaceLavaMinItems()
+                    + " or more (furnace-lava-min-items); until then golems bring the next fuel on the list.");
+        }
         if (pick == null) {
             say(player, NamedTextColor.YELLOW, "No [Fuel] container in golem range holds any of those: golems won't fuel it.");
         } else {

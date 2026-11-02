@@ -127,7 +127,8 @@ def _(c):
     t = Trigger()
 
     def check():
-        t.fire_when(lambda: logged(c, "BUCKET_FILL"), lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:cauldron"))
+        t.fire_when(lambda: any("(BUCKET_FILL)" in l and c.in_cell(l) for l in c.log_lines()),
+                    lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:cauldron"))
         return [(t.at is not None, "emptied the cauldron as the golem set off for it"),
                 expect(c, "buckets", "bucket", 2), (c.total("lava_bucket") == 0, "no lava bucket was made"), no_errors(c)]
     return check
@@ -151,7 +152,7 @@ def _(c):
     return lambda: [expect(c, "supply", "raw_iron", 0), iron_conserved(c, 17), no_errors(c)]
 
 
-@scenario("furnace-edge-carry-64-three-furnaces", "furnace-edge", 180, "carry-amount: 64, 64 raw iron in the supply and three labelled blast furnaces: each gets some; none lost.", alone=True)
+@scenario("furnace-edge-carry-64-three-furnaces", "furnace-edge", 180, "carry-amount: 64, 64 raw iron in the supply and three labelled blast furnaces: the load goes to 2 of them (never more than 2); none lost.", alone=True)
 def _(c):
     set_options(c, carry_amount="64")
     supply(c, items=[("raw_iron", 64)])
@@ -163,7 +164,7 @@ def _(c):
         for i in range(3):
             if cooked(c, f"b{i}") > 0:
                 seen.add(i)
-        return [(seen == {0, 1, 2}, f"furnaces that got raw iron: {sorted(seen)} (want all 3)"),
+        return [(len(seen) == 2, f"furnaces that got raw iron: {sorted(seen)} (want 2: a load goes to at most 2)"),
                 expect(c, "supply", "raw_iron", 0), iron_conserved(c, 64), no_errors(c)]
     c.golem(4, 10)
     return check

@@ -8,8 +8,9 @@ from suite_furnace_edge import no_errors, logged
 from suite_options import set_options
 
 
-def room(c, input=None, golem_at=(4, 4)):
-    supply(c, items=[("oak_log", 16)])
+def room(c, input=None, golem_at=(4, 4), supply_at=(16, 17)):
+    # The supply is far from the furnace, so the 3-second check catches the golem carrying (the "fills up meanwhile" scenarios).
+    supply(c, dx=supply_at[0], dz=supply_at[1], items=[("oak_log", 16)])
     furnace(c, "furnace", 8, 10, input=input, label="[logs]")
     c.chest("logs", 4, 16, [("birch_log", 1)])
     c.sign(4, 16, "[logs]")
@@ -89,7 +90,8 @@ def _(c):
         if t.at is not None and "at" not in back and c.count("supply", "oak_log") == 16:
             back["at"] = t.since()
         return [(t.at is not None, "filled the furnace while the golem carried logs"),
-                ("at" in back and back["at"] < 15, f"back in the supply {back.get('at', '?')}s after (want under 15s)"),
+                # under the default 20s wait: it walked straight back (the supply is ~14 blocks away)
+                ("at" in back and back["at"] < 20, f"back in the supply {back.get('at', '?')}s after (want under 20s)"),
                 (not logged(c, "waits up to"), "the golem didn't wait"), no_errors(c)]
     return check
 

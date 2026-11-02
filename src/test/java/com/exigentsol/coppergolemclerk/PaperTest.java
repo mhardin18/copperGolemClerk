@@ -49,6 +49,7 @@ abstract class PaperTest {
         ChestLabels.holderOf = inv -> inv.getHolder();
         ChestLabels.locationOf = inv -> inv.getHolder() instanceof BlockState s ? s.getLocation() : inv.getLocation();
         GolemTraffic.passable = b -> !b.getType().isSolid();
+        FurnaceFeeder.dripsThrough = b -> !b.getType().isSolid();
         ItemFinder.hideFromOthers = d -> { };
         for (int cx = -4; cx <= 4; cx++) {
             for (int cz = -4; cz <= 4; cz++) {

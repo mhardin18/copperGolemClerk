@@ -188,11 +188,11 @@ def _(c):
                     expect(c, "supply", "oak_log", 0), no_errors(c)]
 
 
-@scenario("option-split-min-1", "furnace-trips", 120, "furnace-split-min: 1: 16 logs and three empty furnaces: all three get some.", alone=True)
+@scenario("option-split-min-1", "furnace-trips", 120, "furnace-split-min: 1: 16 logs and three empty furnaces: still only 2 get the load (8 + 8; never more than 2 furnaces per load).", alone=True)
 def _(c):
     set_options(c, furnace_split_min="1")
     three_furnaces(c)
-    return lambda: [(all(n > 0 for n in logs_in(c)) and sum(logs_in(c)) == 16, f"logs in the furnaces: {logs_in(c)} (want all three, 16 in all)"),
+    return lambda: [(sorted(logs_in(c)) == [0, 8, 8], f"logs in the furnaces: {logs_in(c)} (want two with 8, one empty)"),
                     no_errors(c)]
 
 

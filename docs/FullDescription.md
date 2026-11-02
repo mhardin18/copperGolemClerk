@@ -87,7 +87,7 @@ label lets in.
 | Sign on a chest or barrel | What it does | Spellings that work (any case) |
 | --- | --- | --- |
 | `[Furnace Supply]` | golems take items to cook from it | `[Furnace Supply]`, `[Furnace Supplies]`, `[Furnaces Supply]`, `[Furnace-Supply]`, `[Furnace_Supply]` |
-| `[Fuel]` | golems take fuel from it (charcoal, then coal, then lava buckets) | `[Fuel]`, `[Fuels]` |
+| `[Fuel]` | golems take fuel from it (charcoal, then coal, then lava buckets, which go in only when a furnace has 100 or more items to cook; empty buckets go back here to wait for a lava cauldron that dripstone refills) | `[Fuel]`, `[Fuels]` |
 
 Neither chest receives sorted items unless it also has an item label: `[Fuel] [charcoal]` or
 `[Furnace Supply] [raw iron]` on one sign.
