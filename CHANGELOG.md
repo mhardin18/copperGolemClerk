@@ -4,7 +4,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.x needs build 190 or newer. V
 
 ## 3.0.0 (in progress)
 
-A major release: golems now run your furnaces (feeding, fueling and emptying them), and your `config.yml` is kept up to date with every new setting and its explanation when you upgrade.
+A major release, "The Furnaces Are Alive": golems now run your furnaces (feeding, fueling and emptying them), and your `config.yml` is kept up to date with every new setting and its explanation when you upgrade.
 
 ### New
 - Upgrading brings your `config.yml` up to date: at startup, any setting the new version has that your file doesn't is added, with its default and the comment that explains it, in the same place as in a fresh config, and the comment above every setting you already have is replaced with the new version's explanation. Your values are never changed, and a note at the end of a setting's line stays; the old file is kept as `config-before-<version>.yml`, and the console lists what was added and which explanations changed. A `config.yml` with a YAML error is left alone, and one that can't be written gets a clear console warning (new settings then use their defaults).

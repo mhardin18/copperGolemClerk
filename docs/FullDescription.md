@@ -10,6 +10,29 @@ claims, full-chest alerts for claim owners, optional golem limits per claim, and
 every feature tunable in one config file. They never ask for a raise and never complain about the
 cobblestone.
 
+## 🔥 New in 3.0.0: The Furnaces Are Alive
+
+Your clerks have been promoted to the kitchen. Put a sign like `[raw iron]` on a furnace, smoker
+or blast furnace, and golems keep it cooking. They bring what needs cooking from your
+`[Furnace Supply]` chest and fuel from your `[Fuel]` chest. Then they carry the ingots, glass
+and steak off to wherever they belong. No hopper towers, no standing around waiting for the
+last stack of sand, and nobody burns the coal you were saving. (They don't eat the steak.
+We checked.)
+
+- **Fed on time:** a furnace gets topped up when it runs low, a full load at a time, so it
+  doesn't sit idle while you're off mining.
+- **Fuel with common sense:** charcoal first, then coal. Lava buckets go in only when there's a
+  big pile to cook, so a bucket that lasts 100 items isn't burnt on eight ingots.
+- **Lava on tap:** put a cauldron under pointed dripstone with lava above it, and golems refill
+  your empty buckets as it fills.
+- **Emptied for you:** finished items go into your storage, or a hopper under the furnace takes
+  them, if you'd rather.
+- **Only what you label:** unlabelled furnaces are left alone, and nothing from the rest of your
+  storage wanders into a fire.
+
+Also new: when you upgrade, any new settings appear in your `config.yml` with an explanation of
+each. Details are under "Run your furnaces" below.
+
 I'm always open to new ideas for this plugin. Open an enhancement request on GitHub:
 https://github.com/mhardin18/copperGolemClerk/issues
 
