@@ -121,6 +121,22 @@ fetch-from-overflow: true
 # a different item). Higher empties overflow faster but can crowd the chest.
 fetchers-per-overflow-chest: 2
 
+# For an [Overflow] chest that a hopper fills (a hopper above it facing down, or beside
+# it facing into it, like a smelter's output chest): golems fetch an item from it only
+# once this many of it are there (1 to 64), so they don't walk over for every ingot the
+# hopper drops in. Items that stack to less than this (ender pearls, tools) are fetched
+# once a full carry of them is there. Overflow chests without a hopper feeding them are
+# emptied right away as usual. 1 = no waiting (a trip for every item, as before 2.7.0);
+# carry-amount (16) = only full trips; anything above carry-amount works like carry-amount.
+# See also overflow-fetch-wait-seconds.
+overflow-fetch-min: 8
+# For an [Overflow] chest that a hopper fills: golems also fetch an item once it has waited
+# there this many seconds (0 to 3600), even with fewer than overflow-fetch-min of it, so
+# the last few items of a smelting run still get sorted. Each fetch starts the wait again
+# for what's left. 0 = no waiting at all (same as overflow-fetch-min: 1). Higher means
+# items can sit in the overflow chest longer before they're put away.
+overflow-fetch-wait-seconds: 120
+
 # How many items a golem carries per trip (1 to 64; vanilla is 16). Right after a golem
 # takes items out of a copper chest, it takes more of the same from that chest (or puts
 # some back, below 16). Items that stack to 16 or 1 (ender pearls, tools) are carried

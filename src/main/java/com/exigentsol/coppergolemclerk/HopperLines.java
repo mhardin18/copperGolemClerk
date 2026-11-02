@@ -71,6 +71,25 @@ final class HopperLines {
     }
 
     /**
+     * True if a hopper pushes items into the chest (either half): one above it facing down, or
+     * one beside it facing into it. Such a chest fills a little at a time (a smelter's output).
+     */
+    static boolean fedByHopper(World world, Set<HomeFinder.Pos> halves) {
+        BlockFace[] sides = {BlockFace.UP, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
+        for (HomeFinder.Pos p : halves) {
+            Block chest = world.getBlockAt(p.x(), p.y(), p.z());
+            for (BlockFace side : sides) {
+                Block next = next(chest, side);
+                if (next != null && next.getBlockData() instanceof Hopper hopper
+                        && hopper.getFacing() == side.getOppositeFace()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * True if a hopper under the chest (either half) leads into a furnace: the chest feeds a
      * smelter, so golems never sort anything into it.
      */

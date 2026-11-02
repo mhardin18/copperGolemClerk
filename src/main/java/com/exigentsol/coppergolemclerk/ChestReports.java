@@ -356,6 +356,7 @@ final class ChestReports {
             return;
         }
         List<Inventory> overflowChests = new ArrayList<>();
+        int hopperFed = 0;
         List<ChestLabels.Labels> overflowLabels = new ArrayList<>();
         List<Inventory> destinations = new ArrayList<>();
         List<ChestLabels.Labels> destinationLabels = new ArrayList<>();
@@ -379,6 +380,9 @@ final class ChestReports {
             if (labels.overflow() && visible.test(state)) {
                 overflowChests.add(inv);
                 overflowLabels.add(labels);
+                if (HopperLines.fedByHopper(center.getWorld(), halves)) {
+                    hopperFed++;
+                }
             }
             if (labels.hasItemRules() || !labels.overflow()) {
                 String why = HomeFinder.isBlocked(center.getWorld(), halves) ? "a block on top"
@@ -494,6 +498,12 @@ final class ChestReports {
             say(player, NamedTextColor.GREEN, (plugin.fetchFromOverflow()
                     ? "Have a chest with room; idle golems will move them: "
                     : "Have a chest with room (fetch-from-overflow is off, so move them yourself): ") + amounts(moving));
+            if (plugin.fetchFromOverflow() && hopperFed > 0 && plugin.overflowFetchMin() > 1) {
+                say(player, NamedTextColor.GRAY, "  A hopper fills " + (hopperFed == 1 && overflowChests.size() == 1 ? "this chest"
+                        : hopperFed + " of these chests") + ": golems fetch an item from it once " + plugin.overflowFetchMin()
+                        + " are there, or after " + plugin.overflowFetchWaitSeconds()
+                        + " seconds (overflow-fetch-min, overflow-fetch-wait-seconds).");
+            }
         }
     }
 
