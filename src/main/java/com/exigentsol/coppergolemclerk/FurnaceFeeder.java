@@ -58,7 +58,8 @@ import org.bukkit.inventory.SmokingRecipe;
  * (furnace-trusted-claims) in a claim where that claim's owner has container trust.
  *
  * Golems walk to a spot beside the block (Paper's pathfinder) and the plugin moves the items. A
- * golem that can't get there within 30 seconds gives up on that block for a minute.
+ * golem that can't get there within 30 seconds gives up on that block for a minute; one that
+ * finds no path to it at all tries again after 10 seconds.
  */
 final class FurnaceFeeder {
 
@@ -79,6 +80,11 @@ final class FurnaceFeeder {
 
     private static final long GIVE_UP_AFTER_MILLIS = 30_000;
     private static final long SKIP_AFTER_GIVING_UP_MILLIS = 60_000;
+    /**
+     * No walkable spot next to a block right now (often just after a golem spawns, teleports or
+     * lands): try it again soon. Skipping it a full minute left furnaces idle in tests.
+     */
+    private static final long SKIP_AFTER_NO_PATH_MILLIS = 10_000;
     private static final long OFFER_COOLDOWN_MILLIS = 5_000;
     private static final double REACH = 2.5;
     /**
@@ -862,7 +868,7 @@ final class FurnaceFeeder {
                 debugStart(golem, block);
                 return true;
             }
-            giveUp(golem, stops.get(i), now);
+            noPath(golem, block, now);
         }
         return false;
     }
@@ -873,7 +879,7 @@ final class FurnaceFeeder {
         Reach.Spot spot = spotFor(golem, walkTo);
         if (spot == null) {
             if (kind != Kind.FUEL_TAKE) {
-                giveUp(golem, HomeFinder.Pos.of(walkTo), now);
+                noPath(golem, walkTo, now);
             }
             return false; // try another source or furnace next time
         }
@@ -1328,6 +1334,16 @@ final class FurnaceFeeder {
         EntityEquipment equipment = golem.getEquipment();
         equipment.setItemInMainHand(item);
         equipment.setItemInMainHandDropChance(GolemCarry.GUARANTEED_DROP);
+    }
+
+    /** No walkable spot by this block right now: skip it briefly (SKIP_AFTER_NO_PATH_MILLIS). */
+    private void noPath(CopperGolem golem, Block block, long now) {
+        failed.computeIfAbsent(golem.getUniqueId(), k -> new HashMap<>())
+                .put(HomeFinder.Pos.of(block), now + SKIP_AFTER_NO_PATH_MILLIS);
+        if (plugin.debug()) {
+            plugin.getLogger().info(golem.getType() + " has no path to the " + pretty(block.getType()) + " at " + at(block)
+                    + " right now; trying again in " + SKIP_AFTER_NO_PATH_MILLIS / 1000 + "s");
+        }
     }
 
     private void giveUp(Entity golem, HomeFinder.Pos what, long now) {
