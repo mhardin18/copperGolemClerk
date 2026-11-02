@@ -90,10 +90,13 @@ defaults work as-is: about 50 groups that cover nearly every survival item. Afte
 the file, run `/cgc reload` to apply it without a restart.
 
 To update, replace the old jar with the new one and restart. Your `config.yml` is
-kept, and any settings new in that version are added to it at startup, each with the
-comment that explains it, in the same place as in a fresh config. Settings already in
-your file are never changed. The old file is saved as `config-before-<version>.yml`, and the
-console lists what was added. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
+kept and brought up to date at startup: settings new in that version are added, each with
+the comment that explains it, in the same place as in a fresh config, and the comment above
+every other setting is replaced with the new version's explanation. Your values are never
+changed, and a note at the end of a setting's line (`carry-amount: 32  # our farm`) stays;
+a comment on its own line above a setting is replaced. The old file is saved as
+`config-before-<version>.yml`, and the console lists what was added and which explanations
+changed. To uninstall, delete the jar (and the `plugins/CopperGolemClerk/` folder if
 you don't want to keep the config).
 
 ### Upgrading from SmartCopperGolems
@@ -706,8 +709,8 @@ with its line number and the old settings are kept.
 |---|---|---|
 | `disabled-worlds` | `[]` | Worlds (by folder name) where the plugin does nothing and golems behave as in vanilla, e.g. `[world_nether, world_the_end]`. |
 | `update-check` | `true` | Check GitHub weekly for a newer release; log it and tell admins on join. Nothing is downloaded. |
-| `debug` | `false` | Log every sorting decision. Useful while setting up groups and labels. |
-| `trace-golems` | `false` | Log each golem's state, position and held item whenever they change. Very chatty. |
+| `debug` | `false` | Write every decision the plugin makes to the console, with the reason: chest choices and accept/refuse, furnace jobs, `[Overflow]` fetches, returns, giving way, greetings, carry top-ups, reach, portals, mode toggles, tidying, update checks. Changes nothing golems do; players never see it. Several lines per golem per delivery, so turn it off after setting up or investigating. |
+| `trace-golems` | `false` | Once a second, log each golem's state, position, held item and whether it's walking, when any of those changed (up to a line a second per walking golem). Even chattier than `debug`; for following exactly what golems do. |
 
 ## Permissions
 
@@ -738,6 +741,23 @@ cd copperGolemClerk
 
 The jar is written to `build/libs/CopperGolemClerk-<version>.jar`. Install it as
 described in [Install](#install).
+
+### Adding a setting
+
+A new setting needs all of these, or `./gradlew build` fails (`ConfigDocsTest`) and says
+what's missing:
+
+1. A line in `src/main/resources/config.yml`, with its own comment right above it: what it
+   does, its range and default, and what raising or lowering it does. Servers that upgrade
+   get the setting added to their `config.yml` from there, comment included, and a changed
+   comment replaces the old one above that setting in their file.
+2. A row in the [settings reference](#settings-reference) in this README, and a mention in
+   the section that describes the feature.
+3. A line in `CHANGELOG.md` under the version that adds it, naming it in backticks.
+
+Also update `docs/FullDescription.md` (the Hangar page) when the setting changes what
+players or server owners see. A setting kept out of `config.yml` on purpose (a test hook)
+is listed in `ConfigDocsTest.HIDDEN` with the reason.
 
 ## Changelog
 
