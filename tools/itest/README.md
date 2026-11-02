@@ -11,6 +11,7 @@ then removes everything and the force-loads.
     python3 -I tools/itest/run.py core world          # suites or scenario names (substring match)
     python3 -I tools/itest/run.py server-restart      # manual: asks you to restart the server
     python3 -I tools/itest/run.py soak                # manual: ~15-minute soak test
+    python3 -I tools/itest/run.py smelter-replica     # manual: 6 minutes of a copied smelter; prints trips and idle furnaces
     python3 -I tools/itest/run.py --list              # what each scenario checks
     python3 -I tools/itest/run.py --keep              # leave the arenas up to inspect
 
