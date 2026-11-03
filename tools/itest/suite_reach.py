@@ -100,6 +100,33 @@ def _(c):
     return lambda: [("4 chest rows up" in reply() and "raise it to 4" in reply(), f"says 4 rows up, out of reach; got: {reply().strip()}")]
 
 
+def ledge_stack(c):
+    """Three chests stacked at (14, 10), [logs] on top, with a stone pillar behind as high as the stack."""
+    for dy, label in enumerate(["[stone]", "[wool]", "[logs]"]):
+        c.chest(f"row{dy + 1}", 14, 10, dy=dy)
+        c.sign(14, 10, label, dy=dy)
+    for dy in range(3):
+        c.block(15, 10, "stone_bricks", dy=dy)
+    return c.abs(14, 10, 2)
+
+
+@scenario("check-ledge-behind", "reach", 60, "/cgc check on the top of a 3-high stack with a ledge behind it, a golem nearby: says golems can't walk to the ledge, so it's 3 rows up.")
+def _(c):
+    x, y, z = ledge_stack(c)
+    c.golem(10, 10)
+    reply = lambda: say(c, f"cgc check {x} {y} {z}")
+    return lambda: [("can't walk to the spot level with it" in reply() and "3 chest rows up" in reply(),
+                     f"says the ledge can't be walked to and 3 rows up; got: {reply().strip()}")]
+
+
+@scenario("check-ledge-behind-no-golem", "reach", 30, "/cgc check on the same stack with no golem nearby: says golems use it the vanilla way only if they can walk to the ledge, otherwise 3 rows up.")
+def _(c):
+    x, y, z = ledge_stack(c)
+    reply = lambda: say(c, f"cgc check {x} {y} {z}")
+    return lambda: [("only if they can walk to" in reply() and "3 chest rows up" in reply(),
+                     f"says it depends on the ledge, otherwise 3 rows up; got: {reply().strip()}")]
+
+
 # ---- edge cases
 
 from arena import Trigger, conserved  # noqa: E402

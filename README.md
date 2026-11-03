@@ -426,7 +426,9 @@ stand on beside the stack (standing on top of other chests doesn't count), and o
 floor a golem can walk to counts: the top of the ground behind a wall of chests built
 into a hillside doesn't make the top row count as low. A chest within vanilla's reach
 is still preferred over an equally good one higher up.
-`/cgc check` on a high chest says how many rows up it is and whether golems reach it.
+`/cgc check` on a high chest says how many rows up it is and whether golems reach it. It also
+says when a chest is level with a spot golems can't walk to (asking a golem nearby), and
+how high it is from the floor they do use.
 
 ### Barrels and shulker boxes
 
