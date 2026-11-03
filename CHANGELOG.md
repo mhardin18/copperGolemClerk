@@ -4,6 +4,9 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 
 ## 3.0.1 (in progress)
 
+### Changed
+- Built against the newest Paper API (26.3 build 238), and every build now also checks that the plugin compiles against build 190's API, so it keeps running on every build from 190 on, as the requirements say.
+
 ### Fixed
 - A golem walking to an `[Overflow]` chest to fetch an item now checks on the way that the item still has a home. If that chest filled up, was removed or relabelled, the golem stops without taking anything, instead of carrying the items straight back.
 - With `deliver-reach` or `take-reach` raised, the top row of a wall of chests built against a hillside or another wall never got its items: they went to `[Overflow]`. The ground behind the wall, level with the top chests, counted as a place to stand, so those chests looked reachable the vanilla way, and vanilla golems can't open them from the floor in front. Now only a spot a golem can walk to counts, and the golem is sent to that spot. `/cgc check` on such a chest now says that golems can't walk to the spot level with it, and how many rows up it is from the floor they use (before, it said nothing was wrong).
