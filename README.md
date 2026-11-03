@@ -430,6 +430,23 @@ A bigger area costs more. Each search covers about 2.5 times as many chunks at 6
 unloaded chunks are never found, so a distance beyond your server's view distance
 (10 chunks = 160 blocks by default) gains nothing unless players keep that ground loaded.
 
+**Impact on tick rate.** Larger searches take more server time on every tick. Measured
+on a test server with 20 golems working among 1,817 chests (the server alone used
+1.30 ms per tick):
+
+| `search-distance` | Server ms per tick | Added per working golem |
+|---|---|---|
+| 32 (vanilla) | 2.40 | about 0.055 ms |
+| 64 | 3.15 | about 0.09 ms |
+| 96 | 4.38 | about 0.15 ms |
+| 128 | 6.45 | about 0.26 ms |
+
+The server has 50 ms per tick (20 TPS) for everything, so the cost grows with the number
+of golems working at once: 100 busy golems would use about 5.5 ms at 32 but about 26 ms,
+half the tick, at 128. Raise the setting only as far as your storage needs, and watch
+`/mspt` (or `/tps`) after changing it; if the server falls behind, lower it or reduce
+the number of golems (see [Golem limits](#golem-limits)).
+
 ### Taller stacks of chests
 
 Vanilla golems only open chests up to 2 rows above the floor they stand on: the
@@ -706,7 +723,7 @@ with its line number and the old settings are kept.
 | `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
 | `take-reach` | `2` | How many rows up golems take from copper chests and fetch from `[Overflow]` chests, 2 to 6. |
-| `search-distance` | `32` | How far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways (a square; up and down stays 8). 32 (vanilla) to 128. Above 32 the plugin walks golems to chests vanilla can't see. |
+| `search-distance` | `32` | How far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways (a square; up and down stays 8). 32 (vanilla) to 128. Above 32 the plugin walks golems to chests vanilla can't see. Larger values cost tick time: about 0.055 ms per working golem at 32, 0.26 ms at 128 (see Bigger storage areas). |
 
 ### Looking after golems
 

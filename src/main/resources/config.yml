@@ -297,6 +297,12 @@ take-reach: 2
 # items for them, walks take longer, and each search covers more chunks: about 2.5
 # times as many at 64 as at 32, about 7.4 times at 128. Chests in unloaded chunks are
 # never found, whatever this is.
+# Tick-rate cost: the time golems add to each server tick grows with this setting.
+# Measured with 20 working golems among 1,817 chests, per golem per tick: about
+# 0.055 ms at 32, 0.09 ms at 64, 0.15 ms at 96 and 0.26 ms at 128. A tick has 50 ms
+# (20 TPS) for everything on the server, so 100 golems at 128 would use about half of
+# it; the same golems at 32 about a tenth. Raise it only as far as your storage needs,
+# and check /mspt (or /tps) after you do. See "Bigger storage areas" in the README.
 search-distance: 32
 
 # Which containers golems put items into. Vanilla golems only use chests and trapped
