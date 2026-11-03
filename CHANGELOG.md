@@ -2,7 +2,7 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup with their explanations, and the explanations of the settings you have are brought up to date (before that, new settings used their defaults until you added them).
 
-## 3.0.1 (in progress)
+## 3.1.0 (in progress)
 
 ### New
 - `search-distance` (default 32, vanilla's range; up to 128): how far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways. Above 32 the plugin walks golems to chests vanilla golems can't see and moves the items for them, lets their paths reach that far, and gives longer walks more time before giving up.
