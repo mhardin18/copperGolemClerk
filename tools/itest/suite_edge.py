@@ -347,10 +347,11 @@ def _(c):
 def _(c):
     c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
     x, y, z = c.abs(54, 10)  # over 32 blocks from anywhere on the platform (x 0-20)
+    c.chests["far"] = [(x, y, z)]  # first, so clear() removes it and the glowstone even if setup fails
+    c.r.cmd(f"fill {x} {y - 1} {z} {x} {y} {z} minecraft:air")  # leftovers from an interrupted run
     c.run(f"setblock {x} {y - 1} {z} minecraft:glowstone")
     c.run(f"setblock {x} {y} {z} minecraft:chest[facing=south]")
     c.run(f"item replace block {x} {y} {z} container.0 with minecraft:oak_log 1")
-    c.chests["far"] = [(x, y, z)]
     c.chest("overflow", 14, 10)
     c.sign(14, 10, "[Overflow]")
     c.golem(4, 10)

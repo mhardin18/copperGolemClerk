@@ -45,7 +45,11 @@ def old_and_new_golem(c):
 
 
 def _count_golems(c):
-    m = re.search(r"count: (\d+)", c.r.cmd("execute if entity @e[type=minecraft:copper_golem]"), re.I)
+    """Golems the plugin counts against max-golems-outside-claims: in this world (distance=0..
+    keeps @e out of the Nether and End) and not switched to vanilla mode. Counting more makes
+    the limit too high to trip, so no alert comes."""
+    sel = '@e[type=minecraft:copper_golem,distance=0..,nbt=!{BukkitValues:{"coppergolemclerk:mode":"vanilla"}}]'
+    m = re.search(r"count: (\d+)", c.r.cmd(f"execute in minecraft:overworld if entity {sel}"), re.I)
     return int(m.group(1)) if m else 0
 
 
