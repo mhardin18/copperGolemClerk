@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.CopperGolem;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.entity.LivingEntityMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
 /** max-golems-per-claim / max-golems-outside-claims (the test server has no GriefPrevention: all unclaimed). */
@@ -60,5 +62,28 @@ class GolemLimitsPaperTest extends PaperTest {
         setVanilla(switched, true);
         plugin.limits().tick();
         assertTrue(plugin.manages(kept), "the vanilla-mode golem doesn't use up the one place");
+    }
+
+    @Test
+    void golemsOverTheLimitLoseTheLongerPathsAndGetThemBack() {
+        CopperGolem oldest = golem(0, 0);
+        oldest.setTicksLived(3000);
+        CopperGolem newest = golem(2, 0);
+        newest.setTicksLived(100);
+        for (CopperGolem g : new CopperGolem[] {oldest, newest}) {
+            ((LivingEntityMock) g).registerAttribute(Attribute.FOLLOW_RANGE); // the mock has none by default
+        }
+        setting("search-distance", "64"); // a reload gives both golems the longer paths
+        setting("max-golems-outside-claims", "1");
+        double base = newest.getAttribute(Attribute.FOLLOW_RANGE).getBaseValue();
+
+        plugin.limits().tick();
+        assertEquals(96, oldest.getAttribute(Attribute.FOLLOW_RANGE).getValue(), 0.001, "managed: 1.5 x 64");
+        assertEquals(base, newest.getAttribute(Attribute.FOLLOW_RANGE).getValue(), 0.001, "over the limit: vanilla paths");
+
+        oldest.remove();
+        plugin.limits().tick();
+        assertTrue(plugin.manages(newest));
+        assertEquals(96, newest.getAttribute(Attribute.FOLLOW_RANGE).getValue(), 0.001, "back under: longer paths again");
     }
 }
