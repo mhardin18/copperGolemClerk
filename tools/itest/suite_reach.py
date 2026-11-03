@@ -47,6 +47,25 @@ def _(c):
     return lambda: [expect(c, "overflow", "birch_log", 8), expect(c, "top", "birch_log", 0)]
 
 
+@scenario("deliver-row3-ledge-behind", "reach", 240, "deliver-reach: 4: the [logs] chest on top of a 3-high stack has a stone pillar behind it as high as the stack (a ledge level with the chest that no golem can climb onto): the logs still go into it, not [Overflow].", alone=True)
+def _(c):
+    # Like a wall of chests built against a hillside: the top of the ground behind the wall
+    # looks like a place to stand level with the top chest, so it used to count as row 0.
+    set_options(c, deliver_reach="4")
+    c.chest("copper", 2, 10, [("birch_log", 8)], block="waxed_copper_chest")
+    for dy, label in enumerate(["[stone]", "[wool]"]):
+        c.chest(f"row{dy + 1}", 14, 10, dy=dy)
+        c.sign(14, 10, label, dy=dy)
+    c.chest("top", 14, 10, dy=2)
+    c.sign(14, 10, "[logs]", dy=2)
+    for dy in range(3):
+        c.block(15, 10, "stone_bricks", dy=dy)
+    c.chest("overflow", 8, 16)
+    c.sign(8, 16, "[Overflow]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "top", "birch_log", 8), expect(c, "overflow", "birch_log", 0)]
+
+
 def take_scene(c):
     for dy in range(3):
         c.block(2, 10, "stone_bricks", dy=dy)

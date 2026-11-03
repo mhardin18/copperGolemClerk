@@ -422,8 +422,10 @@ chest at their feet and the one on top of it. Two settings raise that, up to 6 r
 
 For a chest above row 2, the golem walks to the floor in front of the stack and the
 plugin opens the chest and moves the items, as the golem would. It needs floor to
-stand on beside the stack (standing on top of other chests doesn't count). A chest
-within vanilla's reach is still preferred over an equally good one higher up.
+stand on beside the stack (standing on top of other chests doesn't count), and only
+floor a golem can walk to counts: the top of the ground behind a wall of chests built
+into a hillside doesn't make the top row count as low. A chest within vanilla's reach
+is still preferred over an equally good one higher up.
 `/cgc check` on a high chest says how many rows up it is and whether golems reach it.
 
 ### Barrels and shulker boxes
