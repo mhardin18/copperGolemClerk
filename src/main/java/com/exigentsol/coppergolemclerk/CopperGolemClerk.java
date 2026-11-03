@@ -65,6 +65,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean logGolemDeaths;
     private volatile int deliverReach = Reach.VANILLA;
     private volatile int takeReach = Reach.VANILLA;
+    private volatile int searchDistance = HomeFinder.VANILLA_DISTANCE;
     private GolemModes modes;
     private GolemStats stats;
     private volatile boolean joinSummary = true;
@@ -142,6 +143,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getScheduler().runTaskTimer(this, greetings::tick, 10, 10);
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);
+        paths.setSearchDistance(searchDistance);
         paths.setAvoidTrapdoors(avoidTrapdoors);
         getServer().getPluginManager().registerEvents(new GolemDeaths(this), this);
         getServer().getPluginManager().registerEvents(new GolemPortals(this), this);
@@ -255,6 +257,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             traffic.setEnabled(false);
         }
         if (paths != null) {
+            paths.setSearchDistance(HomeFinder.VANILLA_DISTANCE); // and vanilla path lengths
             paths.setAvoidTrapdoors(false); // a reloaded plugin starts from vanilla costs
         }
         if (updates != null) {
@@ -355,6 +358,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             Reach.clearWalkCache();
         }
         takeReach = reachSetting(config, "take-reach");
+        searchDistance = rangeSetting(config, "search-distance", HomeFinder.VANILLA_DISTANCE,
+                HomeFinder.VANILLA_DISTANCE, HomeFinder.MAX_DISTANCE);
+        HomeFinder.setSearchDistance(searchDistance);
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
         statusLabels = config.getBoolean("status-labels", true);
@@ -385,6 +391,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         disabledWorlds = Set.copyOf(off);
         if (paths != null) {
+            paths.setSearchDistance(searchDistance);
             paths.setAvoidTrapdoors(avoidTrapdoors); // after disabled-worlds: golems there keep vanilla paths
         }
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
@@ -666,6 +673,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** How many chest rows up golems take from copper and [Overflow] chests (2 = vanilla). */
     int takeReach() {
         return takeReach;
+    }
+
+    /** How far golems look for chests, in blocks each way sideways (32 = vanilla, up to 128). */
+    int searchDistance() {
+        return searchDistance;
     }
 
     /**
