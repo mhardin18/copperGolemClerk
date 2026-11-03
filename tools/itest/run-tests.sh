@@ -4,8 +4,8 @@
 #
 #   tools/itest/run-tests.sh smoke              # ~3 min: one or two scenarios per feature
 #   tools/itest/run-tests.sh quick              # smoke + what this branch changes, ~15-35 min
-#   tools/itest/run-tests.sh changed            # the same with the one-at-a-time scenarios, up to ~2.5 h
-#   tools/itest/run-tests.sh full               # everything except manual scenarios, ~3 h
+#   tools/itest/run-tests.sh changed            # the same with the one-at-a-time scenarios, up to ~1.5 h
+#   tools/itest/run-tests.sh full               # everything except manual scenarios, ~1.5 h
 #   tools/itest/run-tests.sh core reach         # suites or scenario names, as run.py takes them
 #   tools/itest/run-tests.sh --no-deploy smoke  # test the jar pluginDev already has
 #
