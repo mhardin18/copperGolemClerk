@@ -8,7 +8,7 @@ own platform run in parallel; those that change something server-wide (config,
 reloads, tick timing) run one at a time afterwards. Any unexpected error or
 exception in the server log while a scenario runs fails it.
 
-    python3 -I tools/itest/run.py smoke             # quick sanity check, about 10 min (impact.SMOKE)
+    python3 -I tools/itest/run.py smoke             # quick sanity check, about 3 min (impact.SMOKE)
     python3 -I tools/itest/run.py --changed         # smoke + suites this branch's changes touch
     python3 -I tools/itest/run.py --changed=main    # ... compared with another ref
     python3 -I tools/itest/run.py                   # every suite except manual scenarios (hours)
@@ -27,6 +27,7 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arena  # noqa: E402
 import impact  # noqa: E402
+import results as saved  # noqa: E402
 import suite_alerts  # noqa: E402,F401
 import suite_commands  # noqa: E402,F401
 import suite_config  # noqa: E402
@@ -136,7 +137,7 @@ def unexpected_errors(lines, allowed):
     return out
 
 
-def run_batch(r, log, batch, keep):
+def run_batch(r, log, batch, keep, results=None):
     """Build a batch of scenarios, poll until each passes or times out. Returns results."""
     cells, checks, done, last = {}, {}, {}, None
     for i, s in batch:
@@ -156,6 +157,8 @@ def run_batch(r, log, batch, keep):
             except Exception as e:  # a broken setup fails that scenario, not the whole run
                 done[i] = ("FAIL", c.elapsed(), [(False, f"setup failed: {e}")])
         while len(done) < len(batch):
+            if results is not None:  # so a run stopped part way still reports what finished
+                results.update({i: (cells[i], d) for i, d in done.items()})
             time.sleep(POLL)
             for i, s in batch:
                 if i in done:
@@ -199,9 +202,11 @@ def main(argv):
             print(f"{s['suite']:10} {s['name']:28} {s['timeout']:>4}s  {s['description']}{flag}")
         return 0
     keep = "--keep" in argv
+    record = saved.Recorder(argv, arena.SERVER)  # output.txt + summary.json in ~/claude/itest-results
     chosen = select(argv)
     if not chosen:
         print("no scenarios match", argv)
+        record.finish("finished", [], 0)
         return 2
 
     r = from_properties(os.path.join(arena.SERVER, "server.properties"))
@@ -213,47 +218,66 @@ def main(argv):
     alone = [(i, s) for i, s in chosen if s["alone"]]
     results = {}
     started = time.time()
+    interrupted = False
     try:
-        if parallel:
-            print(f"Running {len(parallel)} scenario(s) in parallel at x={arena.X0}, y={arena.Y} ...")
-            cells, done = run_batch(r, log, parallel, keep)
-            results.update({i: (cells[i], d) for i, d in done.items()})
-        for i, s in alone:
-            print(f"Running {s['name']} on its own ...")
-            try:
-                cells, done = run_batch(r, log, [(i, s)], keep)
+        try:
+            if parallel:
+                print(f"Running {len(parallel)} scenario(s) in parallel at x={arena.X0}, y={arena.Y} ...")
+                cells, done = run_batch(r, log, parallel, keep, results)
                 results.update({i: (cells[i], d) for i, d in done.items()})
-            finally:
-                if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
-                    with open(arena.CONFIG, "w") as f:
-                        f.write(config_before)
-                    r.cmd("coppergolemclerk reload")
-    finally:
-        if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
-            with open(arena.CONFIG, "w") as f:
-                f.write(config_before)
-            print("Restored config.yml.")
-        r.cmd("coppergolemclerk reload")
+            for i, s in alone:
+                print(f"Running {s['name']} on its own ...")
+                try:
+                    cells, done = run_batch(r, log, [(i, s)], keep, results)
+                    results.update({i: (cells[i], d) for i, d in done.items()})
+                finally:
+                    if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
+                        with open(arena.CONFIG, "w") as f:
+                            f.write(config_before)
+                        r.cmd("coppergolemclerk reload")
+        finally:
+            if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
+                with open(arena.CONFIG, "w") as f:
+                    f.write(config_before)
+                print("Restored config.yml.")
+            r.cmd("coppergolemclerk reload")
+    except KeyboardInterrupt:
+        interrupted = True
+        print("\nStopped: reporting the scenarios that finished.")
 
     print()
     failed = 0
+    entries = []
     for i, s in chosen:
+        if i not in results:
+            entries.append({"name": s["name"], "suite": s["suite"], "status": "NOT RUN", "seconds": 0,
+                            "description": s["description"], "checks": [], "log": []})
+            continue
         cell, (status, elapsed, checks) = results[i]
         print(f"{status}  {s['suite']:10} {s['name']:28} {elapsed:5.0f}s  {s['description']}")
+        near = []
         if status == "SKIP":
             print(f"        {checks[0][1]}")
         if status == "FAIL":
             failed += 1
             for ok, text in checks:
                 print(f"        {'ok ' if ok else 'BAD'} {text}")
-            near = [l for l in cell.log_lines()
-                    if "CopperGolemClerk" in l and "trace golem" not in l and cell.in_cell(l)]
-            for l in near[-8:]:
-                print("        log:", l[l.find("]: ") + 3:][:170])
+            near = [l[l.find("]: ") + 3:][:170] for l in cell.log_lines()
+                    if "CopperGolemClerk" in l and "trace golem" not in l and cell.in_cell(l)][-8:]
+            for l in near:
+                print("        log:", l)
+        entries.append({"name": s["name"], "suite": s["suite"], "status": status, "seconds": round(elapsed),
+                        "description": s["description"], "checks": [{"ok": bool(ok), "text": text} for ok, text in checks],
+                        "log": near})
     minutes = (time.time() - started) / 60
-    skipped = sum(1 for i, _ in chosen if results[i][1][0] == "SKIP")
-    print(f"\n{len(chosen) - failed - skipped}/{len(chosen) - skipped} passed, {skipped} skipped, in {minutes:.1f} min" + ("  (arenas kept)" if keep else ""))
-    return 1 if failed else 0
+    ran = [e for e in entries if e["status"] != "NOT RUN"]
+    skipped = sum(1 for e in ran if e["status"] == "SKIP")
+    print(f"\n{len(ran) - failed - skipped}/{len(ran) - skipped} passed, {skipped} skipped, in {minutes:.1f} min"
+          + ("  (arenas kept)" if keep else "")
+          + (f"; stopped with {len(entries) - len(ran)} not run" if interrupted else ""))
+    print(f"Results saved in {record.dir}")
+    record.finish("interrupted" if interrupted else "finished", entries, minutes)
+    return 1 if failed or interrupted else 0
 
 
 if __name__ == "__main__":

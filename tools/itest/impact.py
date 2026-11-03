@@ -1,6 +1,6 @@
 """Which in-game tests to run for a change: the smoke set, and suites picked from changed files.
 
-    run.py smoke              # about 10 minutes: one or two scenarios per feature
+    run.py smoke              # about 3 minutes: one or two scenarios per feature
     run.py --changed          # smoke + the suites the branch's changes touch
     run.py --changed=<ref>    # ... compared with <ref> instead of the release branch
     run.py --changed --parallel-only   # leave out the scenarios that run one at a time (quick)
