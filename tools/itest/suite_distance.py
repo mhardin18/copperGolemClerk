@@ -66,3 +66,63 @@ def _(c):
     set_options(c, search_distance="500")
     return lambda: [("search-distance must be 32 to 128 (it's 500); using 128." in "\n".join(c.log_lines()),
                      "warned and used 128")]
+
+
+def odd_scene(c, chest_dx):
+    """search-distance 43; the only [logs] chest on the walkway chest_dx out; an [Overflow] chest near."""
+    set_options(c, search_distance="43")
+    walkway(c)
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("logs", chest_dx, 10, [("oak_log", 1)])
+    c.sign(chest_dx, 10, "[logs]")
+    # Overflow right by the copper chest: walking to it never brings the golem within 43 of
+    # the far chest (distance counts from where the golem is, so that would be a real home).
+    c.chest("overflow", 2, 4)
+    c.sign(2, 4, "[Overflow]")
+    c.golem(4, 10)
+
+
+@scenario("odd-distance-inside", "distance", 240, "search-distance: 43 (not a multiple of 16): the only [logs] chest is 41 blocks from the copper chest, inside 43: the logs go there. No warning about the setting.", alone=True)
+def _(c):
+    odd_scene(c, 44)  # copper chest at dx 2 -> 42 blocks; the golem takes from beside it
+    return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "overflow", "birch_log", 0),
+                    ("search-distance must be" not in "\n".join(c.log_lines()), "no warning: 43 is used as it is")]
+
+
+@scenario("odd-distance-outside", "distance", 240, "search-distance: 43: the only [logs] chest is 47 blocks from the copper chest, outside 43: it's ignored and the logs go to [Overflow].", alone=True)
+def _(c):
+    odd_scene(c, 50)  # copper chest at dx 2 -> 48 blocks
+    return lambda: [expect(c, "overflow", "birch_log", 16), expect(c, "logs", "birch_log", 0)]
+
+
+@scenario("far-target-unloaded", "distance", 240, "search-distance: 64: the far [logs] chest's chunk unloads while the golem walks to it: the chunk stays unloaded (the plugin doesn't load it again by looking at the chest), no errors.", alone=True)
+def _(c):
+    from arena import Trigger
+    set_options(c, search_distance="64")
+    walkway(c)
+    c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
+    c.chest("far", 54, 10, [("oak_log", 1)])
+    c.sign(54, 10, "[logs]")
+    c.chest("overflow", 2, 4)
+    c.sign(2, 4, "[Overflow]")
+    c.golem(4, 10)
+    x0, y, z = c.abs(36, 10)
+    x1, _, _ = c.abs(67, 10)
+    fx, fy, fz = c.chests["far"][0]
+    # The far chest sits two chunks past the last force-loaded one, so with the tickets for dx
+    # 36..67 gone its chunk drops out of memory (the one in between stays only as a border).
+    c.cleanup.insert(0, f"forceload add {x0} {z - 8} {x1} {z + 8}")  # so cleanup can reach the walkway
+    t = Trigger()
+
+    def heading():
+        return any(f"at {fx},{fy},{fz}" in l and "heads for the chest" in l for l in c.log_lines())
+
+    def check():
+        t.fire_when(heading, lambda: c.r.cmd(f"forceload remove {x0} {z - 8} {x1} {z + 8}"))
+        loaded = "passed" in c.r.cmd(f"execute if loaded {fx} {fy} {fz}")
+        return [(t.at is not None, "the golem headed for the far chest, then its chunk was released"),
+                (t.since() >= 30, f"waited {t.since():.0f}s of 30s since the chunk was released"),
+                (not loaded, "the far chest's chunk stayed unloaded" if not loaded else "the far chest's chunk is loaded again")]
+    # (No item count: the golem is out on the walkway, likely frozen in a chunk that isn't ticking,
+    # still holding the logs, and the platform's counts can't see it there.)
+    return check

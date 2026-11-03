@@ -76,7 +76,7 @@ def _(c):
 @scenario("bad-numbers", "config", 30, "Zero, negative and non-numeric timings load without errors (clamped to safe minimums).", alone=True)
 def _(c):
     text = original()
-    for key, value in (("matching-chest-timeout-seconds", "-5"), ("fetchers-per-overflow-chest", "0"),
+    for key, value in (("search-distance", "-5"), ("fetchers-per-overflow-chest", "0"),
                        ("homeless-retry-minutes", "abc")):
         text = re.sub(rf"(?m)^{key}: .*$", f"{key}: {value}", text)
     reply, lines, restored = try_config(c, text)

@@ -109,6 +109,12 @@ final class ReachDelivery {
                 it.remove();
                 continue;
             }
+            if (!HomeFinder.allLoaded(golem.getWorld(), job.halves())) {
+                // The chest's chunk unloaded (players moved away): reading it would load it again.
+                golem.getPathfinder().stopPathfinding();
+                it.remove();
+                continue;
+            }
             ItemStack held = golem.getEquipment().getItemInMainHand();
             HomeFinder.Pos at = job.halves().iterator().next();
             Material container = golem.getWorld().getBlockAt(at.x(), at.y(), at.z()).getType();

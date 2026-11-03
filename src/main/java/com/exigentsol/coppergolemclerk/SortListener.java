@@ -100,6 +100,33 @@ public final class SortListener implements Listener {
         }
     }
 
+    /** A sign was written or changed: a chest may have a new label. */
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSignChange(org.bukkit.event.block.SignChangeEvent event) {
+        labelChanged(event.getBlock());
+    }
+
+    /** An item went into (or came out of) an item frame: a chest may have a new label. */
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFrameUse(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        if (event.getRightClicked() instanceof org.bukkit.entity.ItemFrame frame) {
+            labelChanged(frame.getLocation().getBlock());
+        }
+    }
+
+    /**
+     * Items marked "no home" near a new or changed label may have a home now: forget the marks
+     * within a golem's search distance, so golems take them out and try again straight away
+     * instead of after homeless-retry-minutes.
+     */
+    private void labelChanged(Block near) {
+        int cleared = returns.clearNear(near.getWorld(), near.getX(), near.getZ(), HomeFinder.searchDistance() + 1);
+        if (cleared > 0 && plugin.debug()) {
+            plugin.getLogger().info(String.format("A label changed at %d,%d,%d: cleared the 'no home' marks on %d chest%s nearby",
+                    near.getX(), near.getY(), near.getZ(), cleared, cleared == 1 ? "" : "s"));
+        }
+    }
+
     /** Forget which items had no home, so golems try them again (after /coppergolemclerk reload). */
     void clearHomeless() {
         returns.clear();

@@ -25,7 +25,7 @@ def labels(c):
     return _count(c.r.cmd(f"execute if entity {c.selector('text_display')}"))
 
 
-@scenario("labels-say-what-golems-do", "labels", 45, "Status labels: a golem carrying logs says so, an empty one is idle, a vanilla-mode one says vanilla mode, a weathered one says its copper is weathered.", alone=True)
+@scenario("labels-say-what-golems-do", "labels", 45, "Status labels: a golem carrying logs says what it holds, an empty one is idle, a vanilla-mode one says vanilla mode, a weathered one says its copper is weathered.", alone=True)
 def _(c):
     set_options(c, status_labels_everywhere="true")
     golem_at(c, 4, 10, ',equipment:{mainhand:{id:"minecraft:birch_log",count:5}}')
@@ -36,7 +36,9 @@ def _(c):
     def check():
         a, b, v = (label_text(c, dx, 10) for dx in (4, 8, 12))
         w = label_text(c, 16, 10, "text.extra[1].text")
-        return [("carrying 5 birch log" in a, f"carrier: {a[-80:]!r}"), ("idle" in b, f"empty: {b[-60:]!r}"),
+        # With no chests at all the carrier says "no chest for 5 birch log" at once (the search has
+        # nowhere to go); either way the label names what it holds.
+        return [("5 birch log" in a, f"carrier: {a[-80:]!r}"), ("idle" in b, f"empty: {b[-60:]!r}"),
                 ("vanilla mode" in v, f"vanilla: {v[-60:]!r}"), ("weathered copper" in w, f"weathered: {w[-120:]!r}")]
     return check
 

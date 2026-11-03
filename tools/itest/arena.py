@@ -145,10 +145,14 @@ class Cell:
         props = [f"facing={facing}"] + ([f"type={half}"] if half else [])
         state = "[" + ",".join(props) + "]" if block != "barrel" else "[facing=up]"
         x, y, z = self.abs(dx, dz, dy)
+        # Recorded first, so clear() removes it even if setup fails; and the spot is emptied
+        # first (unchecked), since setblock refuses to place a block that is already there,
+        # as one left off the platform by an interrupted run would be.
+        self.chests.setdefault(name, []).append((x, y, z))
+        self.r.cmd(f"setblock {x} {y} {z} minecraft:air")
         self.run(f"setblock {x} {y} {z} minecraft:{block}{state}")
         for slot, (item, count) in enumerate(items):
             self.run(f"item replace block {x} {y} {z} container.{slot} with {qualify(item)} {count}")
-        self.chests.setdefault(name, []).append((x, y, z))
 
     def double_chest(self, name, dx, dz, items=()):
         """Left half at dx, right half at dx-1 (vanilla: a south-facing left half joins to the west)."""

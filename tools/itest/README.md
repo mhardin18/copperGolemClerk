@@ -14,7 +14,7 @@ then removes everything and the force-loads.
     python3 -I tools/itest/run.py smoke               # quick sanity check, ~3 min
     python3 -I tools/itest/run.py --changed --parallel-only   # smoke + what this branch touches, ~15 min
     python3 -I tools/itest/run.py --changed           # the same with the one-at-a-time scenarios, ~1-1.5 h
-    python3 -I tools/itest/run.py                     # everything except manual scenarios (2-3 h)
+    python3 -I tools/itest/run.py                     # everything except manual scenarios (~1.5 h)
     python3 -I tools/itest/run.py core world          # suites or scenario names (substring match)
     python3 -I tools/itest/run.py server-restart      # manual: asks you to restart the server
     python3 -I tools/itest/run.py soak                # manual: ~15-minute soak test
@@ -31,8 +31,8 @@ last line it prints says where the results were saved.
 
     tools/itest/run-tests.sh smoke        # ~3 min: one or two scenarios per feature
     tools/itest/run-tests.sh quick        # smoke + what this branch changes (--changed --parallel-only), ~15-35 min
-    tools/itest/run-tests.sh changed      # the same with the one-at-a-time scenarios, up to ~2.5 h
-    tools/itest/run-tests.sh full         # everything except manual scenarios, ~3 h
+    tools/itest/run-tests.sh changed      # the same with the one-at-a-time scenarios, up to ~1.5 h
+    tools/itest/run-tests.sh full         # everything except manual scenarios, ~1.5 h
     tools/itest/run-tests.sh core reach   # suites or scenario names (any part of a name matches)
     tools/itest/run-tests.sh --no-deploy smoke   # test the jar pluginDev already has
 
@@ -109,8 +109,8 @@ were tested, and says whether each failure is a plugin bug or a test-timing prob
 |---|---|---|
 | After every change | `run.py smoke` | ~3 min |
 | Before opening a PR | `run.py --changed --parallel-only` | ~15-35 min |
-| Before merging a PR that touches sorting code | `run.py --changed` | up to ~2.5 h |
-| Before a release | `run.py` (full) | ~3 h |
+| Before merging a PR that touches sorting code | `run.py --changed` | up to ~1.5 h |
+| Before a release | `run.py` (full) | ~1.5 h |
 
 `smoke` is the list `impact.SMOKE`: one or two quick scenarios per feature, almost all
 run in parallel. `--changed` compares the branch with its release branch

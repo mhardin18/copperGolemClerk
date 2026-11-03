@@ -328,7 +328,11 @@ final class OverflowFetcher {
     private void continueFetch(CopperGolem golem, Fetch fetch, long now) {
         UUID id = golem.getUniqueId();
         World world = plugin.getServer().getWorld(fetch.world());
-        Block block = world == null ? null : world.getBlockAt(fetch.chest().x(), fetch.chest().y(), fetch.chest().z());
+        if (world == null || !HomeFinder.allLoaded(world, fetch.halves())) {
+            endFetch(golem, now, false); // the chest's chunk unloaded: reading it would load it again
+            return;
+        }
+        Block block = world.getBlockAt(fetch.chest().x(), fetch.chest().y(), fetch.chest().z());
         if (!isIdle(golem) || block == null || !golem.getWorld().equals(world)
                 || !(block.getState(false) instanceof Container container)
                 || HomeFinder.isLocked(container)) { // locked while the golem was on its way

@@ -8,6 +8,9 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 - `search-distance` (default 32, vanilla's range; up to 128): how far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways. Above 32 the plugin walks golems to chests vanilla golems can't see and moves the items for them, lets their paths reach that far, and gives longer walks more time before giving up.
 
 ### Changed
+- How long a golem keeps trying to deliver an item now comes from the walk, not a setting. Each fallback step (best chest, any matching chest, `[Overflow]` or empty chests) lasts as long as walking to the farthest chest it tries takes, 30 seconds or more, so a bigger `search-distance` gets longer steps automatically. A step with nothing new to try is skipped, so an item with no home in range is put back after the 30-second vanilla step instead of after two minutes. `matching-chest-timeout-seconds` is gone: it's taken out of `config.yml` on upgrade, and the console says why.
+- Adding or changing a sign or item frame label clears the "no home" marks on chests within `search-distance`, so golems try those items again straight away instead of after `homeless-retry-minutes`.
+- Console messages about bringing `config.yml` up to date link to that version's `config.yml` on GitHub instead of pointing into the jar.
 - Built against the newest Paper API (26.3 build 238), and every build now also checks that the plugin compiles against build 190's API, so it keeps running on every build from 190 on, as the requirements say.
 
 ### Fixed

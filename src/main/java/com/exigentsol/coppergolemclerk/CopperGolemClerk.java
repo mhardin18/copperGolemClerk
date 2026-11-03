@@ -105,7 +105,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private ChestReports reports;
     private volatile Set<String> disabledWorlds = Set.of();
     private volatile boolean preferMatchingChests;
-    private volatile long matchingChestTimeoutMillis;
+    private volatile long fixedStepMillis;
 
     @Override
     public void onEnable() {
@@ -176,6 +176,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
      * date; values are never changed. The old file is kept as config-before-<version>.yml.
      * A config.yml with a YAML error is left alone.
      */
+    /** This version's config.yml on GitHub, with every setting explained. */
+    private String configUrl() {
+        return Versions.configUrl(getPluginMeta().getVersion(), getPluginMeta().getAPIVersion());
+    }
+
     private void addMissingSettings() {
         File config = new File(getDataFolder(), "config.yml");
         try (java.io.InputStream in = getResource("config.yml")) {
@@ -198,7 +203,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             if (!java.nio.file.Files.isWritable(config.toPath())) {
                 getLogger().warning("config.yml can't be written (check its permissions), so it wasn't brought up to date: "
                         + (result.added().isEmpty() ? "" : "new settings " + String.join(", ", result.added())
-                        + " use their defaults; ") + "see the config.yml in the jar for what each setting does.");
+                        + " use their defaults; ") + (result.removed().isEmpty() ? "" : String.join(", ", result.removed())
+                        + " are no longer used; ") + "see " + configUrl() + " for what each setting does.");
                 return;
             }
             String version = getPluginMeta().getVersion();
@@ -215,6 +221,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         + (one ? "its default and an explanation" : "their defaults and an explanation of each") + ": "
                         + String.join(", ", result.added()) + ".");
             }
+            for (String key : result.removed()) {
+                getLogger().info("Removed " + key + " from config.yml: it's no longer used ("
+                        + ConfigUpgrade.RETIRED.get(key) + ").");
+            }
             if (!result.explained().isEmpty()) {
                 getLogger().info("Updated the explanation above " + result.explained().size() + " setting"
                         + (result.explained().size() == 1 ? "" : "s") + " in config.yml to this version's: "
@@ -223,7 +233,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             getLogger().info("Your settings' values are unchanged; the old file is " + backup.getName() + ".");
         } catch (IOException e) {
             getLogger().warning("Couldn't bring config.yml up to date (" + e.getClass().getSimpleName() + ": " + e.getMessage()
-                    + "); new settings use their defaults. See the config.yml in the jar for what they do.");
+                    + "); new settings use their defaults. See " + configUrl() + " for what they do.");
         }
     }
 
@@ -395,7 +405,12 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             paths.setAvoidTrapdoors(avoidTrapdoors); // after disabled-worlds: golems there keep vanilla paths
         }
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
-        matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;
+        // Not in config.yml: for tests. Fixed-length search steps instead of walk-based ones (0 = off).
+        fixedStepMillis = Math.max(0, config.getInt("fixed-step-seconds", 0)) * 1000L;
+        if (config.contains("matching-chest-timeout-seconds")) {
+            getLogger().warning("matching-chest-timeout-seconds is no longer used: golems now get as long as the walk"
+                    + " to each chest takes (see search-distance). Delete it from config.yml.");
+        }
         groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());
         getLogger().info("Loaded " + groups.groupCount() + " item groups (match-mode: " + mode + ").");
         return null;
@@ -445,8 +460,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return preferMatchingChests;
     }
 
-    long matchingChestTimeoutMillis() {
-        return matchingChestTimeoutMillis;
+    /** Fixed search-step length for tests (hidden setting fixed-step-seconds), or 0 for walk-based steps. */
+    long fixedStepMillis() {
+        return fixedStepMillis;
     }
 
     boolean signLabels() {
