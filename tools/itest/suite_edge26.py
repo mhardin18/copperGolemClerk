@@ -121,7 +121,7 @@ def _(c):
 
 @scenario("carry64-homeless-returned", "edge26", 240, "carry-amount 64 with an item that has nowhere to go (empty chests off): all 64 go back into the copper chest, none lost.", alone=True)
 def _(c):
-    set_options(c, carry_amount="64", allow_empty_chests="false", matching_chest_timeout_seconds="5")
+    set_options(c, carry_amount="64", allow_empty_chests="false", fixed_step_seconds="5")
     c.chest("copper", 2, 10, [("sculk_shrieker", 64)], block="waxed_copper_chest")
     c.chest("stone", 14, 10, [("andesite", 1)])
     c.golem(4, 10)

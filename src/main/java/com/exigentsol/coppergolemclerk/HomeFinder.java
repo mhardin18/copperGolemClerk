@@ -70,7 +70,12 @@ final class HomeFinder {
     record Search(Material type, long startedMillis, UUID world, Pos source) {
     }
 
-    /** Where a search is in its timeline. Each step lasts matching-chest-timeout-seconds. */
+    /**
+     * Where a search is in its timeline. Each step lasts as long as the walk to the farthest
+     * chest it would try (HomeFinder.walkMillis: at least 30 s), worked out when the step
+     * begins; a step with nothing new to try is skipped. VANILLA lasts VANILLA_STEP_MILLIS.
+     * The hidden test setting fixed-step-seconds makes every step that long instead.
+     */
     enum Step {
         /** The most specific matching chests, then overflow, then empty. */
         ANY,
@@ -93,6 +98,13 @@ final class HomeFinder {
     private final Map<UUID, Long> lastAccepted = new HashMap<>();
     /** Milliseconds each searching golem has been (likely) active: see {@link #tickClocks()}. */
     private final Map<UUID, Long> activeMillis = new HashMap<>();
+    /**
+     * Where each step of a golem's search ends, in active milliseconds: ANY, ANY_MATCHING,
+     * NO_MATCHING, VANILLA. -1 = that step hasn't begun, so its length isn't known yet.
+     */
+    private final Map<UUID, long[]> stepEnds = new HashMap<>();
+    /** The vanilla step: vanilla golems (and other plugins deciding where items go) get a turn. */
+    static final long VANILLA_STEP_MILLIS = 30_000;
     private final Map<UUID, Integer> activationRange = new HashMap<>();
     private static final long ACCEPT_GRACE_MILLIS = 15_000;
     private static final double WAITING_DISTANCE = 4.5;
@@ -109,6 +121,7 @@ final class HomeFinder {
     Homes homesFor(Entity golem, ItemStack held) {
         UUID id = golem.getUniqueId();
         Search search = searchFor(golem, held.getType());
+        advance(golem, held);
         Step step = stepOf(id);
         if (step == Step.VANILLA || step == Step.RETURN) {
             return null;
@@ -137,6 +150,7 @@ final class HomeFinder {
         searches.put(golem.getUniqueId(), new Search(type, System.currentTimeMillis(),
                 golem.getWorld().getUID(), Pos.of(source)));
         activeMillis.put(golem.getUniqueId(), 0L);
+        stepEnds.remove(golem.getUniqueId());
         cache.remove(golem.getUniqueId());
     }
 
@@ -156,6 +170,10 @@ final class HomeFinder {
             Entity golem = Bukkit.getEntity(id);
             if (golem != null && likelyActive(golem)) {
                 activeMillis.merge(id, 1000L, Long::sum);
+                if (golem instanceof LivingEntity living && living.getEquipment() != null
+                        && !living.getEquipment().getItemInMainHand().isEmpty()) {
+                    advance(golem, living.getEquipment().getItemInMainHand());
+                }
             }
         }
     }
@@ -209,23 +227,93 @@ final class HomeFinder {
                     source == null ? null : Pos.of(source));
             searches.put(golem.getUniqueId(), search);
             activeMillis.put(golem.getUniqueId(), 0L);
+            stepEnds.remove(golem.getUniqueId());
         }
         return search;
     }
 
+    private static final Step[] TIMED = {Step.ANY, Step.ANY_MATCHING, Step.NO_MATCHING, Step.VANILLA};
+
     Step stepOf(UUID id) {
         long elapsed = activeMillis.getOrDefault(id, 0L);
-        long step = plugin.matchingChestTimeoutMillis();
-        if (elapsed < step) {
-            return Step.ANY;
+        long fixed = plugin.fixedStepMillis();
+        if (fixed > 0) {
+            int k = (int) Math.min(TIMED.length, elapsed / fixed);
+            return k < TIMED.length ? TIMED[k] : Step.RETURN;
         }
-        if (elapsed < 2 * step) {
-            return Step.ANY_MATCHING;
+        long[] ends = stepEnds.get(id);
+        if (ends == null) {
+            return Step.ANY; // not worked out yet: the search has just started
         }
-        if (elapsed < 3 * step) {
-            return Step.NO_MATCHING;
+        for (int k = 0; k < TIMED.length; k++) {
+            if (ends[k] < 0 || elapsed < ends[k]) {
+                return TIMED[k];
+            }
         }
-        return elapsed < 4 * step ? Step.VANILLA : Step.RETURN;
+        return Step.RETURN;
+    }
+
+    /**
+     * Work out the length of each step as it begins. The first three last as long as the walk
+     * to the farthest chest they'd try, from where the golem is when the step begins: the best
+     * matching chests (or [Overflow]/empty chests if nothing matches), then any matching
+     * chest, then [Overflow]/empty chests. A step that adds nothing new lasts 0 and is skipped,
+     * so an item with no home in range goes straight to the vanilla step and then back.
+     */
+    private void advance(Entity golem, ItemStack held) {
+        if (plugin.fixedStepMillis() > 0) {
+            return;
+        }
+        UUID id = golem.getUniqueId();
+        long[] ends = stepEnds.computeIfAbsent(id, k -> new long[] {-1, -1, -1, -1});
+        long elapsed = activeMillis.getOrDefault(id, 0L);
+        Homes all = null;
+        for (int k = 0; k < TIMED.length; k++) {
+            if (ends[k] < 0) {
+                long start = k == 0 ? 0 : ends[k - 1];
+                if (TIMED[k] == Step.VANILLA) {
+                    ends[k] = start + VANILLA_STEP_MILLIS;
+                } else {
+                    if (all == null) {
+                        all = scan(golem, held);
+                    }
+                    ends[k] = start + stepLength(golem, all, TIMED[k]);
+                }
+            }
+            if (elapsed < ends[k]) {
+                return; // this step is still running
+            }
+        }
+    }
+
+    /** How long a step lasts for these homes: the walk to the farthest chest it would try, or 0 if nothing new. */
+    private long stepLength(Entity golem, Homes all, Step step) {
+        Set<Pos> fallback = new HashSet<>(all.overflow());
+        if (plugin.allowEmptyChests()) {
+            fallback.addAll(all.empty());
+        }
+        Set<Pos> tries = switch (step) {
+            case ANY -> !all.matching().isEmpty() ? all.matching() : fallback;
+            case ANY_MATCHING -> all.allMatching().equals(all.matching()) ? Set.of() : all.allMatching();
+            case NO_MATCHING -> all.allMatching().isEmpty() ? Set.of() : fallback; // else step ANY offered them
+            default -> Set.of();
+        };
+        long longest = 0;
+        for (Pos p : tries) {
+            Location chest = new Location(golem.getWorld(), p.x() + 0.5, p.y(), p.z() + 0.5);
+            longest = Math.max(longest, walkMillis(golem.getLocation(), chest));
+        }
+        return longest;
+    }
+
+    /** When this golem's search runs out (the end of the vanilla step), in active milliseconds, if known. */
+    private long searchEnd(UUID id) {
+        long fixed = plugin.fixedStepMillis();
+        if (fixed > 0) {
+            return TIMED.length * fixed;
+        }
+        long[] ends = stepEnds.get(id);
+        return ends == null || ends[TIMED.length - 1] < 0 ? Long.MAX_VALUE : ends[TIMED.length - 1];
     }
 
     /** How long past the return step a golem may wait in line at a chest (vanilla queues can last up to a minute). */
@@ -234,7 +322,8 @@ final class HomeFinder {
     /** True once a golem has waited near a chest well past the return step: return its item anyway. */
     boolean waitedTooLong(UUID id) {
         long elapsed = activeMillis.getOrDefault(id, 0L);
-        return elapsed >= 4 * plugin.matchingChestTimeoutMillis() + MAX_QUEUE_MILLIS;
+        long end = searchEnd(id);
+        return end != Long.MAX_VALUE && elapsed >= end + MAX_QUEUE_MILLIS;
     }
 
     /** Searches that have run through all steps, by golem UUID. */
@@ -266,6 +355,7 @@ final class HomeFinder {
         if (search != null) {
             searches.put(id, new Search(search.type(), System.currentTimeMillis(), search.world(), search.source()));
             activeMillis.put(id, 0L);
+            stepEnds.remove(id);
         }
         cache.remove(id);
     }
@@ -280,6 +370,7 @@ final class HomeFinder {
         cache.remove(id);
         lastAccepted.remove(id);
         activeMillis.remove(id);
+        stepEnds.remove(id);
     }
 
     /** Drop state for golems that haven't been seen for a while (died, unloaded). */
@@ -289,6 +380,7 @@ final class HomeFinder {
         // gains active time slowly, and restarting its clock could put off a return forever.
         searches.entrySet().removeIf(e -> e.getValue().startedMillis() < cutoff && Bukkit.getEntity(e.getKey()) == null);
         activeMillis.keySet().retainAll(searches.keySet());
+        stepEnds.keySet().retainAll(searches.keySet());
         lastAccepted.values().removeIf(t -> t < cutoff);
         int tick = Bukkit.getCurrentTick();
         for (Iterator<CacheEntry> it = cache.values().iterator(); it.hasNext(); ) {

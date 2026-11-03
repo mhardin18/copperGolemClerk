@@ -3,6 +3,7 @@ package com.exigentsol.coppergolemclerk;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,7 +15,9 @@ import java.util.regex.Pattern;
  *   the config.yml shipped in the jar, in the same place as there (after the setting before it);
  * - the comment right above each setting the file already has is replaced with the shipped
  *   one when it differs (an older explanation, or none), so every setting is explained as
- *   this version works. The value lines are never touched, nor a note at the end of a line.
+ *   this version works. The value lines are never touched, nor a note at the end of a line;
+ * - settings this version no longer uses (RETIRED) are taken out, with the comment above them,
+ *   so the file doesn't suggest they still do something.
  *
  * Only top-level settings are looked at; nested lines (the groups) are left as they are.
  */
@@ -22,10 +25,20 @@ final class ConfigUpgrade {
 
     private static final Pattern KEY = Pattern.compile("^([A-Za-z0-9][A-Za-z0-9_-]*):");
 
-    /** The new text, the settings added to it, and the settings whose explanation was brought up to date. */
-    record Result(String text, List<String> added, List<String> explained) {
+    /**
+     * Settings this version no longer uses, and why: they're removed from the file on upgrade.
+     */
+    static final Map<String, String> RETIRED = Map.of(
+            "matching-chest-timeout-seconds",
+            "golems now get as long as the walk to each chest takes (see search-distance)");
+
+    /**
+     * The new text, the settings added to it, the settings whose explanation was brought up to
+     * date, and the retired settings taken out.
+     */
+    record Result(String text, List<String> added, List<String> explained, List<String> removed) {
         boolean changed() {
-            return !added.isEmpty() || !explained.isEmpty();
+            return !added.isEmpty() || !explained.isEmpty() || !removed.isEmpty();
         }
     }
 
@@ -69,11 +82,35 @@ final class ConfigUpgrade {
                 explained.add(setting.key());
             }
         }
-        if (added.isEmpty() && explained.isEmpty()) {
-            return new Result(current, added, explained);
+        List<String> removed = new ArrayList<>();
+        for (String key : RETIRED.keySet()) {
+            if (remove(lines, key)) {
+                removed.add(key);
+            }
+        }
+        if (added.isEmpty() && explained.isEmpty() && removed.isEmpty()) {
+            return new Result(current, added, explained, removed);
         }
         String text = String.join("\n", lines) + (endsWithNewline ? "\n" : "");
-        return new Result(text, added, explained);
+        return new Result(text, added, explained, removed);
+    }
+
+    /** Take out a setting (its line, anything nested under it, the comment above it and one blank line). */
+    private static boolean remove(List<String> lines, String key) {
+        int line = lineOf(lines, key);
+        if (line < 0) {
+            return false;
+        }
+        int start = line;
+        while (start > 0 && lines.get(start - 1).startsWith("#")) {
+            start--;
+        }
+        int end = endOf(lines, line);
+        if (start > 0 && lines.get(start - 1).isBlank()) {
+            start--; // the blank line that set it apart
+        }
+        lines.subList(start, end).clear();
+        return true;
     }
 
     /** Put the shipped comment right above a setting the file has, if what's there differs. True if it changed. */

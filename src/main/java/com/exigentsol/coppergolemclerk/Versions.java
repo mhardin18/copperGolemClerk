@@ -9,6 +9,17 @@ final class Versions {
 
     private static final Pattern TAG = Pattern.compile("v?(\\d+(?:\\.\\d+)*)-paper(\\d+(?:\\.\\d+)*)");
 
+    /** Where the project lives on GitHub. */
+    static final String REPOSITORY = "https://github.com/mhardin18/copperGolemClerk";
+
+    /**
+     * The config.yml a release shipped with, on GitHub: what each setting does, for owners
+     * who never open the jar. version: the plugin's; minecraft: the Paper version it's for.
+     */
+    static String configUrl(String version, String minecraft) {
+        return REPOSITORY + "/blob/v" + version + "-paper" + minecraft + "/src/main/resources/config.yml";
+    }
+
     /** A published release: plugin version, the Minecraft (Paper) version it was built for, its page. */
     record Release(String version, String minecraft, String url) {
     }

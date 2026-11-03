@@ -178,7 +178,7 @@ def _(c):
 
 @scenario("vanilla-keeps-homeless-item", "modes", 150, "A vanilla-mode golem holding dirt with nowhere to put it keeps holding it, as in vanilla: the plugin doesn't return it.", alone=True)
 def _(c):
-    set_options(c, matching_chest_timeout_seconds="10")
+    set_options(c, fixed_step_seconds="10")
     c.chest("copper", 2, 10, [("dirt", 8)], block="waxed_copper_chest")
     c.chest("logs", 14, 10, [("oak_log", 1)])
     golem(c, 4, 10, vanilla=True)

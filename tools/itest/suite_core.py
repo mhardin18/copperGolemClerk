@@ -85,7 +85,7 @@ def _(c):
     return lambda: [expect(c, "overflow", "birch_log", 16), expect(c, "full", "birch_log", 0)]
 
 
-@scenario("return-homeless", "core", 420, "With nowhere to put it, the item goes back to its copper chest (after 120 active seconds) and stays there.")
+@scenario("return-homeless", "core", 420, "With nowhere to put it, the item goes back to its copper chest (after the 30-second vanilla step) and stays there.")
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)  # a full, unrelated chest: no home, no empty chest
@@ -121,7 +121,7 @@ def _(c):
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "logs", "spruce_log", 16), expect(c, "empty", "*", 0)]
 
 
-@scenario("sleepy-golem-return", "core", 600, "With no player nearby, a no-home item is still returned, after 120 seconds of the golem actually being active.")
+@scenario("sleepy-golem-return", "core", 600, "With no player nearby, a no-home item is still returned, after 30 seconds of the golem actually being active.")
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)

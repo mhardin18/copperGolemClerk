@@ -151,12 +151,12 @@ belongs. After trying 10 chests they pause and start over from the nearest, so
 far-away chests seldom get used.
 
 With `prefer-matching-chests` (on by default), a golem carrying an item first
-looks over every chest in its range: 32 blocks sideways and 8 up or down, in
-loaded chunks. If any chest matches the item (a sign or frame label, the same item,
-or the same group) and has room, the golem walks straight to it. Empty chests are
-used only when no matching chest has room. If the golem hasn't delivered within
-`matching-chest-timeout-seconds` (default 30), for example because the chest is
-walled off, it works through the fallback steps in "Items with no home" below.
+looks over every chest in its range: `search-distance` blocks sideways (32 by default)
+and 8 up or down, in loaded chunks. If any chest matches the item (a sign or frame label,
+the same item, or the same group) and has room, the golem walks straight to it. Empty
+chests are used only when no matching chest has room. If the golem hasn't delivered by
+the time the walk there should have taken (30 seconds or more), for example because the
+chest is walled off, it works through the fallback steps in "Items with no home" below.
 
 ### Item frame labels
 
@@ -260,15 +260,19 @@ if any of these applies.
 
 ### Items with no home
 
-If a golem can't deliver its item it works through four steps, each lasting
-`matching-chest-timeout-seconds` (default 30): steer to the most specific matching
-chest, overflow or empty chest; then any matching chest (the most specific one may be
-unreachable); then only overflow or empty chests; then plain vanilla wandering. After
-that (with `return-unsortable-items`, on by default), the item is put back into the copper chest it came from (golems can't walk to
-copper chests while carrying, so it's moved directly) and marked "no home" there for
-`homeless-retry-minutes` (default 5). Golems take other items first and skip a copper
-chest that has only "no home" items left. Add a home for the item, then
-`/cgc reload` to have golems try again right away. Steps count only time the
+If a golem can't deliver its item it works through four steps: steer to the most
+specific matching chest, overflow or empty chest; then any matching chest (the most
+specific one may be unreachable); then only overflow or empty chests; then plain vanilla
+wandering for 30 seconds. Each of the first three lasts as long as walking to the
+farthest chest it tries takes (30 seconds or more, longer with a bigger
+`search-distance`), and a step with nothing new to try is skipped, so an item with no
+home in range goes straight to the vanilla step. After that (with
+`return-unsortable-items`, on by default), the item is put back into the copper chest it
+came from (golems can't walk to copper chests while carrying, so it's moved directly)
+and marked "no home" there for `homeless-retry-minutes` (default 5). Golems take other
+items first and skip a copper chest that has only "no home" items left. Add a home for
+the item with a sign or item frame label and golems within `search-distance` of it try
+again right away (or `/cgc reload` to clear every mark). Steps count only time the
 golem is likely active (walking, or a player within the server's entity activation
 range), so golems that Paper pauses far from players don't run out of time, and a
 golem waiting its turn next to a chest that takes its item isn't sent back (unless it
@@ -672,9 +676,8 @@ with its line number and the old settings are kept.
 |---|---|---|
 | `match-mode` | `all` | When a chest counts as a group match by its contents. `all`: every item in the chest must share a group with the carried item, so one stray item stops group matching and chests stay tidy. `any`: one item from the group is enough. |
 | `prefer-matching-chests` | `true` | A golem first looks over every chest in range (32 blocks sideways, 8 up or down) and walks straight to the best one that has room, instead of trying the nearest chests one by one and dropping its item in the first empty one. |
-| `matching-chest-timeout-seconds` | `30` | How long each fallback step lasts when a golem can't deliver: best chest → any matching chest → `[Overflow]` or empty chests → vanilla behaviour → put it back. Only time when the golem is likely active counts. |
 | `return-unsortable-items` | `true` | After the last step, put the item back into the copper chest it came from (or the nearest one with room), instead of carrying it around for ever. |
-| `homeless-retry-minutes` | `5` | Items put back are marked "no home" in that copper chest for this long: golems take other items first and skip a chest with only those left. `/cgc reload` clears the marks. |
+| `homeless-retry-minutes` | `5` | Items put back are marked "no home" in that copper chest for this long: golems take other items first and skip a chest with only those left. A new or changed sign or item frame label nearby clears the marks within `search-distance`; `/cgc reload` clears them all. |
 | `allow-empty-chests` | `true` | Golems may use an empty chest as a last resort. `false`: only labelled chests, chests already holding the item or its group, and `[Overflow]` chests. |
 | `overflow-before-empty` | `true` | When no matching chest has room, try `[Overflow]` chests before empty ones. `false` fills empty chests first. |
 | `item-frame-labels` | `true` | An item in a frame on a chest means "only this item goes here". |

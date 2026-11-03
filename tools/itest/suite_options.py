@@ -8,12 +8,18 @@ import re
 from arena import CONFIG, expect, scenario
 
 
+# Settings the plugin reads that aren't in config.yml (ConfigDocsTest.HIDDEN): set_options adds them.
+HIDDEN = {"fixed-step-seconds", "status-labels-everywhere", "update-check-url", "mode-marker-height"}
+
+
 def set_options(c, **options):
     text = open(CONFIG).read()
     for key, value in options.items():
         key = key.replace("_", "-")
         text, n = re.subn(rf"(?m)^{key}: .*$", f"{key}: {value}", text)
-        if n != 1:
+        if n == 0 and key in HIDDEN:
+            text = text.rstrip("\n") + f"\n{key}: {value}\n"  # test-only settings aren't in config.yml
+        elif n != 1:
             raise RuntimeError(f"config has no single '{key}:' line")
     with open(CONFIG, "w") as f:
         f.write(text)
@@ -131,9 +137,8 @@ def _(c):
                     (refused(), "the [stone] chest refused the logs ('labelled for' in the log)")]
 
 
-@scenario("option-short-timeout", "options", 120, "matching-chest-timeout-seconds: 5: a no-home item is returned within about 20 active seconds, not 120.", alone=True)
+@scenario("no-home-quick-return", "options", 150, "An item with no home in range skips straight to the 30-second vanilla step: it's back in its copper chest within about 45 active seconds (it used to take 120).", alone=True)
 def _(c):
-    set_options(c, matching_chest_timeout_seconds="5")
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)
     c.golem(4, 10)
@@ -146,7 +151,7 @@ def _(c):
         returned = bool(picked) and in_chest == 1 and holding == 0
         took = c.elapsed() - picked[0] if picked else None
         return [(bool(picked), "golem picked the item up"), (returned, "item returned to the copper chest"),
-                (took is not None and took < 45, f"returned {took and round(took)}s after pickup (want under 45)")]
+                (took is not None and took < 50, f"returned {took and round(took)}s after pickup (want under 50)")]
     return check
 
 
@@ -177,7 +182,7 @@ def _(c):
 
 @scenario("option-homeless-retry", "options", 300, "homeless-retry-minutes: 1: a returned no-home item is picked up again about a minute later.", alone=True)
 def _(c):
-    set_options(c, homeless_retry_minutes="1", matching_chest_timeout_seconds="5")
+    set_options(c, homeless_retry_minutes="1", fixed_step_seconds="5")
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)
     c.golem(4, 10)
@@ -198,9 +203,9 @@ def _(c):
     return check
 
 
-@scenario("long-search-not-reset", "options", 960, "matching-chest-timeout-seconds: 180: a no-home item is returned after 720 active seconds, even though that is past the 10-minute mark where stale searches are cleaned up. ~13 minutes.", alone=True, manual=True)
+@scenario("long-search-not-reset", "options", 960, "fixed-step-seconds: 180 (test setting): a no-home item is returned after 720 active seconds, even though that is past the 10-minute mark where stale searches are cleaned up. ~13 minutes.", alone=True, manual=True)
 def _(c):
-    set_options(c, matching_chest_timeout_seconds="180")
+    set_options(c, fixed_step_seconds="180")
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)  # no home, no empty chest
     c.golem(4, 10)

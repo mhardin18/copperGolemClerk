@@ -27,7 +27,8 @@ class ConfigDocsTest {
     private static final Set<String> HIDDEN = Set.of(
             "status-labels-everywhere", // test hook (itest suite labels)
             "update-check-url",         // test hook (itest suite commands)
-            "mode-marker-height");      // fine-tuning only
+            "mode-marker-height",       // fine-tuning only
+            "fixed-step-seconds");      // test hook: fixed-length search steps (itests that need short waits)
 
     /** Settings from before the changelog named settings; every later one must be in it. */
     private static final Set<String> OLDER_THAN_CHANGELOG = Set.of(

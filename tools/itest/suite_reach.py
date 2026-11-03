@@ -138,7 +138,7 @@ def heading_high(c):
 
 @scenario("deliver-high-walled-off", "reach", 300, "deliver-reach: 4, but the floor in front of the [logs] stack is walled off: the golem gives up on it and the logs go to [Overflow], none lost.", alone=True)
 def _(c):
-    set_options(c, deliver_reach="4", matching_chest_timeout_seconds="20")
+    set_options(c, deliver_reach="4", fixed_step_seconds="20")
     deliver_scene(c)
     # A glass ring two blocks out and five high around the stack, with no roof (a block on
     # top of the chest would stop it opening at all): the floor beside it can't be reached.
@@ -198,7 +198,7 @@ def _(c):
 
 @scenario("deliver-reach-lowered-midway", "reach", 300, "deliver-reach drops from 4 to 2 (reload) while a golem walks to the top chest: it ends up using [Overflow], nothing lost or stuck.", alone=True)
 def _(c):
-    set_options(c, deliver_reach="4", matching_chest_timeout_seconds="20")
+    set_options(c, deliver_reach="4", fixed_step_seconds="20")
     deliver_scene(c)
     t = Trigger()
     def check():
@@ -210,7 +210,7 @@ def _(c):
 
 @scenario("take-high-homeless", "reach", 300, "take-reach: 4: a high copper chest holds only dirt, which has no home: the golem takes it, returns it, and doesn't keep fetching it.", alone=True)
 def _(c):
-    set_options(c, take_reach="4", matching_chest_timeout_seconds="10", allow_empty_chests="false")
+    set_options(c, take_reach="4", fixed_step_seconds="10", allow_empty_chests="false")
     for dy in range(3):
         c.block(2, 10, "stone_bricks", dy=dy)
     c.chest("copper", 2, 10, [("dirt", 8)], block="waxed_copper_chest", dy=3)
