@@ -104,7 +104,8 @@ final class Returns {
         }
         List<Block> candidates = new ArrayList<>();
         boolean sourceListed = false;
-        if (source != null && sourceWorld != null && sourceWorld.equals(golem.getWorld())) {
+        if (source != null && sourceWorld != null && sourceWorld.equals(golem.getWorld())
+                && sourceWorld.isChunkLoaded(source.x() >> 4, source.z() >> 4)) { // else reading it would load it
             Block b = sourceWorld.getBlockAt(source.x(), source.y(), source.z());
             if (isCopperChest(b.getType()) || HomeFinder.isDestination(b.getType())) {
                 candidates.add(b); // its copper chest, or the overflow chest it was fetched from

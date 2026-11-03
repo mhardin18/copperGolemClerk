@@ -179,6 +179,9 @@ final class HomeFinder {
     }
 
     private boolean likelyActive(Entity golem) {
+        if (!golem.isTicking()) {
+            return false; // in a chunk the server isn't ticking (far from players): frozen, whatever its path
+        }
         if (golem instanceof Mob mob && mob.getPathfinder().hasPath()) {
             return true; // walking mobs are kept active
         }
@@ -413,6 +416,16 @@ final class HomeFinder {
         Block at = golem.getLocation().getBlock();
         for (Pos p : halves) {
             if (Math.abs(p.x() - at.getX()) <= VANILLA_DISTANCE && Math.abs(p.z() - at.getZ()) <= VANILLA_DISTANCE) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** True if the chunks of every half of a container are loaded (reading a block in an unloaded one loads it). */
+    static boolean allLoaded(World world, Set<Pos> halves) {
+        for (Pos p : halves) {
+            if (!world.isChunkLoaded(p.x() >> 4, p.z() >> 4)) {
                 return false;
             }
         }
