@@ -7,13 +7,38 @@ so no player needs to be nearby. The runner places chests, signs, frames and ite
 summons copper golems, polls chest contents until every check passes or time runs out,
 then removes everything and the force-loads.
 
-    python3 -I tools/itest/run.py                     # everything except manual scenarios (~15 min)
+    python3 -I tools/itest/run.py smoke               # quick sanity check, ~10 min
+    python3 -I tools/itest/run.py --changed --parallel-only   # smoke + what this branch touches, ~15 min
+    python3 -I tools/itest/run.py --changed           # the same with the one-at-a-time scenarios, ~1-1.5 h
+    python3 -I tools/itest/run.py                     # everything except manual scenarios (2-3 h)
     python3 -I tools/itest/run.py core world          # suites or scenario names (substring match)
     python3 -I tools/itest/run.py server-restart      # manual: asks you to restart the server
     python3 -I tools/itest/run.py soak                # manual: ~15-minute soak test
     python3 -I tools/itest/run.py smelter-replica     # manual: 6 minutes of a copied smelter; prints trips and idle furnaces
     python3 -I tools/itest/run.py --list              # what each scenario checks
     python3 -I tools/itest/run.py --keep              # leave the arenas up to inspect
+
+## Which tests to run
+
+| When | Command | Time |
+|---|---|---|
+| After every change | `run.py smoke` | ~10 min |
+| Before opening a PR | `run.py --changed --parallel-only` | ~15 min |
+| Before merging a PR that touches sorting code | `run.py --changed` | up to ~1.5 h |
+| Before a release | `run.py` (full) | 2-3 h |
+
+`smoke` is the list `impact.SMOKE`: one or two quick scenarios per feature, almost all
+run in parallel. `--changed` compares the branch with its release branch
+(`origin/release/<version>`, or `--changed=<ref>`), maps each changed file to the
+suites that exercise it (`impact.SOURCE_SUITES`), and runs those plus the smoke set
+and every scenario the branch adds or edits. A `config.yml` change that only touches
+comments maps to nothing (ConfigDocsTest covers it); `CopperGolemClerk.java` maps to
+the options and config suites only when the change reads settings. Files with no
+mapping are listed so the table can be extended. `--parallel-only` leaves out the
+scenarios that run one at a time (they change server-wide settings, so they can't
+share the server), except ones the branch edits. Add `--list` to any of these to see
+what would run without running it. Unknown options are refused (an unknown one used
+to start a full run), and a stopped run (SIGTERM) still restores `config.yml`.
 
 Exit code 0 = all passed. On failure it prints each check and the plugin's debug log
 lines for that scenario's area (pluginDev runs with `debug: true`). Any unexpected
