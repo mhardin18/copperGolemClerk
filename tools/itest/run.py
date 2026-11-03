@@ -98,8 +98,8 @@ def select(argv):
         words += suites
     picked = []
     for i, s in enumerate(arena.SCENARIOS):
-        if s["name"] in smoke:
-            picked.append((i, s))
+        if s["name"] in smoke and not (s["manual"] and not any(w in s["name"] for w in words)):
+            picked.append((i, s))  # manual scenarios still run only when named, even if the branch edits them
             continue
         named = any(w == s["suite"] or w in s["name"] for w in words)
         everything = not words and not smoke
