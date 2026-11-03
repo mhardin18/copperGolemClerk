@@ -118,6 +118,9 @@ public final class SortListener implements Listener {
                 homes.forget(id); // its next search starts fresh
                 return;
             }
+            if (reach.isDelivering(id)) {
+                return; // walking to a high or far chest: a long walk can outlast the search steps
+            }
             if (!homes.waitedTooLong(id) && homes.waitingNearHome(golem, held)) {
                 // Waiting in line at a chest that takes the item: check again next second.
                 // Not forever, though: a chest vanilla can't use for some reason would hold it there for good.

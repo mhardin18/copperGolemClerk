@@ -286,6 +286,16 @@ deliver-reach: 2
 # fetch from (2 to 6 rows, like deliver-reach). Above 2 the plugin does the taking.
 take-reach: 2
 
+# How far golems look for things to do: chests to put items into, copper chests to
+# take from, [Overflow] chests to fetch from and furnaces to keep going. In blocks
+# each way sideways from where the golem stands (a square, like vanilla's); up and
+# down stays 8. 32 is vanilla's own range and the lowest allowed; the most is 128.
+# Above 32 the plugin walks golems to chests vanilla golems can't see and moves the
+# items for them, walks take longer, and each search covers more chunks: about 2.5
+# times as many at 64 as at 32, about 7.4 times at 128. Chests in unloaded chunks are
+# never found, whatever this is.
+search-distance: 32
+
 # Which containers golems put items into. Vanilla golems only use chests and trapped
 # chests. Add barrel and/or shulker_box (every colour) and golems use those too: the
 # golem walks up to it and the plugin puts the item in, with labels, contents matching

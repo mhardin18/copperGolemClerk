@@ -57,27 +57,27 @@ SOURCE_SUITES = {
     "GolemLabels": ["labels"],
     "GolemLimits": ["limits"],
     "GolemModes": ["modes"],
-    "GolemPaths": ["setup"],
+    "GolemPaths": ["setup", "distance"],
     "GolemPortals": ["portals", "dimensions"],
     "GolemRescue": ["rescue"],
     "GolemStats": ["stats"],
     "GolemTraffic": ["traffic"],
     "HelpText": ["commands"],
-    "HomeFinder": SORTING + ["destinations", "reach", "overflow-hopper"],
+    "HomeFinder": SORTING + ["destinations", "reach", "overflow-hopper"] + ["distance"],
     "HopperLines": ["overflow-hopper", "furnace", "edge"],
     "ItemFinder": ["find"],
     "ItemGroups": ["core", "edge", "filters", "find"],
     "LabelAdvisor": ["commands", "find"],
-    "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach"],
+    "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach"] + ["distance"],
     "PaperSupport": [],
     "Reach": ["reach", "destinations", "edge30"],
-    "ReachDelivery": ["reach", "destinations", "edge30"],
+    "ReachDelivery": ["reach", "destinations", "edge30"] + ["distance"],
     "Returns": ["core", "edge", "world", "edge26"],
-    "SortListener": SORTING + ["reach", "destinations", "conflicts"],
+    "SortListener": SORTING + ["reach", "destinations", "conflicts"] + ["distance"],
     "StorageReport": ["commands"],
     "UpdateChecker": ["commands"],
     "Versions": ["commands"],
-    "src/main/resources/config.yml": ["options", "config"],
+    "src/main/resources/config.yml": ["options", "config", "distance"],
     "src/main/resources/plugin.yml": ["commands"],
     "tools/itest/hooks/": ["conflicts"],
 }
@@ -126,6 +126,10 @@ def changed_scenarios(files, base):
         starts = [(n, m.group(1)) for n, line in enumerate(lines, 1)
                   for m in [re.match(r'@scenario\(\s*"([^"]+)"', line)] if m]
         diff = git("diff", "-U0", since, "--", f) + git("diff", "-U0", "HEAD", "--", f)
+        on_base = subprocess.run(["git", "-C", ROOT, "cat-file", "-e", f"{since}:{f}"], capture_output=True).returncode == 0
+        if not on_base:
+            names.update(name for _, name in starts)  # a file new on this branch: all of it
+            continue
         for m in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", diff, re.M):
             first, count = int(m.group(1)), int(m.group(2) or 1)
             for line in range(first, first + max(count, 1)):

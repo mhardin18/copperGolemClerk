@@ -28,6 +28,7 @@ that cover nearly every survival item; everything else is optional.
 
 **Bigger, faster storage rooms**
 - **Taller stacks** (a setting): golems reach chests up to 6 rows high (vanilla: 2).
+- **Bigger storage areas** (a setting): golems look up to 128 blocks away for chests (vanilla: 32).
 - **Barrels and shulker boxes** as destinations (a setting).
 - **Bigger loads** (a setting): carry up to 64 items a trip instead of 16.
 - **Golems run your furnaces:** label a furnace `[raw iron]` and golems feed it from your
@@ -411,6 +412,20 @@ through a Nether portal, End portal or End gateway; one that steps into a portal
 stays in its own world. A golem on a lead or riding a boat or minecart goes through
 as usual, so you can still take golems to another dimension.
 
+### Bigger storage areas
+
+Vanilla golems look for chests up to 32 blocks away in each direction sideways (and 8
+up or down). `search-distance` raises the sideways distance, up to 128 blocks; it can't
+go below vanilla's 32. Golems then find chests, copper chests, `[Overflow]` chests and
+furnaces further away. Vanilla golems never see chests past 32 blocks, so for those the
+golem walks there and the plugin moves the items, as for chests above vanilla's reach,
+and the time golems are given before they give up on a walk grows with its length.
+
+A bigger area costs more. Each search covers about 2.5 times as many chunks at 64 as at
+32, and about 7.4 times at 128, and golems spend longer walking than sorting. Chests in
+unloaded chunks are never found, so a distance beyond your server's view distance
+(10 chunks = 160 blocks by default) gains nothing unless players keep that ground loaded.
+
 ### Taller stacks of chests
 
 Vanilla golems only open chests up to 2 rows above the floor they stand on: the
@@ -688,6 +703,7 @@ with its line number and the old settings are kept.
 | `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
 | `take-reach` | `2` | How many rows up golems take from copper chests and fetch from `[Overflow]` chests, 2 to 6. |
+| `search-distance` | `32` | How far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways (a square; up and down stays 8). 32 (vanilla) to 128. Above 32 the plugin walks golems to chests vanilla can't see. |
 
 ### Looking after golems
 

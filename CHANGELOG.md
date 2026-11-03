@@ -4,6 +4,9 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 
 ## 3.0.1 (in progress)
 
+### New
+- `search-distance` (default 32, vanilla's range; up to 128): how far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways. Above 32 the plugin walks golems to chests vanilla golems can't see and moves the items for them, lets their paths reach that far, and gives longer walks more time before giving up.
+
 ### Changed
 - Built against the newest Paper API (26.3 build 238), and every build now also checks that the plugin compiles against build 190's API, so it keeps running on every build from 190 on, as the requirements say.
 

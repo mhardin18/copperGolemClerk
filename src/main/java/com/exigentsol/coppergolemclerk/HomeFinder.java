@@ -39,9 +39,9 @@ import org.bukkit.inventory.ItemStack;
  * [overflow] chests with room, and which are empty fallbacks. Results are cached briefly because Paper asks about every
  * chest during one search.
  *
- * Mirrors vanilla's search area: chests and trapped chests within 32 blocks
- * sideways and 8 up/down of the golem's block (1 if it is riding something),
- * in loaded chunks only.
+ * Searches like vanilla, but search-distance blocks sideways (32 = vanilla, up to 128):
+ * containers within that distance and 8 up/down of the golem's block (1 if it is riding
+ * something), in loaded chunks only.
  */
 final class HomeFinder {
 
@@ -298,8 +298,47 @@ final class HomeFinder {
         }
     }
 
+    /** Vanilla's search distance, sideways each way; search-distance can't go below it. */
+    static final int VANILLA_DISTANCE = 32;
+    /** The most search-distance allows. */
+    static final int MAX_DISTANCE = 128;
+    private static volatile int searchDistance = VANILLA_DISTANCE;
+
+    static void setSearchDistance(int blocks) {
+        searchDistance = Math.clamp(blocks, VANILLA_DISTANCE, MAX_DISTANCE);
+    }
+
+    static int searchDistance() {
+        return searchDistance;
+    }
+
     /**
-     * Container blocks of the given types within the golem's search area (vanilla's:
+     * True if every half of this container is outside the area vanilla golems search from
+     * where this golem stands (32 sideways): vanilla never offers it as a target, so the
+     * plugin has to walk the golem there and move the items itself.
+     */
+    static boolean beyondVanilla(Entity golem, Set<Pos> halves) {
+        Block at = golem.getLocation().getBlock();
+        for (Pos p : halves) {
+            if (Math.abs(p.x() - at.getX()) <= VANILLA_DISTANCE && Math.abs(p.z() - at.getZ()) <= VANILLA_DISTANCE) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * How long a golem may walk to a spot before giving up: 30 seconds for vanilla-range walks,
+     * more for longer ones (golems walk about 2.5 blocks a second, and paths wind).
+     */
+    static long walkMillis(Location from, Location to) {
+        double dx = from.getX() - to.getX();
+        double dz = from.getZ() - to.getZ();
+        return Math.max(30_000L, 15_000L + (long) (Math.sqrt(dx * dx + dz * dz) * 800));
+    }
+
+    /**
+     * Container blocks of the given types within the golem's search area (search-distance; vanilla's:
      * 32 sideways, 8 up/down of its block, 1 if riding; loaded chunks only), nearest first.
      */
     static List<BlockState> containersInRange(Entity golem, Predicate<Material> types) {
@@ -314,7 +353,7 @@ final class HomeFinder {
         List<BlockState> found = new ArrayList<>();
         World world = center.getWorld();
         Block at = center.getBlock();
-        int h = riding ? 1 : 32;
+        int h = riding ? 1 : searchDistance;
         int v = riding ? 1 : 8;
         int chunkX = at.getX() >> 4;
         int chunkZ = at.getZ() >> 4;
@@ -358,8 +397,9 @@ final class HomeFinder {
                     || (plugin.furnaceFeeding() && HopperLines.feedsFurnace(golem.getWorld(), halves))) {
                 continue;
             }
-            if (!isVanillaTarget(state.getType()) && pluginRow(golem.getWorld(), halves) == Integer.MAX_VALUE) {
-                continue; // a barrel or shulker box with nowhere to stand in reach of it
+            if ((!isVanillaTarget(state.getType()) || beyondVanilla(golem, halves))
+                    && pluginRow(golem.getWorld(), halves) == Integer.MAX_VALUE) {
+                continue; // a barrel or shulker box, or a chest past vanilla's range, with nowhere to stand in reach of it
             }
             ChestLabels.Labels labels = matcher.labelsOf(inventory);
             if (labels.overflow() && !labels.hasItemRules()) {
@@ -416,6 +456,13 @@ final class HomeFinder {
             if (!isVanillaTarget(state.getType())) {
                 // A barrel or shulker box: vanilla golems never use them, so the plugin delivers.
                 if (pluginRow(world(golem), halves) == Integer.MAX_VALUE) {
+                    continue; // nowhere to stand within reach of it
+                }
+                high.addAll(halves);
+            } else if (beyondVanilla(golem, halves)) {
+                // Past vanilla's 32 blocks (search-distance): vanilla never sees it, so the plugin delivers.
+                int row = golem instanceof org.bukkit.entity.Mob mob ? Reach.rowFor(mob, halves) : Reach.rowOf(world(golem), halves);
+                if (row == Integer.MAX_VALUE || row > Math.max(Reach.VANILLA, reach)) {
                     continue; // nowhere to stand within reach of it
                 }
                 high.addAll(halves);
