@@ -38,7 +38,9 @@ final class GolemLimits {
         int perClaim = plugin.maxGolemsPerClaim();
         int outside = plugin.maxGolemsOutsideClaims();
         if (perClaim <= 0 && outside <= 0) {
+            Set<UUID> before = over;
             over = Set.of();
+            before.forEach(plugin::limitChanged); // limits turned off: all managed again
             return;
         }
         // Group the golems the plugin would otherwise manage: by claim, or by world when unclaimed.
@@ -80,6 +82,19 @@ final class GolemLimits {
                         + "). The newest " + (golems.size() - limit) + " sort like vanilla.");
             }
         }
+        Set<UUID> before = over;
         over = Set.copyOf(now);
+        // Golems that crossed a limit either way: their path settings (search-distance's
+        // longer paths, avoid-trapdoors) follow whether the plugin manages them now.
+        for (UUID id : now) {
+            if (!before.contains(id)) {
+                plugin.limitChanged(id);
+            }
+        }
+        for (UUID id : before) {
+            if (!now.contains(id)) {
+                plugin.limitChanged(id);
+            }
+        }
     }
 }

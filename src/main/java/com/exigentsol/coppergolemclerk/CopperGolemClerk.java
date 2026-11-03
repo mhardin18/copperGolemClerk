@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
@@ -705,6 +706,13 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return golem instanceof org.bukkit.entity.CopperGolem && enabledIn(golem.getWorld())
                 && (modes == null || !modes.isVanilla(golem))
                 && (limits == null || !limits.isOver(golem.getUniqueId()));
+    }
+
+    /** This golem went over a golem limit, or back under one: refresh its path settings. */
+    void limitChanged(UUID golem) {
+        if (paths != null && getServer().getEntity(golem) instanceof org.bukkit.entity.CopperGolem copper) {
+            paths.refresh(copper);
+        }
     }
 
     /** A player switched this golem's mode: drop what the plugin was doing with it. */
