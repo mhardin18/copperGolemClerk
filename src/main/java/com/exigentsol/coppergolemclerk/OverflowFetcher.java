@@ -40,9 +40,9 @@ import org.bukkit.inventory.ItemStack;
  */
 final class OverflowFetcher {
 
-    /** giveUpMillis: how long the walk may take (longer for long walks, search-distance). */
+    /** clock: when the walk is given up (see WalkClock). */
     private record Fetch(UUID world, HomeFinder.Pos chest, Set<HomeFinder.Pos> halves, Material type,
-                         Location target, boolean copper, long startedMillis, long giveUpMillis) {
+                         Location target, boolean copper, long startedMillis, WalkClock clock) {
     }
 
     private static final long CHECK_EVERY_MILLIS = 5_000;
@@ -203,7 +203,7 @@ final class OverflowFetcher {
                     continue; // no way to walk there from here: try the next overflow chest
                 }
                 fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block),
-                        halves, type, target, false, now, HomeFinder.walkMillis(golem.getLocation(), target)));
+                        halves, type, target, false, now, new WalkClock(target, now)));
                 golem.getPathfinder().moveTo(target, 1.0);
                 if (plugin.debug()) {
                     plugin.getLogger().info(String.format("%s is idle; fetching %s from overflow chest at %d,%d,%d",
@@ -243,7 +243,7 @@ final class OverflowFetcher {
             return; // no way to walk there from here
         }
         fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block), halves,
-                type, target, true, now, HomeFinder.walkMillis(golem.getLocation(), target)));
+                type, target, true, now, new WalkClock(target, now)));
         golem.getPathfinder().moveTo(target, 1.0);
         if (plugin.debug()) {
             plugin.getLogger().info(String.format("%s is idle; taking %s from the copper chest at %d,%d,%d (%s)",
@@ -369,10 +369,10 @@ final class OverflowFetcher {
             golem.getPathfinder().stopPathfinding();
             return;
         }
-        if (now - fetch.startedMillis() > fetch.giveUpMillis()) {
+        if (fetch.clock().expired(golem, now)) {
             if (plugin.debug()) {
                 plugin.getLogger().info(golem.getType() + " couldn't reach the " + (fetch.copper() ? "copper" : "overflow")
-                        + " chest for " + fetch.type() + "; trying again later");
+                        + " chest for " + fetch.type() + " (" + fetch.clock().reason(now) + "); trying again later");
             }
             endFetch(golem, now, true);
             return;

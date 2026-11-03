@@ -116,7 +116,8 @@ overflow-before-empty: true
 # anything it would take), send it to an [Overflow] chest to fetch an item that
 # now has a home, e.g. ores after you add an [ores] chest. It takes up to
 # carry-amount (16 by default), like a normal pickup, and sorts them. Items that would just go back to overflow are
-# left alone. If it can't reach the overflow chest within 30 seconds it gives
+# left alone. If it stops getting closer to the overflow chest for 10 seconds
+# (or the walk outlasts its limit, which grows with search-distance) it gives
 # up and waits a minute. If the item loses its home on the way (that chest fills
 # up or is removed), it stops without taking anything. Items it can't deliver go
 # back to that chest.

@@ -74,9 +74,9 @@ final class FurnaceFeeder {
      * @param stops   for FEED: the furnaces still to visit, the current one first; for SUPPLY_TAKE: the
      *                furnaces the load is meant for (claimed, so other golems leave them alone)
      */
-    /** giveUpMillis: how long the walk may take (longer for long walks, search-distance). */
+    /** clock: when the walk is given up (see WalkClock); FEED_WAIT has its own limit. */
     private record Job(Kind kind, UUID world, HomeFinder.Pos target, HomeFinder.Pos furnace, Material type,
-                       Location walk, long startedMillis, List<HomeFinder.Pos> stops, long giveUpMillis) {
+                       Location walk, long startedMillis, List<HomeFinder.Pos> stops, WalkClock clock) {
     }
 
     private static final long GIVE_UP_AFTER_MILLIS = 30_000;
@@ -865,7 +865,7 @@ final class FurnaceFeeder {
             if (spot != null) {
                 jobs.put(golem.getUniqueId(), new Job(Kind.FEED, golem.getWorld().getUID(), stops.get(i), null,
                         type, spot.target(), now, new ArrayList<>(stops.subList(i, stops.size())),
-                        HomeFinder.walkMillis(golem.getLocation(), spot.target())));
+                        new WalkClock(spot.target(), now)));
                 golem.getPathfinder().moveTo(spot.target(), 1.0);
                 debugStart(golem, block);
                 return true;
@@ -886,7 +886,7 @@ final class FurnaceFeeder {
             return false; // try another source or furnace next time
         }
         jobs.put(golem.getUniqueId(), new Job(kind, golem.getWorld().getUID(), HomeFinder.Pos.of(walkTo), furnace, type,
-                spot.target(), now, stops, HomeFinder.walkMillis(golem.getLocation(), spot.target())));
+                spot.target(), now, stops, new WalkClock(spot.target(), now)));
         golem.getPathfinder().moveTo(spot.target(), 1.0);
         debugStart(golem, walkTo);
         return true;
@@ -961,12 +961,12 @@ final class FurnaceFeeder {
             golem.getPathfinder().moveTo(job.walk(), 1.0);
             return true;
         }
-        if (now - job.startedMillis() > job.giveUpMillis()) {
+        if (job.clock().expired(golem, now)) {
             golem.getPathfinder().stopPathfinding();
             giveUp(golem, job.target(), now);
             if (plugin.debug()) {
                 plugin.getLogger().info(golem.getType() + " couldn't get to the " + pretty(target.getType()) + " at "
-                        + at(target) + " in time; trying again later");
+                        + at(target) + " (" + job.clock().reason(now) + "); trying again later");
             }
             if (job.kind() == Kind.FEED && job.stops().size() > 1) {
                 return startFeed(golem, job.type(), job.stops().subList(1, job.stops().size()), now);
@@ -991,7 +991,7 @@ final class FurnaceFeeder {
         if (moved == 0 && stops.size() == 1 && plugin.furnaceWaitSeconds() > 0 && stillTakes(block, held)) {
             // The last furnace is full for now (it filled while the golem walked over): wait for room.
             jobs.put(golem.getUniqueId(), new Job(Kind.FEED_WAIT, job.world(), job.target(), null, job.type(),
-                    job.walk(), now, stops, GIVE_UP_AFTER_MILLIS));
+                    job.walk(), now, stops, null));
             if (plugin.debug()) {
                 plugin.getLogger().info(golem.getType() + " waits up to " + plugin.furnaceWaitSeconds()
                         + "s for room in the " + pretty(block.getType()) + " at " + at(block));
