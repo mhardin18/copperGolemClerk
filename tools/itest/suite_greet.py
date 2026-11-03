@@ -16,7 +16,7 @@ def boxed(c, kind, dx, dz):
 
 
 def hellos(c, text="said hello"):
-    return [l for l in c.log_lines() if text in l and c.in_cell(l)]
+    return [l for l in c.cell_lines() if text in l]
 
 
 @scenario("greet-iron-golem", "greet", 90, "An idle copper golem walks over to an iron golem and says hello.")

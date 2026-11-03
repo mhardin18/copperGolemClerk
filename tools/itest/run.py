@@ -70,6 +70,7 @@ import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the 
 from rcon import from_properties  # noqa: E402
 
 POLL = 3
+SLOW_ROUND = 10  # seconds; a slower round of checks is reported
 
 
 FLAGS = ("--list", "--keep", "--changed", "--parallel-only")
@@ -140,7 +141,7 @@ def unexpected_errors(lines, allowed):
 
 def run_batch(r, log, batch, keep, results=None):
     """Build a batch of scenarios, poll until each passes or times out. Returns results."""
-    cells, checks, done, last = {}, {}, {}, None
+    cells, checks, done, last, worst = {}, {}, {}, None, 0
     for i, s in batch:
         cells[i] = arena.Cell(r, i, log, s["dimension"], s.get("place"))
         cells[i].forceload(True)
@@ -161,22 +162,27 @@ def run_batch(r, log, batch, keep, results=None):
             if results is not None:  # so a run stopped part way still reports what finished
                 results.update({i: (cells[i], d) for i, d in done.items()})
             time.sleep(POLL)
+            round_started = time.time()
             for i, s in batch:
                 if i in done:
                     continue
                 c = cells[i]
                 try:
-                    results = checks[i]()
+                    outcome = checks[i]()
                 except Exception as e:
-                    results = [(False, f"check failed: {type(e).__name__}: {e}")]
+                    outcome = [(False, f"check failed: {type(e).__name__}: {e}")]
                 errors = unexpected_errors(c.log_lines(), s["allow_errors"])
                 if errors:
-                    results = results + [(False, f"server error during the scenario: {errors[0][:200]}")]
-                    done[i] = ("FAIL", c.elapsed(), results)
-                elif all(ok for ok, _ in results):
-                    done[i] = ("PASS", c.elapsed(), results)
+                    outcome = outcome + [(False, f"server error during the scenario: {errors[0][:200]}")]
+                    done[i] = ("FAIL", c.elapsed(), outcome)
+                elif all(ok for ok, _ in outcome):
+                    done[i] = ("PASS", c.elapsed(), outcome)
                 elif c.elapsed() > s["timeout"]:
-                    done[i] = ("FAIL", c.elapsed(), results)
+                    done[i] = ("FAIL", c.elapsed(), outcome)
+            took = time.time() - round_started
+            if took > max(SLOW_ROUND, worst):  # checks that act mid-walk need rounds well under a walk
+                worst = took
+                print(f"  note: checking {len(batch) - len(done)} scenario(s) took {took:.0f}s this round", flush=True)
             left = [s["name"] for i, s in batch if i not in done]
             if left and len(left) != last:
                 print(f"  {len(batch) - len(left)}/{len(batch)} finished; waiting on {', '.join(left)}", flush=True)

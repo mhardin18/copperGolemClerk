@@ -31,9 +31,9 @@ def summon_frame(c, dx, dz, item, kind="item_frame", on_top=False):
 def fetch_log(c):
     """(seconds, kind, item, chest) for each fetch start/take in this cell, from the debug log."""
     out = []
-    for l in c.log_lines():
+    for l in c.cell_lines():
         m = re.search(r"^\[(\d+):(\d+):(\d+)\].*?(is idle; fetching|took \d+) (\w+) from overflow chest at ([-\d,]+)", l)
-        if m and c.in_cell(l):
+        if m:
             t = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
             out.append((t, "start" if "fetching" in m.group(4) else "take", m.group(5), m.group(6)))
     return out
@@ -324,7 +324,7 @@ def _(c):
     c.golem(4, 10)
 
     def takes():
-        return sum(1 for l in c.log_lines() if "took" in l and "GRANITE" in l and c.in_cell(l))
+        return sum(1 for l in c.cell_lines() if "took" in l and "GRANITE" in l)
 
     def check():
         n = takes()
@@ -437,7 +437,7 @@ def _(c):
     c.golem(4, 10)
 
     def fetches():
-        return sum(1 for l in c.log_lines() if "fetching" in l and "BIRCH_LOG" in l and c.in_cell(l))
+        return sum(1 for l in c.cell_lines() if "fetching" in l and "BIRCH_LOG" in l)
 
     def check():
         n = fetches()
@@ -615,8 +615,8 @@ def _(c):
     golem_on_roof(c, 10, 10)
 
     def check():
-        skipped = [l for l in c.log_lines() if "has no path to the overflow chest" in l and c.in_cell(l)]
-        fetched = [l for l in c.log_lines() if "fetching GRANITE" in l and c.in_cell(l)]
+        skipped = [l for l in c.cell_lines() if "has no path to the overflow chest" in l]
+        fetched = [l for l in c.cell_lines() if "fetching GRANITE" in l]
         return [(c.elapsed() > 20, "waited 20s"), (bool(skipped), "logged that there's no path"),
                 (not fetched, f"never sent to fetch ({len(fetched)} tries)"),
                 expect(c, "overflow", "granite", 16)]

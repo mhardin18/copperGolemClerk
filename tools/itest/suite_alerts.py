@@ -9,7 +9,7 @@ from suite_options import set_options
 
 
 def alerts(c, text=""):
-    return [l for l in c.log_lines() if "Alert" in l and text in l and c.in_cell(l)]
+    return [l for l in c.cell_lines() if "Alert" in l and text in l]
 
 
 def full_logs_chest(c):

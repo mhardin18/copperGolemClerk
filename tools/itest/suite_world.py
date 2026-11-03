@@ -59,7 +59,7 @@ def _(c):
     t = Trigger()
 
     def fetching():
-        return any("fetching GRANITE" in l and c.in_cell(l) for l in c.log_lines())
+        return any("fetching GRANITE" in l for l in c.cell_lines())
 
     def check():
         t.fire_when(fetching, lambda: c.remove(18, 4))
@@ -85,7 +85,7 @@ def _(c):
     t = Trigger()
 
     def lines():
-        return [l for l in c.log_lines() if c.in_cell(l)]
+        return [l for l in c.cell_lines()]
 
     def check():
         t.fire_when(lambda: any("fetching GRANITE" in l for l in lines()), lambda: c.remove(10, 16))
@@ -253,8 +253,7 @@ def _(c):
     t = Trigger()
 
     def gave_up_returning():
-        return any("no copper chest to return it to" in l and "SCULK_SHRIEKER" in l and c.in_cell(l)
-                   for l in c.log_lines())
+        return any("no copper chest to return it to" in l and "SCULK_SHRIEKER" in l for l in c.cell_lines())
 
     def check():
         t.fire_when(lambda: c.holding("sculk_shrieker") > 0, lambda: c.remove(2, 10))
@@ -305,7 +304,7 @@ def _(c):
 # ---- log-golem-deaths: every golem that dies or is removed is accounted for in the log
 
 def golem_log(c, text):
-    lines = [l for l in c.log_lines() if text in l and c.in_cell(l)]
+    lines = [l for l in c.cell_lines() if text in l]
     return bool(lines), f"logged '{text}'" + ("" if lines else "")
 
 

@@ -101,6 +101,7 @@ were tested, and says whether each failure is a plugin bug or a test-timing prob
 | `pluginDev didn't answer RCON within 5 minutes` | The server didn't come up: see `/opt/minecraft/pluginDev/logs/latest.log`. |
 | `unknown option(s)` | A typo in an option. Unknown options are refused (an unknown one used to start a full run). |
 | A scenario fails in a big run but passes on its own | Probably timing under load: re-run it by name (`run-tests.sh <name>`). If it keeps failing, it's real. |
+| `note: checking N scenario(s) took 25s this round` | One round of checks took longer than 10 seconds. Scenarios that act while a golem walks (break a chest, kill the golem) can miss their moment when rounds are that slow, and fail. Rounds used to take most of a minute in a full run because every scenario re-read the whole server log; that is fixed, so a note like this means something else is slow (RCON, or a very busy server). |
 | The machine rebooted, or `kill -9` was used, mid-run | The results are cut off; pluginDev's `config.yml` may still have a test setting, and test golems and force-loaded chunks may be left around x=-500. Check the config against the shipped defaults and clear the leftovers; the next run that reuses a platform clears it too. |
 
 ## Which tests to run

@@ -127,7 +127,7 @@ def _(c):
     t = Trigger()
 
     def check():
-        t.fire_when(lambda: any("(FUEL_TAKE)" in l and c.in_cell(l) for l in c.log_lines()), lambda: c.r.cmd(f"item replace block {fx} {fy} {fz} container.0 with minecraft:air"))
+        t.fire_when(lambda: any("(FUEL_TAKE)" in l for l in c.cell_lines()), lambda: c.r.cmd(f"item replace block {fx} {fy} {fz} container.0 with minecraft:air"))
         return [(t.at is not None, "emptied the [Fuel] chest after the golem set off"), (t.at is not None and t.since() > 30, "watched 30s"),
                 (c.total("charcoal") == 0, f"{c.total('charcoal')} charcoal exist (want 0)"), (c.holding() == 0, "hands empty"), no_errors(c)]
     return check

@@ -133,7 +133,7 @@ from arena import Trigger, conserved  # noqa: E402
 
 
 def heading_high(c):
-    return any("heads for the chest" in l and c.in_cell(l) for l in c.log_lines())
+    return any("heads for the chest" in l for l in c.cell_lines())
 
 
 @scenario("deliver-high-walled-off", "reach", 300, "deliver-reach: 4, but the floor in front of the [logs] stack is walled off: the golem gives up on it and the logs go to [Overflow], none lost.", alone=True)
@@ -147,7 +147,7 @@ def _(c):
                            (x - 2, z - 2, x - 2, z + 2), (x + 2, z - 2, x + 2, z + 2)):
         c.run(f"fill {x1} {y} {z1} {x2} {y + 4} {z2} minecraft:glass")
     def check():
-        tried = any("heads for the chest" in l and c.in_cell(l) for l in c.log_lines())
+        tried = any("heads for the chest" in l for l in c.cell_lines())
         return [(tried, "the golem tried the high chest first"), expect(c, "overflow", "birch_log", 8),
                 expect(c, "top", "birch_log", 0), conserved(c, "birch_log", 8)]
     return check
@@ -217,8 +217,8 @@ def _(c):
     c.chest("logs", 14, 10, [("oak_log", 1)])
     c.golem(5, 10)
     def check():
-        takes = [l for l in c.log_lines() if "took" in l and "DIRT" in l and c.in_cell(l)]
-        returned = [l for l in c.log_lines() if "returned DIRT" in l and c.in_cell(l)]
+        takes = [l for l in c.cell_lines() if "took" in l and "DIRT" in l]
+        returned = [l for l in c.cell_lines() if "returned DIRT" in l]
         return [(len(returned) >= 1, "the dirt was returned"), (c.elapsed() > 150, "waited 150 seconds"),
                 (len(takes) <= 2, f"taken at most twice (got {len(takes)})"), conserved(c, "dirt", 8)]
     return check

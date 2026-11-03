@@ -212,7 +212,7 @@ def _(c):
     t = Trigger()
 
     def check():
-        trips = [l for l in c.log_lines() if "(SUPPLY_TAKE)" in l and c.in_cell(l)]
+        trips = [l for l in c.cell_lines() if "(SUPPLY_TAKE)" in l]
         t.fire_when(lambda: c.count("furnace", "oak_log") == 32, lambda: None)
         return [(t.at is not None and t.since() > 10, "furnace got 32 logs, then 10s more"),
                 (len(trips) == 2, f"{len(trips)} trips to the supply started (want 2)"),
