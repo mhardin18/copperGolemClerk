@@ -141,12 +141,39 @@ def unexpected_errors(lines, allowed):
 
 def run_batch(r, log, batch, keep, results=None):
     """Build a batch of scenarios, poll until each passes or times out. Returns results."""
-    cells, checks, done, last, worst = {}, {}, {}, None, 0
+    cells, checks, done, last = {}, {}, {}, None
     for i, s in batch:
         cells[i] = arena.Cell(r, i, log, s["dimension"], s.get("place"))
         cells[i].forceload(True)
     time.sleep(2)
+    state = {"worst": 0, "last_round": time.time()}
+
+    def check_round():
+        """Check every built scenario that hasn't finished once."""
+        started = state["last_round"] = time.time()
+        for i, s in batch:
+            if i in done or i not in checks:
+                continue
+            c = cells[i]
+            try:
+                outcome = checks[i]()
+            except Exception as e:
+                outcome = [(False, f"check failed: {type(e).__name__}: {e}")]
+            errors = unexpected_errors(c.log_lines(), s["allow_errors"])
+            if errors:
+                outcome = outcome + [(False, f"server error during the scenario: {errors[0][:200]}")]
+                done[i] = ("FAIL", c.elapsed(), outcome)
+            elif all(ok for ok, _ in outcome):
+                done[i] = ("PASS", c.elapsed(), outcome)
+            elif c.elapsed() > s["timeout"]:
+                done[i] = ("FAIL", c.elapsed(), outcome)
+        took = time.time() - started
+        if took > max(SLOW_ROUND, state["worst"]):  # checks that act mid-walk need rounds well under a walk
+            state["worst"] = took
+            print(f"  note: checking {len(checks) - len(done)} scenario(s) took {took:.0f}s this round", flush=True)
+
     try:
+        build_started = time.time()
         for i, s in batch:
             c = cells[i]
             c.clear()
@@ -158,31 +185,17 @@ def run_batch(r, log, batch, keep, results=None):
                 done[i] = ("SKIP", 0, [(True, str(e))])
             except Exception as e:  # a broken setup fails that scenario, not the whole run
                 done[i] = ("FAIL", c.elapsed(), [(False, f"setup failed: {e}")])
+            # Golems start work as soon as their platform is built, so the ones built first are
+            # checked while the rest are built (a scenario that acts mid-walk can't wait for all).
+            if time.time() - state["last_round"] >= POLL:
+                check_round()
+        if len(batch) > 1:
+            print(f"  built {len(batch)} platforms in {time.time() - build_started:.0f}s", flush=True)
         while len(done) < len(batch):
             if results is not None:  # so a run stopped part way still reports what finished
                 results.update({i: (cells[i], d) for i, d in done.items()})
-            time.sleep(POLL)
-            round_started = time.time()
-            for i, s in batch:
-                if i in done:
-                    continue
-                c = cells[i]
-                try:
-                    outcome = checks[i]()
-                except Exception as e:
-                    outcome = [(False, f"check failed: {type(e).__name__}: {e}")]
-                errors = unexpected_errors(c.log_lines(), s["allow_errors"])
-                if errors:
-                    outcome = outcome + [(False, f"server error during the scenario: {errors[0][:200]}")]
-                    done[i] = ("FAIL", c.elapsed(), outcome)
-                elif all(ok for ok, _ in outcome):
-                    done[i] = ("PASS", c.elapsed(), outcome)
-                elif c.elapsed() > s["timeout"]:
-                    done[i] = ("FAIL", c.elapsed(), outcome)
-            took = time.time() - round_started
-            if took > max(SLOW_ROUND, worst):  # checks that act mid-walk need rounds well under a walk
-                worst = took
-                print(f"  note: checking {len(batch) - len(done)} scenario(s) took {took:.0f}s this round", flush=True)
+            time.sleep(max(0, POLL - (time.time() - state["last_round"])))
+            check_round()
             left = [s["name"] for i, s in batch if i not in done]
             if left and len(left) != last:
                 print(f"  {len(batch) - len(left)}/{len(batch)} finished; waiting on {', '.join(left)}", flush=True)

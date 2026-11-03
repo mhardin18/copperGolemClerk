@@ -132,7 +132,7 @@ def _(c):
     furnace(c, "furnace", 8, 10, label="[logs]")
     c.chest("logs", 4, 16, [("birch_log", 1)])
     c.sign(4, 16, "[logs]")
-    c.golem(4, 4)
+    c.golem(4, 4, slow=True)
     x, y, z = c.abs(8, 10)
     t = Trigger()
 

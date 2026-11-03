@@ -35,7 +35,7 @@ def _(c):
     supply(c)
     furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
     raw_chest(c)
-    c.golem(4, 10)
+    c.golem(4, 10, slow=True)
     x, y, z = c.abs(8, 10)
     t = Trigger()
 
@@ -51,7 +51,7 @@ def _(c):
     supply(c)
     furnace(c, "blast", 8, 10, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
     c.chest("stash", 4, 16)
-    c.golem(4, 4)
+    c.golem(4, 4, slow=True)
     sx, sy, sz = c.chests["supply"][0]
     tx, ty, tz = c.chests["stash"][0]
     t = Trigger()
@@ -72,7 +72,7 @@ def _(c):
 def _(c):
     supply(c)
     furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
-    c.golem(4, 10)
+    c.golem(4, 10, slow=True)
     t = Trigger()
 
     def check():
@@ -89,7 +89,7 @@ def _(c):
     supply(c)
     furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
     raw_chest(c)
-    c.golem(4, 10)
+    c.golem(4, 10, slow=True)
     t = Trigger()
 
     def check():
@@ -104,7 +104,7 @@ def _(c):
     supply(c)
     furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
     c.chest("empty", 4, 16)
-    c.golem(4, 10)
+    c.golem(4, 10, slow=True)
     t = Trigger()
 
     def to_vanilla():
@@ -123,7 +123,7 @@ def _(c):
     c.chest("buckets", 4, 16, [("bucket", 1)])
     c.block(16, 4, "lava_cauldron")
     x, y, z = c.abs(16, 4)
-    c.golem(4, 10)
+    c.golem(4, 10, slow=True)
     t = Trigger()
 
     def check():
