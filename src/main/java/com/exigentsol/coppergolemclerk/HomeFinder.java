@@ -420,7 +420,7 @@ final class HomeFinder {
                 }
                 high.addAll(halves);
             } else if (reach > Reach.VANILLA) {
-                int row = Reach.rowOf(world(golem), halves);
+                int row = golem instanceof org.bukkit.entity.Mob mob ? Reach.rowFor(mob, halves) : Reach.rowOf(world(golem), halves);
                 if (row > Reach.VANILLA && row <= reach) {
                     high.addAll(halves); // out of vanilla's reach, within ours
                 }

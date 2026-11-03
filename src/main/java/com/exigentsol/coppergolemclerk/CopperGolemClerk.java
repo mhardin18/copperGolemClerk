@@ -352,6 +352,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         if (listener != null) {
             listener.furnaces().clear();
             listener.fetcher().clear();
+            Reach.clearWalkCache();
         }
         takeReach = reachSetting(config, "take-reach");
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());

@@ -154,7 +154,7 @@ public final class SortListener implements Listener {
             if (noGolems) {
                 event.setAllowed(false); // [No Golems]: never take from it
             } else if (plugin.takeReach() > Reach.VANILLA && Returns.isCopperChest(block.getType())
-                    && !Reach.vanillaReaches(rowOf(block))) {
+                    && !Reach.vanillaReaches(rowOf(golem, block))) {
                 event.setAllowed(false); // too high for vanilla; idle golems fetch from it (OverflowFetcher)
             } else if (fetcher.isFetching(golem.getUniqueId()) || furnaces.isBusy(golem.getUniqueId())) {
                 event.setAllowed(false); // walking to an overflow chest or a furnace; don't get pulled away
@@ -398,10 +398,10 @@ public final class SortListener implements Listener {
     }
 
     /** A chest's row above where a golem can stand beside it (Integer.MAX_VALUE if nowhere). */
-    private static int rowOf(Block block) {
+    private static int rowOf(Entity golem, Block block) {
         Set<HomeFinder.Pos> halves = block.getState(false) instanceof Container c
                 ? HomeFinder.halvesOf(c.getInventory(), block) : Set.of(HomeFinder.Pos.of(block));
-        return Reach.rowOf(block.getWorld(), halves);
+        return golem instanceof org.bukkit.entity.Mob mob ? Reach.rowFor(mob, halves) : Reach.rowOf(block.getWorld(), halves);
     }
 
     /** True if the golem's current item was fetched from (one half of) this chest. */

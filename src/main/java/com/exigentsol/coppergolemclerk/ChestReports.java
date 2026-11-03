@@ -314,15 +314,63 @@ final class ChestReports {
 
     /** Whether golems can reach this chest's height (only said when it's above vanilla's 2 rows). */
     private void reachNote(CommandSender player, Block block, Inventory inv, String setting, int reach) {
-        int row = Reach.rowOf(block.getWorld(), HomeFinder.halvesOf(inv, block));
+        Set<HomeFinder.Pos> halves = HomeFinder.halvesOf(inv, block);
+        int row = Reach.rowOf(block.getWorld(), halves);
         if (row == Integer.MAX_VALUE) {
             say(player, NamedTextColor.YELLOW, "No floor for a golem to stand on beside it within "
                     + Reach.MAX + " rows; golems use it only if vanilla can reach it some other way.");
         } else if (!Reach.vanillaReaches(row)) {
-            say(player, row <= reach ? NamedTextColor.WHITE : NamedTextColor.RED, "It's " + row
-                    + " chest rows up from the floor beside it: " + (row <= reach
-                    ? "within " + setting + " (" + reach + "), so golems use it."
-                    : "out of reach. Golems reach " + reach + " (" + setting + "); raise it to " + row + " or more."));
+            say(player, row <= reach ? NamedTextColor.WHITE : NamedTextColor.RED, rowsUp(row, setting, reach));
+        } else {
+            lowSpotNote(player, block, halves, setting, reach);
+        }
+    }
+
+    private static String rowsUp(int row, String setting, int reach) {
+        return "It's " + row + " chest rows up from the floor beside it: " + (row <= reach
+                ? "within " + setting + " (" + reach + "), so golems use it."
+                : "out of reach. Golems reach " + reach + " (" + setting + "); raise it to " + row + " or more.");
+    }
+
+    /**
+     * A chest within vanilla's reach only from a spot golems may not be able to get to, such as
+     * the ground behind a wall of chests built into a hillside, while from the floor in front of
+     * it the chest is higher. Asks a golem nearby whether it can walk to the low spot.
+     */
+    private void lowSpotNote(CommandSender player, Block block, Set<HomeFinder.Pos> halves, String setting, int reach) {
+        Reach.Spot low = null;
+        Reach.Spot high = null;
+        for (Reach.Spot spot : Reach.spotsFor(block.getWorld(), halves)) {
+            if (Reach.vanillaReaches(spot.row())) {
+                low = low == null || spot.row() < low.row() ? spot : low;
+            } else {
+                high = high == null || spot.row() < high.row() ? spot : high;
+            }
+        }
+        if (low == null || high == null) {
+            return; // every spot within vanilla's reach: golems use it the vanilla way
+        }
+        Location center = block.getLocation().add(0.5, 0.5, 0.5);
+        org.bukkit.entity.CopperGolem golem = null;
+        for (var g : block.getWorld().getNearbyEntitiesByType(org.bukkit.entity.CopperGolem.class, center, 32, 8, 32)) {
+            if (plugin.manages(g) && (golem == null
+                    || g.getLocation().distanceSquared(center) < golem.getLocation().distanceSquared(center))) {
+                golem = g;
+            }
+        }
+        Block feet = low.feet();
+        String where = feet.getX() + "," + feet.getY() + "," + feet.getZ();
+        if (golem != null) {
+            int row = Reach.rowFor(golem, halves);
+            if (Reach.vanillaReaches(row)) {
+                return; // the nearest golem can walk to the low spot
+            }
+            say(player, row <= reach ? NamedTextColor.WHITE : NamedTextColor.RED, "Golems can't walk to the spot level with it ("
+                    + where + "), so they use the floor in front. " + rowsUp(row, setting, reach));
+        } else {
+            say(player, NamedTextColor.YELLOW, "Golems open it the vanilla way only if they can walk to " + where
+                    + " (level with it); otherwise " + rowsUp(high.row(), setting, reach).replaceFirst("^It's", "it's")
+                    + " (No golem nearby to check which.)");
         }
     }
 

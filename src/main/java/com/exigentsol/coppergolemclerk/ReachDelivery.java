@@ -67,7 +67,8 @@ final class ReachDelivery {
         if (!(golem instanceof CopperGolem copper)) {
             return false;
         }
-        Reach.Spot spot = Reach.spotFor(golem.getWorld(), halves);
+        // A spot the golem can walk to, not just the lowest one: it may be behind the wall.
+        Reach.Spot spot = Reach.walkableSpot(copper, halves, Math.max(Reach.VANILLA, plugin.deliverReach()));
         if (spot == null) {
             return false;
         }

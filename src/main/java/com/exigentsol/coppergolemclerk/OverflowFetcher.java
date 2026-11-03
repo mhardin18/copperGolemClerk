@@ -141,7 +141,7 @@ final class OverflowFetcher {
                 return;
             }
             Set<HomeFinder.Pos> halves = HomeFinder.halvesOf(inventory, state.getBlock());
-            int row = Reach.rowOf(golem.getWorld(), halves);
+            int row = Reach.rowFor(golem, halves);
             if (Reach.vanillaReaches(row) || row == Integer.MAX_VALUE) {
                 return; // vanilla takes from this one (or tries to)
             }
