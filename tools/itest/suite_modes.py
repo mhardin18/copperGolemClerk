@@ -153,7 +153,8 @@ def make_vanilla(c):
     c.r.cmd(f"data merge entity {sel} {{{VANILLA}}}")
 
 
-@scenario("vanilla-switch-mid-fetch", "modes", 90, "A golem fetching from [Overflow] is switched to vanilla on the way: it stops, and the granite stays in the overflow chest.")
+@scenario("vanilla-switch-mid-fetch", "modes", 90, "A golem fetching from [Overflow] is switched to vanilla on the way: it stops, and the granite stays in the overflow chest.",
+          alone=True)  # the switch must land during a walk of a few seconds: under parallel load the harness polls too slowly
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     c.chest("overflow", 18, 4, [("granite", 16)])
@@ -165,8 +166,12 @@ def _(c):
     golem(c, 4, 10)
     t = Trigger()
     def check():
-        t.fire_when(lambda: any("fetching GRANITE" in l and c.in_cell(l) for l in c.log_lines()), lambda: make_vanilla(c))
-        return [(t.at is not None and t.since() > 30, "switched mid-fetch, 30 seconds ago"),
+        t.fire_when(lambda: any("fetching GRANITE" in l and c.in_cell(l) for l in c.log_lines()), lambda: make_vanilla(c),
+                    lines=c.log_lines)
+        took_first = t.at is not None and any("took" in l and "GRANITE" in l and c.in_cell(l) for l in c.log_lines()[:t.lines])
+        return [(not took_first, "switched before the golem got there" if not took_first
+                 else "the golem took the granite before the switch landed (harness too slow; not a plugin failure)"),
+                (t.at is not None and t.since() > 30, "switched mid-fetch, 30 seconds ago"),
                 expect(c, "overflow", "granite", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
     return check
 
