@@ -71,6 +71,34 @@ def _(c):
     return check
 
 
+@scenario("home-gone-during-fetch", "world", 180, "The chest a fetched item would go to is destroyed while the golem walks to the overflow chest; it stops without taking anything.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    c.chest("overflow", 18, 4, [("granite", 16)])
+    c.sign(18, 4, "[Overflow]")
+    c.chest("stone", 10, 16, [("andesite", 1)])
+    # Same 20-block walk as overflow-gone-during-fetch, so the home is gone before the golem arrives.
+    x, y, z = c.abs(12, 0)
+    _, _, z2 = c.abs(12, 12)
+    c.run(f"fill {x} {y} {z} {x} {y + 2} {z2} minecraft:glass")
+    c.golem(4, 10)
+    t = Trigger()
+
+    def lines():
+        return [l for l in c.log_lines() if c.in_cell(l)]
+
+    def check():
+        t.fire_when(lambda: any("fetching GRANITE" in l for l in lines()), lambda: c.remove(10, 16))
+        took = [l for l in lines() if "took" in l and "GRANITE from overflow chest" in l]
+        stopped = any("stopped fetching GRANITE" in l and "no longer has a home" in l for l in lines())
+        return [(t.at is not None, "home chest destroyed after the fetch started"),
+                (stopped, "golem stopped the fetch: no home" if stopped else "no 'stopped fetching' line yet"),
+                (not took, "golem never took the granite" if not took else f"golem took granite: {took[0][-80:]}"),
+                (c.holding() == 0, f"golem holding {c.holding()} items (want 0)"),
+                expect(c, "overflow", "granite", 16)]
+    return check
+
+
 @scenario("return-target-missing", "world", 420, "The copper chest an item came from is destroyed; the item is returned to another copper chest.")
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")

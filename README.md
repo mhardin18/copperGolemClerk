@@ -282,8 +282,9 @@ chest and takes up to `carry-amount` (16) of an item that now has a home, then s
 at a time, each a different item, so they don't crowd it. So when
 you add a chest for something that was piling up in overflow, golems move it
 over on their own. Items with no home are left in overflow, and so are items in
-an overflow chest golems can't open (locked, blocked or waterlogged). Golems never walk
-to an empty copper chest.
+an overflow chest golems can't open (locked, blocked or waterlogged). If an item loses
+its home while the golem is on its way (that chest fills up or is removed), the golem
+stops without taking it. Golems never walk to an empty copper chest.
 
 An `[Overflow]` chest that a hopper fills (a hopper above it facing down, or beside it
 facing into it, such as the output chest of a smelter) gets a few at a time. So golems
