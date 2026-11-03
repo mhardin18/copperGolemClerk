@@ -5,6 +5,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 ## 3.1.0 (in progress)
 
 ### New
+- Golems keep furnaces going before they sort. An idle golem first does furnace upkeep (stopped furnaces, empty buckets, fuel, items to cook from a `[Furnace Supply]`), then sorts copper chests, then takes out finished items, then re-sorts `[Overflow]`. Before, sorting always came first and furnaces were tended only when there was nothing to sort. `furnace-jobs-before-sorting` (default 3; 0 = sorting first, the old order) is how many furnace jobs in a row a golem does while a copper chest has items before it sorts once.
 - `search-distance` (default 32, vanilla's range; up to 128): how far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways. Above 32 the plugin walks golems to chests vanilla golems can't see and moves the items for them, lets their paths reach that far, and gives longer walks more time before giving up.
 
 ### Changed

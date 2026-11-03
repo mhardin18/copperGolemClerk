@@ -191,6 +191,12 @@ public final class SortListener implements Listener {
             } else if (!returns.prepareSource(event.getBlock())) {
                 // Empty, or only items with no home: don't walk over for nothing.
                 event.setAllowed(false);
+            } else if (golem instanceof org.bukkit.entity.CopperGolem copper && Returns.isCopperChest(block.getType())) {
+                if (furnaces.upkeepBeforeVanillaTake(copper)) {
+                    event.setAllowed(false); // furnace upkeep comes first (furnace-jobs-before-sorting)
+                } else {
+                    furnaces.sorted(golem.getUniqueId());
+                }
             }
             return;
         }

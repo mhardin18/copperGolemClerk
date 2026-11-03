@@ -340,12 +340,24 @@ will put in, and points out label entries that add nothing.
 anything else, unless a hopper under the furnace collects it. It waits until 8 are ready
 (`furnace-take-out-at`) so a trip is worth it, unless the furnace has stopped: nothing left
 to cook, out of fuel, its output slot full, or its output slot holding something else (an item
-a player left there), which keeps it from lighting until that's taken out. Golems do the urgent jobs first: a furnace
-with a full output slot, then fuel, then items to cook for furnaces running low, and only
-then taking out finished items. If no chest in range would
+a player left there), which keeps it from lighting until that's taken out. If no chest in range would
 take it (and there's no copper chest to return it to), it stays in the furnace rather than
 in a golem's hands. Items taken out of a furnace are never put back into one, so `[stone]`
 can't turn into an endless cobblestone → stone → smooth stone loop.
+
+**What golems do first.** An idle golem keeps furnaces going before it sorts:
+
+1. Furnace upkeep: empty a furnace that has stopped (full output slot), take out empty
+   buckets and refill them at a lava cauldron, bring fuel, bring items to cook to furnaces
+   running low.
+2. Sort copper chests.
+3. Take out finished items (`furnace-take-out-at`).
+4. Re-sort `[Overflow]` chests.
+5. Say hello to iron and snow golems.
+
+So a big bank of furnaces can't keep copper chests waiting forever, a golem that has done 3
+furnace jobs in a row while a copper chest has items sorts once before more furnace work
+(`furnace-jobs-before-sorting`; 0 puts sorting first, as before 3.1.0).
 
 **Fuel.** Golems only take fuel from containers with a `[Fuel]` sign, so the coal in your
 other chests is never burned. They use the first fuel in `furnace-fuel` that a `[Fuel]`
@@ -725,6 +737,7 @@ with its line number and the old settings are kept.
 | `furnace-refill-below` | `16` | A furnace gets more to cook only once this many items or fewer are left in it (0 to 64). Lower (0 = only when empty) can leave furnaces idle while golems are busy; 64 = top up after every item (many wasted trips). |
 | `furnace-split-min` | `8` | A load is split between 2 furnaces (never more) only if each gets at least this many items (1 to 64); the emptiest furnaces go first. Above half of `carry-amount` = whole loads to one furnace. |
 | `furnace-take-out-at` | `8` | Golems take finished items out once this many are ready (1 to 64), or sooner when the furnace has stopped. 1 = a trip for every item; higher = fewer trips, items wait longer. Furnaces with a hopper under them are never emptied by golems. |
+| `furnace-jobs-before-sorting` | `3` | Furnace upkeep comes before sorting; after this many furnace jobs in a row while a copper chest has items (0 to 64), a golem sorts once. 0 = sorting always first (the order before 3.1.0); higher = busier furnaces, copper chests wait longer. |
 | `furnace-wait-seconds` | `20` | How long a golem waits at a furnace that filled up before it arrived (0 to 300), before taking the rest back to the `[Furnace Supply]`. 0 = straight back (can loop); long waits keep that golem idle. |
 | `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |

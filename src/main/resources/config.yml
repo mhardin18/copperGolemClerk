@@ -233,6 +233,14 @@ furnace-take-out-at: 8
 # fetching and returning the same items as the furnace frees up. Very long waits keep that
 # golem standing there doing nothing else (no sorting) for the whole time.
 furnace-wait-seconds: 20
+# Furnace upkeep comes before sorting: an idle golem first empties stopped furnaces, takes
+# out empty buckets, brings fuel and brings items to cook from a [Furnace Supply], then
+# sorts copper chests, then takes out finished items (furnace-take-out-at), then re-sorts
+# [Overflow]. So a big bank of furnaces can't keep sorting waiting forever, after this many
+# furnace jobs in a row (0 to 64) while a copper chest has items, the golem sorts once.
+# 0 = sorting always comes first (how golems worked before 3.1.0). Higher = furnaces stay
+# busier, copper chests (and the hoppers filling them) wait longer.
+furnace-jobs-before-sorting: 3
 # With GriefPrevention, golems use furnaces and [Fuel]/[Furnace Supply] containers
 # in the claim their copper chest is in. true: also in claims where that claim's owner has
 # container trust.
