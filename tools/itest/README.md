@@ -18,6 +18,35 @@ then removes everything and the force-loads.
     python3 -I tools/itest/run.py --list              # what each scenario checks
     python3 -I tools/itest/run.py --keep              # leave the arenas up to inspect
 
+## Running tests yourself
+
+`tools/itest/run-tests.sh` does the whole thing in one command: builds the plugin from
+the checkout it's in, deploys it to pluginDev, starts (or restarts) the server, runs the
+tests, and stops the server again if it was stopped before.
+
+    tools/itest/run-tests.sh smoke        # ~3 min
+    tools/itest/run-tests.sh quick        # smoke + what this branch changes (--changed --parallel-only)
+    tools/itest/run-tests.sh changed      # --changed
+    tools/itest/run-tests.sh full         # everything except manual scenarios
+    tools/itest/run-tests.sh core reach   # suites or scenario names
+    tools/itest/run-tests.sh --no-deploy smoke   # test the jar pluginDev already has
+
+To keep a long run going after you log out, start it with nohup (or inside tmux):
+
+    nohup tools/itest/run-tests.sh full > /dev/null 2>&1 &
+
+## Results
+
+Every `run.py` run saves its results in `~/claude/itest-results/<date>-<time>-<what>/`
+(`ITEST_RESULTS` overrides the folder); `~/claude/itest-results/latest` points at the
+newest. `output.txt` is everything the run printed. `summary.json` has the status
+(`running`, `finished` or `interrupted`), when it ran, the arguments, the git branch and
+commit (and whether it had uncommitted changes), the plugin jar's file name and sha256,
+the Paper build, totals per status, and every scenario with its status (`PASS`, `FAIL`,
+`SKIP`, or `NOT RUN` when the run was stopped first), seconds, checks and, for
+failures, the plugin's log lines for its platform. A stopped run (Ctrl-C or SIGTERM)
+still restores `config.yml` and saves what finished.
+
 ## Which tests to run
 
 | When | Command | Time |
