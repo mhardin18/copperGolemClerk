@@ -337,6 +337,16 @@ final class OverflowFetcher {
             endFetch(golem, now, false);
             return;
         }
+        if (!fetch.copper() && !stillHasHome(golem, inventory, fetch.type())) {
+            // Its home filled up, was removed or relabelled on the way: taking it would only mean
+            // carrying it straight back. (Copper chest fetches don't need a home: vanilla takes anything.)
+            if (plugin.debug()) {
+                plugin.getLogger().info(String.format("%s stopped fetching %s from overflow chest at %d,%d,%d: it no longer has a home",
+                        golem.getType(), fetch.type(), block.getX(), block.getY(), block.getZ()));
+            }
+            endFetch(golem, now, false);
+            return;
+        }
         Location center = block.getLocation().clone().add(0.5, 0.5, 0.5);
         if (golem.getLocation().clone().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH + 0.5
                 || (plugin.takeReach() > Reach.VANILLA
@@ -362,6 +372,16 @@ final class OverflowFetcher {
         }
         // Vanilla AI may have redirected it; keep it heading to the chest.
         golem.getPathfinder().moveTo(fetch.target(), 1.0);
+    }
+
+    /** True if a chest in the golem's range (from where it is now) would still take this item from the overflow chest. */
+    private boolean stillHasHome(CopperGolem golem, Inventory overflow, Material type) {
+        for (ItemStack stack : overflow.getStorageContents()) {
+            if (stack != null && stack.getType() == type) {
+                return !homes.typesWithHome(golem, List.of(stack)).isEmpty();
+            }
+        }
+        return false;
     }
 
     /** Take up to carry-amount of the item, from as many stacks of it as that needs (only ones that stack together). */

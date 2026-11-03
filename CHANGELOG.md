@@ -7,6 +7,9 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 ### Changed
 - Built against the newest Paper API (26.3 build 238), and every build now also checks that the plugin compiles against build 190's API, so it keeps running on every build from 190 on, as the requirements say.
 
+### Fixed
+- A golem walking to an `[Overflow]` chest to fetch an item now checks on the way that the item still has a home. If that chest filled up, was removed or relabelled, the golem stops without taking anything, instead of carrying the items straight back.
+
 ## 3.0.0 (2026-11-02)
 
 A major release, "The Furnaces Are Alive": golems now run your furnaces (feeding, fueling and emptying them), and your `config.yml` is kept up to date with every new setting and its explanation when you upgrade.
