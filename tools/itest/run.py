@@ -8,7 +8,7 @@ own platform run in parallel; those that change something server-wide (config,
 reloads, tick timing) run one at a time afterwards. Any unexpected error or
 exception in the server log while a scenario runs fails it.
 
-    python3 -I tools/itest/run.py smoke             # quick sanity check, about 10 min (impact.SMOKE)
+    python3 -I tools/itest/run.py smoke             # quick sanity check, about 3 min (impact.SMOKE)
     python3 -I tools/itest/run.py --changed         # smoke + suites this branch's changes touch
     python3 -I tools/itest/run.py --changed=main    # ... compared with another ref
     python3 -I tools/itest/run.py                   # every suite except manual scenarios (hours)
