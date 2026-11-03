@@ -236,9 +236,14 @@ class Trigger:
 
     def __init__(self):
         self.at = None
+        self.lines = 0
 
-    def fire_when(self, condition, action):
+    def fire_when(self, condition, action, lines=None):
+        """Run action once, the first time condition() holds. lines: a callable giving the
+        cell's log lines; their count when it fired is kept in self.lines."""
         if self.at is None and condition():
+            if lines is not None:
+                self.lines = len(lines())
             action()
             self.at = time.time()
         return self.at is not None
