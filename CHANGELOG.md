@@ -2,6 +2,8 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup with their explanations, and the explanations of the settings you have are brought up to date (before that, new settings used their defaults until you added them).
 
+## 3.0.1 (in progress)
+
 ## 3.0.0 (2026-11-02)
 
 A major release, "The Furnaces Are Alive": golems now run your furnaces (feeding, fueling and emptying them), and your `config.yml` is kept up to date with every new setting and its explanation when you upgrade.
