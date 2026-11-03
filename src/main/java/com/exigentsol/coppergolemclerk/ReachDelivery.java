@@ -33,10 +33,10 @@ final class ReachDelivery {
 
     /**
      * chest: a chest above vanilla's reach (vs a barrel or shulker box, which vanilla never uses).
-     * far: past vanilla's search distance. giveUpMillis: how long the walk may take.
+     * far: past vanilla's search distance. clock: when the walk is given up.
      */
     private record Job(UUID world, Set<HomeFinder.Pos> halves, Material type, Location target, long startedMillis,
-                       boolean chest, boolean far, long giveUpMillis) {
+                       boolean chest, boolean far, WalkClock clock) {
     }
 
     private static final long SKIP_AFTER_GIVING_UP_MILLIS = 60_000;
@@ -80,9 +80,9 @@ final class ReachDelivery {
         HomeFinder.Pos first = halves.iterator().next();
         Material container = golem.getWorld().getBlockAt(first.x(), first.y(), first.z()).getType();
         boolean far = HomeFinder.beyondVanilla(golem, halves);
+        long now = System.currentTimeMillis();
         jobs.put(golem.getUniqueId(), new Job(golem.getWorld().getUID(), halves, type, spot.target(),
-                System.currentTimeMillis(), HomeFinder.isVanillaTarget(container), far,
-                HomeFinder.walkMillis(golem.getLocation(), spot.target())));
+                now, HomeFinder.isVanillaTarget(container), far, new WalkClock(spot.target(), now)));
         copper.getPathfinder().moveTo(spot.target(), 1.0);
         if (plugin.debug()) {
             HomeFinder.Pos p = halves.iterator().next();
@@ -133,7 +133,7 @@ final class ReachDelivery {
                 it.remove();
                 continue;
             }
-            if (now - job.startedMillis() > job.giveUpMillis()) {
+            if (job.clock().expired(golem, now)) {
                 for (HomeFinder.Pos p : job.halves()) {
                     failed.computeIfAbsent(golem.getUniqueId(), k -> new HashMap<>()).put(p, now + SKIP_AFTER_GIVING_UP_MILLIS);
                 }
@@ -141,7 +141,7 @@ final class ReachDelivery {
                 it.remove();
                 if (plugin.debug()) {
                     plugin.getLogger().info(golem.getType() + " couldn't get within reach of a " + (job.far() ? "far" : "high")
-                            + " chest; trying others");
+                            + " chest (" + job.clock().reason(now) + "); trying others");
                 }
                 continue;
             }

@@ -2,12 +2,13 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup with their explanations, and the explanations of the settings you have are brought up to date (before that, new settings used their defaults until you added them).
 
-## 3.0.1 (in progress)
+## 3.1.0 (in progress)
 
 ### New
 - `search-distance` (default 32, vanilla's range; up to 128): how far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways. Above 32 the plugin walks golems to chests vanilla golems can't see and moves the items for them, lets their paths reach that far, and gives longer walks more time before giving up.
 
 ### Changed
+- Walks the plugin sends golems on (to furnaces, supplies, far or high chests, overflow chests) no longer end at a fixed 30 seconds or so. A golem gives up when it has gone 10 seconds without getting a block closer, either in a straight line or along its path, so stuck golems move on sooner and slow ones (Slowness, soul sand, crowds) get there. A ceiling that grows with `search-distance` (81 s at 32, 132 s at 64, 235 s at 128) ends any walk that never arrives.
 - How long a golem keeps trying to deliver an item now comes from the walk, not a setting. Each fallback step (best chest, any matching chest, `[Overflow]` or empty chests) lasts as long as walking to the farthest chest it tries takes, 30 seconds or more, so a bigger `search-distance` gets longer steps automatically. A step with nothing new to try is skipped, so an item with no home in range is put back after the 30-second vanilla step instead of after two minutes. `matching-chest-timeout-seconds` is gone: it's taken out of `config.yml` on upgrade, and the console says why.
 - Adding or changing a sign or item frame label clears the "no home" marks on chests within `search-distance`, so golems try those items again straight away instead of after `homeless-retry-minutes`.
 - Console messages about bringing `config.yml` up to date link to that version's `config.yml` on GitHub instead of pointing into the jar.

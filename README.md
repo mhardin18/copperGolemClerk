@@ -422,8 +422,14 @@ Vanilla golems look for chests up to 32 blocks away in each direction sideways (
 up or down). `search-distance` raises the sideways distance, up to 128 blocks; it can't
 go below vanilla's 32. Golems then find chests, copper chests, `[Overflow]` chests and
 furnaces further away. Vanilla golems never see chests past 32 blocks, so for those the
-golem walks there and the plugin moves the items, as for chests above vanilla's reach,
-and the time golems are given before they give up on a walk grows with its length.
+golem walks there and the plugin moves the items, as for chests above vanilla's reach.
+
+When the plugin walks a golem somewhere (a furnace, a supply, a far or high chest, an
+overflow chest), it gives up once the golem has gone 10 seconds without getting a block
+closer, so a stuck golem moves on quickly and a slow one (Slowness, soul sand, a crowd)
+gets there. No walk lasts longer than twice the time for the whole `search-distance`:
+81 seconds at 32, 132 at 64, 235 at 128. Time frozen in a chunk the server isn't
+ticking doesn't count.
 
 A bigger area costs more. Each search covers about 2.5 times as many chunks at 64 as at
 32, and about 7.4 times at 128, and golems spend longer walking than sorting. Chests in

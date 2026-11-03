@@ -76,6 +76,7 @@ SOURCE_SUITES = {
     "SortListener": SORTING + ["reach", "destinations", "conflicts"] + ["distance"],
     "StorageReport": ["commands"],
     "UpdateChecker": ["commands"],
+    "WalkClock": FURNACE + ["reach", "destinations", "overflow-hopper", "distance"],
     "Versions": ["commands"],
     "src/main/resources/config.yml": ["options", "config", "distance"],
     "src/main/resources/plugin.yml": ["commands"],
