@@ -5,7 +5,7 @@ lost or duplicated.
 """
 import re
 
-from arena import Trigger, conserved, expect, scenario
+from arena import LUCK, Trigger, conserved, expect, scenario
 from suite_furnace import cooked, furnace, hopper, supply
 from suite_options import set_options
 
@@ -148,9 +148,8 @@ def _(c):
     walled, gave_up = Trigger(), []
 
     def wall():
-        # A two-high ring of glass 2 blocks out from the chest (x 16-20, z 15-20), so the
-        # nearest spot a golem can stand is 3 blocks away: past the 2.5 blocks from which a
-        # furnace job may use a chest (FurnaceFeeder.REACH), which doesn't look for walls.
+        # A two-high ring of glass 2 blocks out from the chest (x 16-20, z 15-20): no golem
+        # can get beside it.
         for dx in range(16, 21):
             for dz in range(15, 21):
                 if dx in (16, 20) or dz in (15, 20):
@@ -166,6 +165,38 @@ def _(c):
                  else "hasn't given up yet"),
                 expect(c, "supply", "raw_iron", 16), iron_conserved(c), no_errors(c)]
     return check
+
+
+@scenario("furnace-edge-not-through-wall", "furnace-edge", 90, "A golem that can't move, 2 blocks from the supply with a glass wall between: it doesn't take the raw iron through the wall; it gives up the walk instead.")
+def _(c):
+    supply(c, dx=10, dz=10)
+    furnace(c, "blast", 2, 10, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
+    for dz in range(3, 18):  # two high, west of the supply; the way round is open
+        c.block(9, dz, "glass")
+        c.block(9, dz, "glass", dy=1)
+    # Movement speed 0: it stays where it is, as a golem held up behind the wall would. Jobs are
+    # checked once a second, so a walking golem was usually gone before the old 2.5-block check.
+    x, y, z = c.abs(8, 10)
+    c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} {{active_effects:[{LUCK}],"
+          'attributes:[{id:"minecraft:movement_speed",base:0.0}]}')
+    return lambda: [(logged(c, "(SUPPLY_TAKE)"), "the golem was sent for the raw iron"),
+                    (logged(c, "couldn't get to the chest"), "it gave up the walk"),
+                    expect(c, "supply", "raw_iron", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)"),
+                    iron_conserved(c), no_errors(c)]
+
+
+@scenario("furnace-edge-row4-deliver-reach", "furnace-edge", 150, "deliver-reach: 4: a [raw iron] furnace on top of a 3-high pillar (row 4) is fed from the floor beside the pillar.", alone=True)
+def _(c):
+    set_options(c, deliver_reach="4")
+    for dy in range(3):
+        c.block(10, 10, "stone", dy=dy)
+    furnace(c, "blast", 10, 10, block="blast_furnace", fuel=("coal", 16), label="[raw iron]", dy=3)
+    supply(c, dx=16, dz=16)
+    c.golem(4, 10)
+    # Ingots can only come from that furnace, and may already have been taken out of it.
+    fed = lambda: c.count("blast", "raw_iron") + c.total("iron_ingot")
+    return lambda: [(fed() > 0, f"{fed()} raw iron in the row-4 furnace or ingots made (want some)"),
+                    iron_conserved(c), no_errors(c)]
 
 
 @scenario("furnace-edge-full-furnace", "furnace-edge", 60, "A labelled furnace whose input already holds 64 raw iron: golems leave the supply alone.")
