@@ -31,11 +31,12 @@ def hopper(c, name, dx, dz, facing, dy=1, items=()):
 
 
 def slot(c, name, n):
-    """'item count' in a furnace slot, or '' if empty."""
+    """'item count' in a furnace slot, or '' if empty. Asks for that one slot: the server cuts
+    a whole Items list short ("{Slot:..."), which hid slot 1 behind slot 0."""
     x, y, z = c.chests[name][0]
-    out = c.r.cmd(f"data get block {x} {y} {z} Items")
-    m = re.search(r'\{Slot: ' + str(n) + r'b, id: "minecraft:([a-z_]+)", count: (\d+)', out)
-    return f"{m.group(1)} {m.group(2)}" if m else ""
+    out = c.r.cmd(f"data get block {x} {y} {z} Items[{{Slot:{n}b}}]")
+    item, count = re.search(r'id: "minecraft:([a-z_]+)"', out), re.search(r'count: (\d+)', out)
+    return f"{item.group(1)} {count.group(1) if count else 1}" if item else ""
 
 
 def cooked(c, name):
