@@ -51,6 +51,7 @@ import suite_stats  # noqa: E402,F401
 import suite_tidy  # noqa: E402,F401
 import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
+import suite_work_order  # noqa: E402,F401
 import suite_destinations  # noqa: E402,F401
 import suite_carry  # noqa: E402,F401
 import suite_furnace  # noqa: E402,F401

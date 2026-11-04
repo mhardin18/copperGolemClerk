@@ -52,6 +52,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile int furnaceRefillBelow = 16;
     private volatile int furnaceWaitSeconds = 20;
     private volatile int furnaceTakeOutAt = 8;
+    private volatile int furnaceJobsBeforeSorting = 3;
     private volatile int furnaceFuelAhead = 16;
     private volatile int furnaceLavaMinItems = 100;
     private volatile int furnaceSplitMin = 8;
@@ -360,6 +361,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         furnaceRefillBelow = rangeSetting(config, "furnace-refill-below", 16, 0, 64);
         furnaceWaitSeconds = rangeSetting(config, "furnace-wait-seconds", 20, 0, 300);
         furnaceTakeOutAt = rangeSetting(config, "furnace-take-out-at", 8, 1, 64);
+        furnaceJobsBeforeSorting = rangeSetting(config, "furnace-jobs-before-sorting", 3, 0, 64);
         furnaceFuelAhead = rangeSetting(config, "furnace-fuel-ahead", 16, 0, 64);
         furnaceLavaMinItems = rangeSetting(config, "furnace-lava-min-items", 100, 0, 1000);
         furnaceSplitMin = rangeSetting(config, "furnace-split-min", 8, 1, 64);
@@ -511,6 +513,14 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** furnace-take-out-at: golems take out what a furnace made once this many are ready (or it has stopped). */
     int furnaceTakeOutAt() {
         return furnaceTakeOutAt;
+    }
+
+    /**
+     * furnace-jobs-before-sorting: furnace upkeep jobs a golem does in a row while a copper chest
+     * waits to be sorted, before it sorts once. 0 = sorting always comes first (the order before 3.1.0).
+     */
+    int furnaceJobsBeforeSorting() {
+        return furnaceJobsBeforeSorting;
     }
 
     /** furnace-fuel-ahead: fuel golems bring also covers this many more items than are waiting. */

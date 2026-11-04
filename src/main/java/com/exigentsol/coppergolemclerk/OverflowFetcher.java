@@ -127,10 +127,11 @@ final class OverflowFetcher {
                 || (furnaces != null && furnaces.isBusy(golem.getUniqueId()))) {
             return;
         }
-        // Anything to take from a copper chest? Then it's not idle. Copper chests vanilla can't use
-        // don't count: above vanilla's reach (take-reach raised) or past its 32 blocks
-        // (search-distance raised). The plugin fetches from those.
+        // Anything to take from a copper chest? Then there's sorting to do. Vanilla takes from the
+        // copper chests it can use; the plugin fetches from the ones it can't: above vanilla's reach
+        // (take-reach raised) or past its 32 blocks (search-distance raised).
         int takeReach = plugin.takeReach();
+        boolean vanillaTakes = false;
         BlockState high = null;
         Set<HomeFinder.Pos> highHalves = null;
         for (BlockState state : HomeFinder.containersInRange(golem, Returns::isCopperChest)) {
@@ -141,11 +142,13 @@ final class OverflowFetcher {
             Set<HomeFinder.Pos> halves = HomeFinder.halvesOf(inventory, state.getBlock());
             boolean far = HomeFinder.beyondVanilla(golem, halves);
             if (!far && takeReach <= Reach.VANILLA) {
-                return; // vanilla takes from this one
+                vanillaTakes = true; // vanilla takes from this one
+                break;
             }
             int row = Reach.rowFor(golem, halves);
             if (!far && (Reach.vanillaReaches(row) || row == Integer.MAX_VALUE)) {
-                return; // vanilla takes from this one (or tries to)
+                vanillaTakes = true; // vanilla takes from this one (or tries to)
+                break;
             }
             if (high == null && row <= Math.max(Reach.VANILLA, takeReach) && !HomeFinder.isLocked(state)
                     && !HomeFinder.isBlocked(golem.getWorld(), halves)) {
@@ -153,12 +156,24 @@ final class OverflowFetcher {
                 highHalves = halves;
             }
         }
-        if (high != null) {
-            startCopperFetch(golem, high, highHalves, now);
+        // 1. Furnace upkeep, unless sorting has waited furnace-jobs-before-sorting jobs already.
+        if (furnaces != null && furnaces.upkeepFirst(golem, vanillaTakes || high != null)) {
             return;
         }
+        // 2. Sorting.
+        if (vanillaTakes) {
+            return; // vanilla's AI walks it to the copper chest
+        }
+        if (high != null) {
+            startCopperFetch(golem, high, highHalves, now);
+            if (furnaces != null) {
+                furnaces.sorted(golem.getUniqueId());
+            }
+            return;
+        }
+        // 3. Take out finished furnace items, before re-sorting overflow.
         if (furnaces != null) {
-            furnaces.findWork(golem); // empty or fuel a labelled furnace before re-sorting overflow
+            furnaces.findTakeOut(golem);
             if (furnaces.isBusy(golem.getUniqueId())) {
                 return;
             }

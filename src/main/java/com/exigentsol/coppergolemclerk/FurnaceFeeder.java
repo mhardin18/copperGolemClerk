@@ -101,6 +101,11 @@ final class FurnaceFeeder {
     private final HomeFinder homes;
     private final Returns returns;
     private final Map<UUID, Job> jobs = new HashMap<>();
+    /** Furnace upkeep jobs each golem has started in a row while a copper chest waited (furnace-jobs-before-sorting). */
+    private final Map<UUID, Integer> upkeepStreak = new HashMap<>();
+    /** When each golem last looked for upkeep from vanilla's target check (it fires often: at most every 5 s). */
+    private final Map<UUID, Long> upkeepCheckedAt = new HashMap<>();
+    private static final long UPKEEP_CHECK_EVERY_MILLIS = 5_000;
     /** Blocks a golem couldn't reach: golem -> block -> until. */
     private final Map<UUID, Map<HomeFinder.Pos, Long>> failed = new HashMap<>();
     /** Golems holding something they took out of a furnace: it's never fed back into one. */
@@ -419,6 +424,8 @@ final class FurnaceFeeder {
         failed.values().removeIf(Map::isEmpty);
         declined.values().removeIf(e -> now - e.getValue() > OFFER_COOLDOWN_MILLIS);
         fromFurnace.removeIf(this::emptyHanded);
+        upkeepStreak.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
+        upkeepCheckedAt.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
         fromSupply.removeIf(this::emptyHanded);
         if (!plugin.furnaceFeeding()) {
             stopAll();
@@ -442,20 +449,73 @@ final class FurnaceFeeder {
     }
 
     /**
-     * Idle golems (empty hand): empty a furnace that has made something, take out an empty
-     * bucket, bring fuel to one that needs it, or fetch items to cook from a [Furnace Supply].
+     * Furnace upkeep for an idle golem, ahead of sorting: see {@link #findUpkeep}. sortingWaits: a
+     * copper chest in range has items to sort. Once the golem has done furnace-jobs-before-sorting
+     * upkeep jobs in a row while sorting waited, it's sorting's turn (and with 0, always). True if a
+     * job started.
      */
-    void findWork(CopperGolem golem) {
-        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
-            return;
+    boolean upkeepFirst(CopperGolem golem, boolean sortingWaits) {
+        UUID id = golem.getUniqueId();
+        int limit = plugin.furnaceJobsBeforeSorting();
+        if (!sortingWaits) {
+            upkeepStreak.remove(id);
+        } else if (upkeepStreak.getOrDefault(id, 0) >= limit) {
+            return false;
+        }
+        findUpkeep(golem);
+        if (!isBusy(id)) {
+            return false;
+        }
+        if (sortingWaits) {
+            upkeepStreak.merge(id, 1, Integer::sum);
+        }
+        return true;
+    }
+
+    /**
+     * Vanilla is about to send an idle golem to a copper chest: if furnace upkeep should come first
+     * (and is there), start it instead. Checks at most every 5 s per golem. True if a job started.
+     */
+    boolean upkeepBeforeVanillaTake(CopperGolem golem) {
+        UUID id = golem.getUniqueId();
+        if (isBusy(id)) {
+            return true;
         }
         long now = System.currentTimeMillis();
+        if (now - upkeepCheckedAt.getOrDefault(id, 0L) < UPKEEP_CHECK_EVERY_MILLIS) {
+            return false;
+        }
+        upkeepCheckedAt.put(id, now);
+        return upkeepFirst(golem, true);
+    }
+
+    /** The golem went to sort a copper chest: the furnace streak starts again. */
+    void sorted(UUID golem) {
+        upkeepStreak.remove(golem);
+    }
+
+    /** Furnaces in the golem's range it may use now. */
+    private List<Furnace> usableFurnaces(CopperGolem golem, long now) {
         List<Furnace> furnaces = new ArrayList<>();
         for (BlockState state : HomeFinder.containersInRange(golem, FurnaceFeeder::isFurnace)) {
             if (state instanceof Furnace furnace && usable(golem, furnace, now)) {
                 furnaces.add(furnace);
             }
         }
+        return furnaces;
+    }
+
+    /**
+     * Upkeep, the furnace work that comes before sorting: empty a furnace that has stopped (full
+     * output slot), take out an empty bucket, refill one at a lava cauldron, bring fuel, or bring
+     * items to cook from a [Furnace Supply].
+     */
+    void findUpkeep(CopperGolem golem) {
+        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        List<Furnace> furnaces = usableFurnaces(golem, now);
         UUID id = golem.getUniqueId();
         // 1. A furnace whose output slot is full has stopped: empty it first.
         if (startEmpty(golem, furnaces, true, now)) {
@@ -510,11 +570,19 @@ final class FurnaceFeeder {
             }
         }
         // 4. Items to cook from a [Furnace Supply], for furnaces running low.
-        if (startSupply(golem, now)) {
+        startSupply(golem, now);
+    }
+
+    /**
+     * After sorting: take out what's done, once it's worth a trip (furnace-take-out-at) or the
+     * furnace won't make more for now.
+     */
+    void findTakeOut(CopperGolem golem) {
+        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
             return;
         }
-        // 5. Take out what's done, once it's worth a trip (furnace-take-out-at) or the furnace has stopped.
-        startEmpty(golem, furnaces, false, now);
+        long now = System.currentTimeMillis();
+        startEmpty(golem, usableFurnaces(golem, now), false, now);
     }
 
     /**
@@ -1377,6 +1445,8 @@ final class FurnaceFeeder {
     void clear() {
         declined.clear();
         failed.clear();
+        upkeepStreak.clear();
+        upkeepCheckedAt.clear();
     }
 
     /** furnace-fuel's default: charcoal first (renewable), then coal, then lava buckets. */

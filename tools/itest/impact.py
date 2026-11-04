@@ -38,7 +38,7 @@ SMOKE = [
 
 # Source file (class name, or a path prefix) -> suites that exercise it.
 SORTING = ["core", "edge", "setup", "world", "dimensions"]
-FURNACE = ["furnace", "furnace-edge", "furnace-refill", "furnace-trips", "lava", "edge30"]
+FURNACE = ["furnace", "furnace-edge", "furnace-refill", "furnace-trips", "lava", "edge30", "work-order"]
 SOURCE_SUITES = {
     "Alerts": ["alerts"],
     "ChestLabels": ["core", "edge", "filters", "edge26"],
@@ -68,12 +68,12 @@ SOURCE_SUITES = {
     "ItemFinder": ["find"],
     "ItemGroups": ["core", "edge", "filters", "find"],
     "LabelAdvisor": ["commands", "find"],
-    "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach"] + ["distance"],
+    "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach"] + ["distance", "work-order"],
     "PaperSupport": [],
     "Reach": ["reach", "destinations", "edge30"],
     "ReachDelivery": ["reach", "destinations", "edge30"] + ["distance"],
     "Returns": ["core", "edge", "world", "edge26"],
-    "SortListener": SORTING + ["reach", "destinations", "conflicts"] + ["distance"],
+    "SortListener": SORTING + ["reach", "destinations", "conflicts"] + ["distance", "work-order"],
     "StorageReport": ["commands"],
     "UpdateChecker": ["commands"],
     "WalkClock": FURNACE + ["reach", "destinations", "overflow-hopper", "distance"],
