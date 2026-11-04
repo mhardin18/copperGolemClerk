@@ -94,7 +94,6 @@ final class FurnaceFeeder {
      */
     static final int MAX_STOPS = 2;
     /** How far a golem looks for a lava cauldron to refill a bucket (sideways; 4 up and down). */
-    private static final int CAULDRON_RANGE = 16;
 
     private final CopperGolemClerk plugin;
     private final HomeFinder homes;
@@ -923,25 +922,15 @@ final class FurnaceFeeder {
         return dripCauldron && fuelRoom ? BucketPlan.STORE : BucketPlan.SORT;
     }
 
+    /**
+     * The nearest cauldron passing `wanted`, as far out as chests and furnaces: search-distance
+     * sideways and 8 up or down (1 while riding). See CauldronIndex.
+     */
     private static Block nearestCauldron(Entity golem, java.util.function.Predicate<Block> wanted) {
-        Block at = golem.getLocation().getBlock();
-        Block best = null;
-        int bestDist = Integer.MAX_VALUE;
-        for (int dy = -4; dy <= 4; dy++) {
-            for (int dx = -CAULDRON_RANGE; dx <= CAULDRON_RANGE; dx++) {
-                for (int dz = -CAULDRON_RANGE; dz <= CAULDRON_RANGE; dz++) {
-                    int d = dx * dx + dy * dy + dz * dz;
-                    if (d < bestDist) {
-                        Block b = at.getRelative(dx, dy, dz);
-                        if (b.getWorld().isChunkLoaded(b.getX() >> 4, b.getZ() >> 4) && wanted.test(b)) {
-                            bestDist = d;
-                            best = b;
-                        }
-                    }
-                }
-            }
-        }
-        return best;
+        boolean riding = golem.isInsideVehicle();
+        int h = riding ? 1 : HomeFinder.searchDistance();
+        int v = riding ? 1 : CauldronIndex.VERTICAL;
+        return CauldronIndex.nearest(golem.getLocation().getBlock(), h, v, wanted, System.currentTimeMillis());
     }
 
     // ---- jobs

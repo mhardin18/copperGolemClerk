@@ -262,6 +262,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     @Override
     public void onDisable() {
+        CauldronIndex.clear();
         if (itemFinder != null) {
             itemFinder.removeAll();
         }

@@ -463,12 +463,12 @@ for a furnace with a backlog of 100 or more items (`furnace-lava-min-items`) whe
 is there too: what's waiting in it, what other golems are bringing, and its share of the
 matching items in `[Furnace Supply]` containers in range. For a smaller backlog they bring
 just enough charcoal or coal instead. `/cgc check` on the furnace shows its backlog. Lava buckets leave an empty
-bucket in the furnace: golems take it out and refill it at a lava cauldron nearby (never from
+bucket in the furnace: golems take it out and refill it at a lava cauldron in range (never from
 lava in the world), then put it back in a `[Fuel]` container. A cauldron that dripping lava
 keeps refilling (pointed dripstone hanging over it, within 11 blocks, with a lava source on
 top of the block the dripstone hangs from) is worth waiting for: until it's full, golems put
 the empty buckets in a `[Fuel]` container, and an idle golem takes one to the cauldron as
-soon as it fills and brings the lava bucket back. With no such cauldron nearby and none full,
+soon as it fills and brings the lava bucket back. With no such cauldron in range and none full,
 the empty bucket is sorted like anything else. A `[Fuel]` chest with no other label never
 receives sorted items; label it `[Fuel] [charcoal]` to have golems fill it with the charcoal
 your furnaces make.
@@ -522,8 +522,8 @@ as usual, so you can still take golems to another dimension.
 
 Vanilla golems look for chests up to 32 blocks away in each direction sideways (and 8
 up or down). `search-distance` raises the sideways distance, up to 128 blocks; it can't
-go below vanilla's 32. Golems then find chests, copper chests, `[Overflow]` chests and
-furnaces further away. Vanilla golems never see chests past 32 blocks, so for those the
+go below vanilla's 32. Golems then find chests, copper chests, `[Overflow]` chests,
+furnaces and lava cauldrons further away. Vanilla golems never see chests past 32 blocks, so for those the
 golem walks there and the plugin moves the items, as for chests above vanilla's reach.
 
 When the plugin walks a golem somewhere (a furnace, a supply, a far or high chest, an
@@ -837,7 +837,7 @@ with its line number and the old settings are kept.
 | `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
 | `take-reach` | `2` | How many rows up golems take from copper chests and fetch from `[Overflow]` chests, 2 to 6. |
-| `search-distance` | `32` | How far golems look for chests, copper chests, `[Overflow]` chests and furnaces, in blocks each way sideways (a square; up and down stays 8). 32 (vanilla) to 128. Above 32 the plugin walks golems to chests vanilla can't see. Larger values cost tick time: about 0.055 ms per working golem at 32, 0.26 ms at 128 (see Bigger storage areas). |
+| `search-distance` | `32` | How far golems look for chests, copper chests, `[Overflow]` chests, furnaces and lava cauldrons, in blocks each way sideways (a square; up and down stays 8). 32 (vanilla) to 128. Above 32 the plugin walks golems to chests vanilla can't see. Larger values cost tick time: about 0.055 ms per working golem at 32, 0.26 ms at 128 (see Bigger storage areas). |
 
 ### Looking after golems
 

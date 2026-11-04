@@ -148,6 +148,9 @@ public final class SortListener implements Listener {
             if (reach.isDelivering(id)) {
                 return; // walking to a high or far chest: a long walk can outlast the search steps
             }
+            if (furnaces.isBusy(id)) {
+                return; // on a furnace job (a bucket to a far cauldron, fuel to a far furnace): the job says where it goes
+            }
             if (!homes.waitedTooLong(id) && homes.waitingNearHome(golem, held)) {
                 // Waiting in line at a chest that takes the item: check again next second.
                 // Not forever, though: a chest vanilla can't use for some reason would hold it there for good.
