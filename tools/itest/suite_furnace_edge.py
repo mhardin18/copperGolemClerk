@@ -148,15 +148,14 @@ def _(c):
     walled, gave_up = Trigger(), []
 
     def wall():
-        # A full ring of glass, corners too (a golem on a diagonal can still reach the chest),
-        # around the chest and its sign (north side, dz 17): two high, and a lid over both.
-        for dx in (17, 18, 19):
-            for dz in (16, 17, 18, 19):
-                if (dx, dz) not in ((18, 17), (18, 18)):
+        # A two-high ring of glass 2 blocks out from the chest (x 16-20, z 15-20), so the
+        # nearest spot a golem can stand is 3 blocks away: past the 2.5 blocks from which a
+        # furnace job may use a chest (FurnaceFeeder.REACH), which doesn't look for walls.
+        for dx in range(16, 21):
+            for dz in range(15, 21):
+                if dx in (16, 20) or dz in (15, 20):
                     c.block(dx, dz, "glass")
                     c.block(dx, dz, "glass", dy=1)
-        c.block(18, 18, "glass", dy=1)
-        c.block(18, 17, "glass", dy=1)
 
     def check():
         walled.fire_when(lambda: logged(c, "SUPPLY_TAKE"), wall)
