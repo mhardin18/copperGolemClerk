@@ -10,7 +10,7 @@ import time
 from arena import Trigger, expect, scenario
 import arena
 from rcon import from_properties
-from suite_furnace import furnace, hopper, supply
+from suite_furnace import furnace, hopper, slot, supply
 from suite_furnace_edge import no_errors, logged
 from suite_options import set_options
 
@@ -153,9 +153,7 @@ def _(c):
 
 
 def slot_fuel(c):
-    x, y, z = c.chests["furnace"][0]
-    m = re.search(r'\{Slot: 1b, id: "minecraft:([a-z_]+)", count: (\d+)', c.r.cmd(f"data get block {x} {y} {z} Items"))
-    return f"{m.group(1)} {m.group(2)}" if m else ""
+    return slot(c, "furnace", 1)
 
 
 # ---- furnace-split-min and furnace-refill-below

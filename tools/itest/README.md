@@ -158,6 +158,15 @@ error or exception in the server log during a scenario fails it.
 Scenarios that change something server-wide (config, reloads, tick timing) run one at a
 time after the others, and the runner restores `config.yml` after each.
 
+## Reading containers in a check
+
+Count items with `c.count(name, item)` (it uses `execute if items`). To see one slot,
+use `slot(c, name, n)` from `suite_furnace` (furnace slots: 0 input, 1 fuel, 2 output);
+it asks for that slot alone with `data get block ... Items[{Slot:<n>b}]`. Don't parse a
+whole `data get block ... Items`: the server cuts long output short (`{Slot:...`), so
+anything after the first item or two goes missing. Until 3.1.0 `slot()` did that, and a
+furnace with input in slot 0 always read as having no fuel.
+
 ## Golems near and far from players
 
 Paper only runs a mob's AI in short bursts (about 100 ticks a minute) when no player is
