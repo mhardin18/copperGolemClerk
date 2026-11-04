@@ -123,12 +123,13 @@ def _(c):
 
 @scenario("furnace-edge-cauldron-emptied-before-fill", "furnace-edge", 150, "The lava cauldron is emptied while a golem walks over with an empty bucket: the bucket is sorted into the bucket chest instead.")
 def _(c):
-    # Furnace and cauldron at opposite corners (about 22 blocks), so the check catches the walk.
-    furnace(c, "furnace", 2, 2, fuel=("bucket", 1), label="[raw iron]")
+    # A walk of about 19 blocks, so the check catches it, with the cauldron inside the 16-block
+    # square around the furnace that golems search for one (FurnaceFeeder.CAULDRON_RANGE).
+    furnace(c, "furnace", 2, 4, fuel=("bucket", 1), label="[raw iron]")
     c.chest("buckets", 4, 16, [("bucket", 1)])
-    c.block(18, 18, "lava_cauldron")
-    x, y, z = c.abs(18, 18)
-    c.golem(3, 4)
+    c.block(16, 16, "lava_cauldron")
+    x, y, z = c.abs(16, 16)
+    c.golem(3, 6)
     t = Trigger()
 
     def check():
@@ -147,11 +148,15 @@ def _(c):
     walled, gave_up = Trigger(), []
 
     def wall():
-        # Glass around the chest and its sign (north side, dz 17), two high, and on top.
-        for dx, dz in ((17, 18), (19, 18), (18, 19), (17, 17), (19, 17), (18, 16)):
-            c.block(dx, dz, "glass")
-            c.block(dx, dz, "glass", dy=1)
+        # A full ring of glass, corners too (a golem on a diagonal can still reach the chest),
+        # around the chest and its sign (north side, dz 17): two high, and a lid over both.
+        for dx in (17, 18, 19):
+            for dz in (16, 17, 18, 19):
+                if (dx, dz) not in ((18, 17), (18, 18)):
+                    c.block(dx, dz, "glass")
+                    c.block(dx, dz, "glass", dy=1)
         c.block(18, 18, "glass", dy=1)
+        c.block(18, 17, "glass", dy=1)
 
     def check():
         walled.fire_when(lambda: logged(c, "SUPPLY_TAKE"), wall)
