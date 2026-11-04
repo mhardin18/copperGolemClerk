@@ -105,6 +105,14 @@ final class FurnaceFeeder {
     private final Map<UUID, Integer> upkeepStreak = new HashMap<>();
     /** When each golem last looked for upkeep from vanilla's target check (it fires often: at most every 5 s). */
     private final Map<UUID, Long> upkeepCheckedAt = new HashMap<>();
+    /**
+     * Golems just let go to sort a copper chest, and when: until they pick up their load (or
+     * SORT_PENDING_MILLIS pass), no upkeep job starts. Otherwise the once-a-second idle check
+     * started one while vanilla walked the golem to the copper chest, and the golem's pickup
+     * there silently ended it (with furnace-jobs-before-sorting 1, every time).
+     */
+    private final Map<UUID, Long> sortPending = new HashMap<>();
+    private static final long SORT_PENDING_MILLIS = 15_000;
     private static final long UPKEEP_CHECK_EVERY_MILLIS = 5_000;
     /** Blocks a golem couldn't reach: golem -> block -> until. */
     private final Map<UUID, Map<HomeFinder.Pos, Long>> failed = new HashMap<>();
@@ -426,6 +434,7 @@ final class FurnaceFeeder {
         fromFurnace.removeIf(this::emptyHanded);
         upkeepStreak.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
         upkeepCheckedAt.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
+        sortPending.entrySet().removeIf(e -> now - e.getValue() > SORT_PENDING_MILLIS || !emptyHanded(e.getKey()));
         fromSupply.removeIf(this::emptyHanded);
         if (!plugin.furnaceFeeding()) {
             stopAll();
@@ -456,6 +465,9 @@ final class FurnaceFeeder {
      */
     boolean upkeepFirst(CopperGolem golem, boolean sortingWaits) {
         UUID id = golem.getUniqueId();
+        if (sortingWaits && sortPending.containsKey(id)) {
+            return false; // on its way to sort: let it pick up its load first
+        }
         int limit = plugin.furnaceJobsBeforeSorting();
         if (!sortingWaits) {
             upkeepStreak.remove(id);
@@ -489,9 +501,10 @@ final class FurnaceFeeder {
         return upkeepFirst(golem, true);
     }
 
-    /** The golem went to sort a copper chest: the furnace streak starts again. */
+    /** The golem went to sort a copper chest: the furnace streak starts again once it has its load. */
     void sorted(UUID golem) {
         upkeepStreak.remove(golem);
+        sortPending.put(golem, System.currentTimeMillis());
     }
 
     /** Furnaces in the golem's range it may use now. */
@@ -1446,6 +1459,7 @@ final class FurnaceFeeder {
         declined.clear();
         failed.clear();
         upkeepStreak.clear();
+        sortPending.clear();
         upkeepCheckedAt.clear();
     }
 

@@ -83,6 +83,34 @@ def _(c):
     return check
 
 
+@scenario("jobs-before-sorting-1-steady-inflow", "work-order", 180, "furnace-jobs-before-sorting: 1 with 8 logs arriving every 10s: the golem alternates, fuelling all three furnaces while it keeps sorting (it used to drop every furnace job when vanilla took it to sort).", alone=True)
+def _(c):
+    set_options(c, furnace_jobs_before_sorting="1")
+    sorting_waits(c, logs=8)
+    for i, dz in enumerate((4, 10, 16)):
+        unfuelled(c, f"furnace{i}", 12, dz)
+    fuel_chest(c, 18, 10, charcoal=32)
+    c.golem(6, 10)
+    x, y, z = c.chests["copper"][0]
+    state = {"next": 10, "added": 8}
+
+    def inflow():
+        while c.elapsed() >= state["next"]:
+            state["next"] += 10
+            free = next((n for n in range(27) if c.r.cmd(f"execute if items block {x} {y} {z} container.{n} *").find("passed") < 0), None)
+            if free is not None:
+                c.r.cmd(f"item replace block {x} {y} {z} container.{free} with minecraft:birch_log 8")
+                state["added"] += 8
+
+    def check():
+        inflow()
+        n = sum(fuelled(c, f"furnace{i}") for i in range(3))
+        sorted_logs = c.count("logs", "birch_log")
+        return [(n == 3, f"{n} of 3 furnaces fuelled"),
+                (sorted_logs >= 32, f"{sorted_logs} logs sorted of {state['added']} added (want 32 or more)"), no_errors(c)]
+    return check
+
+
 @scenario("option-jobs-before-sorting-0", "work-order", 150, "furnace-jobs-before-sorting: 0: sorting comes first, as before 3.1.0: the golem takes logs from the copper chest before it fuels the furnace.", alone=True)
 def _(c):
     set_options(c, furnace_jobs_before_sorting="0")
