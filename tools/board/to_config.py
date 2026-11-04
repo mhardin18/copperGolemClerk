@@ -26,12 +26,14 @@ cats = board["categories"]
 assign = board["assign"]
 survival = set(assign)  # every survival item is assigned
 
-# Group names: short, sign-friendly ([ores], [light source], [Rail] ...).
+# Group names: short, sign-friendly ([ores], [light source], [Rail] ...). Each must fit
+# on one sign line as [name with spaces] (checked below). The plugin also accepts the
+# names renamed in 3.1.0 (ItemGroups.RENAMED).
 NAMES = {
     "light": "light-sources", "ingots-gems": "ingots-and-gems", "utility": "utility-blocks",
-    "dirt-sand": "dirt-and-sand", "saplings-leaves": "saplings-and-leaves", "other-building": "building",
+    "dirt-sand": "dirt-and-sand", "saplings-leaves": "foliage", "other-building": "building",
     "potions-brewing": "brewing", "books-enchanting": "books", "maps-navigation": "maps",
-    "ice-snow": "ice-and-snow", "concrete-terracotta": "concrete-and-terracotta",
+    "ice-snow": "ice-and-snow", "smithing-templates": "templates", "crafting-materials": "materials",
     "animal-gear": "animal-gear", "rare": "rare-items",
 }
 def slug(s):
@@ -120,6 +122,15 @@ for i in survival:
         problems.append((i, want, hit))
 if len(set(groups)) != len(groups):
     problems.append(("duplicate group names", None, None))
+
+# Sign width, as ChestReports.fitsOnSign measures it: a line is 90 pixels.
+NARROW = {**dict.fromkeys("i!.,:;|'", 2), "l": 3, **dict.fromkeys("tI[] ", 4), **dict.fromkeys("fk<>", 5)}
+def sign_width(text):
+    return sum(NARROW.get(ch, 6) for ch in text)
+for g in groups:
+    label = "[" + g.replace("-", " ") + "]"
+    if sign_width(label) > 90:
+        problems.append((label, "too wide for one sign line (90 px): rename it in NAMES", sign_width(label)))
 
 lines = ["groups:"]
 for g, (title, ents, ex, members) in groups.items():

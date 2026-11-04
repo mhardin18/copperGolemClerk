@@ -201,6 +201,10 @@ public final class ItemGroups {
             if (fuzzy >= 0) {
                 return Optional.of(new Rule(inGroup(fuzzy), groupSizes[fuzzy], "group " + groupNames.get(fuzzy)));
             }
+            Rule renamed = renamedGroup(words);
+            if (renamed != null) {
+                return Optional.of(renamed);
+            }
         }
         String entry = key.startsWith("#") ? key.replace(' ', '_') : key.replace(' ', '_').replace('-', '_');
         String meaning = key.startsWith("#") ? "item tag " + entry
@@ -218,6 +222,83 @@ public final class ItemGroups {
             rule = ruleFor(m -> containsWords(m.name(), words(key)), "items with \"" + key + "\" in their name");
         }
         return Optional.ofNullable(rule);
+    }
+
+    /**
+     * Default groups renamed in 3.1.0 to fit on a sign line, both ways round, so a sign
+     * keeps working whichever names the server's config.yml has: [smithing templates]
+     * finds the new templates group, and [templates] finds an older config's
+     * smithing-templates. The old concrete-and-terracotta became two groups; [concrete]
+     * and [terracotta] on an older config already mean those items by name.
+     */
+    static final Map<String, List<String>> RENAMED = Map.of(
+            "concrete-and-terracotta", List.of("concrete", "terracotta"),
+            "saplings-and-leaves", List.of("foliage"),
+            "crafting-materials", List.of("materials"),
+            "smithing-templates", List.of("templates"),
+            "foliage", List.of("saplings-and-leaves"),
+            "materials", List.of("crafting-materials"),
+            "templates", List.of("smithing-templates"));
+
+    /** The group(s) a label names under its old or new default name, or null if none is in the config. */
+    private Rule renamedGroup(String[] words) {
+        for (var e : RENAMED.entrySet()) {
+            if (!sameWordsIgnoringPlural(words, words(e.getKey()))) {
+                continue;
+            }
+            BitSet wanted = new BitSet();
+            List<String> found = new ArrayList<>();
+            for (String target : e.getValue()) {
+                int i = namedGroup(target);
+                if (i >= 0) {
+                    wanted.set(i);
+                    found.add(groupNames.get(i));
+                }
+            }
+            if (found.isEmpty()) {
+                return null;
+            }
+            Predicate<Material> test = m -> {
+                BitSet bits = membership.get(m);
+                return bits != null && bits.intersects(wanted);
+            };
+            int size = (int) items.stream().filter(test).count();
+            return new Rule(test, size, (found.size() == 1 ? "group " : "groups ") + String.join(" + ", found)
+                    + " (renamed from " + e.getKey() + ")");
+        }
+        return null;
+    }
+
+    /** The index of the group with exactly this name (dashes, spaces and underscores alike), or -1. */
+    private int namedGroup(String name) {
+        String key = String.join("-", words(name));
+        for (int i = 0; i < groupNames.size(); i++) {
+            if (String.join("-", words(groupNames.get(i))).equals(key)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * The sign label to suggest for a group: its name in brackets, or, if that's too wide
+     * for a sign line, a shorter name that means the same group (an older config's
+     * saplings-and-leaves -> [foliage]).
+     */
+    String signLabel(int index) {
+        String name = groupNames.get(index);
+        String label = "[" + name.replace('-', ' ') + "]";
+        if (ChestReports.fitsOnSign(label)) {
+            return label;
+        }
+        for (var e : RENAMED.entrySet()) {
+            String shorter = "[" + e.getKey().replace('-', ' ') + "]";
+            if (e.getValue().size() == 1 && namedGroup(e.getValue().get(0)) == index && ChestReports.fitsOnSign(shorter)
+                    && namedGroup(e.getKey()) < 0) {
+                return shorter;
+            }
+        }
+        return label;
     }
 
     /**

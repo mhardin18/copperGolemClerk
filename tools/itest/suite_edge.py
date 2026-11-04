@@ -165,6 +165,34 @@ def _(c):
     return lambda: [expect(c, "mixed", "birch_log", 16), expect(c, "mixed", "granite", 16), expect(c, "empty", "*", 0)]
 
 
+@scenario("label-over-two-lines", "edge", 240, "Labels carried on to the next line: a chest signed [concrete-and- / terracotta] takes concrete and glazed terracotta, and the copper chest's [Only concrete / and terracotta] filter leaves its dirt alone.")
+def _(c):
+    c.chest("copper", 2, 10, [("white_concrete", 8), ("red_glazed_terracotta", 4), ("dirt", 5)], block="waxed_copper_chest")
+    c.sign(2, 10, ["[Only concrete", "and terracotta]"])
+    c.chest("empty", 6, 10)
+    c.chest("ct", 14, 10)
+    c.sign(14, 10, ["[concrete-and-", "terracotta]"])
+    c.golem(4, 10)
+    return lambda: [expect(c, "ct", "white_concrete", 8), expect(c, "ct", "red_glazed_terracotta", 4),
+                    expect(c, "copper", "dirt", 5), expect(c, "empty", "*", 0)]
+
+
+@scenario("renamed-group-names", "edge", 240, "The short group names from 3.1.0 work whichever names config.yml has: [foliage] takes oak leaves, [materials] takes paper, [templates] takes a smithing template.")
+def _(c):
+    c.chest("copper", 2, 10, [("oak_leaves", 8), ("paper", 8), ("coast_armor_trim_smithing_template", 2)],
+            block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("leaves", 10, 10)
+    c.sign(10, 10, "[foliage]")
+    c.chest("mats", 14, 10)
+    c.sign(14, 10, "[materials]")
+    c.chest("tpl", 18, 10)
+    c.sign(18, 10, "[templates]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "leaves", "oak_leaves", 8), expect(c, "mats", "paper", 8),
+                    expect(c, "tpl", "coast_armor_trim_smithing_template", 2), expect(c, "empty", "*", 0)]
+
+
 @scenario("junk-sign-text", "edge", 120, "Signs that aren't labels ([no such thing], [[logs]], logs, [🍞]) are ignored; the chest acts on its contents.")
 def _(c):
     c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")

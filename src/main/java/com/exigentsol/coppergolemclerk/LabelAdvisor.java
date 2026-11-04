@@ -119,8 +119,7 @@ final class LabelAdvisor {
     }
 
     private void addGroup(List<Suggestion> out, int index) {
-        String name = plugin.groups().groupName(index).replace('-', ' ');
-        String label = "[" + name + "]";
+        String label = plugin.groups().signLabel(index);
         out.add(new Suggestion(label, "group " + plugin.groups().groupName(index) + " ("
                 + plugin.groups().groupSize(index) + " items)", ChestReports.fitsOnSign(label)));
     }
@@ -176,7 +175,7 @@ final class LabelAdvisor {
                 : "Most of this " + what + " (" + advice.coveredPercent() + "% of the items) fits:");
         for (Suggestion s : advice.suggestions()) {
             say(sender, s.fits() ? NamedTextColor.AQUA : NamedTextColor.GRAY, "  " + s.label() + "  = " + s.meaning()
-                    + (s.fits() ? "" : " (too wide for one sign line: leave the items in, and golems match by contents)"));
+                    + (s.fits() ? "" : " (too wide for one sign line: start it on one line and end it with ] on the next)"));
         }
         if (!advice.strays().isEmpty()) {
             say(sender, NamedTextColor.YELLOW, "Doesn't fit that label (move these out first): " + amounts(advice.strays()) + ".");
