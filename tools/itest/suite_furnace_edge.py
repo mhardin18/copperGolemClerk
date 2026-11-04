@@ -22,7 +22,10 @@ def iron_conserved(c, want=16):
 
 
 def logged(c, text):
-    return any(text in l for l in c.log_lines())
+    """True if a log line about this platform (one with a coordinate on it) has this text.
+    Not the whole log: scenarios run side by side, and another platform's golem logging
+    "waits up to" must not set off this one's trigger."""
+    return any(text in l for l in c.cell_lines())
 
 
 def raw_chest(c, dx=4, dz=16):
