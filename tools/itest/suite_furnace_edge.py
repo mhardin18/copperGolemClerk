@@ -32,11 +32,11 @@ def raw_chest(c, dx=4, dz=16):
 
 @scenario("furnace-edge-furnace-broken-mid-feed", "furnace-edge", 180, "The labelled furnace is broken while a golem carries the supply's raw iron to it: the golem puts it back in the supply (never sorted into the [raw iron] chest); none lost.")
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
     raw_chest(c)
-    c.golem(4, 10, slow=True)
-    x, y, z = c.abs(8, 10)
+    c.golem(10, 10)
+    x, y, z = c.abs(2, 2)
     t = Trigger()
 
     def check():
@@ -70,9 +70,9 @@ def _(c):
 
 @scenario("furnace-edge-golem-killed-carrying", "furnace-edge", 120, "A golem carrying the supply's raw iron is killed: the raw iron drops (nothing vanishes).")
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
-    c.golem(4, 10, slow=True)
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
+    c.golem(10, 10)
     t = Trigger()
 
     def check():
@@ -86,10 +86,10 @@ def _(c):
 
 @scenario("furnace-edge-feeding-off-mid-job", "furnace-edge", 180, "furnace-feeding is turned off (reload) while a golem carries raw iron to a furnace: it stops and sorts the raw iron into the [raw iron] chest.", alone=True)
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
     raw_chest(c)
-    c.golem(4, 10, slow=True)
+    c.golem(10, 10)
     t = Trigger()
 
     def check():
@@ -101,10 +101,10 @@ def _(c):
 
 @scenario("furnace-edge-vanilla-mode-mid-job", "furnace-edge", 180, "A golem carrying raw iron to a furnace is switched to vanilla: the plugin lets go of it (no errors) and the raw iron isn't lost.")
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
     c.chest("empty", 4, 16)
-    c.golem(4, 10, slow=True)
+    c.golem(10, 10)
     t = Trigger()
 
     def to_vanilla():
