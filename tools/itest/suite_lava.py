@@ -131,9 +131,17 @@ def _(c):
 
     def check():
         t.fire_when(lambda: c.holding("bucket") > 0, lambda: set_cauldron(c, "cauldron"))
+        # Read the return from the log: the dripstone can refill the cauldron within seconds,
+        # and then the golem takes the bucket out again before a check sees it in [Fuel].
+        fx, fy, fz = c.chests["fuelchest"][0]
+        returned = t.at is not None and any(f"put 1 BUCKET into the inventory of the CHEST at {fx},{fy},{fz}" in l
+                                            for l in c.cell_lines())
         back = t.at is not None and t.since() > 5 and c.holding() == 0
-        return [(t.at is not None, "emptied the cauldron while the golem carried the bucket"), (back, "golem's hands empty again"),
-                expect(c, "fuelchest", "bucket", 1), expect(c, "buckets", "bucket", 1), no_errors(c)]
+        in_fuel = c.count("fuelchest", "bucket") + c.count("fuelchest", "lava_bucket")
+        return [(t.at is not None, "emptied the cauldron while the golem carried the bucket"),
+                (returned, "the golem put the empty bucket back in [Fuel]"), (back, "golem's hands empty again"),
+                (in_fuel == 1, f"fuelchest has {in_fuel} bucket or lava bucket (want 1; a refilled cauldron may have filled it)"),
+                expect(c, "buckets", "bucket", 1), no_errors(c)]
     return check
 
 

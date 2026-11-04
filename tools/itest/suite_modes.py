@@ -163,7 +163,9 @@ def _(c):
     x, y, z = c.abs(12, 0)
     _, _, z2 = c.abs(12, 17)
     c.run(f"fill {x} {y} {z} {x} {y + 2} {z2} minecraft:glass")  # a long walk, so the switch comes first
-    golem(c, 4, 10)
+    # Start near the wall's open end: from (4, 10) the way round was at the edge of what the
+    # pathfinder searches, so the fetch sometimes never started.
+    golem(c, 8, 17)
     t = Trigger()
     def check():
         t.fire_when(lambda: any("fetching GRANITE" in l for l in c.cell_lines()), lambda: make_vanilla(c),
