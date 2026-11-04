@@ -1,4 +1,6 @@
 """Test platforms and the scenario registry for the in-game tests."""
+import bisect
+import os
 import re
 import time
 
@@ -36,26 +38,67 @@ def scenario(name, suite, timeout, description, alone=False, manual=False, allow
     return wrap
 
 
+LUCK = '{id:"minecraft:luck",duration:-1,show_particles:0b,show_icon:0b}'
+# A third of a copper golem's walking speed, for scenarios that break, empty or kill something
+# while a golem walks a few blocks: at full speed that's about 2 seconds, shorter than the
+# time between checks, so the test sometimes acted after the golem had already arrived.
+SLOW = 'attributes:[{id:"minecraft:movement_speed",base:0.07}]'
+
+
 class Log:
-    """Reads the server log from a starting offset onwards."""
+    """Reads the server log from a starting offset onwards.
+
+    Every scenario in a batch reads the log on every poll, so lines are read from the file
+    once and kept: a read only fetches what was written since the last one. Re-reading the
+    whole file each time made a poll round of a full run take most of a minute."""
 
     def __init__(self, path):
         self.path = path
+        self._lines, self._offsets, self._read_to = [], [], 0
 
     def size(self):
         try:
-            import os
             return os.path.getsize(self.path)
         except OSError:
             return 0
 
-    def since(self, offset):
+    def _refresh(self):
+        size = self.size()
+        if size < self._read_to:  # a new log file (server restarted): start over
+            self._lines, self._offsets, self._read_to = [], [], 0
+        if size == self._read_to:
+            return
         try:
-            with open(self.path, errors="replace") as f:
-                f.seek(offset)
-                return f.read().splitlines()
+            with open(self.path, "rb") as f:
+                f.seek(self._read_to)
+                data = f.read(size - self._read_to)
         except OSError:
-            return []
+            return
+        end = data.rfind(b"\n")
+        if end < 0:
+            return  # no complete line yet
+        at = self._read_to
+        for raw in data[:end].split(b"\n"):
+            self._offsets.append(at)
+            self._lines.append(raw.decode("utf-8", errors="replace").rstrip("\r"))
+            at += len(raw) + 1
+        self._read_to += end + 1
+
+    def since(self, offset):
+        """Complete lines that start at or after this byte offset (from size())."""
+        self._refresh()
+        return self._lines[bisect.bisect_left(self._offsets, offset):]
+
+
+_COORDS = {}  # log line -> the x, z pairs in it (each line is parsed once, not once per scenario)
+
+
+def _coords(line):
+    found = _COORDS.get(line)
+    if found is None:
+        found = _COORDS[line] = [(int(m.group(1)), int(m.group(3)))
+                                 for m in re.finditer(r"(-?\d+),\s*(-?\d+),\s*(-?\d+)", line)]
+    return found
 
 
 class InDimension:
@@ -100,9 +143,18 @@ class Cell:
     def log_lines(self):
         return self.log.since(self.log_start)
 
+    def cell_lines(self):
+        """log_lines() about this platform (a coordinate on it). Kept between calls, so each
+        call only looks at the lines written since the last one."""
+        lines = self.log_lines()
+        if getattr(self, "_cell_from", None) != self.log_start or len(lines) < self._cell_scanned:
+            self._cell_from, self._cell_scanned, self._cell = self.log_start, 0, []
+        self._cell.extend(l for l in lines[self._cell_scanned:] if self.in_cell(l))
+        self._cell_scanned = len(lines)
+        return list(self._cell)
+
     def in_cell(self, line):
-        for m in re.finditer(r"(-?\d+),\s*(-?\d+),\s*(-?\d+)", line):
-            x, z = int(m.group(1)), int(m.group(3))
+        for x, z in _coords(line):
             if self.x - 2 <= x <= self.x + SIZE + 1 and self.z - 2 <= z <= self.z + SIZE + 1:
                 return True
         return False
@@ -183,13 +235,15 @@ class Cell:
         """Remove a block outright (a chest's contents vanish with it)."""
         self.block(dx, dz, "air", dy)
 
-    def golem(self, dx, dz, awake=True):
+    def golem(self, dx, dz, awake=True, slow=False):
         """Summon a copper golem. awake=True gives it an invisible, endless Luck effect:
         Paper keeps mobs with potion effects fully active, which is how golems behave with
         a player nearby. awake=False leaves it to Paper's entity activation: with no player
-        within 32 blocks, a golem standing still only thinks in short bursts once a minute."""
+        within 32 blocks, a golem standing still only thinks in short bursts once a minute.
+        slow=True: it walks at a third of the usual speed (see SLOW)."""
         x, y, z = self.abs(dx, dz)
-        nbt = ' {active_effects:[{id:"minecraft:luck",duration:-1,show_particles:0b,show_icon:0b}]}' if awake else ""
+        parts = ([f"active_effects:[{LUCK}]"] if awake else []) + ([SLOW] if slow else [])
+        nbt = " {" + ",".join(parts) + "}" if parts else ""
         self.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5}{nbt}")
 
     # ---- reads

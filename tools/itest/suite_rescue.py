@@ -41,7 +41,7 @@ def far_golems(c):
 
 
 def logged(c, text):
-    return [l for l in c.log_lines() if text in l and c.in_cell(l)]
+    return [l for l in c.cell_lines() if text in l]
 
 
 @scenario("rescue-home-learned", "rescue", 90, "A golem that takes logs from a copper chest remembers it as its home.")
@@ -127,7 +127,7 @@ def _(c):
         adopted = f"{WORLD};{x};{y};{z}" in data
         t.fire_when(lambda: adopted, lambda: None)
         return [(adopted, f"home is now the chest at {x},{y},{z}"), (t.since() > 12, "waited 12s more"),
-                (not logged(c, "is lost") and not any("Alert" in l and "lost" in l for l in c.log_lines() if c.in_cell(l)),
+                (not logged(c, "is lost") and not any("Alert" in l and "lost" in l for l in c.cell_lines()),
                  "never treated as lost")]
     return check
 

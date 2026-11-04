@@ -3,15 +3,15 @@
 The right-click itself needs a real player, so these scenarios set the mode the way the
 plugin stores it: coppergolemclerk:mode = "vanilla" in the golem's persistent data.
 """
-from arena import _count, expect, scenario
+from arena import SLOW, _count, expect, scenario
 
 LUCK = '{id:"minecraft:luck",duration:-1,show_particles:0b,show_icon:0b}'
 VANILLA = 'BukkitValues:{"coppergolemclerk:mode":"vanilla"}'
 
 
-def golem(c, dx, dz, vanilla=False):
+def golem(c, dx, dz, vanilla=False, slow=False):
     x, y, z = c.abs(dx, dz)
-    extra = "," + VANILLA if vanilla else ""
+    extra = ("," + VANILLA if vanilla else "") + ("," + SLOW if slow else "")
     c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} {{active_effects:[{LUCK}]{extra}}}")
 
 
@@ -86,7 +86,7 @@ def _(c):
     c.run(f"kill {c.selector('snow_golem')}")
     c.run(f"kill {c.selector('copper_golem')}")
     def check():
-        lines = [l for l in c.log_lines() if "[CopperGolemClerk]" in l and c.in_cell(l)]
+        lines = [l for l in c.cell_lines() if "[CopperGolemClerk]" in l]
         died = [l for l in lines if "died at" in l]
         return [(len(died) == 1, f"one death logged, the copper golem's (got {len(died)})"),
                 (not any("snow" in l.lower() or "iron" in l.lower() for l in lines), "nothing about iron or snow golems")]
@@ -101,7 +101,7 @@ def _(c):
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{Tags:[\"itest_other\"]}}")
     golem(c, 4, 10)
     def check():
-        lines = [l for l in c.log_lines() if "[CopperGolemClerk]" in l and c.in_cell(l)]
+        lines = [l for l in c.cell_lines() if "[CopperGolemClerk]" in l]
         return [expect(c, "logs", "birch_log", 8),
                 (not any("IRON_GOLEM" in l for l in lines), "no plugin log line about the iron golem")]
     return check
@@ -166,7 +166,7 @@ def _(c):
     golem(c, 4, 10)
     t = Trigger()
     def check():
-        t.fire_when(lambda: any("fetching GRANITE" in l and c.in_cell(l) for l in c.log_lines()), lambda: make_vanilla(c),
+        t.fire_when(lambda: any("fetching GRANITE" in l for l in c.cell_lines()), lambda: make_vanilla(c),
                     lines=c.log_lines)
         took_first = t.at is not None and any("took" in l and "GRANITE" in l and c.in_cell(l) for l in c.log_lines()[:t.lines])
         return [(not took_first, "switched before the golem got there" if not took_first

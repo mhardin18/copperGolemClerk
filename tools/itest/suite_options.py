@@ -132,7 +132,7 @@ def _(c):
     c.golem(4, 10)
 
     def refused():
-        return any("labelled for" in l and "BIRCH_LOG" in l and c.in_cell(l) for l in c.log_lines())
+        return any("labelled for" in l and "BIRCH_LOG" in l for l in c.cell_lines())
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "stone", "birch_log", 0),
                     (refused(), "the [stone] chest refused the logs ('labelled for' in the log)")]
 

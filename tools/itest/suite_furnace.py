@@ -128,12 +128,12 @@ def _(c):
 
 @scenario("supply-leftover-goes-back", "furnace", 150, "The unfuelled furnace fills up while a golem carries supply logs to it: after waiting for room, the golem puts them back in the supply chest, not in the [logs] chest.")
 def _(c):
-    supply(c, items=[("oak_log", 16)])
-    furnace(c, "furnace", 8, 10, label="[logs]")
+    supply(c, dx=18, dz=18, items=[("oak_log", 16)])
+    furnace(c, "furnace", 2, 2, label="[logs]")
     c.chest("logs", 4, 16, [("birch_log", 1)])
     c.sign(4, 16, "[logs]")
-    c.golem(4, 4)
-    x, y, z = c.abs(8, 10)
+    c.golem(10, 10)
+    x, y, z = c.abs(2, 2)
     t = Trigger()
 
     def check():
