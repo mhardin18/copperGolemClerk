@@ -17,13 +17,16 @@ final class HelpText {
 
     private static final List<Entry> ENTRIES = List.of(
             new Entry("check", "/cgc check", "/cgc check <x> <y> <z> [world]",
-                    "Explain the chest you're looking at, or the item in your hand.",
+                    "Explain the chest you're looking at and suggest a sign label, or explain the item in your hand.",
                     List.of("Look at a chest (within 6 blocks) and run it to see:",
-                            "- what each sign or item-frame label on it means, and labels that match nothing",
+                            "- what each sign or item-frame label on it means, and labels that match nothing"
+                                    + " or never close (a label can carry on to the next sign line: [Only light / sources])",
                             "- what the chest takes, from its labels or its contents",
                             "- whether the item in your hand would go there",
                             "- anything stopping golems from using it: a block on top, a lock, a hopper"
                                     + " under it feeding a copper chest, or no room",
+                            "- what to write on its sign: labels for what's in it (most specific first), what its label"
+                                    + " doesn't cover, or, for an empty chest, labels for the item in your hand",
                             "Not looking at a chest: the item groups the item in your hand belongs to.",
                             "Players can only check containers they could open (not locked; with GriefPrevention,"
                                     + " unclaimed or where they have container trust).")),

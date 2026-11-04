@@ -80,7 +80,10 @@ allow-empty-chests: true
 item-frame-labels: true
 
 # Sign labels: put a wall sign on any side of a chest (or a standing sign on
-# top) and write rules on it, one per line, in square brackets:
+# top) and write rules on it in square brackets, one or more per line. A rule too
+# wide for one line can carry on to the next: leave the [ open and close it later
+# ("[Only light" then "sources]" = [Only light sources]). Lines are joined with a
+# space, or with nothing after a - or _. An unclosed rule is ignored (/cgc check says so).
 #   [logs]           a group from the list below
 #   [oak log]        one item (spaces or underscores, any capitalization)
 #   [*_ORE]          a name pattern: * stands for any letters (or none) in the item's ID,
@@ -94,7 +97,11 @@ item-frame-labels: true
 #   [@edible]        a property: @edible, @fuel (burns in a furnace) or @record
 # A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
-# If a word is both a group and an item, the group wins: [stone] = stone group.
+# If a word is both a group and an item, the group wins: [stone] = stone group,
+# [terracotta] = terracotta group (glazed too).
+# Groups renamed in 3.1.0 answer to both names: [smithing templates] = [templates],
+# [crafting materials] = [materials], [saplings and leaves] = [foliage], and
+# [concrete and terracotta] = both the concrete and terracotta groups.
 # Group names work singular or plural: [Rail] = rails, [ore] = ores,
 # [light source] = light-sources. If a word matches no group and no item, it
 # matches items with that word in their name: [carpet] = every carpet.
@@ -431,6 +438,9 @@ debug: false
 trace-golems: false
 
 # Each group is a list of entries. An item can be in more than one group.
+# A group's name is its sign label ([light sources] for light-sources), so keep names
+# short: a sign line holds about 15 letters (a longer label can carry on to the next
+# line, but one line is easier). Upgrading never changes this list.
 # Entry formats:
 #   DIAMOND            one item (minecraft:diamond also works)
 #   *_ORE              name pattern; * matches any letters (or none), whole ID must fit
@@ -445,7 +455,7 @@ groups:
   music-discs:
     - "*DISC*"
   # Smithing templates (19 items)
-  smithing-templates:
+  templates:
     - "*TEMPLATE*"
   # Rare & trophies (18 items)
   rare-items:
@@ -608,7 +618,7 @@ groups:
     - RAW_GOLD
     - RAW_IRON
   # Crafting materials (9 items)
-  crafting-materials:
+  materials:
     - BOWL
     - BRICK
     - CLAY_BALL
@@ -761,9 +771,11 @@ groups:
   wool:
     - "#minecraft:wool_carpets"
     - "*WOOL*"
-  # Concrete & terracotta (97 items)
-  concrete-and-terracotta:
+  # Concrete: blocks, powder, slabs & stairs (64 items)
+  concrete:
     - "*CONCRETE*"
+  # Terracotta: plain, dyed & glazed (33 items)
+  terracotta:
     - "*TERRACOTTA*"
   # Glass (35 items)
   glass:
@@ -784,7 +796,7 @@ groups:
   flowers:
     - "#minecraft:flowers"
   # Saplings & leaves (23 items)
-  saplings-and-leaves:
+  foliage:
     - "*SAPLING*"
     - "*_POPLAR_LEAVES"
     - ACACIA_LEAVES

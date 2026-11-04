@@ -1134,4 +1134,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             return sender.hasPermission("coppergolemclerk.admin");
         }
     }
+
+    LabelAdvisor labelAdvisor() {
+        return labelAdvisor;
+    }
 }

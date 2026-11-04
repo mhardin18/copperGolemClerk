@@ -94,4 +94,57 @@ class LabelAdvisorPaperTest extends PaperTest {
     void labelPermissionIsEveryones() {
         assertTrue(plugin.mayUse(server.addPlayer(), "label"));
     }
+
+    private String check(Block block, org.bukkit.inventory.ItemStack hand) {
+        ConsoleCommandSenderMock console = server.getConsoleSender();
+        while (console.nextMessage() != null) {
+            // drop older messages
+        }
+        new ChestReports(plugin).checkChest(console, block, hand);
+        StringBuilder out = new StringBuilder();
+        String line;
+        while ((line = console.nextMessage()) != null) {
+            out.append(line.replaceAll("§.", "")).append('\n');
+        }
+        return out.toString();
+    }
+
+    @Test
+    void checkSuggestsALabelForAnUnlabelledChest() {
+        String out = check(chest(0, 0, item(Material.OAK_LOG, 3), item(Material.BIRCH_LOG, 2)), org.bukkit.inventory.ItemStack.empty());
+        assertTrue(out.contains("Suggested sign label") && out.contains("[logs]"), out);
+    }
+
+    @Test
+    void checkNamesWhatALabelDoesNotCoverAndALabelForIt() {
+        Block labelled = chest(4, 0, item(Material.OAK_LOG, 3), item(Material.DIRT, 2));
+        sign(labelled, "[logs]");
+        String out = check(labelled, org.bukkit.inventory.ItemStack.empty());
+        assertTrue(out.contains("Sign label: not covered by the label") && out.contains("dirt x2"), out);
+        assertTrue(out.contains("To keep them here, add [dirt]"), out);
+        assertFalse(out.contains("already labelled"), out); // check lists the labels itself
+    }
+
+    @Test
+    void checkOnAMatchingLabelledChestSaysSo() {
+        Block labelled = chest(4, 0, item(Material.OAK_LOG, 3));
+        sign(labelled, "[logs]");
+        assertTrue(check(labelled, org.bukkit.inventory.ItemStack.empty()).contains("everything in it matches its label"));
+    }
+
+    @Test
+    void checkOnAnEmptyChestSuggestsALabelForTheItemInHand() {
+        String out = check(chest(8, 0), item(Material.BIRCH_LOG, 1));
+        assertTrue(out.contains("Sign label for your birch log") && out.contains("[logs]"), out);
+        String noHand = check(chest(12, 0), org.bukkit.inventory.ItemStack.empty());
+        assertTrue(noHand.contains("hold an item and check again"), noHand);
+    }
+
+    @Test
+    void checkGivesNoLabelAdviceForOverflowOrCopperChests() {
+        Block over = chest(16, 0, item(Material.DIRT, 2), item(Material.DIAMOND, 1));
+        sign(over, "[Overflow]");
+        assertFalse(check(over, org.bukkit.inventory.ItemStack.empty()).contains("Sign label"));
+        assertFalse(check(copperChest(20, 0, item(Material.DIRT, 1)), org.bukkit.inventory.ItemStack.empty()).contains("Sign label"));
+    }
 }

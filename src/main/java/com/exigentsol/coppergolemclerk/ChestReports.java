@@ -60,7 +60,7 @@ final class ChestReports {
             say(player, NamedTextColor.AQUA, "No label: golems leave this " + kind + " alone. Put a sign on it saying what to"
                     + " cook, like [raw iron], and golems will run it.");
             for (String unknown : labels.unknown()) {
-                say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+                say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
             }
             return;
         }
@@ -84,7 +84,7 @@ final class ChestReports {
             }
         }
         for (String unknown : labels.unknown()) {
-            say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+            say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
         }
         if (cookable.isEmpty()) {
             say(player, NamedTextColor.YELLOW, "Golems put nothing into it: its labels cover nothing a " + kind + " can cook.");
@@ -188,7 +188,7 @@ final class ChestReports {
                 say(player, NamedTextColor.AQUA, "Copper chest: golems take items out of it to sort them.");
             }
             for (String unknown : filter.unknown()) {
-                say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+                say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
             }
             reachNote(player, block, inv, "take-reach", plugin.takeReach());
             return;
@@ -224,7 +224,7 @@ final class ChestReports {
             say(player, NamedTextColor.AQUA, "A hopper under it leads into a furnace (a smelter): golems never sort anything into it.");
         }
         for (String unknown : labels.unknown()) {
-            say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+            say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
         }
         for (String only : labels.onlyNames()) {
             say(player, NamedTextColor.YELLOW, "  " + only + " is a filter for copper chests (what golems take out);"
@@ -267,6 +267,13 @@ final class ChestReports {
 
         if (!hand.isEmpty()) {
             say(player, NamedTextColor.GREEN, "Your " + pretty(hand.getType()) + ": " + verdict(hand, inv, labels));
+        }
+        // Sign-label advice for storage chests: not for [Overflow], fuel or supply chests, or a smelter's input.
+        boolean furnaceOnly = plugin.furnaceFeeding() && !labels.hasItemRules()
+                && (labels.fuel() || labels.supply() || HopperLines.feedsFurnace(block.getWorld(), halvesOf(block, inv)));
+        if (!labels.overflow() && !furnaceOnly && plugin.signLabels() && plugin.labelAdvisor() != null) {
+            plugin.labelAdvisor().suggest(player, inv, labels, pretty(block.getType()).toLowerCase(java.util.Locale.ROOT),
+                    hand, true);
         }
     }
 
@@ -534,8 +541,9 @@ final class ChestReports {
                 say(player, NamedTextColor.AQUA, "  " + e.getKey() + (fits ? "" : "*") + "  " + amounts(e.getValue()));
             }
             if (anyTooLong) {
-                say(player, NamedTextColor.GRAY, "  * too long for one sign line: put one of those items in an empty, "
-                        + "unlabelled chest instead, and golems will add the rest of the group.");
+                say(player, NamedTextColor.GRAY, "  * too wide for one sign line: start it on one line and end it on the next "
+                        + "(\"[Only light\" then \"sources]\"), or put one of those items in an empty, unlabelled chest "
+                        + "and golems will add the rest of the group.");
             }
         }
         if (!blocked.isEmpty()) {
@@ -569,13 +577,19 @@ final class ChestReports {
         if (bits == null || bits.isEmpty()) {
             return "[" + pretty(type) + "]";
         }
-        return "[" + plugin.groups().groupName(bits.nextSetBit(0)).replace('-', ' ') + "]";
+        return plugin.groups().signLabel(bits.nextSetBit(0));
     }
 
     private String describeChest(Inventory inv, ChestLabels.Labels labels) {
         var loc = ChestLabels.locationOf.apply(inv);
         String at = loc == null ? "?" : loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
         return (labels.names().isEmpty() ? "chest" : String.join(" ", labels.names())) + " at " + at;
+    }
+
+    /** Why a sign label is ignored: it matches nothing, or its bracket is never closed. */
+    static String ignoredLabel(String label) {
+        return label.endsWith("]") ? label + " matches no group or item, so it's ignored"
+                : label + " has no closing ], so it's ignored (a label can carry on to the next line: end it there with ])";
     }
 
     /** Rough pixel width in Minecraft's default font. */

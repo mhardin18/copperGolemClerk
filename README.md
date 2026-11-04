@@ -43,7 +43,8 @@ that cover nearly every survival item; everything else is optional.
 **For players**
 - **`/cgc find <item>`:** which chests near you hold something, and the nearest glow for you.
   By default players only search their own GriefPrevention claims.
-- **`/cgc check`:** explains a chest you could open, or which groups the item in your hand is in.
+- **`/cgc check`:** explains a chest you could open and suggests a sign label from what's in it,
+  or says which groups the item in your hand is in.
 - **`/cgc overflow`:** what's piling up in the overflow chests near you, and what label would
   give each item a home.
 - **`/cgc label`:** what to write on a chest's sign, from what's in it.
@@ -57,8 +58,8 @@ that cover nearly every survival item; everything else is optional.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
 
 **For admins**
-- **`/cgc check`** explains any chest: what its labels mean, what it takes, and anything
-  stopping golems from using it.
+- **`/cgc check`** explains any chest: what its labels mean, what it takes, anything
+  stopping golems from using it, and what sign label to give it.
 - **`/cgc overflow`** lists what's in overflow chests and what label would give each item a home.
 - **`/cgc stats`** shows how much the golems have sorted, server-wide.
 - **`/cgc golems`** finds every golem: where it is, what it's carrying and whether it's lost.
@@ -143,6 +144,75 @@ Groups are defined in `config.yml` (and you can edit them) using:
 
 The same forms work on signs; see [`*` patterns, `#` tags and `@` properties](#-patterns--tags-and--properties).
 
+#### The default groups
+
+A fresh `config.yml` has these 51 groups. Every name fits on one sign line. The
+item counts are for Paper 26.3; an item can be in more than one group.
+
+| Sign label | What's in it | Items |
+|---|---|---|
+| `[music discs]` | Music discs | 23 |
+| `[templates]` | Smithing templates | 19 |
+| `[rare items]` | Rare & trophies | 18 |
+| `[buckets]` | Buckets | 12 |
+| `[brewing]` | Potions & brewing | 9 |
+| `[books]` | Books & enchanting | 5 |
+| `[maps]` | Maps & navigation | 23 |
+| `[fireworks]` | Fireworks | 2 |
+| `[food]` | Food | 38 |
+| `[seeds]` | Seeds | 7 |
+| `[farming]` | Crops & farming | 14 |
+| `[mob drops]` | Mob drops | 27 |
+| `[ores]` | Ores | 22 |
+| `[mineral blocks]` | Mineral blocks | 8 |
+| `[ingots and gems]` | Ingots & gems | 19 |
+| `[materials]` | Crafting materials | 9 |
+| `[amethyst]` | Amethyst | 6 |
+| `[animal gear]` | Saddles & animal armor | 30 |
+| `[armor]` | Armor | 31 |
+| `[weapons]` | Weapons & ammo | 23 |
+| `[tools]` | Tools | 35 |
+| `[boats]` | Boats | 22 |
+| `[rails]` | Rails & minecarts | 9 |
+| `[redstone]` | Redstone | 72 |
+| `[light sources]` | Light sources | 40 |
+| `[storage]` | Storage | 45 |
+| `[workstations]` | Workstations (villager jobs) | 13 |
+| `[utility blocks]` | Utility blocks | 9 |
+| `[decorations]` | Decorations | 143 |
+| `[wool]` | Wool & carpet | 64 |
+| `[concrete]` | Concrete: blocks, powder, slabs & stairs | 64 |
+| `[terracotta]` | Terracotta: plain, dyed & glazed | 33 |
+| `[glass]` | Glass | 35 |
+| `[dyes]` | Dyes | 16 |
+| `[mushrooms]` | Mushrooms | 6 |
+| `[flowers]` | Flowers | 31 |
+| `[foliage]` | Saplings & leaves | 23 |
+| `[sculk]` | Sculk | 4 |
+| `[sulfur]` | Sulfur & cinnabar | 28 |
+| `[ocean]` | Ocean | 45 |
+| `[nether]` | Nether | 44 |
+| `[end]` | The End | 10 |
+| `[copper]` | Copper blocks | 80 |
+| `[logs]` | Logs & planks | 64 |
+| `[wooden building]` | Wooden building | 80 |
+| `[dirt and sand]` | Dirt, sand & gravel | 12 |
+| `[ice and snow]` | Ice & snow | 6 |
+| `[plants]` | Plants | 26 |
+| `[stone]` | Stone & deepslate | 81 |
+| `[sandstone]` | Sandstone | 20 |
+| `[building]` | Bricks, quartz & other building | 29 |
+
+In 3.1.0 four groups were renamed so that their sign labels fit on one line:
+`smithing-templates` became `templates`, `crafting-materials` became `materials`,
+`saplings-and-leaves` became `foliage`, and `concrete-and-terracotta` became two groups,
+`concrete` and `terracotta`. Upgrading never changes the `groups:` in your `config.yml`,
+so a server that started before 3.1.0 keeps the old names. Both names work on signs
+either way: `[foliage]` finds an older config's `saplings-and-leaves`, and
+`[crafting materials]` finds the new `materials`. To get the new groups themselves,
+copy them from the [default
+`config.yml`](https://github.com/mhardin18/copperGolemClerk/blob/main/src/main/resources/config.yml).
+
 ### Smarter use of empty chests
 
 Vanilla golems walk to the nearest chest they haven't tried and drop their item
@@ -169,7 +239,8 @@ item; empty frames are ignored. Turn this off with `item-frame-labels: false`.
 
 Put a wall sign on any side of a chest (or a standing sign on top, or a hanging
 sign just above) with rules in square brackets. Each line can hold one rule or
-several (`[ice][snow]`), and the chest takes anything any rule matches:
+several (`[ice][snow]`), and a rule too long for one line can carry on to the next
+([see below](#labels-too-long-for-one-line)). The chest takes anything any rule matches:
 
 | Line        | Accepts                         |
 |-------------|---------------------------------|
@@ -188,9 +259,28 @@ item with the same name, and group names work singular or plural (`[Rail]` =
 `rails`, `[ore]` = `ores`, `[light source]` = `light-sources`). If a word matches
 no group and no item, it matches items with that word in their name (`[carpet]`
 = every carpet). An item that comes in all 16 dye colours also covers them:
-`[Terracotta]`, `[Shulker Box]`, `[Candle]` and `[Bundle]` take the plain item and
-every colour, while `[Red Terracotta]` takes only red. For one exact item that
-shares a group's name, use a framed item instead.
+`[Shulker Box]`, `[Candle]` and `[Bundle]` take the plain item and every colour,
+while `[Red Candle]` takes only red. (`[Terracotta]` is a group: plain, dyed and
+glazed terracotta.) For one exact item that shares a group's name, use a framed item
+instead.
+
+#### Labels too long for one line
+
+A sign line holds about 15 letters, fewer with wide letters like `m` and `w` (the game
+measures the width, not the number of letters). A label that doesn't fit can carry on
+to the next line: leave the `[` open at the end of one line and close it with `]` on
+a later one. The lines are joined with a space, or with nothing after a `-` or `_`:
+
+| Sign lines | Read as |
+|---|---|
+| `[Only light` / `sources]` | `[Only light sources]` |
+| `[Only ingots` / `and gems]` | `[Only ingots and gems]` |
+| `[*_SMITHING_` / `TEMPLATE]` | `[*_SMITHING_TEMPLATE]` |
+| `[ores] [Only` / `redstone]` | `[ores]` and `[Only redstone]` |
+
+Each side of a sign is read on its own, so a label can't carry on to the back. A label
+that is never closed is ignored, and `/cgc check` on the chest says so. `/cgc label` and
+`/cgc overflow` mark a suggested label that is too wide for one line.
 
 #### `*` patterns, `#` tags and `@` properties
 
@@ -648,7 +738,12 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   items with "horse" in their name, 9 items: ...), labels that match nothing, what
   the chest takes, whether it takes the item in your hand, and anything stopping
   golems from using it (a block on top, a lock, a hopper feeding a copper chest, full).
-  Players can only check containers they could open.
+  It ends with sign-label advice, as `/cgc label` gives: for an unlabelled chest, labels
+  for what's in it, most specific first, and which items wouldn't fit; for a labelled
+  chest, anything inside its label doesn't cover, and a label that would; for an empty
+  chest, labels for the item in your hand. `[Overflow]`, `[Fuel]` and `[Furnace Supply]`
+  chests and copper chests get no label advice. Players can only check containers they
+  could open.
 - `/cgc check` while not looking at a chest: which groups the item in your hand belongs to.
 - `/cgc label` while looking at a chest: what to write on its sign, from what's in it. One kind of item: its own
   label, then its groups; several kinds: the most specific group they all share; no shared group: the group most
@@ -719,7 +814,7 @@ with its line number and the old settings are kept.
 | `sign-labels` | `true` | Sign labels (`[logs]`, `[Overflow]`, `[No Golems]`, `[Only ...]`). |
 | `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use. Copper chests and chests a player has open are left alone. |
 | `destination-containers` | `[chest, trapped_chest]` | What golems put items into. Add `barrel` and/or `shulker_box` (every colour). Leave `chest` out to keep golems away from plain chests. Golems always take from copper chests. |
-| `groups` | 50 groups | The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
+| `groups` | 51 groups | The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
 
 ### Busier golems
 
