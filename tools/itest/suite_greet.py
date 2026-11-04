@@ -89,7 +89,7 @@ def _(c):
 def _(c):
     x, y, z = c.abs(18, 18)
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{Tags:[\"itest_other\"],NoAI:1b}}")
-    golem(c, 2, 2, slow=True)
+    golem(c, 2, 2)  # about 22 blocks from the iron golem: a walk the check catches
     killed = Trigger()
     def check():
         killed.fire_when(lambda: hellos(c, "going to say hello"), lambda: c.r.cmd(f"kill {c.selector('iron_golem')}"))  # this platform's only

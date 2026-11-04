@@ -34,6 +34,35 @@ def _(c):
                     has(check_at(c, 14, 10), 'items with "horse" in their name')]
 
 
+@scenario("check-suggests-sign-label", "commands", 30, "/cgc check ends with sign-label advice: labels for an unlabelled chest's contents, what a label doesn't cover (and a label that would), a hint for an empty chest, and none for [Overflow].")
+def _(c):
+    c.chest("logs", 6, 10, [("oak_log", 4), ("birch_log", 2)])
+    c.chest("labelled", 9, 10, [("oak_log", 3), ("dirt", 2)])
+    c.sign(9, 10, "[logs]")
+    c.chest("empty", 12, 10)
+    c.chest("over", 15, 10, [("dirt", 2), ("diamond", 1)])
+    c.sign(15, 10, "[Overflow]")
+
+    def check():
+        over = check_at(c, 15, 10)
+        return [has(check_at(c, 6, 10), "Suggested sign label"), has(check_at(c, 6, 10), "[logs]"),
+                has(check_at(c, 9, 10), "Sign label: not covered by the label"), has(check_at(c, 9, 10), "add [dirt]"),
+                has(check_at(c, 12, 10), "hold an item and check again"),
+                ("Sign label" not in over and "Suggested sign label" not in over, f"no label advice on [Overflow]; got: {over.strip()}")]
+    return check
+
+
+@scenario("check-label-over-two-lines", "commands", 30, "/cgc check reads a label carried on to the next sign line, and points out one that is never closed.")
+def _(c):
+    c.chest("carried", 6, 10)
+    c.sign(6, 10, ["[light", "sources]"])
+    c.chest("open", 10, 10)
+    c.sign(10, 10, ["[logs]", "[Only light"])
+    return lambda: [has(check_at(c, 6, 10), "[light sources] = group light-sources"),
+                    has(check_at(c, 10, 10), "[logs] = group logs"),
+                    has(check_at(c, 10, 10), "[Only light has no closing ]")]
+
+
 @scenario("check-contents", "commands", 30, "/cgc check on unlabelled chests: shared group, a stray item, empty, blocked, and a copper chest.")
 def _(c):
     c.chest("logs", 6, 10, [("oak_log", 4), ("birch_log", 2)])

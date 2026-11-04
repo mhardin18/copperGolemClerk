@@ -39,10 +39,10 @@ def scenario(name, suite, timeout, description, alone=False, manual=False, allow
 
 
 LUCK = '{id:"minecraft:luck",duration:-1,show_particles:0b,show_icon:0b}'
-# A third of a copper golem's walking speed, for scenarios that break, empty or kill something
-# while a golem walks a few blocks: at full speed that's about 2 seconds, shorter than the
-# time between checks, so the test sometimes acted after the golem had already arrived.
-SLOW = 'attributes:[{id:"minecraft:movement_speed",base:0.07}]'
+# Scenarios that break, empty or kill something while a golem walks use a long walk (across
+# the platform, about 20 blocks) at normal speed, so a check every 3 seconds catches it.
+# Slowed golems (movement_speed 0.07) were tried and dropped in 3.1.0: they barely moved,
+# gave up short walks, and ran past their scenario's time limit.
 
 
 class Log:
@@ -235,14 +235,13 @@ class Cell:
         """Remove a block outright (a chest's contents vanish with it)."""
         self.block(dx, dz, "air", dy)
 
-    def golem(self, dx, dz, awake=True, slow=False):
+    def golem(self, dx, dz, awake=True):
         """Summon a copper golem. awake=True gives it an invisible, endless Luck effect:
         Paper keeps mobs with potion effects fully active, which is how golems behave with
         a player nearby. awake=False leaves it to Paper's entity activation: with no player
-        within 32 blocks, a golem standing still only thinks in short bursts once a minute.
-        slow=True: it walks at a third of the usual speed (see SLOW)."""
+        within 32 blocks, a golem standing still only thinks in short bursts once a minute."""
         x, y, z = self.abs(dx, dz)
-        parts = ([f"active_effects:[{LUCK}]"] if awake else []) + ([SLOW] if slow else [])
+        parts = [f"active_effects:[{LUCK}]"] if awake else []
         nbt = " {" + ",".join(parts) + "}" if parts else ""
         self.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5}{nbt}")
 

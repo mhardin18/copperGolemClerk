@@ -51,10 +51,11 @@ def _(c):
 
 @scenario("furnace-edge-supply-emptied-before-arrival", "furnace-edge", 90, "The supply chest is emptied after a golem sets off for it: the golem gives up quietly, nothing is invented, the furnace stays empty.")
 def _(c):
-    supply(c)
+    # A walk across the platform (about 20 blocks), so the check catches the golem on its way.
+    supply(c, dx=18, dz=18)
     furnace(c, "blast", 8, 10, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
     c.chest("stash", 4, 16)
-    c.golem(4, 4, slow=True)
+    c.golem(3, 3)
     sx, sy, sz = c.chests["supply"][0]
     tx, ty, tz = c.chests["stash"][0]
     t = Trigger()
@@ -122,11 +123,12 @@ def _(c):
 
 @scenario("furnace-edge-cauldron-emptied-before-fill", "furnace-edge", 150, "The lava cauldron is emptied while a golem walks over with an empty bucket: the bucket is sorted into the bucket chest instead.")
 def _(c):
-    furnace(c, "furnace", 8, 10, fuel=("bucket", 1), label="[raw iron]")
+    # Furnace and cauldron at opposite corners (about 22 blocks), so the check catches the walk.
+    furnace(c, "furnace", 2, 2, fuel=("bucket", 1), label="[raw iron]")
     c.chest("buckets", 4, 16, [("bucket", 1)])
-    c.block(16, 4, "lava_cauldron")
-    x, y, z = c.abs(16, 4)
-    c.golem(4, 10, slow=True)
+    c.block(18, 18, "lava_cauldron")
+    x, y, z = c.abs(18, 18)
+    c.golem(3, 4)
     t = Trigger()
 
     def check():
@@ -134,6 +136,31 @@ def _(c):
                     lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:cauldron"))
         return [(t.at is not None, "emptied the cauldron as the golem set off for it"),
                 expect(c, "buckets", "bucket", 2), (c.total("lava_bucket") == 0, "no lava bucket was made"), no_errors(c)]
+    return check
+
+
+@scenario("furnace-edge-walk-gives-up-when-stuck", "furnace-edge", 120, "The supply is walled in while a golem walks to it: it gives up within about 10 seconds of getting no closer (\"no closer in 10s\"), not after a fixed 30, and nothing is taken or lost.")
+def _(c):
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
+    c.golem(3, 3)
+    walled, gave_up = Trigger(), []
+
+    def wall():
+        # Glass around the chest and its sign (north side, dz 17), two high, and on top.
+        for dx, dz in ((17, 18), (19, 18), (18, 19), (17, 17), (19, 17), (18, 16)):
+            c.block(dx, dz, "glass")
+            c.block(dx, dz, "glass", dy=1)
+        c.block(18, 18, "glass", dy=1)
+
+    def check():
+        walled.fire_when(lambda: logged(c, "SUPPLY_TAKE"), wall)
+        if walled.at is not None and not gave_up and logged(c, "no closer in 10s"):
+            gave_up.append(walled.since())
+        return [(walled.at is not None, "walled in the supply as the golem set off"),
+                (bool(gave_up) and gave_up[0] < 30, f"gave up {gave_up[0]:.0f}s after the wall (want under 30)" if gave_up
+                 else "hasn't given up yet"),
+                expect(c, "supply", "raw_iron", 16), iron_conserved(c), no_errors(c)]
     return check
 
 

@@ -3,15 +3,15 @@
 The right-click itself needs a real player, so these scenarios set the mode the way the
 plugin stores it: coppergolemclerk:mode = "vanilla" in the golem's persistent data.
 """
-from arena import SLOW, _count, expect, scenario
+from arena import _count, expect, scenario
 
 LUCK = '{id:"minecraft:luck",duration:-1,show_particles:0b,show_icon:0b}'
 VANILLA = 'BukkitValues:{"coppergolemclerk:mode":"vanilla"}'
 
 
-def golem(c, dx, dz, vanilla=False, slow=False):
+def golem(c, dx, dz, vanilla=False):
     x, y, z = c.abs(dx, dz)
-    extra = ("," + VANILLA if vanilla else "") + ("," + SLOW if slow else "")
+    extra = "," + VANILLA if vanilla else ""
     c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} {{active_effects:[{LUCK}]{extra}}}")
 
 

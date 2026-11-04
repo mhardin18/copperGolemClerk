@@ -47,6 +47,21 @@ def _(c):
     return check
 
 
+@scenario("work-order-setting-out-of-range", "work-order", 30, "furnace-jobs-before-sorting: -1 and 999 are warned about and clamped (0 and 64).", alone=True)
+def _(c):
+    set_options(c, furnace_jobs_before_sorting="-1")
+    low = []
+
+    def check():
+        log = "\n".join(c.log_lines())
+        if not low and "furnace-jobs-before-sorting must be 0 to 64 (it's -1); using 0." in log:
+            low.append(True)
+            set_options(c, furnace_jobs_before_sorting="999")
+        return [(bool(low), "warned about furnace-jobs-before-sorting -1, using 0"),
+                ("furnace-jobs-before-sorting must be 0 to 64 (it's 999); using 64." in log, "warned about 999, using 64")]
+    return check
+
+
 @scenario("sorts-after-n-furnace-jobs", "work-order", 240, "furnace-jobs-before-sorting: 1: three furnaces with no fuel and a copper chest of logs: after fuelling one furnace the golem sorts before fuelling the next.", alone=True)
 def _(c):
     set_options(c, furnace_jobs_before_sorting="1")
@@ -128,25 +143,28 @@ class Backlog(threading.Thread):
         super().__init__(daemon=True)
         self.at = at
         self.r = from_properties(arena.SERVER + "/server.properties")
-        self.waiting, self.added, self.stop = [], 0, False
+        self.waiting, self.added, self.full, self.stop = [], 0, 0, False
 
-    def items(self):
+    def count(self, what):
+        """How many of an item ('*' = anything) are in the copper chest, or in one slot of it."""
         x, y, z = self.at
-        return self.r.cmd(f"data get block {x} {y} {z} Items")
+        return arena._count(self.r.cmd(f"execute if items block {x} {y} {z} {what}"))
 
     def run(self):
+        # One slot or one count at a time: a whole `data get block ... Items` is cut short by
+        # the server, which hid most stacks (logs waiting read 8) and made full slots look free.
         x, y, z = self.at
         tick = 0
         while not self.stop:
             try:
-                out = self.items()
-                self.waiting.append(sum(int(n) for n in re.findall(r'id: "minecraft:birch_log", count: (\d+)', out)))
+                self.waiting.append(self.count("container.* minecraft:birch_log"))
                 if tick % INFLOW_EVERY == 0:
-                    used = {int(s) for s in re.findall(r"Slot: (\d+)b", out)}
-                    free = next((s for s in range(27) if s not in used), None)
+                    free = next((s for s in range(27) if self.count(f"container.{s} *") == 0), None)
                     if free is not None:
                         self.r.cmd(f"item replace block {x} {y} {z} container.{free} with minecraft:birch_log {INFLOW}")
                         self.added += INFLOW
+                    else:
+                        self.full += 1
             except Exception:
                 pass
             tick += 1
@@ -157,7 +175,7 @@ class Backlog(threading.Thread):
         # Little's law: average logs waiting / logs arriving per second = average seconds a log waits.
         rate = self.added / max(1, len(self.waiting))
         return (f"logs waiting: avg {sum(w) / len(w):.1f}, max {max(w)}; about {sum(w) / len(w) / rate if rate else 0:.0f}s "
-                f"a log waits; {self.added} added")
+                f"a log waits; {self.added} added" + (f" ({self.full} inflows skipped: chest full)" if self.full else ""))
 
 
 def balance(c, n):
@@ -184,7 +202,9 @@ def balance(c, n):
         if done and not furnaces.stop:
             furnaces.stop = backlog.stop = True
             print(f"  furnace-jobs-before-sorting {n}: {backlog.report()}; logs sorted: "
-                  f"{c.count('logs', 'birch_log')}; ingots out: {c.count('ingots', 'iron_ingot') - 1}; "
+                  f"{c.count('logs', 'birch_log')}; ingots made: "
+                  f"{sum(c.count(k, 'iron_ingot') for k in names) + c.count('ingots', 'iron_ingot') - 1}, taken out: "
+                  f"{c.count('ingots', 'iron_ingot') - 1}; "
                   f"furnaces: {furnaces.report()}", flush=True)
         return [(done, f"measured for {BALANCE_SECONDS}s"), no_errors(c)]
     return check
