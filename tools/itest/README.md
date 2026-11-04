@@ -167,6 +167,15 @@ whole `data get block ... Items`: the server cuts long output short (`{Slot:...`
 anything after the first item or two goes missing. Until 3.1.0 `slot()` did that, and a
 furnace with input in slot 0 always read as having no fuel.
 
+## Checking the server log
+
+Scenarios run side by side, so `c.log_lines()` holds every platform's lines. To react to
+what this scenario's golem did, use `c.cell_lines()` (only lines with a coordinate on this
+platform), or `logged(c, text)` from `suite_furnace_edge`, which uses it. Until 3.1.0
+`logged()` read the whole log: one golem's "waits up to" set off the triggers of every
+waiting scenario, which broke a supply chest or killed a golem before it had picked
+anything up. `c.log_lines()` is fine for warnings from scenarios that run `alone`.
+
 ## Golems near and far from players
 
 Paper only runs a mob's AI in short bursts (about 100 ticks a minute) when no player is
