@@ -16,8 +16,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * /cgc label: suggests a sign label for the chest you're looking at, from what's in it.
- * It only suggests: the player writes the sign.
+ * /cgc label, and the end of /cgc check: suggests a sign label for a chest from what's in it
+ * (or, for an empty chest, from the item in your hand). It only suggests: the player writes the sign.
  *
  * One kind of item: that item's label, then its groups. Several kinds sharing a group: the
  * most specific shared group first. No shared group: the group covering most of the items,
@@ -141,8 +141,22 @@ final class LabelAdvisor {
                     + " (an [Only ...] sign limits what they take).");
             return;
         }
-        Map<Material, Integer> contents = contents(inventory);
         ChestLabels.Labels labels = ChestLabels.of(inventory, plugin.groups(), plugin.itemFrameLabels(), plugin.signLabels());
+        if (labels.hasItemRules()) {
+            say(sender, NamedTextColor.GOLD, "This " + what + " is already labelled " + String.join(" ", labels.names()) + ".");
+        }
+        suggest(sender, inventory, labels, what, ItemStack.empty(), false);
+    }
+
+    /**
+     * The sign-label advice for a storage chest, used by /cgc label and at the end of /cgc check.
+     * Labelled: whether its contents match the label. Unlabelled: labels for what's in it, most
+     * specific first, and what wouldn't fit. Empty and unlabelled: a label for the item in hand,
+     * if any. inCheck leaves out what /cgc check has already said.
+     */
+    void suggest(CommandSender sender, Inventory inventory, ChestLabels.Labels labels, String what, ItemStack hand,
+            boolean inCheck) {
+        Map<Material, Integer> contents = contents(inventory);
         if (labels.hasItemRules()) {
             Map<Material, Integer> notCovered = new EnumMap<>(Material.class);
             contents.forEach((m, n) -> {
@@ -150,37 +164,60 @@ final class LabelAdvisor {
                     notCovered.put(m, n);
                 }
             });
-            say(sender, NamedTextColor.GOLD, "This " + what + " is already labelled " + String.join(" ", labels.names()) + ".");
             if (notCovered.isEmpty()) {
-                say(sender, NamedTextColor.GREEN, contents.isEmpty() ? "It's empty; golems will fill it with what the label covers."
-                        : "Everything in it matches the label.");
+                if (!inCheck) {
+                    say(sender, NamedTextColor.GREEN, contents.isEmpty()
+                            ? "It's empty; golems will fill it with what the label covers."
+                            : "Everything in it matches the label.");
+                } else if (!contents.isEmpty()) {
+                    say(sender, NamedTextColor.GREEN, "Sign label: everything in it matches its label.");
+                }
             } else {
-                say(sender, NamedTextColor.YELLOW, "Not covered by the label (golems won't add more of these): " + amounts(notCovered) + ".");
+                say(sender, NamedTextColor.YELLOW, (inCheck ? "Sign label: n" : "N") + "ot covered by the label (golems won't add"
+                        + " more of these; move them out, or add a label for them): " + amounts(notCovered) + ".");
+                Advice extra = advise(notCovered);
+                if (!extra.suggestions().isEmpty() && extra.strays().isEmpty()) {
+                    Suggestion s = extra.suggestions().getFirst();
+                    say(sender, NamedTextColor.AQUA, "  To keep them here, add " + s.label() + "  = " + s.meaning() + tooWide(s));
+                }
             }
             return;
         }
         if (contents.isEmpty()) {
-            say(sender, NamedTextColor.YELLOW, "This " + what + " is empty. Put one item in it, or write a sign label for what"
-                    + " should go here, e.g. [logs].");
+            if (!hand.isEmpty() && hand.getType().isItem()) {
+                Advice forHand = advise(Map.of(hand.getType(), hand.getAmount()));
+                say(sender, NamedTextColor.GOLD, "Sign label for your " + name(hand.getType()) + ", most specific first:");
+                for (Suggestion s : forHand.suggestions()) {
+                    say(sender, s.fits() ? NamedTextColor.AQUA : NamedTextColor.GRAY, "  " + s.label() + "  = " + s.meaning() + tooWide(s));
+                }
+                say(sender, NamedTextColor.GRAY, "Write it in square brackets on a sign on the " + what + ".");
+            } else {
+                say(sender, NamedTextColor.YELLOW, (inCheck ? "Sign label: p" : "This " + what + " is empty. P")
+                        + "ut one item in it, or write a sign label for what should go here, e.g. [logs]"
+                        + (inCheck ? " (hold an item and check again for a suggestion)." : "."));
+            }
             return;
         }
         Advice advice = advise(contents);
         if (advice.suggestions().isEmpty()) {
-            say(sender, NamedTextColor.YELLOW, "These items share no group, so there's no label to suggest. Sort them into"
-                    + " separate chests, or label this one [Overflow] as a catch-all.");
+            say(sender, NamedTextColor.YELLOW, (inCheck ? "Sign label: these" : "These") + " items share no group, so there's no"
+                    + " label to suggest. Sort them into separate chests, or label this one [Overflow] as a catch-all.");
             return;
         }
         say(sender, NamedTextColor.GOLD, advice.strays().isEmpty()
                 ? "Suggested sign label" + (advice.suggestions().size() > 1 ? "s, most specific first:" : ":")
                 : "Most of this " + what + " (" + advice.coveredPercent() + "% of the items) fits:");
         for (Suggestion s : advice.suggestions()) {
-            say(sender, s.fits() ? NamedTextColor.AQUA : NamedTextColor.GRAY, "  " + s.label() + "  = " + s.meaning()
-                    + (s.fits() ? "" : " (too wide for one sign line: start it on one line and end it with ] on the next)"));
+            say(sender, s.fits() ? NamedTextColor.AQUA : NamedTextColor.GRAY, "  " + s.label() + "  = " + s.meaning() + tooWide(s));
         }
         if (!advice.strays().isEmpty()) {
             say(sender, NamedTextColor.YELLOW, "Doesn't fit that label (move these out first): " + amounts(advice.strays()) + ".");
         }
         say(sender, NamedTextColor.GRAY, "Write it in square brackets on a sign on the " + what + "; /cgc help explains labels.");
+    }
+
+    private static String tooWide(Suggestion s) {
+        return s.fits() ? "" : " (too wide for one sign line: start it on one line and end it with ] on the next)";
     }
 
     private static String amounts(Map<Material, Integer> items) {

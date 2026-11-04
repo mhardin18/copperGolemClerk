@@ -43,7 +43,8 @@ that cover nearly every survival item; everything else is optional.
 **For players**
 - **`/cgc find <item>`:** which chests near you hold something, and the nearest glow for you.
   By default players only search their own GriefPrevention claims.
-- **`/cgc check`:** explains a chest you could open, or which groups the item in your hand is in.
+- **`/cgc check`:** explains a chest you could open and suggests a sign label from what's in it,
+  or says which groups the item in your hand is in.
 - **`/cgc overflow`:** what's piling up in the overflow chests near you, and what label would
   give each item a home.
 - **`/cgc label`:** what to write on a chest's sign, from what's in it.
@@ -57,8 +58,8 @@ that cover nearly every survival item; everything else is optional.
 - Right-click a golem with bamboo to switch it **back to vanilla**.
 
 **For admins**
-- **`/cgc check`** explains any chest: what its labels mean, what it takes, and anything
-  stopping golems from using it.
+- **`/cgc check`** explains any chest: what its labels mean, what it takes, anything
+  stopping golems from using it, and what sign label to give it.
 - **`/cgc overflow`** lists what's in overflow chests and what label would give each item a home.
 - **`/cgc stats`** shows how much the golems have sorted, server-wide.
 - **`/cgc golems`** finds every golem: where it is, what it's carrying and whether it's lost.
@@ -737,7 +738,12 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   items with "horse" in their name, 9 items: ...), labels that match nothing, what
   the chest takes, whether it takes the item in your hand, and anything stopping
   golems from using it (a block on top, a lock, a hopper feeding a copper chest, full).
-  Players can only check containers they could open.
+  It ends with sign-label advice, as `/cgc label` gives: for an unlabelled chest, labels
+  for what's in it, most specific first, and which items wouldn't fit; for a labelled
+  chest, anything inside its label doesn't cover, and a label that would; for an empty
+  chest, labels for the item in your hand. `[Overflow]`, `[Fuel]` and `[Furnace Supply]`
+  chests and copper chests get no label advice. Players can only check containers they
+  could open.
 - `/cgc check` while not looking at a chest: which groups the item in your hand belongs to.
 - `/cgc label` while looking at a chest: what to write on its sign, from what's in it. One kind of item: its own
   label, then its groups; several kinds: the most specific group they all share; no shared group: the group most

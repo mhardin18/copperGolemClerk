@@ -268,6 +268,13 @@ final class ChestReports {
         if (!hand.isEmpty()) {
             say(player, NamedTextColor.GREEN, "Your " + pretty(hand.getType()) + ": " + verdict(hand, inv, labels));
         }
+        // Sign-label advice for storage chests: not for [Overflow], fuel or supply chests, or a smelter's input.
+        boolean furnaceOnly = plugin.furnaceFeeding() && !labels.hasItemRules()
+                && (labels.fuel() || labels.supply() || HopperLines.feedsFurnace(block.getWorld(), halvesOf(block, inv)));
+        if (!labels.overflow() && !furnaceOnly && plugin.signLabels() && plugin.labelAdvisor() != null) {
+            plugin.labelAdvisor().suggest(player, inv, labels, pretty(block.getType()).toLowerCase(java.util.Locale.ROOT),
+                    hand, true);
+        }
     }
 
     private void describeContents(CommandSender player, Inventory inv) {
