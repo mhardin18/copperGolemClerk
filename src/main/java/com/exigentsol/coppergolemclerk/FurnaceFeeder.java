@@ -87,7 +87,6 @@ final class FurnaceFeeder {
      */
     private static final long SKIP_AFTER_NO_PATH_MILLIS = 10_000;
     private static final long OFFER_COOLDOWN_MILLIS = 5_000;
-    private static final double REACH = 2.5;
     /**
      * Most furnaces one load is split between. A golem's load claims its furnaces until it's
      * delivered (other golems leave them alone), so a big load spread over many furnaces kept the
@@ -303,10 +302,19 @@ final class FurnaceFeeder {
     }
 
     private Reach.Spot spotFor(CopperGolem golem, Block block) {
+        return Reach.reachableSpot(golem, golem.getWorld(), halvesFor(block), reach());
+    }
+
+    /** The block's halves if it's a double chest, else just the block. */
+    private static Set<HomeFinder.Pos> halvesFor(Block block) {
         BlockState state = block.getState(false);
-        Set<HomeFinder.Pos> halves = state instanceof Container c && !isFurnace(block.getType())
+        return state instanceof Container c && !isFurnace(block.getType())
                 ? HomeFinder.halvesOf(c.getInventory(), block) : Set.of(HomeFinder.Pos.of(block));
-        return Reach.reachableSpot(golem, golem.getWorld(), halves, Math.max(Reach.VANILLA, plugin.deliverReach()));
+    }
+
+    /** How many rows up furnace jobs reach: deliver-reach, at least vanilla's. */
+    private int reach() {
+        return Math.max(Reach.VANILLA, plugin.deliverReach());
     }
 
     // ---- where a load of items to cook goes
@@ -1058,10 +1066,9 @@ final class FurnaceFeeder {
         return true;
     }
 
-    private static boolean near(CopperGolem golem, Block block) {
-        Location center = block.getLocation().add(0.5, 0.5, 0.5);
-        return golem.getLocation().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH
-                || Reach.within(golem.getLocation(), golem.getWorld(), Set.of(HomeFinder.Pos.of(block)), Reach.VANILLA);
+    /** At the block: beside it with nothing in the way, as Reach.arrived (not just close through a wall). */
+    private boolean near(CopperGolem golem, Block block) {
+        return Reach.arrived(golem.getLocation(), golem.getWorld(), halvesFor(block), reach());
     }
 
     /** At a furnace of the load: put its even share in, then head for the next one. True if the job goes on. */

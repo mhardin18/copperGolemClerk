@@ -233,6 +233,35 @@ final class Reach {
      * True if a golem at this spot is close enough to use the chest: beside it (within 1.5
      * blocks sideways of a half's centre) and the chest no more than reach rows above its feet.
      */
+    /**
+     * Whether a golem standing here can use this chest or furnace: vanilla's touch (within,
+     * rows 0 to 2), or, up to `reach` rows, standing on one of its spots (spotsFor), which only
+     * count with open space between the golem and the block. A plain distance check let golems
+     * use blocks through a wall or a floor.
+     */
+    static boolean arrived(Location golem, World world, Set<HomeFinder.Pos> halves, int reach) {
+        if (within(golem, world, halves, VANILLA)) {
+            return true;
+        }
+        if (reach <= VANILLA) {
+            return false; // spots in rows 0 to 2 are all within vanilla's touch
+        }
+        Block feet = golem.getBlock();
+        for (Spot spot : spotsFor(world, halves)) {
+            if (spot.row() <= reach && spot.feet().getY() == feet.getY()) {
+                double dx = golem.getX() - spot.target().getX();
+                double dz = golem.getZ() - spot.target().getZ();
+                if (dx * dx + dz * dz <= ARRIVED * ARRIVED) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** How far from a spot's middle a golem still counts as standing on it (the pathfinder stops a little short). */
+    private static final double ARRIVED = 0.75;
+
     static boolean within(Location golem, World world, Set<HomeFinder.Pos> halves, int reach) {
         int feetY = golem.getBlockY();
         for (HomeFinder.Pos p : halves) {
