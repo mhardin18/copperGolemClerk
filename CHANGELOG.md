@@ -20,6 +20,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 - Adding or changing a sign or item frame label clears the "no home" marks on chests within `search-distance`, so golems try those items again straight away instead of after `homeless-retry-minutes`.
 - `max-golems-outside-claims` is gone, and golems on unclaimed land are no longer limited. It shared one limit among all the unclaimed land in a world, oldest golems first, so one player's golems could leave another player's, far away, sorting like vanilla without them being told why; and since only loaded golems count, golems switched between the two as players came and went. It's taken out of `config.yml` on upgrade, and the console says why. `max-golems-per-claim` is unchanged.
 - Console messages about bringing `config.yml` up to date link to that version's `config.yml` on GitHub instead of pointing into the jar.
+- A performance test tool, `tools/perf` (see its README): it measures how much server time golems cost, with the plugin off and at each `search-distance`, and compares versions. It is for developers and changes nothing in the plugin.
 - Built against the newest Paper API (26.3 build 238), and every build now also checks that the plugin compiles against build 190's API, so it keeps running on every build from 190 on, as the requirements say.
 
 ### Fixed
