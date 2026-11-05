@@ -31,9 +31,9 @@ def summon_frame(c, dx, dz, item, kind="item_frame", on_top=False):
 def fetch_log(c):
     """(seconds, kind, item, chest) for each fetch start/take in this cell, from the debug log."""
     out = []
-    for l in c.log_lines():
+    for l in c.cell_lines():
         m = re.search(r"^\[(\d+):(\d+):(\d+)\].*?(is idle; fetching|took \d+) (\w+) from overflow chest at ([-\d,]+)", l)
-        if m and c.in_cell(l):
+        if m:
             t = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + int(m.group(3))
             out.append((t, "start" if "fetching" in m.group(4) else "take", m.group(5), m.group(6)))
     return out
@@ -163,6 +163,34 @@ def _(c):
     raw_sign(c, 14, 10, ['"[logs]"', '"[stone]"', '""', '""'])
     c.golem(4, 10)
     return lambda: [expect(c, "mixed", "birch_log", 16), expect(c, "mixed", "granite", 16), expect(c, "empty", "*", 0)]
+
+
+@scenario("label-over-two-lines", "edge", 240, "Labels carried on to the next line: a chest signed [concrete-and- / terracotta] takes concrete and glazed terracotta, and the copper chest's [Only concrete / and terracotta] filter leaves its dirt alone.")
+def _(c):
+    c.chest("copper", 2, 10, [("white_concrete", 8), ("red_glazed_terracotta", 4), ("dirt", 5)], block="waxed_copper_chest")
+    c.sign(2, 10, ["[Only concrete", "and terracotta]"])
+    c.chest("empty", 6, 10)
+    c.chest("ct", 14, 10)
+    c.sign(14, 10, ["[concrete-and-", "terracotta]"])
+    c.golem(4, 10)
+    return lambda: [expect(c, "ct", "white_concrete", 8), expect(c, "ct", "red_glazed_terracotta", 4),
+                    expect(c, "copper", "dirt", 5), expect(c, "empty", "*", 0)]
+
+
+@scenario("renamed-group-names", "edge", 240, "The short group names from 3.1.0 work whichever names config.yml has: [foliage] takes oak leaves, [materials] takes paper, [templates] takes a smithing template.")
+def _(c):
+    c.chest("copper", 2, 10, [("oak_leaves", 8), ("paper", 8), ("coast_armor_trim_smithing_template", 2)],
+            block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("leaves", 10, 10)
+    c.sign(10, 10, "[foliage]")
+    c.chest("mats", 14, 10)
+    c.sign(14, 10, "[materials]")
+    c.chest("tpl", 18, 10)
+    c.sign(18, 10, "[templates]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "leaves", "oak_leaves", 8), expect(c, "mats", "paper", 8),
+                    expect(c, "tpl", "coast_armor_trim_smithing_template", 2), expect(c, "empty", "*", 0)]
 
 
 @scenario("junk-sign-text", "edge", 120, "Signs that aren't labels ([no such thing], [[logs]], logs, [🍞]) are ignored; the chest acts on its contents.")
@@ -324,7 +352,7 @@ def _(c):
     c.golem(4, 10)
 
     def takes():
-        return sum(1 for l in c.log_lines() if "took" in l and "GRANITE" in l and c.in_cell(l))
+        return sum(1 for l in c.cell_lines() if "took" in l and "GRANITE" in l)
 
     def check():
         n = takes()
@@ -347,10 +375,11 @@ def _(c):
 def _(c):
     c.chest("copper", 2, 10, [("birch_log", 16)], block="waxed_copper_chest")
     x, y, z = c.abs(54, 10)  # over 32 blocks from anywhere on the platform (x 0-20)
+    c.chests["far"] = [(x, y, z)]  # first, so clear() removes it and the glowstone even if setup fails
+    c.r.cmd(f"fill {x} {y - 1} {z} {x} {y} {z} minecraft:air")  # leftovers from an interrupted run
     c.run(f"setblock {x} {y - 1} {z} minecraft:glowstone")
     c.run(f"setblock {x} {y} {z} minecraft:chest[facing=south]")
     c.run(f"item replace block {x} {y} {z} container.0 with minecraft:oak_log 1")
-    c.chests["far"] = [(x, y, z)]
     c.chest("overflow", 14, 10)
     c.sign(14, 10, "[Overflow]")
     c.golem(4, 10)
@@ -436,7 +465,7 @@ def _(c):
     c.golem(4, 10)
 
     def fetches():
-        return sum(1 for l in c.log_lines() if "fetching" in l and "BIRCH_LOG" in l and c.in_cell(l))
+        return sum(1 for l in c.cell_lines() if "fetching" in l and "BIRCH_LOG" in l)
 
     def check():
         n = fetches()
@@ -614,8 +643,8 @@ def _(c):
     golem_on_roof(c, 10, 10)
 
     def check():
-        skipped = [l for l in c.log_lines() if "has no path to the overflow chest" in l and c.in_cell(l)]
-        fetched = [l for l in c.log_lines() if "fetching GRANITE" in l and c.in_cell(l)]
+        skipped = [l for l in c.cell_lines() if "has no path to the overflow chest" in l]
+        fetched = [l for l in c.cell_lines() if "fetching GRANITE" in l]
         return [(c.elapsed() > 20, "waited 20s"), (bool(skipped), "logged that there's no path"),
                 (not fetched, f"never sent to fetch ({len(fetched)} tries)"),
                 expect(c, "overflow", "granite", 16)]

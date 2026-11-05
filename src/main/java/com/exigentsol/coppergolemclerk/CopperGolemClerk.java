@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
@@ -51,6 +52,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile int furnaceRefillBelow = 16;
     private volatile int furnaceWaitSeconds = 20;
     private volatile int furnaceTakeOutAt = 8;
+    private volatile int furnaceJobsBeforeSorting = 3;
     private volatile int furnaceFuelAhead = 16;
     private volatile int furnaceLavaMinItems = 100;
     private volatile int furnaceSplitMin = 8;
@@ -65,6 +67,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean logGolemDeaths;
     private volatile int deliverReach = Reach.VANILLA;
     private volatile int takeReach = Reach.VANILLA;
+    private volatile int searchDistance = HomeFinder.VANILLA_DISTANCE;
     private GolemModes modes;
     private GolemStats stats;
     private volatile boolean joinSummary = true;
@@ -78,7 +81,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private StorageReport storageReport;
     private GolemLimits limits;
     private volatile int maxGolemsPerClaim;
-    private volatile int maxGolemsOutsideClaims;
+    private volatile int claimBlocksPerExtraGolem;
     private final Claims claims = new Claims(this);
     private volatile boolean findOutsideOwnClaims;
     private volatile boolean golemsCommandForPlayers;
@@ -104,7 +107,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private ChestReports reports;
     private volatile Set<String> disabledWorlds = Set.of();
     private volatile boolean preferMatchingChests;
-    private volatile long matchingChestTimeoutMillis;
+    private volatile long fixedStepMillis;
 
     @Override
     public void onEnable() {
@@ -142,6 +145,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getScheduler().runTaskTimer(this, greetings::tick, 10, 10);
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);
+        paths.setSearchDistance(searchDistance);
         paths.setAvoidTrapdoors(avoidTrapdoors);
         getServer().getPluginManager().registerEvents(new GolemDeaths(this), this);
         getServer().getPluginManager().registerEvents(new GolemPortals(this), this);
@@ -174,6 +178,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
      * date; values are never changed. The old file is kept as config-before-<version>.yml.
      * A config.yml with a YAML error is left alone.
      */
+    /** This version's config.yml on GitHub, with every setting explained. */
+    private String configUrl() {
+        return Versions.configUrl(getPluginMeta().getVersion(), getPluginMeta().getAPIVersion());
+    }
+
     private void addMissingSettings() {
         File config = new File(getDataFolder(), "config.yml");
         try (java.io.InputStream in = getResource("config.yml")) {
@@ -196,7 +205,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             if (!java.nio.file.Files.isWritable(config.toPath())) {
                 getLogger().warning("config.yml can't be written (check its permissions), so it wasn't brought up to date: "
                         + (result.added().isEmpty() ? "" : "new settings " + String.join(", ", result.added())
-                        + " use their defaults; ") + "see the config.yml in the jar for what each setting does.");
+                        + " use their defaults; ") + (result.removed().isEmpty() ? "" : String.join(", ", result.removed())
+                        + " are no longer used; ") + "see " + configUrl() + " for what each setting does.");
                 return;
             }
             String version = getPluginMeta().getVersion();
@@ -213,6 +223,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         + (one ? "its default and an explanation" : "their defaults and an explanation of each") + ": "
                         + String.join(", ", result.added()) + ".");
             }
+            for (String key : result.removed()) {
+                getLogger().info("Removed " + key + " from config.yml: it's no longer used ("
+                        + ConfigUpgrade.RETIRED.get(key) + ").");
+            }
             if (!result.explained().isEmpty()) {
                 getLogger().info("Updated the explanation above " + result.explained().size() + " setting"
                         + (result.explained().size() == 1 ? "" : "s") + " in config.yml to this version's: "
@@ -221,7 +235,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             getLogger().info("Your settings' values are unchanged; the old file is " + backup.getName() + ".");
         } catch (IOException e) {
             getLogger().warning("Couldn't bring config.yml up to date (" + e.getClass().getSimpleName() + ": " + e.getMessage()
-                    + "); new settings use their defaults. See the config.yml in the jar for what they do.");
+                    + "); new settings use their defaults. See " + configUrl() + " for what they do.");
         }
     }
 
@@ -248,6 +262,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     @Override
     public void onDisable() {
+        CauldronIndex.clear();
         if (itemFinder != null) {
             itemFinder.removeAll();
         }
@@ -255,6 +270,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             traffic.setEnabled(false);
         }
         if (paths != null) {
+            paths.setSearchDistance(HomeFinder.VANILLA_DISTANCE); // and vanilla path lengths
             paths.setAvoidTrapdoors(false); // a reloaded plugin starts from vanilla costs
         }
         if (updates != null) {
@@ -320,7 +336,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         findEnabled = config.getBoolean("find-enabled", true);
         maxGolemsPerClaim = rangeSetting(config, "max-golems-per-claim", 0, 0, 100_000);
-        maxGolemsOutsideClaims = rangeSetting(config, "max-golems-outside-claims", 0, 0, 100_000);
+        claimBlocksPerExtraGolem = rangeSetting(config, "claim-blocks-per-extra-golem", 0, 0, 10_000_000);
+        if (config.contains("max-golems-outside-claims")) {
+            getLogger().warning("max-golems-outside-claims is no longer used: golems on unclaimed land aren't limited"
+                    + " (see max-golems-per-claim). Delete it from config.yml.");
+        }
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
         findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
@@ -346,14 +366,19 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         furnaceRefillBelow = rangeSetting(config, "furnace-refill-below", 16, 0, 64);
         furnaceWaitSeconds = rangeSetting(config, "furnace-wait-seconds", 20, 0, 300);
         furnaceTakeOutAt = rangeSetting(config, "furnace-take-out-at", 8, 1, 64);
+        furnaceJobsBeforeSorting = rangeSetting(config, "furnace-jobs-before-sorting", 3, 0, 64);
         furnaceFuelAhead = rangeSetting(config, "furnace-fuel-ahead", 16, 0, 64);
         furnaceLavaMinItems = rangeSetting(config, "furnace-lava-min-items", 100, 0, 1000);
         furnaceSplitMin = rangeSetting(config, "furnace-split-min", 8, 1, 64);
         if (listener != null) {
             listener.furnaces().clear();
             listener.fetcher().clear();
+            Reach.clearWalkCache();
         }
         takeReach = reachSetting(config, "take-reach");
+        searchDistance = rangeSetting(config, "search-distance", HomeFinder.VANILLA_DISTANCE,
+                HomeFinder.VANILLA_DISTANCE, HomeFinder.MAX_DISTANCE);
+        HomeFinder.setSearchDistance(searchDistance);
         golemToggleItem = GolemModes.parseItem(config.getString("golem-toggle-item", "bamboo"), getLogger());
         modeMarkers = config.getBoolean("mode-markers", true);
         statusLabels = config.getBoolean("status-labels", true);
@@ -384,10 +409,16 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         disabledWorlds = Set.copyOf(off);
         if (paths != null) {
+            paths.setSearchDistance(searchDistance);
             paths.setAvoidTrapdoors(avoidTrapdoors); // after disabled-worlds: golems there keep vanilla paths
         }
         preferMatchingChests = config.getBoolean("prefer-matching-chests", true);
-        matchingChestTimeoutMillis = Math.max(1, config.getInt("matching-chest-timeout-seconds", 30)) * 1000L;
+        // Not in config.yml: for tests. Fixed-length search steps instead of walk-based ones (0 = off).
+        fixedStepMillis = Math.max(0, config.getInt("fixed-step-seconds", 0)) * 1000L;
+        if (config.contains("matching-chest-timeout-seconds")) {
+            getLogger().warning("matching-chest-timeout-seconds is no longer used: golems now get as long as the walk"
+                    + " to each chest takes (see search-distance). Delete it from config.yml.");
+        }
         groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());
         getLogger().info("Loaded " + groups.groupCount() + " item groups (match-mode: " + mode + ").");
         return null;
@@ -437,8 +468,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return preferMatchingChests;
     }
 
-    long matchingChestTimeoutMillis() {
-        return matchingChestTimeoutMillis;
+    /** Fixed search-step length for tests (hidden setting fixed-step-seconds), or 0 for walk-based steps. */
+    long fixedStepMillis() {
+        return fixedStepMillis;
     }
 
     boolean signLabels() {
@@ -488,6 +520,14 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return furnaceTakeOutAt;
     }
 
+    /**
+     * furnace-jobs-before-sorting: furnace upkeep jobs a golem does in a row while a copper chest
+     * waits to be sorted, before it sorts once. 0 = sorting always comes first (the order before 3.1.0).
+     */
+    int furnaceJobsBeforeSorting() {
+        return furnaceJobsBeforeSorting;
+    }
+
     /** furnace-fuel-ahead: fuel golems bring also covers this many more items than are waiting. */
     int furnaceFuelAhead() {
         return furnaceFuelAhead;
@@ -513,14 +553,14 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return furnaceFuel;
     }
 
-    /** max-golems-per-claim: golems in one claim that use the plugin (0 = no limit). */
+    /** max-golems-per-claim: golems in one claim that use the plugin (0 = no limit unless claim-blocks-per-extra-golem). */
     int maxGolemsPerClaim() {
         return maxGolemsPerClaim;
     }
 
-    /** max-golems-outside-claims: golems on unclaimed land in one world that use the plugin (0 = no limit). */
-    int maxGolemsOutsideClaims() {
-        return maxGolemsOutsideClaims;
+    /** claim-blocks-per-extra-golem: each claim's limit grows by one golem per this many claim blocks (0 = off). */
+    int claimBlocksPerExtraGolem() {
+        return claimBlocksPerExtraGolem;
     }
 
     GolemLimits limits() {
@@ -667,6 +707,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return takeReach;
     }
 
+    /** How far golems look for chests, in blocks each way sideways (32 = vanilla, up to 128). */
+    int searchDistance() {
+        return searchDistance;
+    }
+
     /**
      * True if the plugin handles this entity: a copper golem (never any other mob, even if Paper
      * someday fires its sorting events for others), in a world that isn't disabled, that a
@@ -676,6 +721,13 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return golem instanceof org.bukkit.entity.CopperGolem && enabledIn(golem.getWorld())
                 && (modes == null || !modes.isVanilla(golem))
                 && (limits == null || !limits.isOver(golem.getUniqueId()));
+    }
+
+    /** This golem went over a golem limit, or back under one: refresh its path settings. */
+    void limitChanged(UUID golem) {
+        if (paths != null && getServer().getEntity(golem) instanceof org.bukkit.entity.CopperGolem copper) {
+            paths.refresh(copper);
+        }
     }
 
     /** A player switched this golem's mode: drop what the plugin was doing with it. */
@@ -1086,5 +1138,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             }
             return sender.hasPermission("coppergolemclerk.admin");
         }
+    }
+
+    LabelAdvisor labelAdvisor() {
+        return labelAdvisor;
     }
 }

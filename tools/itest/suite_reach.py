@@ -47,6 +47,25 @@ def _(c):
     return lambda: [expect(c, "overflow", "birch_log", 8), expect(c, "top", "birch_log", 0)]
 
 
+@scenario("deliver-row3-ledge-behind", "reach", 240, "deliver-reach: 4: the [logs] chest on top of a 3-high stack has a stone pillar behind it as high as the stack (a ledge level with the chest that no golem can climb onto): the logs still go into it, not [Overflow].", alone=True)
+def _(c):
+    # Like a wall of chests built against a hillside: the top of the ground behind the wall
+    # looks like a place to stand level with the top chest, so it used to count as row 0.
+    set_options(c, deliver_reach="4")
+    c.chest("copper", 2, 10, [("birch_log", 8)], block="waxed_copper_chest")
+    for dy, label in enumerate(["[stone]", "[wool]"]):
+        c.chest(f"row{dy + 1}", 14, 10, dy=dy)
+        c.sign(14, 10, label, dy=dy)
+    c.chest("top", 14, 10, dy=2)
+    c.sign(14, 10, "[logs]", dy=2)
+    for dy in range(3):
+        c.block(15, 10, "stone_bricks", dy=dy)
+    c.chest("overflow", 8, 16)
+    c.sign(8, 16, "[Overflow]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "top", "birch_log", 8), expect(c, "overflow", "birch_log", 0)]
+
+
 def take_scene(c):
     for dy in range(3):
         c.block(2, 10, "stone_bricks", dy=dy)
@@ -81,18 +100,45 @@ def _(c):
     return lambda: [("4 chest rows up" in reply() and "raise it to 4" in reply(), f"says 4 rows up, out of reach; got: {reply().strip()}")]
 
 
+def ledge_stack(c):
+    """Three chests stacked at (14, 10), [logs] on top, with a stone pillar behind as high as the stack."""
+    for dy, label in enumerate(["[stone]", "[wool]", "[logs]"]):
+        c.chest(f"row{dy + 1}", 14, 10, dy=dy)
+        c.sign(14, 10, label, dy=dy)
+    for dy in range(3):
+        c.block(15, 10, "stone_bricks", dy=dy)
+    return c.abs(14, 10, 2)
+
+
+@scenario("check-ledge-behind", "reach", 60, "/cgc check on the top of a 3-high stack with a ledge behind it, a golem nearby: says golems can't walk to the ledge, so it's 3 rows up.")
+def _(c):
+    x, y, z = ledge_stack(c)
+    c.golem(10, 10)
+    reply = lambda: say(c, f"cgc check {x} {y} {z}")
+    return lambda: [("can't walk to the spot level with it" in reply() and "3 chest rows up" in reply(),
+                     f"says the ledge can't be walked to and 3 rows up; got: {reply().strip()}")]
+
+
+@scenario("check-ledge-behind-no-golem", "reach", 30, "/cgc check on the same stack with no golem nearby: says golems use it the vanilla way only if they can walk to the ledge, otherwise 3 rows up.")
+def _(c):
+    x, y, z = ledge_stack(c)
+    reply = lambda: say(c, f"cgc check {x} {y} {z}")
+    return lambda: [("only if they can walk to" in reply() and "3 chest rows up" in reply(),
+                     f"says it depends on the ledge, otherwise 3 rows up; got: {reply().strip()}")]
+
+
 # ---- edge cases
 
 from arena import Trigger, conserved  # noqa: E402
 
 
 def heading_high(c):
-    return any("heads for the chest" in l and c.in_cell(l) for l in c.log_lines())
+    return any("heads for the chest" in l for l in c.cell_lines())
 
 
 @scenario("deliver-high-walled-off", "reach", 300, "deliver-reach: 4, but the floor in front of the [logs] stack is walled off: the golem gives up on it and the logs go to [Overflow], none lost.", alone=True)
 def _(c):
-    set_options(c, deliver_reach="4", matching_chest_timeout_seconds="20")
+    set_options(c, deliver_reach="4", fixed_step_seconds="20")
     deliver_scene(c)
     # A glass ring two blocks out and five high around the stack, with no roof (a block on
     # top of the chest would stop it opening at all): the floor beside it can't be reached.
@@ -101,7 +147,7 @@ def _(c):
                            (x - 2, z - 2, x - 2, z + 2), (x + 2, z - 2, x + 2, z + 2)):
         c.run(f"fill {x1} {y} {z1} {x2} {y + 4} {z2} minecraft:glass")
     def check():
-        tried = any("heads for the chest" in l and c.in_cell(l) for l in c.log_lines())
+        tried = any("heads for the chest" in l for l in c.cell_lines())
         return [(tried, "the golem tried the high chest first"), expect(c, "overflow", "birch_log", 8),
                 expect(c, "top", "birch_log", 0), conserved(c, "birch_log", 8)]
     return check
@@ -152,7 +198,7 @@ def _(c):
 
 @scenario("deliver-reach-lowered-midway", "reach", 300, "deliver-reach drops from 4 to 2 (reload) while a golem walks to the top chest: it ends up using [Overflow], nothing lost or stuck.", alone=True)
 def _(c):
-    set_options(c, deliver_reach="4", matching_chest_timeout_seconds="20")
+    set_options(c, deliver_reach="4", fixed_step_seconds="20")
     deliver_scene(c)
     t = Trigger()
     def check():
@@ -164,15 +210,15 @@ def _(c):
 
 @scenario("take-high-homeless", "reach", 300, "take-reach: 4: a high copper chest holds only dirt, which has no home: the golem takes it, returns it, and doesn't keep fetching it.", alone=True)
 def _(c):
-    set_options(c, take_reach="4", matching_chest_timeout_seconds="10", allow_empty_chests="false")
+    set_options(c, take_reach="4", fixed_step_seconds="10", allow_empty_chests="false")
     for dy in range(3):
         c.block(2, 10, "stone_bricks", dy=dy)
     c.chest("copper", 2, 10, [("dirt", 8)], block="waxed_copper_chest", dy=3)
     c.chest("logs", 14, 10, [("oak_log", 1)])
     c.golem(5, 10)
     def check():
-        takes = [l for l in c.log_lines() if "took" in l and "DIRT" in l and c.in_cell(l)]
-        returned = [l for l in c.log_lines() if "returned DIRT" in l and c.in_cell(l)]
+        takes = [l for l in c.cell_lines() if "took" in l and "DIRT" in l]
+        returned = [l for l in c.cell_lines() if "returned DIRT" in l]
         return [(len(returned) >= 1, "the dirt was returned"), (c.elapsed() > 150, "waited 150 seconds"),
                 (len(takes) <= 2, f"taken at most twice (got {len(takes)})"), conserved(c, "dirt", 8)]
     return check

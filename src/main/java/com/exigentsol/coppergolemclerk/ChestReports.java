@@ -60,7 +60,7 @@ final class ChestReports {
             say(player, NamedTextColor.AQUA, "No label: golems leave this " + kind + " alone. Put a sign on it saying what to"
                     + " cook, like [raw iron], and golems will run it.");
             for (String unknown : labels.unknown()) {
-                say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+                say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
             }
             return;
         }
@@ -84,7 +84,7 @@ final class ChestReports {
             }
         }
         for (String unknown : labels.unknown()) {
-            say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+            say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
         }
         if (cookable.isEmpty()) {
             say(player, NamedTextColor.YELLOW, "Golems put nothing into it: its labels cover nothing a " + kind + " can cook.");
@@ -188,7 +188,7 @@ final class ChestReports {
                 say(player, NamedTextColor.AQUA, "Copper chest: golems take items out of it to sort them.");
             }
             for (String unknown : filter.unknown()) {
-                say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+                say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
             }
             reachNote(player, block, inv, "take-reach", plugin.takeReach());
             return;
@@ -211,6 +211,7 @@ final class ChestReports {
         }
         if (labels.overflow()) {
             say(player, NamedTextColor.AQUA, "  [Overflow] = takes items that have no matching chest in range");
+            say(player, NamedTextColor.AQUA, "  /cgc overflow lists what's in it and the label each item needs to get a home.");
         }
         if (labels.fuel() && plugin.furnaceFeeding()) {
             say(player, NamedTextColor.AQUA, "  [Fuel] = golems take furnace fuel from here"
@@ -224,7 +225,7 @@ final class ChestReports {
             say(player, NamedTextColor.AQUA, "A hopper under it leads into a furnace (a smelter): golems never sort anything into it.");
         }
         for (String unknown : labels.unknown()) {
-            say(player, NamedTextColor.RED, "  " + unknown + " matches no group or item, so it's ignored");
+            say(player, NamedTextColor.RED, "  " + ignoredLabel(unknown));
         }
         for (String only : labels.onlyNames()) {
             say(player, NamedTextColor.YELLOW, "  " + only + " is a filter for copper chests (what golems take out);"
@@ -267,6 +268,13 @@ final class ChestReports {
 
         if (!hand.isEmpty()) {
             say(player, NamedTextColor.GREEN, "Your " + pretty(hand.getType()) + ": " + verdict(hand, inv, labels));
+        }
+        // Sign-label advice for storage chests: not for [Overflow], fuel or supply chests, or a smelter's input.
+        boolean furnaceOnly = plugin.furnaceFeeding() && !labels.hasItemRules()
+                && (labels.fuel() || labels.supply() || HopperLines.feedsFurnace(block.getWorld(), halvesOf(block, inv)));
+        if (!labels.overflow() && !furnaceOnly && plugin.signLabels() && plugin.labelAdvisor() != null) {
+            plugin.labelAdvisor().suggest(player, inv, labels, pretty(block.getType()).toLowerCase(java.util.Locale.ROOT),
+                    hand, true);
         }
     }
 
@@ -314,15 +322,63 @@ final class ChestReports {
 
     /** Whether golems can reach this chest's height (only said when it's above vanilla's 2 rows). */
     private void reachNote(CommandSender player, Block block, Inventory inv, String setting, int reach) {
-        int row = Reach.rowOf(block.getWorld(), HomeFinder.halvesOf(inv, block));
+        Set<HomeFinder.Pos> halves = HomeFinder.halvesOf(inv, block);
+        int row = Reach.rowOf(block.getWorld(), halves);
         if (row == Integer.MAX_VALUE) {
             say(player, NamedTextColor.YELLOW, "No floor for a golem to stand on beside it within "
                     + Reach.MAX + " rows; golems use it only if vanilla can reach it some other way.");
         } else if (!Reach.vanillaReaches(row)) {
-            say(player, row <= reach ? NamedTextColor.WHITE : NamedTextColor.RED, "It's " + row
-                    + " chest rows up from the floor beside it: " + (row <= reach
-                    ? "within " + setting + " (" + reach + "), so golems use it."
-                    : "out of reach. Golems reach " + reach + " (" + setting + "); raise it to " + row + " or more."));
+            say(player, row <= reach ? NamedTextColor.WHITE : NamedTextColor.RED, rowsUp(row, setting, reach));
+        } else {
+            lowSpotNote(player, block, halves, setting, reach);
+        }
+    }
+
+    private static String rowsUp(int row, String setting, int reach) {
+        return "It's " + row + " chest rows up from the floor beside it: " + (row <= reach
+                ? "within " + setting + " (" + reach + "), so golems use it."
+                : "out of reach. Golems reach " + reach + " (" + setting + "); raise it to " + row + " or more.");
+    }
+
+    /**
+     * A chest within vanilla's reach only from a spot golems may not be able to get to, such as
+     * the ground behind a wall of chests built into a hillside, while from the floor in front of
+     * it the chest is higher. Asks a golem nearby whether it can walk to the low spot.
+     */
+    private void lowSpotNote(CommandSender player, Block block, Set<HomeFinder.Pos> halves, String setting, int reach) {
+        Reach.Spot low = null;
+        Reach.Spot high = null;
+        for (Reach.Spot spot : Reach.spotsFor(block.getWorld(), halves)) {
+            if (Reach.vanillaReaches(spot.row())) {
+                low = low == null || spot.row() < low.row() ? spot : low;
+            } else {
+                high = high == null || spot.row() < high.row() ? spot : high;
+            }
+        }
+        if (low == null || high == null) {
+            return; // every spot within vanilla's reach: golems use it the vanilla way
+        }
+        Location center = block.getLocation().add(0.5, 0.5, 0.5);
+        org.bukkit.entity.CopperGolem golem = null;
+        for (var g : block.getWorld().getNearbyEntitiesByType(org.bukkit.entity.CopperGolem.class, center, 32, 8, 32)) {
+            if (plugin.manages(g) && (golem == null
+                    || g.getLocation().distanceSquared(center) < golem.getLocation().distanceSquared(center))) {
+                golem = g;
+            }
+        }
+        Block feet = low.feet();
+        String where = feet.getX() + "," + feet.getY() + "," + feet.getZ();
+        if (golem != null) {
+            int row = Reach.rowFor(golem, halves);
+            if (Reach.vanillaReaches(row)) {
+                return; // the nearest golem can walk to the low spot
+            }
+            say(player, row <= reach ? NamedTextColor.WHITE : NamedTextColor.RED, "Golems can't walk to the spot level with it ("
+                    + where + "), so they use the floor in front. " + rowsUp(row, setting, reach));
+        } else {
+            say(player, NamedTextColor.YELLOW, "Golems open it the vanilla way only if they can walk to " + where
+                    + " (level with it); otherwise " + rowsUp(high.row(), setting, reach).replaceFirst("^It's", "it's")
+                    + " (No golem nearby to check which.)");
         }
     }
 
@@ -409,7 +465,8 @@ final class ChestReports {
             }
         }
         if (overflowChests.isEmpty()) {
-            say(player, NamedTextColor.YELLOW, "No [Overflow] chests within golem range (32 blocks sideways, 8 up or down).");
+            say(player, NamedTextColor.YELLOW, "No [Overflow] chests within golem range (" + HomeFinder.searchDistance()
+                    + " blocks sideways, 8 up or down).");
             return;
         }
 
@@ -486,8 +543,9 @@ final class ChestReports {
                 say(player, NamedTextColor.AQUA, "  " + e.getKey() + (fits ? "" : "*") + "  " + amounts(e.getValue()));
             }
             if (anyTooLong) {
-                say(player, NamedTextColor.GRAY, "  * too long for one sign line: put one of those items in an empty, "
-                        + "unlabelled chest instead, and golems will add the rest of the group.");
+                say(player, NamedTextColor.GRAY, "  * too wide for one sign line: start it on one line and end it on the next "
+                        + "(\"[Only light\" then \"sources]\"), or put one of those items in an empty, unlabelled chest "
+                        + "and golems will add the rest of the group.");
             }
         }
         if (!blocked.isEmpty()) {
@@ -521,13 +579,19 @@ final class ChestReports {
         if (bits == null || bits.isEmpty()) {
             return "[" + pretty(type) + "]";
         }
-        return "[" + plugin.groups().groupName(bits.nextSetBit(0)).replace('-', ' ') + "]";
+        return plugin.groups().signLabel(bits.nextSetBit(0));
     }
 
     private String describeChest(Inventory inv, ChestLabels.Labels labels) {
         var loc = ChestLabels.locationOf.apply(inv);
         String at = loc == null ? "?" : loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
         return (labels.names().isEmpty() ? "chest" : String.join(" ", labels.names())) + " at " + at;
+    }
+
+    /** Why a sign label is ignored: it matches nothing, or its bracket is never closed. */
+    static String ignoredLabel(String label) {
+        return label.endsWith("]") ? label + " matches no group or item, so it's ignored"
+                : label + " has no closing ], so it's ignored (a label can carry on to the next line: end it there with ])";
     }
 
     /** Rough pixel width in Minecraft's default font. */

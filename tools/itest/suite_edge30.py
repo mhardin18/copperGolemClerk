@@ -127,7 +127,7 @@ def _(c):
     t = Trigger()
 
     def check():
-        t.fire_when(lambda: any("(FUEL_TAKE)" in l and c.in_cell(l) for l in c.log_lines()), lambda: c.r.cmd(f"item replace block {fx} {fy} {fz} container.0 with minecraft:air"))
+        t.fire_when(lambda: any("(FUEL_TAKE)" in l for l in c.cell_lines()), lambda: c.r.cmd(f"item replace block {fx} {fy} {fz} container.0 with minecraft:air"))
         return [(t.at is not None, "emptied the [Fuel] chest after the golem set off"), (t.at is not None and t.since() > 30, "watched 30s"),
                 (c.total("charcoal") == 0, f"{c.total('charcoal')} charcoal exist (want 0)"), (c.holding() == 0, "hands empty"), no_errors(c)]
     return check
@@ -150,7 +150,12 @@ def _(c):
                     lambda: c.r.cmd(f'data merge entity {sel[:-1]},limit=1] {{weather_state:"oxidized",next_weather_age:1L}}'))
         if t.at is None:
             return [(False, "waiting for the golem to carry charcoal")]
-        return [(c.golems() == 0, "the golem turned into a statue"), conserved(c, "charcoal", 8), no_errors(c)]
+        # The furnace may already have some and burns a charcoal for every 8 items: count those too.
+        burnt = -(-c.total("iron_ingot") // 8)
+        have = c.total("charcoal")
+        return [(c.golems() == 0, "the golem turned into a statue"),
+                (have + burnt >= 8 and have <= 8, f"{have} charcoal left + {burnt} burnt (want 8: none lost or duplicated)"),
+                no_errors(c)]
     return check
 
 

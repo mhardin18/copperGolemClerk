@@ -8,16 +8,25 @@ plugins {
 }
 
 group = "com.exigentsol"
-version = "3.0.0"
+version = "3.1.0"
 
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
 }
 
+// The newest Paper API to build and test against, and the oldest Paper build the plugin supports
+// (PaperSupport.MIN_BUILD: Paper added the golem sorting event in 26.3 build 190).
+val paperApi = "26.3.build.238-stable"
+val minPaperApi = "26.3.build.190-stable"
+
+// The oldest supported API, used only to check the plugin still compiles against it.
+val minPaper: Configuration by configurations.creating
+
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.3.build.231-stable")
-    testImplementation("io.papermc.paper:paper-api:26.3.build.231-stable")
+    compileOnly("io.papermc.paper:paper-api:$paperApi")
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
+    minPaper("io.papermc.paper:paper-api:$minPaperApi")
     // A fake Paper server for unit tests of the code that calls the Paper API.
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v26.3:4.118.0")
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
@@ -56,6 +65,22 @@ tasks.processResources {
 
 tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.addAll(listOf("-Xlint:deprecation", "-Xlint:removal"))
+}
+
+// "Requires Paper 26.3 build 190 or newer" stays true only if the plugin uses nothing Paper
+// added later. Compile the plugin against build 190's API as part of `check` (and so `build`):
+// anything newer fails here instead of on someone's server.
+val compileAgainstMinPaper by tasks.registering(JavaCompile::class) {
+    description = "Compiles the plugin against the oldest supported Paper API ($minPaperApi)."
+    group = "verification"
+    source = sourceSets.main.get().java
+    classpath = minPaper
+    destinationDirectory.set(layout.buildDirectory.dir("min-paper-classes"))
+    javaCompiler.set(javaToolchains.compilerFor { languageVersion.set(JavaLanguageVersion.of(25)) })
+}
+
+tasks.check {
+    dependsOn(compileAgainstMinPaper)
 }
 
 // Copy the built jar into the pluginDev test server. Then: sudo systemctl restart mcd

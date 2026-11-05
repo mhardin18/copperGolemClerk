@@ -8,20 +8,26 @@ own platform run in parallel; those that change something server-wide (config,
 reloads, tick timing) run one at a time afterwards. Any unexpected error or
 exception in the server log while a scenario runs fails it.
 
-    python3 -I tools/itest/run.py                   # every suite except manual scenarios (~10 min)
+    python3 -I tools/itest/run.py smoke             # quick sanity check, about 3 min (impact.SMOKE)
+    python3 -I tools/itest/run.py --changed         # smoke + suites this branch's changes touch
+    python3 -I tools/itest/run.py --changed=main    # ... compared with another ref
+    python3 -I tools/itest/run.py                   # every suite except manual scenarios (hours)
     python3 -I tools/itest/run.py core world        # suites or scenario names (substring match)
     python3 -I tools/itest/run.py server-restart    # manual: asks you to restart the server
-    python3 -I tools/itest/run.py --list
+    python3 -I tools/itest/run.py --list            # also with smoke / --changed / names: what would run
     python3 -I tools/itest/run.py --keep            # leave the arenas standing to inspect
 
 Suites: core, world, setup, edge, scenes, conflicts, config, options, lifecycle, perf.
 """
 import os
+import signal
 import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arena  # noqa: E402
+import impact  # noqa: E402
+import results as saved  # noqa: E402
 import suite_alerts  # noqa: E402,F401
 import suite_commands  # noqa: E402,F401
 import suite_config  # noqa: E402
@@ -45,6 +51,7 @@ import suite_stats  # noqa: E402,F401
 import suite_tidy  # noqa: E402,F401
 import suite_traffic  # noqa: E402,F401
 import suite_world  # noqa: E402,F401
+import suite_work_order  # noqa: E402,F401
 import suite_destinations  # noqa: E402,F401
 import suite_carry  # noqa: E402,F401
 import suite_furnace  # noqa: E402,F401
@@ -59,20 +66,70 @@ import suite_find  # noqa: E402,F401
 import suite_edge26  # noqa: E402,F401
 import suite_claims  # noqa: E402,F401
 import suite_limits  # noqa: E402,F401
+import suite_distance  # noqa: E402,F401
 import suite_dimensions  # noqa: E402,F401  (last: its platforms come after the others)
 from rcon import from_properties  # noqa: E402
 
 POLL = 3
+SLOW_ROUND = 10  # seconds; a slower round of checks is reported
+
+
+FLAGS = ("--list", "--keep", "--changed", "--parallel-only")
 
 
 def select(argv):
+    """Scenarios to run: suites or names (substring), "smoke", --changed[=ref], or everything."""
     words = [a for a in argv if not a.startswith("--")]
+    smoke = set()
+    if "smoke" in words:
+        words.remove("smoke")
+        smoke = set(impact.SMOKE)
+    changed = next((a for a in argv if a == "--changed" or a.startswith("--changed=")), None)
+    if changed:
+        base = changed.split("=", 1)[1] if "=" in changed else impact.default_base()
+        files = impact.changed_files(base)
+        suites, notes = impact.suites_for(files, base)
+        print(f"Changes since {base}: {len(files)} file(s)")
+        print("\n".join(notes) if notes else "  (none)")
+        print(f"Running the smoke set plus: {', '.join(suites) if suites else 'no extra suites'}")
+        smoke = set(impact.SMOKE)
+        edited = impact.changed_scenarios(files, base)
+        if edited:
+            print(f"Scenarios this branch adds or edits (always run): {', '.join(sorted(edited))}")
+        smoke |= edited
+        words += suites
     picked = []
     for i, s in enumerate(arena.SCENARIOS):
+        if s["name"] in smoke and not (s["manual"] and not any(w in s["name"] for w in words)):
+            picked.append((i, s))  # manual scenarios still run only when named, even if the branch edits them
+            continue
         named = any(w == s["suite"] or w in s["name"] for w in words)
-        if (named or not words) and not (s["manual"] and not any(w in s["name"] for w in words)):
-            picked.append((i, s))
+        everything = not words and not smoke
+        if (named or everything) and not (s["manual"] and not any(w in s["name"] for w in words)):
+            if not ("--parallel-only" in argv and s["alone"]):
+                picked.append((i, s))
+    alone = [s for _, s in picked if s["alone"]]
+    if changed or "--parallel-only" in argv:
+        # Parallel scenarios finish together in about 12 minutes; each alone one takes about half its limit.
+        print(f"{len(picked)} scenario(s), {len(alone)} run one at a time: about "
+              f"{12 + sum(s['timeout'] for s in alone) // 120} minutes.")
     return picked
+
+
+def check_args(argv):
+    """An error message for flags run.py doesn't know (an unknown one used to start a full run), else None."""
+    bad = [a for a in argv if a.startswith("-") and a.split("=", 1)[0] not in FLAGS]
+    if bad:
+        return f"unknown option(s): {' '.join(bad)}. Options: {', '.join(FLAGS)} (--changed=<git ref>)."
+    names = {s["name"] for s in arena.SCENARIOS}
+    missing = [n for n in impact.SMOKE if n not in names]
+    if missing:
+        return f"impact.SMOKE names scenarios that don't exist: {', '.join(missing)}"
+    known = {s["suite"] for s in arena.SCENARIOS}
+    unknown = sorted({x for v in impact.SOURCE_SUITES.values() for x in v} - known)
+    if unknown:
+        return f"impact.SOURCE_SUITES names suites that don't exist: {', '.join(unknown)}"
+    return None
 
 
 def unexpected_errors(lines, allowed):
@@ -83,14 +140,41 @@ def unexpected_errors(lines, allowed):
     return out
 
 
-def run_batch(r, log, batch, keep):
+def run_batch(r, log, batch, keep, results=None):
     """Build a batch of scenarios, poll until each passes or times out. Returns results."""
     cells, checks, done, last = {}, {}, {}, None
     for i, s in batch:
         cells[i] = arena.Cell(r, i, log, s["dimension"], s.get("place"))
         cells[i].forceload(True)
     time.sleep(2)
+    state = {"worst": 0, "last_round": time.time()}
+
+    def check_round():
+        """Check every built scenario that hasn't finished once."""
+        started = state["last_round"] = time.time()
+        for i, s in batch:
+            if i in done or i not in checks:
+                continue
+            c = cells[i]
+            try:
+                outcome = checks[i]()
+            except Exception as e:
+                outcome = [(False, f"check failed: {type(e).__name__}: {e}")]
+            errors = unexpected_errors(c.log_lines(), s["allow_errors"])
+            if errors:
+                outcome = outcome + [(False, f"server error during the scenario: {errors[0][:200]}")]
+                done[i] = ("FAIL", c.elapsed(), outcome)
+            elif all(ok for ok, _ in outcome):
+                done[i] = ("PASS", c.elapsed(), outcome)
+            elif c.elapsed() > s["timeout"]:
+                done[i] = ("FAIL", c.elapsed(), outcome)
+        took = time.time() - started
+        if took > max(SLOW_ROUND, state["worst"]):  # checks that act mid-walk need rounds well under a walk
+            state["worst"] = took
+            print(f"  note: checking {len(checks) - len(done)} scenario(s) took {took:.0f}s this round", flush=True)
+
     try:
+        build_started = time.time()
         for i, s in batch:
             c = cells[i]
             c.clear()
@@ -102,24 +186,17 @@ def run_batch(r, log, batch, keep):
                 done[i] = ("SKIP", 0, [(True, str(e))])
             except Exception as e:  # a broken setup fails that scenario, not the whole run
                 done[i] = ("FAIL", c.elapsed(), [(False, f"setup failed: {e}")])
+            # Golems start work as soon as their platform is built, so the ones built first are
+            # checked while the rest are built (a scenario that acts mid-walk can't wait for all).
+            if time.time() - state["last_round"] >= POLL:
+                check_round()
+        if len(batch) > 1:
+            print(f"  built {len(batch)} platforms in {time.time() - build_started:.0f}s", flush=True)
         while len(done) < len(batch):
-            time.sleep(POLL)
-            for i, s in batch:
-                if i in done:
-                    continue
-                c = cells[i]
-                try:
-                    results = checks[i]()
-                except Exception as e:
-                    results = [(False, f"check failed: {type(e).__name__}: {e}")]
-                errors = unexpected_errors(c.log_lines(), s["allow_errors"])
-                if errors:
-                    results = results + [(False, f"server error during the scenario: {errors[0][:200]}")]
-                    done[i] = ("FAIL", c.elapsed(), results)
-                elif all(ok for ok, _ in results):
-                    done[i] = ("PASS", c.elapsed(), results)
-                elif c.elapsed() > s["timeout"]:
-                    done[i] = ("FAIL", c.elapsed(), results)
+            if results is not None:  # so a run stopped part way still reports what finished
+                results.update({i: (cells[i], d) for i, d in done.items()})
+            time.sleep(max(0, POLL - (time.time() - state["last_round"])))
+            check_round()
             left = [s["name"] for i, s in batch if i not in done]
             if left and len(left) != last:
                 print(f"  {len(batch) - len(left)}/{len(batch)} finished; waiting on {', '.join(left)}", flush=True)
@@ -133,15 +210,24 @@ def run_batch(r, log, batch, keep):
 
 
 def main(argv):
-    if "--list" in argv:
-        for s in arena.SCENARIOS:
+    problem = check_args(argv)
+    if problem:
+        print(problem)
+        return 2
+    # Being stopped (SIGTERM, e.g. a killed background run) unwinds like Ctrl-C, so the
+    # finally blocks below still restore config.yml and reload.
+    signal.signal(signal.SIGTERM, lambda *_: (_ for _ in ()).throw(KeyboardInterrupt()))
+    if "--list" in argv:  # with smoke, --changed or names: just what that would run
+        for _, s in select([a for a in argv if a != "--list"]):
             flag = " (manual)" if s["manual"] else " (alone)" if s["alone"] else ""
             print(f"{s['suite']:10} {s['name']:28} {s['timeout']:>4}s  {s['description']}{flag}")
         return 0
     keep = "--keep" in argv
+    record = saved.Recorder(argv, arena.SERVER)  # output.txt + summary.json in ~/claude/itest-results
     chosen = select(argv)
     if not chosen:
         print("no scenarios match", argv)
+        record.finish("finished", [], 0)
         return 2
 
     r = from_properties(os.path.join(arena.SERVER, "server.properties"))
@@ -153,47 +239,66 @@ def main(argv):
     alone = [(i, s) for i, s in chosen if s["alone"]]
     results = {}
     started = time.time()
+    interrupted = False
     try:
-        if parallel:
-            print(f"Running {len(parallel)} scenario(s) in parallel at x={arena.X0}, y={arena.Y} ...")
-            cells, done = run_batch(r, log, parallel, keep)
-            results.update({i: (cells[i], d) for i, d in done.items()})
-        for i, s in alone:
-            print(f"Running {s['name']} on its own ...")
-            try:
-                cells, done = run_batch(r, log, [(i, s)], keep)
+        try:
+            if parallel:
+                print(f"Running {len(parallel)} scenario(s) in parallel at x={arena.X0}, y={arena.Y} ...")
+                cells, done = run_batch(r, log, parallel, keep, results)
                 results.update({i: (cells[i], d) for i, d in done.items()})
-            finally:
-                if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
-                    with open(arena.CONFIG, "w") as f:
-                        f.write(config_before)
-                    r.cmd("coppergolemclerk reload")
-    finally:
-        if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
-            with open(arena.CONFIG, "w") as f:
-                f.write(config_before)
-            print("Restored config.yml.")
-        r.cmd("coppergolemclerk reload")
+            for i, s in alone:
+                print(f"Running {s['name']} on its own ...")
+                try:
+                    cells, done = run_batch(r, log, [(i, s)], keep, results)
+                    results.update({i: (cells[i], d) for i, d in done.items()})
+                finally:
+                    if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
+                        with open(arena.CONFIG, "w") as f:
+                            f.write(config_before)
+                        r.cmd("coppergolemclerk reload")
+        finally:
+            if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
+                with open(arena.CONFIG, "w") as f:
+                    f.write(config_before)
+                print("Restored config.yml.")
+            r.cmd("coppergolemclerk reload")
+    except KeyboardInterrupt:
+        interrupted = True
+        print("\nStopped: reporting the scenarios that finished.")
 
     print()
     failed = 0
+    entries = []
     for i, s in chosen:
+        if i not in results:
+            entries.append({"name": s["name"], "suite": s["suite"], "status": "NOT RUN", "seconds": 0,
+                            "description": s["description"], "checks": [], "log": []})
+            continue
         cell, (status, elapsed, checks) = results[i]
         print(f"{status}  {s['suite']:10} {s['name']:28} {elapsed:5.0f}s  {s['description']}")
+        near = []
         if status == "SKIP":
             print(f"        {checks[0][1]}")
         if status == "FAIL":
             failed += 1
             for ok, text in checks:
                 print(f"        {'ok ' if ok else 'BAD'} {text}")
-            near = [l for l in cell.log_lines()
-                    if "CopperGolemClerk" in l and "trace golem" not in l and cell.in_cell(l)]
-            for l in near[-8:]:
-                print("        log:", l[l.find("]: ") + 3:][:170])
+            near = [l[l.find("]: ") + 3:][:170] for l in cell.log_lines()
+                    if "CopperGolemClerk" in l and "trace golem" not in l and cell.in_cell(l)][-8:]
+            for l in near:
+                print("        log:", l)
+        entries.append({"name": s["name"], "suite": s["suite"], "status": status, "seconds": round(elapsed),
+                        "description": s["description"], "checks": [{"ok": bool(ok), "text": text} for ok, text in checks],
+                        "log": near})
     minutes = (time.time() - started) / 60
-    skipped = sum(1 for i, _ in chosen if results[i][1][0] == "SKIP")
-    print(f"\n{len(chosen) - failed - skipped}/{len(chosen) - skipped} passed, {skipped} skipped, in {minutes:.1f} min" + ("  (arenas kept)" if keep else ""))
-    return 1 if failed else 0
+    ran = [e for e in entries if e["status"] != "NOT RUN"]
+    skipped = sum(1 for e in ran if e["status"] == "SKIP")
+    print(f"\n{len(ran) - failed - skipped}/{len(ran) - skipped} passed, {skipped} skipped, in {minutes:.1f} min"
+          + ("  (arenas kept)" if keep else "")
+          + (f"; stopped with {len(entries) - len(ran)} not run" if interrupted else ""))
+    print(f"Results saved in {record.dir}")
+    record.finish("interrupted" if interrupted else "finished", entries, minutes)
+    return 1 if failed or interrupted else 0
 
 
 if __name__ == "__main__":

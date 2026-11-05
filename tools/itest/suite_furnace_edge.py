@@ -5,7 +5,7 @@ lost or duplicated.
 """
 import re
 
-from arena import Trigger, conserved, expect, scenario
+from arena import LUCK, Trigger, conserved, expect, scenario
 from suite_furnace import cooked, furnace, hopper, supply
 from suite_options import set_options
 
@@ -22,7 +22,10 @@ def iron_conserved(c, want=16):
 
 
 def logged(c, text):
-    return any(text in l for l in c.log_lines())
+    """True if a log line about this platform (one with a coordinate on it) has this text.
+    Not the whole log: scenarios run side by side, and another platform's golem logging
+    "waits up to" must not set off this one's trigger."""
+    return any(text in l for l in c.cell_lines())
 
 
 def raw_chest(c, dx=4, dz=16):
@@ -32,11 +35,11 @@ def raw_chest(c, dx=4, dz=16):
 
 @scenario("furnace-edge-furnace-broken-mid-feed", "furnace-edge", 180, "The labelled furnace is broken while a golem carries the supply's raw iron to it: the golem puts it back in the supply (never sorted into the [raw iron] chest); none lost.")
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
     raw_chest(c)
-    c.golem(4, 10)
-    x, y, z = c.abs(8, 10)
+    c.golem(10, 10)
+    x, y, z = c.abs(2, 2)
     t = Trigger()
 
     def check():
@@ -48,10 +51,11 @@ def _(c):
 
 @scenario("furnace-edge-supply-emptied-before-arrival", "furnace-edge", 90, "The supply chest is emptied after a golem sets off for it: the golem gives up quietly, nothing is invented, the furnace stays empty.")
 def _(c):
-    supply(c)
+    # A walk across the platform (about 20 blocks), so the check catches the golem on its way.
+    supply(c, dx=18, dz=18)
     furnace(c, "blast", 8, 10, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
     c.chest("stash", 4, 16)
-    c.golem(4, 4)
+    c.golem(3, 3)
     sx, sy, sz = c.chests["supply"][0]
     tx, ty, tz = c.chests["stash"][0]
     t = Trigger()
@@ -70,9 +74,9 @@ def _(c):
 
 @scenario("furnace-edge-golem-killed-carrying", "furnace-edge", 120, "A golem carrying the supply's raw iron is killed: the raw iron drops (nothing vanishes).")
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
-    c.golem(4, 10)
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
+    c.golem(10, 10)
     t = Trigger()
 
     def check():
@@ -86,10 +90,10 @@ def _(c):
 
 @scenario("furnace-edge-feeding-off-mid-job", "furnace-edge", 180, "furnace-feeding is turned off (reload) while a golem carries raw iron to a furnace: it stops and sorts the raw iron into the [raw iron] chest.", alone=True)
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
     raw_chest(c)
-    c.golem(4, 10)
+    c.golem(10, 10)
     t = Trigger()
 
     def check():
@@ -101,10 +105,10 @@ def _(c):
 
 @scenario("furnace-edge-vanilla-mode-mid-job", "furnace-edge", 180, "A golem carrying raw iron to a furnace is switched to vanilla: the plugin lets go of it (no errors) and the raw iron isn't lost.")
 def _(c):
-    supply(c)
-    furnace(c, "blast", 8, 10, block="blast_furnace", label="[raw iron]")
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", label="[raw iron]")
     c.chest("empty", 4, 16)
-    c.golem(4, 10)
+    c.golem(10, 10)
     t = Trigger()
 
     def to_vanilla():
@@ -119,19 +123,80 @@ def _(c):
 
 @scenario("furnace-edge-cauldron-emptied-before-fill", "furnace-edge", 150, "The lava cauldron is emptied while a golem walks over with an empty bucket: the bucket is sorted into the bucket chest instead.")
 def _(c):
-    furnace(c, "furnace", 8, 10, fuel=("bucket", 1), label="[raw iron]")
+    # A walk of about 19 blocks, so the check catches it, with the cauldron inside the 16-block
+    # square around the furnace that golems search for one (FurnaceFeeder.CAULDRON_RANGE).
+    furnace(c, "furnace", 2, 4, fuel=("bucket", 1), label="[raw iron]")
     c.chest("buckets", 4, 16, [("bucket", 1)])
-    c.block(16, 4, "lava_cauldron")
-    x, y, z = c.abs(16, 4)
-    c.golem(4, 10)
+    c.block(16, 16, "lava_cauldron")
+    x, y, z = c.abs(16, 16)
+    c.golem(3, 6)
     t = Trigger()
 
     def check():
-        t.fire_when(lambda: any("(BUCKET_FILL)" in l and c.in_cell(l) for l in c.log_lines()),
+        t.fire_when(lambda: any("(BUCKET_FILL)" in l for l in c.cell_lines()),
                     lambda: c.r.cmd(f"setblock {x} {y} {z} minecraft:cauldron"))
         return [(t.at is not None, "emptied the cauldron as the golem set off for it"),
                 expect(c, "buckets", "bucket", 2), (c.total("lava_bucket") == 0, "no lava bucket was made"), no_errors(c)]
     return check
+
+
+@scenario("furnace-edge-walk-gives-up-when-stuck", "furnace-edge", 120, "The supply is walled in while a golem walks to it: it gives up within about 10 seconds of getting no closer (\"no closer in 10s\"), not after a fixed 30, and nothing is taken or lost.")
+def _(c):
+    supply(c, dx=18, dz=18)
+    furnace(c, "blast", 2, 2, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
+    c.golem(3, 3)
+    walled, gave_up = Trigger(), []
+
+    def wall():
+        # A two-high ring of glass 2 blocks out from the chest (x 16-20, z 15-20): no golem
+        # can get beside it.
+        for dx in range(16, 21):
+            for dz in range(15, 21):
+                if dx in (16, 20) or dz in (15, 20):
+                    c.block(dx, dz, "glass")
+                    c.block(dx, dz, "glass", dy=1)
+
+    def check():
+        walled.fire_when(lambda: logged(c, "SUPPLY_TAKE"), wall)
+        if walled.at is not None and not gave_up and logged(c, "no closer in 10s"):
+            gave_up.append(walled.since())
+        return [(walled.at is not None, "walled in the supply as the golem set off"),
+                (bool(gave_up) and gave_up[0] < 30, f"gave up {gave_up[0]:.0f}s after the wall (want under 30)" if gave_up
+                 else "hasn't given up yet"),
+                expect(c, "supply", "raw_iron", 16), iron_conserved(c), no_errors(c)]
+    return check
+
+
+@scenario("furnace-edge-not-through-wall", "furnace-edge", 90, "A golem that can't move, 2 blocks from the supply with a glass wall between: it doesn't take the raw iron through the wall; it gives up the walk instead.")
+def _(c):
+    supply(c, dx=10, dz=10)
+    furnace(c, "blast", 2, 10, block="blast_furnace", fuel=("coal", 16), label="[raw iron]")
+    for dz in range(3, 18):  # two high, west of the supply; the way round is open
+        c.block(9, dz, "glass")
+        c.block(9, dz, "glass", dy=1)
+    # Movement speed 0: it stays where it is, as a golem held up behind the wall would. Jobs are
+    # checked once a second, so a walking golem was usually gone before the old 2.5-block check.
+    x, y, z = c.abs(8, 10)
+    c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} {{active_effects:[{LUCK}],"
+          'attributes:[{id:"minecraft:movement_speed",base:0.0}]}')
+    return lambda: [(logged(c, "(SUPPLY_TAKE)"), "the golem was sent for the raw iron"),
+                    (logged(c, "couldn't get to the chest"), "it gave up the walk"),
+                    expect(c, "supply", "raw_iron", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)"),
+                    iron_conserved(c), no_errors(c)]
+
+
+@scenario("furnace-edge-row4-deliver-reach", "furnace-edge", 150, "deliver-reach: 4: a [raw iron] furnace on top of a 3-high pillar (row 4) is fed from the floor beside the pillar.", alone=True)
+def _(c):
+    set_options(c, deliver_reach="4")
+    for dy in range(3):
+        c.block(10, 10, "stone", dy=dy)
+    furnace(c, "blast", 10, 10, block="blast_furnace", fuel=("coal", 16), label="[raw iron]", dy=3)
+    supply(c, dx=16, dz=16)
+    c.golem(4, 10)
+    # Ingots can only come from that furnace, and may already have been taken out of it.
+    fed = lambda: c.count("blast", "raw_iron") + c.total("iron_ingot")
+    return lambda: [(fed() > 0, f"{fed()} raw iron in the row-4 furnace or ingots made (want some)"),
+                    iron_conserved(c), no_errors(c)]
 
 
 @scenario("furnace-edge-full-furnace", "furnace-edge", 60, "A labelled furnace whose input already holds 64 raw iron: golems leave the supply alone.")

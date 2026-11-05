@@ -50,6 +50,9 @@ abstract class PaperTest {
         ChestLabels.locationOf = inv -> inv.getHolder() instanceof BlockState s ? s.getLocation() : inv.getLocation();
         GolemTraffic.passable = b -> !b.getType().isSolid();
         FurnaceFeeder.dripsThrough = b -> !b.getType().isSolid();
+        CauldronIndex.clear();
+        CauldronIndex.mayHaveCauldron = chunk -> true; // MockBukkit lacks Chunk.contains and snapshots
+        CauldronIndex.scan = PaperTest::cauldronsIn;
         ItemFinder.hideFromOthers = d -> { };
         for (int cx = -4; cx <= 4; cx++) {
             for (int cz = -4; cz <= 4; cz++) {
@@ -84,8 +87,25 @@ abstract class PaperTest {
         ChestLabels.holderOf = inv -> inv.getHolder(false);
         ChestLabels.locationOf = org.bukkit.inventory.Inventory::getLocation;
         GolemTraffic.passable = org.bukkit.block.Block::isPassable;
+        CauldronIndex.clear();
         ItemFinder.hideFromOthers = d -> d.setVisibleByDefault(false);
         MockBukkit.unmock();
+    }
+
+    /** Cauldrons in a chunk, within the heights tests use (FLOOR - 12 to FLOOR + 12). */
+    static List<HomeFinder.Pos> cauldronsIn(org.bukkit.Chunk chunk) {
+        List<HomeFinder.Pos> found = new ArrayList<>();
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                for (int y = FLOOR - 12; y <= FLOOR + 12; y++) {
+                    Material type = chunk.getBlock(x, y, z).getType();
+                    if (type == Material.CAULDRON || type == Material.LAVA_CAULDRON) {
+                        found.add(new HomeFinder.Pos((chunk.getX() << 4) + x, y, (chunk.getZ() << 4) + z));
+                    }
+                }
+            }
+        }
+        return found;
     }
 
     Block block(int x, int z) {

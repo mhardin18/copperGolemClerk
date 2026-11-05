@@ -10,6 +10,24 @@ claims, full-chest alerts for claim owners, optional golem limits per claim, and
 every feature tunable in one config file. They never ask for a raise and never complain about the
 cobblestone.
 
+## New in 3.1.0
+
+- **Bigger claims, more golems.** Set `claim-blocks-per-extra-golem` and each claim gets one more
+  golem for every that many claim blocks. It's off (0) by default.
+- **Unclaimed land isn't limited any more.** `max-golems-outside-claims` is retired. Upgrading
+  removes it from your `config.yml` for you, and the console says so. You don't need to do anything.
+- **Furnaces come first.** An idle golem tends furnaces before it sorts. Set
+  `furnace-jobs-before-sorting` to 0 if you want sorting first, as before.
+- **Longer sign labels.** Leave the `[` open and close the `]` on a later line.
+- **Search farther.** `search-distance` (default 32, up to 128) sets how far golems look for chests
+  and furnaces.
+- **Shorter group names.** `templates`, `materials`, `foliage`, `concrete` and `terracotta` replace
+  some long ones. Old and new names both work on signs, and your `groups:` are left alone.
+- **Smarter `/cgc check`.** It now suggests sign labels for the chest you're looking at.
+- **Quicker walks.** Golems give up on a stuck walk sooner, and an item with no home goes back in
+  its copper chest after about 30 seconds. `matching-chest-timeout-seconds` is retired and removed
+  from your `config.yml` on upgrade.
+
 ## 🔥 New in 3.0.0: The Furnaces Are Alive
 
 Your clerks have been promoted to the kitchen. Put a sign like `[raw iron]` on a furnace, smoker
@@ -82,6 +100,7 @@ over for every ingot.
 - **Step aside** for each other in one-wide aisles instead of getting stuck.
 - Optional, with a setting:
   - reach chests stacked up to **6 high** (vanilla: 2);
+  - look up to **128 blocks** away for chests (vanilla: 32);
   - carry up to **64 items** a trip (vanilla: 16);
   - use **barrels and shulker boxes** as well as chests.
 
@@ -157,7 +176,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 - `/cgc golems` shows where the golems are, what they're carrying and whether any are lost.
 - `/cgc stats` shows how much the golems have sorted, server-wide.
 - Players only see what they could open themselves; admins can see into every claim.
-- Optional golem limits cap how many golems in one claim use the plugin (off by default).
+- Optional golem limits cap how many golems in one claim use the plugin, with more for bigger claims if you like (off by default).
 - Load tested with up to 200 golems: a working golem costs about 0.1 ms per tick, the same as
   in vanilla.
 - Nearly every feature can be switched off or tuned in `config.yml`, and `/cgc reload`
@@ -191,7 +210,7 @@ All permissions are standard nodes, so they work with LuckPerms or any other per
 
 | Permission | Default | Allows |
 |---|---|---|
-| `coppergolemclerk.find`, `.check`, `.overflow`, `.stats` | everyone | the player commands, limited to their own claims or what they could open |
+| `coppergolemclerk.find`, `.check`, `.label`, `.overflow`, `.storage`, `.stats` | everyone | the player commands, limited to their own claims or what they could open |
 | `coppergolemclerk.golems` | everyone | `/cgc golems` for their own golems, if the server turns it on |
 | `coppergolemclerk.toggle` | everyone | switching a golem to vanilla and back |
 | `coppergolemclerk.allclaims` | op | the commands above see into every claim |

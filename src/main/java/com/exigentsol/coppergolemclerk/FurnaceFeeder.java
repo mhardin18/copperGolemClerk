@@ -74,8 +74,9 @@ final class FurnaceFeeder {
      * @param stops   for FEED: the furnaces still to visit, the current one first; for SUPPLY_TAKE: the
      *                furnaces the load is meant for (claimed, so other golems leave them alone)
      */
+    /** clock: when the walk is given up (see WalkClock); FEED_WAIT has its own limit. */
     private record Job(Kind kind, UUID world, HomeFinder.Pos target, HomeFinder.Pos furnace, Material type,
-                       Location walk, long startedMillis, List<HomeFinder.Pos> stops) {
+                       Location walk, long startedMillis, List<HomeFinder.Pos> stops, WalkClock clock) {
     }
 
     private static final long GIVE_UP_AFTER_MILLIS = 30_000;
@@ -86,7 +87,6 @@ final class FurnaceFeeder {
      */
     private static final long SKIP_AFTER_NO_PATH_MILLIS = 10_000;
     private static final long OFFER_COOLDOWN_MILLIS = 5_000;
-    private static final double REACH = 2.5;
     /**
      * Most furnaces one load is split between. A golem's load claims its furnaces until it's
      * delivered (other golems leave them alone), so a big load spread over many furnaces kept the
@@ -94,12 +94,24 @@ final class FurnaceFeeder {
      */
     static final int MAX_STOPS = 2;
     /** How far a golem looks for a lava cauldron to refill a bucket (sideways; 4 up and down). */
-    private static final int CAULDRON_RANGE = 16;
 
     private final CopperGolemClerk plugin;
     private final HomeFinder homes;
     private final Returns returns;
     private final Map<UUID, Job> jobs = new HashMap<>();
+    /** Furnace upkeep jobs each golem has started in a row while a copper chest waited (furnace-jobs-before-sorting). */
+    private final Map<UUID, Integer> upkeepStreak = new HashMap<>();
+    /** When each golem last looked for upkeep from vanilla's target check (it fires often: at most every 5 s). */
+    private final Map<UUID, Long> upkeepCheckedAt = new HashMap<>();
+    /**
+     * Golems just let go to sort a copper chest, and when: until they pick up their load (or
+     * SORT_PENDING_MILLIS pass), no upkeep job starts. Otherwise the once-a-second idle check
+     * started one while vanilla walked the golem to the copper chest, and the golem's pickup
+     * there silently ended it (with furnace-jobs-before-sorting 1, every time).
+     */
+    private final Map<UUID, Long> sortPending = new HashMap<>();
+    private static final long SORT_PENDING_MILLIS = 15_000;
+    private static final long UPKEEP_CHECK_EVERY_MILLIS = 5_000;
     /** Blocks a golem couldn't reach: golem -> block -> until. */
     private final Map<UUID, Map<HomeFinder.Pos, Long>> failed = new HashMap<>();
     /** Golems holding something they took out of a furnace: it's never fed back into one. */
@@ -289,10 +301,19 @@ final class FurnaceFeeder {
     }
 
     private Reach.Spot spotFor(CopperGolem golem, Block block) {
+        return Reach.reachableSpot(golem, golem.getWorld(), halvesFor(block), reach());
+    }
+
+    /** The block's halves if it's a double chest, else just the block. */
+    private static Set<HomeFinder.Pos> halvesFor(Block block) {
         BlockState state = block.getState(false);
-        Set<HomeFinder.Pos> halves = state instanceof Container c && !isFurnace(block.getType())
+        return state instanceof Container c && !isFurnace(block.getType())
                 ? HomeFinder.halvesOf(c.getInventory(), block) : Set.of(HomeFinder.Pos.of(block));
-        return Reach.reachableSpot(golem, golem.getWorld(), halves, Math.max(Reach.VANILLA, plugin.deliverReach()));
+    }
+
+    /** How many rows up furnace jobs reach: deliver-reach, at least vanilla's. */
+    private int reach() {
+        return Math.max(Reach.VANILLA, plugin.deliverReach());
     }
 
     // ---- where a load of items to cook goes
@@ -418,6 +439,9 @@ final class FurnaceFeeder {
         failed.values().removeIf(Map::isEmpty);
         declined.values().removeIf(e -> now - e.getValue() > OFFER_COOLDOWN_MILLIS);
         fromFurnace.removeIf(this::emptyHanded);
+        upkeepStreak.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
+        upkeepCheckedAt.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
+        sortPending.entrySet().removeIf(e -> now - e.getValue() > SORT_PENDING_MILLIS || !emptyHanded(e.getKey()));
         fromSupply.removeIf(this::emptyHanded);
         if (!plugin.furnaceFeeding()) {
             stopAll();
@@ -441,20 +465,77 @@ final class FurnaceFeeder {
     }
 
     /**
-     * Idle golems (empty hand): empty a furnace that has made something, take out an empty
-     * bucket, bring fuel to one that needs it, or fetch items to cook from a [Furnace Supply].
+     * Furnace upkeep for an idle golem, ahead of sorting: see {@link #findUpkeep}. sortingWaits: a
+     * copper chest in range has items to sort. Once the golem has done furnace-jobs-before-sorting
+     * upkeep jobs in a row while sorting waited, it's sorting's turn (and with 0, always). True if a
+     * job started.
      */
-    void findWork(CopperGolem golem) {
-        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
-            return;
+    boolean upkeepFirst(CopperGolem golem, boolean sortingWaits) {
+        UUID id = golem.getUniqueId();
+        if (sortingWaits && sortPending.containsKey(id)) {
+            return false; // on its way to sort: let it pick up its load first
+        }
+        int limit = plugin.furnaceJobsBeforeSorting();
+        if (!sortingWaits) {
+            upkeepStreak.remove(id);
+        } else if (upkeepStreak.getOrDefault(id, 0) >= limit) {
+            return false;
+        }
+        findUpkeep(golem);
+        if (!isBusy(id)) {
+            return false;
+        }
+        if (sortingWaits) {
+            upkeepStreak.merge(id, 1, Integer::sum);
+        }
+        return true;
+    }
+
+    /**
+     * Vanilla is about to send an idle golem to a copper chest: if furnace upkeep should come first
+     * (and is there), start it instead. Checks at most every 5 s per golem. True if a job started.
+     */
+    boolean upkeepBeforeVanillaTake(CopperGolem golem) {
+        UUID id = golem.getUniqueId();
+        if (isBusy(id)) {
+            return true;
         }
         long now = System.currentTimeMillis();
+        if (now - upkeepCheckedAt.getOrDefault(id, 0L) < UPKEEP_CHECK_EVERY_MILLIS) {
+            return false;
+        }
+        upkeepCheckedAt.put(id, now);
+        return upkeepFirst(golem, true);
+    }
+
+    /** The golem went to sort a copper chest: the furnace streak starts again once it has its load. */
+    void sorted(UUID golem) {
+        upkeepStreak.remove(golem);
+        sortPending.put(golem, System.currentTimeMillis());
+    }
+
+    /** Furnaces in the golem's range it may use now. */
+    private List<Furnace> usableFurnaces(CopperGolem golem, long now) {
         List<Furnace> furnaces = new ArrayList<>();
         for (BlockState state : HomeFinder.containersInRange(golem, FurnaceFeeder::isFurnace)) {
             if (state instanceof Furnace furnace && usable(golem, furnace, now)) {
                 furnaces.add(furnace);
             }
         }
+        return furnaces;
+    }
+
+    /**
+     * Upkeep, the furnace work that comes before sorting: empty a furnace that has stopped (full
+     * output slot), take out an empty bucket, refill one at a lava cauldron, bring fuel, or bring
+     * items to cook from a [Furnace Supply].
+     */
+    void findUpkeep(CopperGolem golem) {
+        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        List<Furnace> furnaces = usableFurnaces(golem, now);
         UUID id = golem.getUniqueId();
         // 1. A furnace whose output slot is full has stopped: empty it first.
         if (startEmpty(golem, furnaces, true, now)) {
@@ -509,11 +590,19 @@ final class FurnaceFeeder {
             }
         }
         // 4. Items to cook from a [Furnace Supply], for furnaces running low.
-        if (startSupply(golem, now)) {
+        startSupply(golem, now);
+    }
+
+    /**
+     * After sorting: take out what's done, once it's worth a trip (furnace-take-out-at) or the
+     * furnace won't make more for now.
+     */
+    void findTakeOut(CopperGolem golem) {
+        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
             return;
         }
-        // 5. Take out what's done, once it's worth a trip (furnace-take-out-at) or the furnace has stopped.
-        startEmpty(golem, furnaces, false, now);
+        long now = System.currentTimeMillis();
+        startEmpty(golem, usableFurnaces(golem, now), false, now);
     }
 
     /**
@@ -833,25 +922,15 @@ final class FurnaceFeeder {
         return dripCauldron && fuelRoom ? BucketPlan.STORE : BucketPlan.SORT;
     }
 
+    /**
+     * The nearest cauldron passing `wanted`, as far out as chests and furnaces: search-distance
+     * sideways and 8 up or down (1 while riding). See CauldronIndex.
+     */
     private static Block nearestCauldron(Entity golem, java.util.function.Predicate<Block> wanted) {
-        Block at = golem.getLocation().getBlock();
-        Block best = null;
-        int bestDist = Integer.MAX_VALUE;
-        for (int dy = -4; dy <= 4; dy++) {
-            for (int dx = -CAULDRON_RANGE; dx <= CAULDRON_RANGE; dx++) {
-                for (int dz = -CAULDRON_RANGE; dz <= CAULDRON_RANGE; dz++) {
-                    int d = dx * dx + dy * dy + dz * dz;
-                    if (d < bestDist) {
-                        Block b = at.getRelative(dx, dy, dz);
-                        if (b.getWorld().isChunkLoaded(b.getX() >> 4, b.getZ() >> 4) && wanted.test(b)) {
-                            bestDist = d;
-                            best = b;
-                        }
-                    }
-                }
-            }
-        }
-        return best;
+        boolean riding = golem.isInsideVehicle();
+        int h = riding ? 1 : HomeFinder.searchDistance();
+        int v = riding ? 1 : CauldronIndex.VERTICAL;
+        return CauldronIndex.nearest(golem.getLocation().getBlock(), h, v, wanted, System.currentTimeMillis());
     }
 
     // ---- jobs
@@ -863,7 +942,8 @@ final class FurnaceFeeder {
             Reach.Spot spot = spotFor(golem, block);
             if (spot != null) {
                 jobs.put(golem.getUniqueId(), new Job(Kind.FEED, golem.getWorld().getUID(), stops.get(i), null,
-                        type, spot.target(), now, new ArrayList<>(stops.subList(i, stops.size()))));
+                        type, spot.target(), now, new ArrayList<>(stops.subList(i, stops.size())),
+                        new WalkClock(spot.target(), now)));
                 golem.getPathfinder().moveTo(spot.target(), 1.0);
                 debugStart(golem, block);
                 return true;
@@ -884,7 +964,7 @@ final class FurnaceFeeder {
             return false; // try another source or furnace next time
         }
         jobs.put(golem.getUniqueId(), new Job(kind, golem.getWorld().getUID(), HomeFinder.Pos.of(walkTo), furnace, type,
-                spot.target(), now, stops));
+                spot.target(), now, stops, new WalkClock(spot.target(), now)));
         golem.getPathfinder().moveTo(spot.target(), 1.0);
         debugStart(golem, walkTo);
         return true;
@@ -959,12 +1039,12 @@ final class FurnaceFeeder {
             golem.getPathfinder().moveTo(job.walk(), 1.0);
             return true;
         }
-        if (now - job.startedMillis() > GIVE_UP_AFTER_MILLIS) {
+        if (job.clock().expired(golem, now)) {
             golem.getPathfinder().stopPathfinding();
             giveUp(golem, job.target(), now);
             if (plugin.debug()) {
                 plugin.getLogger().info(golem.getType() + " couldn't get to the " + pretty(target.getType()) + " at "
-                        + at(target) + " in time; trying again later");
+                        + at(target) + " (" + job.clock().reason(now) + "); trying again later");
             }
             if (job.kind() == Kind.FEED && job.stops().size() > 1) {
                 return startFeed(golem, job.type(), job.stops().subList(1, job.stops().size()), now);
@@ -975,10 +1055,9 @@ final class FurnaceFeeder {
         return true;
     }
 
-    private static boolean near(CopperGolem golem, Block block) {
-        Location center = block.getLocation().add(0.5, 0.5, 0.5);
-        return golem.getLocation().add(0, golem.getHeight() / 2, 0).distance(center) <= REACH
-                || Reach.within(golem.getLocation(), golem.getWorld(), Set.of(HomeFinder.Pos.of(block)), Reach.VANILLA);
+    /** At the block: beside it with nothing in the way, as Reach.arrived (not just close through a wall). */
+    private boolean near(CopperGolem golem, Block block) {
+        return Reach.arrived(golem.getLocation(), golem.getWorld(), halvesFor(block), reach());
     }
 
     /** At a furnace of the load: put its even share in, then head for the next one. True if the job goes on. */
@@ -989,7 +1068,7 @@ final class FurnaceFeeder {
         if (moved == 0 && stops.size() == 1 && plugin.furnaceWaitSeconds() > 0 && stillTakes(block, held)) {
             // The last furnace is full for now (it filled while the golem walked over): wait for room.
             jobs.put(golem.getUniqueId(), new Job(Kind.FEED_WAIT, job.world(), job.target(), null, job.type(),
-                    job.walk(), now, stops));
+                    job.walk(), now, stops, null));
             if (plugin.debug()) {
                 plugin.getLogger().info(golem.getType() + " waits up to " + plugin.furnaceWaitSeconds()
                         + "s for room in the " + pretty(block.getType()) + " at " + at(block));
@@ -1375,6 +1454,9 @@ final class FurnaceFeeder {
     void clear() {
         declined.clear();
         failed.clear();
+        upkeepStreak.clear();
+        sortPending.clear();
+        upkeepCheckedAt.clear();
     }
 
     /** furnace-fuel's default: charcoal first (renewable), then coal, then lava buckets. */

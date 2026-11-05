@@ -31,11 +31,12 @@ def hopper(c, name, dx, dz, facing, dy=1, items=()):
 
 
 def slot(c, name, n):
-    """'item count' in a furnace slot, or '' if empty."""
+    """'item count' in a furnace slot, or '' if empty. Asks for that one slot: the server cuts
+    a whole Items list short ("{Slot:..."), which hid slot 1 behind slot 0."""
     x, y, z = c.chests[name][0]
-    out = c.r.cmd(f"data get block {x} {y} {z} Items")
-    m = re.search(r'\{Slot: ' + str(n) + r'b, id: "minecraft:([a-z_]+)", count: (\d+)', out)
-    return f"{m.group(1)} {m.group(2)}" if m else ""
+    out = c.r.cmd(f"data get block {x} {y} {z} Items[{{Slot:{n}b}}]")
+    item, count = re.search(r'id: "minecraft:([a-z_]+)"', out), re.search(r'count: (\d+)', out)
+    return f"{item.group(1)} {count.group(1) if count else 1}" if item else ""
 
 
 def cooked(c, name):
@@ -128,12 +129,12 @@ def _(c):
 
 @scenario("supply-leftover-goes-back", "furnace", 150, "The unfuelled furnace fills up while a golem carries supply logs to it: after waiting for room, the golem puts them back in the supply chest, not in the [logs] chest.")
 def _(c):
-    supply(c, items=[("oak_log", 16)])
-    furnace(c, "furnace", 8, 10, label="[logs]")
+    supply(c, dx=18, dz=18, items=[("oak_log", 16)])
+    furnace(c, "furnace", 2, 2, label="[logs]")
     c.chest("logs", 4, 16, [("birch_log", 1)])
     c.sign(4, 16, "[logs]")
-    c.golem(4, 4)
-    x, y, z = c.abs(8, 10)
+    c.golem(10, 10)
+    x, y, z = c.abs(2, 2)
     t = Trigger()
 
     def check():

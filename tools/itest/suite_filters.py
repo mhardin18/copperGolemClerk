@@ -76,7 +76,7 @@ def _(c):
 @scenario("filter-return-skips-filtered", "filters", 120, "A no-home item is returned to the unfiltered copper chest, not the nearer one signed [Only Logs] (where it would be stuck).", alone=True)
 def _(c):
     from suite_options import set_options
-    set_options(c, matching_chest_timeout_seconds="5")
+    set_options(c, fixed_step_seconds="5")
     c.chest("near", 6, 10, block="waxed_copper_chest")
     c.sign(6, 10, "[Only Logs]")
     c.chest("far", 16, 10, block="waxed_copper_chest")

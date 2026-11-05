@@ -1,8 +1,8 @@
-"""limits: max-golems-per-claim and max-golems-outside-claims.
+"""limits: max-golems-per-claim and claim-blocks-per-extra-golem.
 
 Golems are recounted every 5 seconds; the oldest keep the plugin, the newest over the limit
-sort like vanilla, and the claim owner (or, outside claims, players with
-coppergolemclerk.alerts) gets an alert. The claim scenarios use test claim A (see
+sort like vanilla, and the claim owner (for an admin claim, players with
+coppergolemclerk.alerts) gets an alert. Golems on unclaimed land aren't limited. The claim scenarios use test claim A (see
 suite_claims; its owner is offline, so the alert is logged "to <uuid> (when they join)").
 
 How to tell a vanilla golem from a plugin one: birch logs, an empty chest nearer the copper
@@ -10,10 +10,9 @@ chest and a [logs] chest of oak logs further away. The plugin sends birch logs t
 chest (a label beats contents, so it still does once the empty chest holds birch logs);
 vanilla puts them in the empty chest (birch isn't an exact match for oak).
 """
-import re
 import time
 
-from arena import conserved, expect, scenario
+from arena import CONFIG, conserved, expect, scenario
 from suite_claims import OWNER_A, PLACE_A, PLACE_C, PLACE_D, need_fixture
 from suite_options import set_options
 
@@ -42,11 +41,6 @@ def old_and_new_golem(c):
     c.golem(4, 8)
     time.sleep(3)
     c.golem(4, 12)
-
-
-def _count_golems(c):
-    m = re.search(r"count: (\d+)", c.r.cmd("execute if entity @e[type=minecraft:copper_golem]"), re.I)
-    return int(m.group(1)) if m else 0
 
 
 def all_sorted(c):
@@ -119,22 +113,34 @@ def _(c):
     return check
 
 
-@scenario("limit-outside-claims", "limits", 240, "max-golems-outside-claims set to the number of golems already on unclaimed land plus one, then two more golems: an alert names the world and the count, and the newer test golem sorts like vanilla; none lost.", alone=True)
+# Claim A is 101 x 51 = 5,151 claim blocks: one extra golem per 2,600 gives it 1 + 1 = 2.
+@scenario("limit-claim-size", "limits", 240, "max-golems-per-claim: 1 and claim-blocks-per-extra-golem: 2600 with three golems in claim A (5,151 blocks): the claim gets 2, the owner is told why, and the newest golem sorts like vanilla; none lost.", alone=True, place=PLACE_A)
 def _(c):
-    # Other loaded golems on unclaimed land in this world count too (and are older), so the
-    # limit leaves room for exactly one of the two test golems.
-    others = _count_golems(c)
-    set_options(c, max_golems_outside_claims=str(others + 1))
+    need_fixture()
+    set_options(c, max_golems_per_claim="1", claim_blocks_per_extra_golem="2600")
     sorting_room(c)
     old_and_new_golem(c)
-    want = f"There are {others + 2} copper golems in unclaimed land in pluginDev_world; only {others + 1} use"
+    time.sleep(3)
+    c.golem(4, 10)  # the newest
+    want = ("3 copper golems in your claim; only 2 use Copper Golem Clerk"
+            " (max-golems-per-claim 1, plus 1 per 2600 of the claim's 5151 blocks)")
 
     def check():
-        got = limit_alerts(c, want)
-        return [(bool(got), f"alert: '{want}'; got: {limit_alerts(c)[:1]}"),
-                (c.count("logs", "birch_log") > 0, f"logs has {c.count('logs', 'birch_log')} birch logs (want some)"),
-                (c.count("empty", "birch_log") > 0, f"empty has {c.count('empty', 'birch_log')} birch logs (want some)")] + all_sorted(c)
+        got = limit_alerts(c)
+        return [(any(f"to {OWNER_A} (when they join)" in l and want in l for l in got),
+                 f"alert to claim A's owner: '{want}'; got: {got[:1]}"),
+                (c.count("logs", "birch_log") > 0, f"logs has {c.count('logs', 'birch_log')} birch logs (the plugin golems; want some)"),
+                (c.count("empty", "birch_log") > 0, f"empty has {c.count('empty', 'birch_log')} birch logs (the vanilla golem; want some)")] + all_sorted(c)
     return check
+
+
+@scenario("limit-outside-claims-retired", "limits", 30, "max-golems-outside-claims (removed in 3.1.0) put back in config.yml: a reload warns it's no longer used.", alone=True)
+def _(c):
+    with open(CONFIG, "a") as f:
+        f.write("max-golems-outside-claims: 1\n")
+    set_options(c)
+    return lambda: [(any("max-golems-outside-claims is no longer used" in l for l in c.log_lines()),
+                     "warned that max-golems-outside-claims is no longer used")]
 
 
 @scenario("limit-per-claim-ignores-unclaimed", "limits", 180, "max-golems-per-claim: 1 doesn't apply on unclaimed land: two golems there both use the plugin, no alert.", alone=True)
@@ -164,11 +170,11 @@ def _(c):
     return check
 
 
-@scenario("limit-bad-value", "limits", 30, "max-golems-per-claim: -3 and max-golems-outside-claims: 999999 are out of range: warnings, and 0 (no limit) and 100000 are used.", alone=True)
+@scenario("limit-bad-value", "limits", 30, "max-golems-per-claim: -3 and claim-blocks-per-extra-golem: 99999999 are out of range: warnings, and 0 (no limit) and 10000000 are used.", alone=True)
 def _(c):
-    set_options(c, max_golems_per_claim="-3", max_golems_outside_claims="999999")
+    set_options(c, max_golems_per_claim="-3", claim_blocks_per_extra_golem="99999999")
     lines = lambda: c.log_lines()
     return lambda: [(any("max-golems-per-claim must be 0 to 100000 (it's -3); using 0." in l for l in lines()),
                      "warned about max-golems-per-claim -3, using 0"),
-                    (any("max-golems-outside-claims must be 0 to 100000 (it's 999999); using 100000." in l for l in lines()),
-                     "warned about max-golems-outside-claims 999999, using 100000")]
+                    (any("claim-blocks-per-extra-golem must be 0 to 10000000 (it's 99999999); using 10000000." in l for l in lines()),
+                     "warned about claim-blocks-per-extra-golem 99999999, using 10000000")]

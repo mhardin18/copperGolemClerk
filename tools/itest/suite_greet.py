@@ -16,7 +16,7 @@ def boxed(c, kind, dx, dz):
 
 
 def hellos(c, text="said hello"):
-    return [l for l in c.log_lines() if text in l and c.in_cell(l)]
+    return [l for l in c.cell_lines() if text in l]
 
 
 @scenario("greet-iron-golem", "greet", 90, "An idle copper golem walks over to an iron golem and says hello.")
@@ -89,7 +89,7 @@ def _(c):
 def _(c):
     x, y, z = c.abs(18, 18)
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{Tags:[\"itest_other\"],NoAI:1b}}")
-    golem(c, 2, 2)
+    golem(c, 2, 2)  # about 22 blocks from the iron golem: a walk the check catches
     killed = Trigger()
     def check():
         killed.fire_when(lambda: hellos(c, "going to say hello"), lambda: c.r.cmd(f"kill {c.selector('iron_golem')}"))  # this platform's only
@@ -124,7 +124,8 @@ def _(c):
     return check
 
 
-@scenario("greet-interrupted-by-work", "greet", 120, "Logs turn up in the copper chest while the golem walks over to say hello: it drops the visit and sorts them.")
+@scenario("greet-interrupted-by-work", "greet", 120, "Logs turn up in the copper chest while the golem walks over to say hello: it drops the visit and sorts them.",
+          alone=True)  # the logs must arrive during a walk of a few seconds: under parallel load the harness polls too slowly
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     c.chest("logs", 2, 16, [("oak_log", 1)])
@@ -137,11 +138,19 @@ def _(c):
     def stock():
         cx, cy, cz = c.chests["copper"][0]
         c.r.cmd(f"item replace block {cx} {cy} {cz} container.0 with minecraft:birch_log 8")
+    def hellos_after_stock():
+        return [l for l in c.log_lines()[t.lines:] if "said hello" in l and c.in_cell(l)]
+
     def check():
-        t.fire_when(lambda: hellos(c, "going to say hello"), stock)
+        t.fire_when(lambda: hellos(c, "going to say hello"), stock, lines=c.log_lines)
         sorted_.fire_when(lambda: t.at is not None and c.count("logs", "birch_log") == 8, lambda: None)
-        # A hello once the logs are sorted is fine (the golem is idle again); one before isn't.
-        early.fire_when(lambda: t.at is not None and sorted_.at is None and hellos(c), lambda: None)
-        return [(t.at is not None, "a visit started, then logs were added"),
+        # A hello once the logs are sorted is fine (the golem is idle again); one after they
+        # arrived but before they're sorted isn't. One before they arrived means the visit
+        # ended before the harness added them: nothing was tested.
+        early.fire_when(lambda: t.at is not None and sorted_.at is None and hellos_after_stock(), lambda: None)
+        before = t.at is not None and any("said hello" in l and c.in_cell(l) for l in c.log_lines()[:t.lines])
+        return [(not before, "the logs arrived during the visit" if not before
+                 else "the hello was over before the logs arrived (harness too slow; not a plugin failure)"),
+                (t.at is not None, "a visit started, then logs were added"),
                 (sorted_.at is not None, "the logs were sorted"), (early.at is None, "no hello before the logs were sorted")]
     return check

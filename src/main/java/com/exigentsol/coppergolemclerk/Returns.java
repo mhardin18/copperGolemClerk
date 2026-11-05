@@ -49,6 +49,18 @@ final class Returns {
         homeless.clear();
     }
 
+    /**
+     * Forget the "no home" marks on chests within this many blocks sideways of a spot (a
+     * label was just added or changed there, so some of those items may have a home now).
+     * Returns how many chests had marks.
+     */
+    int clearNear(org.bukkit.World world, int x, int z, int blocks) {
+        int before = homeless.size();
+        homeless.keySet().removeIf(k -> k.world().equals(world.getUID())
+                && Math.abs(k.pos().x() - x) <= blocks && Math.abs(k.pos().z() - z) <= blocks);
+        return before - homeless.size();
+    }
+
     static boolean isCopperChest(Material type) {
         return Tag.COPPER_CHESTS.isTagged(type);
     }
@@ -92,7 +104,8 @@ final class Returns {
         }
         List<Block> candidates = new ArrayList<>();
         boolean sourceListed = false;
-        if (source != null && sourceWorld != null && sourceWorld.equals(golem.getWorld())) {
+        if (source != null && sourceWorld != null && sourceWorld.equals(golem.getWorld())
+                && sourceWorld.isChunkLoaded(source.x() >> 4, source.z() >> 4)) { // else reading it would load it
             Block b = sourceWorld.getBlockAt(source.x(), source.y(), source.z());
             if (isCopperChest(b.getType()) || HomeFinder.isDestination(b.getType())) {
                 candidates.add(b); // its copper chest, or the overflow chest it was fetched from

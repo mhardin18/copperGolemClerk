@@ -8,7 +8,7 @@ import re
 
 from arena import Trigger, expect, scenario
 from suite_furnace import furnace, slot, supply
-from suite_furnace_edge import no_errors
+from suite_furnace_edge import logged, no_errors
 from suite_options import set_options
 
 FAST_TICKS = 600  # a dripstone tip gets a random tick every ~0.3s instead of ~70s: a fill every few seconds
@@ -131,10 +131,55 @@ def _(c):
 
     def check():
         t.fire_when(lambda: c.holding("bucket") > 0, lambda: set_cauldron(c, "cauldron"))
+        # Read the return from the log: the dripstone can refill the cauldron within seconds,
+        # and then the golem takes the bucket out again before a check sees it in [Fuel].
+        fx, fy, fz = c.chests["fuelchest"][0]
+        returned = t.at is not None and any(f"put 1 BUCKET into the inventory of the CHEST at {fx},{fy},{fz}" in l
+                                            for l in c.cell_lines())
         back = t.at is not None and t.since() > 5 and c.holding() == 0
-        return [(t.at is not None, "emptied the cauldron while the golem carried the bucket"), (back, "golem's hands empty again"),
-                expect(c, "fuelchest", "bucket", 1), expect(c, "buckets", "bucket", 1), no_errors(c)]
+        in_fuel = c.count("fuelchest", "bucket") + c.count("fuelchest", "lava_bucket")
+        return [(t.at is not None, "emptied the cauldron while the golem carried the bucket"),
+                (returned, "the golem put the empty bucket back in [Fuel]"), (back, "golem's hands empty again"),
+                (in_fuel == 1, f"fuelchest has {in_fuel} bucket or lava bucket (want 1; a refilled cauldron may have filled it)"),
+                expect(c, "buckets", "bucket", 1), no_errors(c)]
     return check
+
+
+# ---- how far golems look for a cauldron: search-distance sideways, 8 up or down
+
+def lava_filled(c, x, y, z):
+    """The cauldron at x y z was used, and the lava bucket is in [Fuel]."""
+    used = "passed" in c.r.cmd(f"execute if block {x} {y} {z} minecraft:cauldron").lower()
+    return [(used, "the cauldron was emptied into the bucket" if used else "the cauldron is still full"),
+            expect(c, "fuelchest", "lava_bucket", 1), expect(c, "fuelchest", "bucket", 0), no_errors(c)]
+
+
+@scenario("lava-cauldron-far", "lava", 240, "search-distance: 64: the only lava cauldron is 50 blocks away (past the old 16): a golem takes the empty bucket from [Fuel] and fills it there on the first trip (the walk outlasts the 30 s no-home steps), then brings the lava back.", alone=True)
+def _(c):
+    from suite_distance import walkway
+    set_options(c, search_distance="64")
+    walkway(c)
+    fuel_chest(c, [("bucket", 1)], dx=4, dz=10)
+    c.block(54, 10, "lava_cauldron")
+    c.golem(2, 10)
+    x, y, z = c.abs(54, 10)
+    return lambda: lava_filled(c, x, y, z) + [
+        (not logged(c, "returned BUCKET"), "the bucket was never sent back on the way (no 'returned BUCKET')")]
+
+
+@scenario("lava-cauldron-six-up", "lava", 150, "A lava cauldron at the top of a 6-step staircase, 6 blocks above the golem (past the old 4): the golem climbs up, fills the empty bucket from [Fuel] and brings the lava back.")
+def _(c):
+    for step in range(7):  # columns at dx 8..14; dx 13 and 14 are 6 high, a landing
+        height = min(step + 1, 6)
+        for dy in range(height):
+            c.block(8 + step, 10, "stone", dy=dy)
+    for dy in range(6):
+        c.block(15, 10, "stone", dy=dy)
+    c.block(15, 10, "lava_cauldron", dy=6)
+    fuel_chest(c, [("bucket", 1)], dx=4, dz=12)
+    c.golem(4, 10)
+    x, y, z = c.abs(15, 10, 6)
+    return lambda: lava_filled(c, x, y, z)
 
 
 @scenario("lava-two-golems-one-cauldron", "lava", 150, "A full dripstone cauldron (normal ticks), 2 empty buckets in [Fuel] and 2 golems: only one golem goes; 1 lava bucket and 1 empty bucket end up in [Fuel], none elsewhere.")

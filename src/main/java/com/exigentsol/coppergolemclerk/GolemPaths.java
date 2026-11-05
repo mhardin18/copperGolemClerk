@@ -2,7 +2,11 @@ package com.exigentsol.coppergolemclerk;
 
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import java.lang.reflect.Method;
+import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.CopperGolem;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
@@ -17,18 +21,34 @@ import org.bukkit.event.Listener;
  * path cost ("malus"; -1 = never), which vanilla itself uses to keep golems out of fire.
  * Paper has no API for it, so it is set by reflection on the server's own Mob class.
  * The cost isn't saved with the golem, so it is set again whenever a golem loads.
+ *
+ * search-distance: above vanilla's 32 blocks, golems need longer paths than their pathfinder
+ * plans (48 blocks, with a budget of 16 nodes per block). A transient follow-range modifier
+ * (never saved with the golem) raises that to 1.5 times the search distance, enough to reach
+ * the far corners of the search square. Only plugin-mode golems get it.
  */
 final class GolemPaths implements Listener {
 
     private static final float NEVER = -1f;
     private static final float VANILLA = 0f; // PathType.TRAPDOOR and ON_TOP_OF_TRAPDOOR default
 
+    /** The golem's own minimum path length (CopperGolem sets requiredPathLength 48). */
+    private static final double GOLEM_PATH_LENGTH = 48;
+
     private final CopperGolemClerk plugin;
+    private final NamespacedKey rangeKey;
     private boolean avoid;
     private boolean failed;
+    private int searchDistance = HomeFinder.VANILLA_DISTANCE;
 
     GolemPaths(CopperGolemClerk plugin) {
         this.plugin = plugin;
+        this.rangeKey = new NamespacedKey(plugin, "search_distance");
+    }
+
+    /** search-distance changed: applied to golems with the next setAvoidTrapdoors (each reload). */
+    void setSearchDistance(int blocks) {
+        searchDistance = blocks;
     }
 
     /**
@@ -58,6 +78,7 @@ final class GolemPaths implements Listener {
     }
 
     private void apply(Entity golem) {
+        applyPathLength(golem);
         if (failed) {
             return;
         }
@@ -74,6 +95,24 @@ final class GolemPaths implements Listener {
             failed = true;
             plugin.getLogger().warning("avoid-trapdoors doesn't work on this server version (" + e
                     + "); golems path over trapdoors as in vanilla.");
+        }
+    }
+
+    /** Let the golem plan paths across the whole search area (transient: never saved with it). */
+    private void applyPathLength(Entity golem) {
+        if (!(golem instanceof CopperGolem copper)) {
+            return;
+        }
+        AttributeInstance range = copper.getAttribute(Attribute.FOLLOW_RANGE);
+        if (range == null) {
+            return;
+        }
+        range.removeModifier(rangeKey);
+        // Path length = max(follow range, 48): set the follow range itself to the length wanted.
+        double want = searchDistance * 1.5;
+        double add = want - range.getBaseValue();
+        if (searchDistance > HomeFinder.VANILLA_DISTANCE && plugin.manages(golem) && want > GOLEM_PATH_LENGTH && add > 0) {
+            range.addTransientModifier(new AttributeModifier(rangeKey, add, AttributeModifier.Operation.ADD_NUMBER));
         }
     }
 

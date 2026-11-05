@@ -64,4 +64,13 @@ class VersionsTest {
         assertEquals("26.3", result.update().minecraft());
         assertNull(result.needsNewerServer());
     }
+
+    @Test
+    void configUrlPointsAtTheReleaseTag() {
+        assertEquals("https://github.com/mhardin18/copperGolemClerk/blob/v3.0.1-paper26.3/src/main/resources/config.yml",
+                Versions.configUrl("3.0.1", "26.3"));
+        // The tag it names is one parse() reads back as the same release.
+        Versions.Release release = Versions.parse("v3.0.1-paper26.3", "x");
+        assertEquals("3.0.1", release.version());
+    }
 }

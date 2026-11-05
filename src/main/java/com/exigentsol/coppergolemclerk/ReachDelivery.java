@@ -23,17 +23,22 @@ import org.bukkit.inventory.ItemStack;
  * Vanilla golems can't open those, so when the chest a golem should use is one of them,
  * the plugin walks it to the spot below (Paper's pathfinder, re-issued each second) and,
  * once it's within reach, opens the lid, puts the item in and closes the lid, as a vanilla
- * delivery would. Gives up after 30 seconds; the golem's search clock keeps running, so
- * it moves on to other chests in time as usual.
+ * delivery would. Gives up after 30 seconds (longer for long walks); the golem's search
+ * clock keeps running, so it moves on to other chests in time as usual.
+ *
+ * search-distance: chests past vanilla's 32 blocks are handled the same way, at any row
+ * golems reach (vanilla never offers them as targets).
  */
 final class ReachDelivery {
 
-    /** chest: a chest above vanilla's reach (vs a barrel or shulker box, which vanilla never uses). */
+    /**
+     * chest: a chest above vanilla's reach (vs a barrel or shulker box, which vanilla never uses).
+     * far: past vanilla's search distance. clock: when the walk is given up.
+     */
     private record Job(UUID world, Set<HomeFinder.Pos> halves, Material type, Location target, long startedMillis,
-                       boolean chest) {
+                       boolean chest, boolean far, WalkClock clock) {
     }
 
-    private static final long GIVE_UP_AFTER_MILLIS = 30_000;
     private static final long SKIP_AFTER_GIVING_UP_MILLIS = 60_000;
     private static final long LID_OPEN_TICKS = 40;
 
@@ -67,21 +72,25 @@ final class ReachDelivery {
         if (!(golem instanceof CopperGolem copper)) {
             return false;
         }
-        Reach.Spot spot = Reach.spotFor(golem.getWorld(), halves);
+        // A spot the golem can walk to, not just the lowest one: it may be behind the wall.
+        Reach.Spot spot = Reach.walkableSpot(copper, halves, Math.max(Reach.VANILLA, plugin.deliverReach()));
         if (spot == null) {
             return false;
         }
         HomeFinder.Pos first = halves.iterator().next();
         Material container = golem.getWorld().getBlockAt(first.x(), first.y(), first.z()).getType();
+        boolean far = HomeFinder.beyondVanilla(golem, halves);
+        long now = System.currentTimeMillis();
         jobs.put(golem.getUniqueId(), new Job(golem.getWorld().getUID(), halves, type, spot.target(),
-                System.currentTimeMillis(), HomeFinder.isVanillaTarget(container)));
+                now, HomeFinder.isVanillaTarget(container), far, new WalkClock(spot.target(), now)));
         copper.getPathfinder().moveTo(spot.target(), 1.0);
         if (plugin.debug()) {
             HomeFinder.Pos p = halves.iterator().next();
             Material what = golem.getWorld().getBlockAt(p.x(), p.y(), p.z()).getType();
             plugin.getLogger().info(String.format("%s carrying %s heads for the %s at %d,%d,%d (row %d, %s)",
                     golem.getType(), type, what.getKey().getKey().replace('_', ' '), p.x(), p.y(), p.z(), spot.row(),
-                    HomeFinder.isVanillaTarget(what) ? "above vanilla's reach" : "vanilla golems don't use these"));
+                    far ? "past vanilla's range" : HomeFinder.isVanillaTarget(what) ? "above vanilla's reach"
+                            : "vanilla golems don't use these"));
         }
         return true;
     }
@@ -100,11 +109,17 @@ final class ReachDelivery {
                 it.remove();
                 continue;
             }
+            if (!HomeFinder.allLoaded(golem.getWorld(), job.halves())) {
+                // The chest's chunk unloaded (players moved away): reading it would load it again.
+                golem.getPathfinder().stopPathfinding();
+                it.remove();
+                continue;
+            }
             ItemStack held = golem.getEquipment().getItemInMainHand();
             HomeFinder.Pos at = job.halves().iterator().next();
             Material container = golem.getWorld().getBlockAt(at.x(), at.y(), at.z()).getType();
             if (held.isEmpty() || held.getType() != job.type() || !HomeFinder.isDestination(container)
-                    || (job.chest() && plugin.deliverReach() <= Reach.VANILLA)) {
+                    || (job.chest() && !job.far() && plugin.deliverReach() <= Reach.VANILLA)) {
                 // Delivered or dropped some other way, or a reload lowered deliver-reach or dropped this
                 // kind of container from destination-containers (or it was broken).
                 golem.getPathfinder().stopPathfinding();
@@ -118,14 +133,15 @@ final class ReachDelivery {
                 it.remove();
                 continue;
             }
-            if (now - job.startedMillis() > GIVE_UP_AFTER_MILLIS) {
+            if (job.clock().expired(golem, now)) {
                 for (HomeFinder.Pos p : job.halves()) {
                     failed.computeIfAbsent(golem.getUniqueId(), k -> new HashMap<>()).put(p, now + SKIP_AFTER_GIVING_UP_MILLIS);
                 }
                 golem.getPathfinder().stopPathfinding();
                 it.remove();
                 if (plugin.debug()) {
-                    plugin.getLogger().info(golem.getType() + " couldn't get within reach of a high chest; trying others");
+                    plugin.getLogger().info(golem.getType() + " couldn't get within reach of a " + (job.far() ? "far" : "high")
+                            + " chest (" + job.clock().reason(now) + "); trying others");
                 }
                 continue;
             }
@@ -171,8 +187,9 @@ final class ReachDelivery {
             plugin.stats().delivered(golem, block.getLocation(), held.getType(), before - rest.getAmount(), false);
         }
         if (plugin.debug()) {
-            plugin.getLogger().info(String.format("%s put %d %s into %s at %d,%d,%d (above vanilla's reach)",
-                    golem.getType(), before - rest.getAmount(), held.getType(), block.getType(), p.x(), p.y(), p.z()));
+            plugin.getLogger().info(String.format("%s put %d %s into %s at %d,%d,%d (%s)",
+                    golem.getType(), before - rest.getAmount(), held.getType(), block.getType(), p.x(), p.y(), p.z(),
+                    job.far() ? "past vanilla's range" : "above vanilla's reach"));
         }
     }
 }

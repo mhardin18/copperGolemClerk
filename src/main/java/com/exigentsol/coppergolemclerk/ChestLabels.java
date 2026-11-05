@@ -28,7 +28,8 @@ import org.bukkit.inventory.ItemStack;
  * - Item frames (or glow frames) hung on any side, holding an item: that item only.
  * - Signs (a wall sign on any side, a standing sign on top, or a hanging sign just
  *   above) with lines in
- *   brackets: each [text] is a group name, item name, pattern or #tag.
+ *   brackets: each [text] is a group name, item name, pattern or #tag. A label too long
+ *   for one line can carry on to the next: "[Only light" / "sources]".
  *   [overflow] (any case) marks the chest as a catch-all for items with no
  *   other home. [No Golems] (any case) keeps golems out of it: they never take
  *   from it (even a copper chest) or put anything into it.
@@ -41,6 +42,8 @@ final class ChestLabels {
 
     /** A line of one or more bracketed labels and nothing else: "[logs]", "[ice][snow]", "[ice] [snow]". */
     private static final Pattern LABEL_LINE = Pattern.compile("^\\s*(\\[[^\\[\\]]+]\\s*)+$");
+    /** Whole labels (or none), then one opened but not closed: "[Only light", "[ores] [crafting". */
+    private static final Pattern OPEN_LINE = Pattern.compile("^\\s*(\\[[^\\[\\]]+]\\s*)*\\[[^\\[\\]]*$");
     private static final Pattern LABEL = Pattern.compile("\\[([^\\[\\]]+)]");
     private static final BlockFace[] SIDES = {BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
 
@@ -114,51 +117,48 @@ final class ChestLabels {
             if (signs) {
                 for (Sign sign : signsOn(block)) {
                     for (Side side : Side.values()) {
+                        List<String> lines = new ArrayList<>();
                         for (Component line : sign.getSide(side).lines()) {
-                            String text = PlainTextComponentSerializer.plainText().serialize(line);
-                            if (!LABEL_LINE.matcher(text).matches()) {
+                            lines.add(PlainTextComponentSerializer.plainText().serialize(line));
+                        }
+                        for (String label : labelTexts(lines, unknown)) {
+                            String inner = label.trim();
+                            if (inner.isEmpty()) {
                                 continue;
                             }
-                            Matcher m = LABEL.matcher(text);
-                            while (m.find()) {
-                                String inner = m.group(1).trim();
-                                if (inner.isEmpty()) {
-                                    continue;
-                                }
-                                if (inner.toLowerCase(Locale.ROOT).equals("overflow")) {
-                                    overflow = true;
-                                    continue;
-                                }
-                                if (isNoGolems(inner)) {
-                                    noGolems = true;
-                                    continue;
-                                }
-                                if (isFuel(inner)) {
-                                    fuel = true; // golems take furnace fuel from here
-                                    continue;
-                                }
-                                if (isFurnaceSupply(inner)) {
-                                    supply = true; // golems take items to cook from here
-                                    continue;
-                                }
-                                String filter = onlyLabel(inner);
-                                if (filter != null) {
-                                    ItemGroups.Rule rule = groups.signRule(filter);
-                                    if (rule != null) {
-                                        only.add(rule);
-                                        onlyNames.add("[" + inner + "]");
-                                    } else {
-                                        unknown.add("[" + inner + "]");
-                                    }
-                                    continue;
-                                }
-                                ItemGroups.Rule rule = groups.signRule(inner);
+                            if (inner.toLowerCase(Locale.ROOT).equals("overflow")) {
+                                overflow = true;
+                                continue;
+                            }
+                            if (isNoGolems(inner)) {
+                                noGolems = true;
+                                continue;
+                            }
+                            if (isFuel(inner)) {
+                                fuel = true; // golems take furnace fuel from here
+                                continue;
+                            }
+                            if (isFurnaceSupply(inner)) {
+                                supply = true; // golems take items to cook from here
+                                continue;
+                            }
+                            String filter = onlyLabel(inner);
+                            if (filter != null) {
+                                ItemGroups.Rule rule = groups.signRule(filter);
                                 if (rule != null) {
-                                    rules.add(rule);
-                                    names.add("[" + inner + "]");
+                                    only.add(rule);
+                                    onlyNames.add("[" + inner + "]");
                                 } else {
                                     unknown.add("[" + inner + "]");
                                 }
+                                continue;
+                            }
+                            ItemGroups.Rule rule = groups.signRule(inner);
+                            if (rule != null) {
+                                rules.add(rule);
+                                names.add("[" + inner + "]");
+                            } else {
+                                unknown.add("[" + inner + "]");
                             }
                         }
                     }
@@ -166,6 +166,54 @@ final class ChestLabels {
             }
         }
         return new Labels(rules, names, overflow, unknown, noGolems, only, onlyNames, fuel, supply);
+    }
+
+    /**
+     * The bracketed label texts on one side of a sign, in order. A line holds one or more
+     * labels and nothing else ("[logs]", "[ice][snow]"). A label too long for one line can
+     * carry on to the next: a line that ends inside an open bracket is joined to the next
+     * one, with a space ("[Only light" + "sources]" = "Only light sources"), or with nothing
+     * after a dash or underscore ("[concrete-and-" + "terracotta]"). A label still open at
+     * the last line is added to unclosed as "[text" (no closing bracket), for /cgc check.
+     */
+    static List<String> labelTexts(List<String> lines, List<String> unclosed) {
+        List<String> out = new ArrayList<>();
+        String pending = null;
+        for (String line : lines) {
+            String text = line.strip();
+            if (pending != null) {
+                String joined = (pending.endsWith("-") || pending.endsWith("_") ? pending : pending + " ") + text;
+                if (LABEL_LINE.matcher(joined).matches() || OPEN_LINE.matcher(joined).matches()) {
+                    text = joined.replaceAll("\\s+", " ");
+                } else {
+                    addOpen(pending, out, unclosed); // this line isn't the rest of it: read it on its own
+                }
+                pending = null;
+            }
+            if (LABEL_LINE.matcher(text).matches()) {
+                Matcher m = LABEL.matcher(text);
+                while (m.find()) {
+                    out.add(m.group(1));
+                }
+            } else if (OPEN_LINE.matcher(text).matches()) {
+                pending = text;
+            }
+        }
+        if (pending != null) {
+            addOpen(pending, out, unclosed);
+        }
+        return out;
+    }
+
+    /** The whole labels on a line that ends with an unclosed one, which goes to unclosed. */
+    private static void addOpen(String text, List<String> out, List<String> unclosed) {
+        Matcher m = LABEL.matcher(text);
+        int end = 0;
+        while (m.find()) {
+            out.add(m.group(1));
+            end = m.end();
+        }
+        unclosed.add(text.substring(end).strip());
     }
 
     /** "Only Logs" -> "Logs" (any case, one or more spaces); null if the text isn't an [Only ...] label. */

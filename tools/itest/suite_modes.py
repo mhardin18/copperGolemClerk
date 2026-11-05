@@ -86,7 +86,7 @@ def _(c):
     c.run(f"kill {c.selector('snow_golem')}")
     c.run(f"kill {c.selector('copper_golem')}")
     def check():
-        lines = [l for l in c.log_lines() if "[CopperGolemClerk]" in l and c.in_cell(l)]
+        lines = [l for l in c.cell_lines() if "[CopperGolemClerk]" in l]
         died = [l for l in lines if "died at" in l]
         return [(len(died) == 1, f"one death logged, the copper golem's (got {len(died)})"),
                 (not any("snow" in l.lower() or "iron" in l.lower() for l in lines), "nothing about iron or snow golems")]
@@ -101,7 +101,7 @@ def _(c):
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{Tags:[\"itest_other\"]}}")
     golem(c, 4, 10)
     def check():
-        lines = [l for l in c.log_lines() if "[CopperGolemClerk]" in l and c.in_cell(l)]
+        lines = [l for l in c.cell_lines() if "[CopperGolemClerk]" in l]
         return [expect(c, "logs", "birch_log", 8),
                 (not any("IRON_GOLEM" in l for l in lines), "no plugin log line about the iron golem")]
     return check
@@ -153,7 +153,8 @@ def make_vanilla(c):
     c.r.cmd(f"data merge entity {sel} {{{VANILLA}}}")
 
 
-@scenario("vanilla-switch-mid-fetch", "modes", 90, "A golem fetching from [Overflow] is switched to vanilla on the way: it stops, and the granite stays in the overflow chest.")
+@scenario("vanilla-switch-mid-fetch", "modes", 90, "A golem fetching from [Overflow] is switched to vanilla on the way: it stops, and the granite stays in the overflow chest.",
+          alone=True)  # the switch must land during a walk of a few seconds: under parallel load the harness polls too slowly
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     c.chest("overflow", 18, 4, [("granite", 16)])
@@ -162,18 +163,24 @@ def _(c):
     x, y, z = c.abs(12, 0)
     _, _, z2 = c.abs(12, 17)
     c.run(f"fill {x} {y} {z} {x} {y + 2} {z2} minecraft:glass")  # a long walk, so the switch comes first
-    golem(c, 4, 10)
+    # Start near the wall's open end: from (4, 10) the way round was at the edge of what the
+    # pathfinder searches, so the fetch sometimes never started.
+    golem(c, 8, 17)
     t = Trigger()
     def check():
-        t.fire_when(lambda: any("fetching GRANITE" in l and c.in_cell(l) for l in c.log_lines()), lambda: make_vanilla(c))
-        return [(t.at is not None and t.since() > 30, "switched mid-fetch, 30 seconds ago"),
+        t.fire_when(lambda: any("fetching GRANITE" in l for l in c.cell_lines()), lambda: make_vanilla(c),
+                    lines=c.log_lines)
+        took_first = t.at is not None and any("took" in l and "GRANITE" in l and c.in_cell(l) for l in c.log_lines()[:t.lines])
+        return [(not took_first, "switched before the golem got there" if not took_first
+                 else "the golem took the granite before the switch landed (harness too slow; not a plugin failure)"),
+                (t.at is not None and t.since() > 30, "switched mid-fetch, 30 seconds ago"),
                 expect(c, "overflow", "granite", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
     return check
 
 
 @scenario("vanilla-keeps-homeless-item", "modes", 150, "A vanilla-mode golem holding dirt with nowhere to put it keeps holding it, as in vanilla: the plugin doesn't return it.", alone=True)
 def _(c):
-    set_options(c, matching_chest_timeout_seconds="10")
+    set_options(c, fixed_step_seconds="10")
     c.chest("copper", 2, 10, [("dirt", 8)], block="waxed_copper_chest")
     c.chest("logs", 14, 10, [("oak_log", 1)])
     golem(c, 4, 10, vanilla=True)

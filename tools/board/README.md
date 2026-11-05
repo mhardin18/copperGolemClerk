@@ -13,3 +13,10 @@ Files:
 - `to_config.py <dir> <layout.json> <out.yml>`: turns the board's saved layout (db doc
   `board/layout`) into compact groups using descriptive tags, name patterns and item names,
   and checks every item lands in exactly one group.
+
+Group names are the sign labels players write, so `to_config.py` fails if a name is too
+wide for one sign line (90 pixels, measured the way `ChestReports.fitsOnSign` does) and
+`NAMES` maps long board ids to short names. In 3.1.0 the board's single "Concrete &
+terracotta" category was split in two (`concrete`, `terracotta`) in `classify.py` and
+in `config.yml`. A board layout saved before then still has the one category: split it
+on the board before regenerating, or `to_config.py` reports the long name.

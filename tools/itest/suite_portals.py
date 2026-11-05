@@ -38,7 +38,7 @@ def _(c):
 
     def check():
         t.fire_when(lambda: True, lambda: None)
-        kept = [l for l in c.log_lines() if "Kept a copper golem" in l and c.in_cell(l)]
+        kept = [l for l in c.cell_lines() if "Kept a copper golem" in l]
         return [(t.since() > 20, "waited 20s"), (c.golems() == 1, f"{c.golems()} golem on the platform (want 1)"),
                 (bool(kept), "logged that it was kept from going through")]
     return check

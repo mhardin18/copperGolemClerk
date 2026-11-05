@@ -10,7 +10,7 @@ import time
 from arena import Trigger, expect, scenario
 import arena
 from rcon import from_properties
-from suite_furnace import furnace, hopper, supply
+from suite_furnace import furnace, hopper, slot, supply
 from suite_furnace_edge import no_errors, logged
 from suite_options import set_options
 
@@ -153,9 +153,7 @@ def _(c):
 
 
 def slot_fuel(c):
-    x, y, z = c.chests["furnace"][0]
-    m = re.search(r'\{Slot: 1b, id: "minecraft:([a-z_]+)", count: (\d+)', c.r.cmd(f"data get block {x} {y} {z} Items"))
-    return f"{m.group(1)} {m.group(2)}" if m else ""
+    return slot(c, "furnace", 1)
 
 
 # ---- furnace-split-min and furnace-refill-below
@@ -212,7 +210,7 @@ def _(c):
     t = Trigger()
 
     def check():
-        trips = [l for l in c.log_lines() if "(SUPPLY_TAKE)" in l and c.in_cell(l)]
+        trips = [l for l in c.cell_lines() if "(SUPPLY_TAKE)" in l]
         t.fire_when(lambda: c.count("furnace", "oak_log") == 32, lambda: None)
         return [(t.at is not None and t.since() > 10, "furnace got 32 logs, then 10s more"),
                 (len(trips) == 2, f"{len(trips)} trips to the supply started (want 2)"),

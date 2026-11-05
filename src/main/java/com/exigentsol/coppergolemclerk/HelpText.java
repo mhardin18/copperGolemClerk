@@ -17,13 +17,16 @@ final class HelpText {
 
     private static final List<Entry> ENTRIES = List.of(
             new Entry("check", "/cgc check", "/cgc check <x> <y> <z> [world]",
-                    "Explain the chest you're looking at, or the item in your hand.",
+                    "Explain the chest you're looking at and suggest a sign label, or explain the item in your hand.",
                     List.of("Look at a chest (within 6 blocks) and run it to see:",
-                            "- what each sign or item-frame label on it means, and labels that match nothing",
+                            "- what each sign or item-frame label on it means, and labels that match nothing"
+                                    + " or never close (a label can carry on to the next sign line: [Only light / sources])",
                             "- what the chest takes, from its labels or its contents",
                             "- whether the item in your hand would go there",
                             "- anything stopping golems from using it: a block on top, a lock, a hopper"
                                     + " under it feeding a copper chest, or no room",
+                            "- what to write on its sign: labels for what's in it (most specific first), what its label"
+                                    + " doesn't cover, or, for an empty chest, labels for the item in your hand",
                             "Not looking at a chest: the item groups the item in your hand belongs to.",
                             "Players can only check containers they could open (not locked; with GriefPrevention,"
                                     + " unclaimed or where they have container trust).")),
@@ -36,7 +39,7 @@ final class HelpText {
                                     + " players only get suggestions for containers they could open.")),
             new Entry("overflow", "/cgc overflow", "/cgc overflow <x> <y> <z> [world]",
                     "What's in nearby [Overflow] chests, and what to do about it.",
-                    List.of("Looks at the [Overflow] chests within golem range of you (32 blocks across,"
+                    List.of("Looks at the [Overflow] chests within golem range of you (search-distance sideways,"
                                     + " 8 up and down) and sorts what's in them into:",
                             "- no chest for it: add a chest with the sign label shown",
                             "- its chest can't be used by golems: what to fix",
@@ -45,7 +48,7 @@ final class HelpText {
                             "Players see only the [Overflow] chests they could open.")),
             new Entry("storage", "/cgc storage", "/cgc storage <x> <y> <z> [world]",
                     "How full the storage around you is.",
-                    List.of("Groups the containers within golem range (32 blocks sideways, 8 up or down) by their label, or for"
+                    List.of("Groups the containers within golem range (search-distance sideways, 8 up or down) by their label, or for"
                                     + " unlabelled ones by what they hold, fullest first, and flags full and nearly full (90%) ones.",
                             "Also shows [Overflow] chests, how many empty chests are left for new kinds of items, and how"
                                     + " many items are waiting in copper chests. Players only see containers they could open.")),

@@ -85,7 +85,7 @@ def _(c):
     return lambda: [expect(c, "overflow", "birch_log", 16), expect(c, "full", "birch_log", 0)]
 
 
-@scenario("return-homeless", "core", 420, "With nowhere to put it, the item goes back to its copper chest (after 120 active seconds) and stays there.")
+@scenario("return-homeless", "core", 420, "With nowhere to put it, the item goes back to its copper chest (after the 30-second vanilla step) and stays there.")
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)  # a full, unrelated chest: no home, no empty chest
@@ -121,7 +121,7 @@ def _(c):
     return lambda: [expect(c, "logs", "birch_log", 16), expect(c, "logs", "spruce_log", 16), expect(c, "empty", "*", 0)]
 
 
-@scenario("sleepy-golem-return", "core", 600, "With no player nearby, a no-home item is still returned, after 120 seconds of the golem actually being active.")
+@scenario("sleepy-golem-return", "core", 600, "With no player nearby, a no-home item is still returned, after 30 seconds of the golem actually being active.")
 def _(c):
     c.chest("copper", 2, 10, [("sculk_shrieker", 1)], block="waxed_copper_chest")
     c.chest("busy", 14, 10, [("dirt", 64)] * 27)
@@ -151,19 +151,19 @@ def _(c):
                     expect(c, "mob", "bone", 3), expect(c, "mob", "string", 0)]
 
 
-@scenario("dyed-sign", "core", 300, "A [Copper] / [Terracotta] sign takes plain and dyed terracotta; [Red Terracotta] still wins red; glazed goes to overflow.")
+@scenario("dyed-sign", "core", 300, "A [Copper] / [Candle] sign takes plain and dyed candles; [Red Candle] still wins red; a torch goes to overflow.")
 def _(c):
-    c.chest("copper", 2, 10, [("lime_terracotta", 8), ("red_terracotta", 6), ("terracotta", 4), ("red_glazed_terracotta", 3)],
+    c.chest("copper", 2, 10, [("lime_candle", 8), ("red_candle", 6), ("candle", 4), ("torch", 3)],
             block="waxed_copper_chest")
-    c.chest("terra", 8, 10)
-    c.sign(8, 10, ["[Copper]", "[Terracotta]"])
+    c.chest("candles", 8, 10)
+    c.sign(8, 10, ["[Copper]", "[Candle]"])
     c.chest("red", 14, 10)
-    c.sign(14, 10, "[Red Terracotta]")
+    c.sign(14, 10, "[Red Candle]")
     c.chest("over", 20, 10)
     c.sign(20, 10, "[Overflow]")
     c.golem(4, 10)
-    return lambda: [expect(c, "terra", "lime_terracotta", 8), expect(c, "terra", "terracotta", 4),
-                    expect(c, "red", "red_terracotta", 6), expect(c, "over", "red_glazed_terracotta", 3)]
+    return lambda: [expect(c, "candles", "lime_candle", 8), expect(c, "candles", "candle", 4),
+                    expect(c, "red", "red_candle", 6), expect(c, "over", "torch", 3)]
 
 
 @scenario("no-golems-copper", "core", 300, "Golems skip a copper chest signed [No Golems] (nearer) and sort from the unsigned one instead.")

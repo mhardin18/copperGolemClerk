@@ -110,4 +110,32 @@ class ConfigUpgradeTest {
         assertTrue(config.getConfigurationSection("groups").getKeys(false).size() == 1, "no shipped groups mixed in");
         assertTrue(result.added().contains("furnace-feeding") && !result.added().contains("groups"));
     }
+
+    @Test
+    void retiredSettingsAreTakenOutWithTheirComment() throws Exception {
+        String shipped = shipped();
+        // A 3.0.0-style file: the shipped one with the retired setting and its own comment back in.
+        String old = shipped.replaceFirst("(?m)^prefer-matching-chests: true\\n",
+                "prefer-matching-chests: true\n\n# If a golem can't deliver its item, it works through these steps...\n"
+                        + "# each lasting matching-chest-timeout-seconds.\nmatching-chest-timeout-seconds: 45\n");
+        ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped);
+        assertEquals(List.of("matching-chest-timeout-seconds"), result.removed());
+        assertTrue(!result.text().contains("matching-chest-timeout-seconds"), result.text());
+        assertEquals(shipped, result.text(), "only the retired setting and its comment go");
+        assertTrue(yaml(result.text()).getBoolean("prefer-matching-chests"));
+    }
+
+    @Test
+    void theUnclaimedGolemLimitIsTakenOutAndThePerAreaOneAdded() throws IOException {
+        String shipped = shipped();
+        // A 3.0.0 file: max-golems-outside-claims where claim-blocks-per-extra-golem is now.
+        String old = shipped.replaceFirst("(?ms)^# Bigger claims get more golems:.*?^claim-blocks-per-extra-golem: 0\n",
+                "# The same limit for copper golems on unclaimed land, per world (without GriefPrevention\n"
+                        + "# that's every golem in the world). 0 = no limit.\nmax-golems-outside-claims: 4\n");
+        assertTrue(old.contains("max-golems-outside-claims: 4"), "the 3.0.0 file was made");
+        ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped);
+        assertEquals(List.of("max-golems-outside-claims"), result.removed());
+        assertEquals(List.of("claim-blocks-per-extra-golem"), result.added());
+        assertEquals(shipped, result.text());
+    }
 }

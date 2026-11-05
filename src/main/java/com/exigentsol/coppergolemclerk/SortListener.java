@@ -100,6 +100,33 @@ public final class SortListener implements Listener {
         }
     }
 
+    /** A sign was written or changed: a chest may have a new label. */
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onSignChange(org.bukkit.event.block.SignChangeEvent event) {
+        labelChanged(event.getBlock());
+    }
+
+    /** An item went into (or came out of) an item frame: a chest may have a new label. */
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)
+    public void onFrameUse(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        if (event.getRightClicked() instanceof org.bukkit.entity.ItemFrame frame) {
+            labelChanged(frame.getLocation().getBlock());
+        }
+    }
+
+    /**
+     * Items marked "no home" near a new or changed label may have a home now: forget the marks
+     * within a golem's search distance, so golems take them out and try again straight away
+     * instead of after homeless-retry-minutes.
+     */
+    private void labelChanged(Block near) {
+        int cleared = returns.clearNear(near.getWorld(), near.getX(), near.getZ(), HomeFinder.searchDistance() + 1);
+        if (cleared > 0 && plugin.debug()) {
+            plugin.getLogger().info(String.format("A label changed at %d,%d,%d: cleared the 'no home' marks on %d chest%s nearby",
+                    near.getX(), near.getY(), near.getZ(), cleared, cleared == 1 ? "" : "s"));
+        }
+    }
+
     /** Forget which items had no home, so golems try them again (after /coppergolemclerk reload). */
     void clearHomeless() {
         returns.clear();
@@ -117,6 +144,12 @@ public final class SortListener implements Listener {
             if (held.isEmpty() || held.getType() != search.type() || !plugin.manages(golem)) {
                 homes.forget(id); // its next search starts fresh
                 return;
+            }
+            if (reach.isDelivering(id)) {
+                return; // walking to a high or far chest: a long walk can outlast the search steps
+            }
+            if (furnaces.isBusy(id)) {
+                return; // on a furnace job (a bucket to a far cauldron, fuel to a far furnace): the job says where it goes
             }
             if (!homes.waitedTooLong(id) && homes.waitingNearHome(golem, held)) {
                 // Waiting in line at a chest that takes the item: check again next second.
@@ -154,13 +187,19 @@ public final class SortListener implements Listener {
             if (noGolems) {
                 event.setAllowed(false); // [No Golems]: never take from it
             } else if (plugin.takeReach() > Reach.VANILLA && Returns.isCopperChest(block.getType())
-                    && !Reach.vanillaReaches(rowOf(block))) {
+                    && !Reach.vanillaReaches(rowOf(golem, block))) {
                 event.setAllowed(false); // too high for vanilla; idle golems fetch from it (OverflowFetcher)
             } else if (fetcher.isFetching(golem.getUniqueId()) || furnaces.isBusy(golem.getUniqueId())) {
                 event.setAllowed(false); // walking to an overflow chest or a furnace; don't get pulled away
             } else if (!returns.prepareSource(event.getBlock())) {
                 // Empty, or only items with no home: don't walk over for nothing.
                 event.setAllowed(false);
+            } else if (golem instanceof org.bukkit.entity.CopperGolem copper && Returns.isCopperChest(block.getType())) {
+                if (furnaces.upkeepBeforeVanillaTake(copper)) {
+                    event.setAllowed(false); // furnace upkeep comes first (furnace-jobs-before-sorting)
+                } else {
+                    furnaces.sorted(golem.getUniqueId());
+                }
             }
             return;
         }
@@ -398,10 +437,10 @@ public final class SortListener implements Listener {
     }
 
     /** A chest's row above where a golem can stand beside it (Integer.MAX_VALUE if nowhere). */
-    private static int rowOf(Block block) {
+    private static int rowOf(Entity golem, Block block) {
         Set<HomeFinder.Pos> halves = block.getState(false) instanceof Container c
                 ? HomeFinder.halvesOf(c.getInventory(), block) : Set.of(HomeFinder.Pos.of(block));
-        return Reach.rowOf(block.getWorld(), halves);
+        return golem instanceof org.bukkit.entity.Mob mob ? Reach.rowFor(mob, halves) : Reach.rowOf(block.getWorld(), halves);
     }
 
     /** True if the golem's current item was fetched from (one half of) this chest. */
