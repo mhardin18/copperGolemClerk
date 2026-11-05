@@ -161,6 +161,20 @@ error or exception in the server log during a scenario fails it.
 | lava | lava bucket fuel, a cauldron dripping lava refills, `furnace-lava-min-items`, and cauldron search range |
 | furnace, furnace-edge, furnace-trips, furnace-refill | furnace feeding, fuelling and taking out, mid-job changes, fewer fuller trips, `furnace-refill-below` and `furnace-wait-seconds` |
 | modes | golems switched to vanilla (sort like vanilla, no marker), antenna markers through switches, unloads and statues; iron and snow golems untouched |
+| alerts | full-chest and filling-[Overflow] alerts: the chest and item named once, no alert when there's room, `full-chest-alerts` and `overflow-alert-percent` |
+| carry | `carry-amount`: bigger loads per trip, stack-size caps, fetching from [Overflow], out-of-range values |
+| claims | GriefPrevention claims: alerts go to the claim owner, lost-golem teleport by owner permission, `/cgc stats` counted per owner |
+| destinations | barrels and shulker boxes as destinations (`destination-containers`): labels, contents, blocked lids, reach, full-container alerts |
+| filters | `[Only <group>]` filters on copper chests: only matching items are taken, two filter lines, `/cgc check`, returns skip filtered chests |
+| find | `/cgc find`: items, groups, patterns and tags, shulker contents, other containers, radius, off switch, related-name hints |
+| finder | `/cgc golems`: loaded and unloaded golems, last-seen spots, killed golems forgotten, positions saved to `golems.yml` |
+| labels | status labels over golems (bamboo in hand): what they say, off switch, removed with the golem, tick time with many |
+| overflow-hopper | hopper-fed [Overflow] chests: golems wait for `overflow-fetch-min` or `overflow-fetch-wait-seconds`; chests no hopper feeds are emptied at once |
+| portals | `avoid-portals`: golems stay out of Nether portals unless the option is off or they're in vanilla mode |
+| rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their copper chest, alerts, teleport home, adopting a new home |
+| stats | `/cgc stats` counts deliveries and saves them to `stats.yml` |
+| traffic | `golems-give-way`: golems meeting in corridors and doorways step aside or back out, avoiding fire, cobwebs and holes |
+| edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |
 
 Scenarios that change something server-wide (config, reloads, tick timing) run one at a
 time after the others, and the runner restores `config.yml` after each.
