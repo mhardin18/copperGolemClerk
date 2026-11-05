@@ -10,6 +10,27 @@ claims, full-chest alerts for claim owners, optional golem limits per claim, and
 every feature tunable in one config file. They never ask for a raise and never complain about the
 cobblestone.
 
+## New in 3.1.0
+
+- **Golem limits count per claim.** With GriefPrevention, `max-golems-per-claim` now applies to
+  each claim on its own, admin claims too. The newest golems over the limit sort like vanilla,
+  and the claim owner is told.
+- **Bigger claims, more golems.** Set `claim-blocks-per-extra-golem` and each claim gets one more
+  golem for every that many claim blocks. It's off (0) by default.
+- **Unclaimed land isn't limited any more.** `max-golems-outside-claims` is retired. Upgrading
+  removes it from your `config.yml` for you, and the console says so. You don't need to do anything.
+- **Furnaces come first.** An idle golem tends furnaces before it sorts. Set
+  `furnace-jobs-before-sorting` to 0 if you want sorting first, as before.
+- **Longer sign labels.** Leave the `[` open and close the `]` on a later line.
+- **Search farther.** `search-distance` (default 32, up to 128) sets how far golems look for chests
+  and furnaces.
+- **Shorter group names.** `templates`, `materials`, `foliage`, `concrete` and `terracotta` replace
+  some long ones. Old and new names both work on signs, and your `groups:` are left alone.
+- **Smarter `/cgc check`.** It now suggests sign labels for the chest you're looking at.
+- **Quicker walks.** Golems give up on a stuck walk sooner, and an item with no home goes back in
+  its copper chest after about 30 seconds. `matching-chest-timeout-seconds` is retired and removed
+  from your `config.yml` on upgrade.
+
 ## 🔥 New in 3.0.0: The Furnaces Are Alive
 
 Your clerks have been promoted to the kitchen. Put a sign like `[raw iron]` on a furnace, smoker
