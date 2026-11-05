@@ -15,6 +15,16 @@ this tree's jar back afterwards), restarts pluginDev, waits for it to settle, an
 to `perf.py` (`--help` lists them). To keep it running after you log out:
 `nohup tools/perf/run-perf.sh all >/dev/null 2>&1 &`.
 
+**CPU speed.** With the normal `schedutil` setting, a light load keeps this CPU near 800 MHz,
+which makes every tick slower and makes few golems look dearer than many. `run-perf.sh` switches
+the CPU to full speed (`performance`) for the run and back afterwards, even if the run fails. This
+affects every server on the machine while it lasts. It needs this sudoers rule
+(`sudo visudo -f /etc/sudoers.d/cpupower-governor`):
+
+    mhardin ALL=(root) NOPASSWD: /usr/bin/cpupower frequency-set -g performance, /usr/bin/cpupower frequency-set -g schedutil
+
+Without the rule, the run goes ahead at the normal setting. The summary shows which setting was in use.
+
 ## The tests
 
 | Test | What runs | Points | Time |

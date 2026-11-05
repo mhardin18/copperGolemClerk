@@ -75,9 +75,27 @@ elif [ $was_running = 0 ]; then
     restart || exit 1
 fi
 
+# Full CPU speed while measuring: with schedutil, a light, bursty load keeps the CPU near 800 MHz,
+# which slows every tick, and more golems would get faster clocks than fewer. Needs the sudoers
+# rule in tools/perf/README.md; without it, the run goes ahead at the normal setting.
+governor=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)
+restore_governor() {
+    [ "$governor" = schedutil ] && sudo -n /usr/bin/cpupower frequency-set -g schedutil >/dev/null && log "CPU back to schedutil"
+}
+if [ "$governor" = schedutil ] && sudo -n /usr/bin/cpupower frequency-set -g performance >/dev/null; then
+    log "CPU set to full speed (performance) for the run"
+    trap restore_governor EXIT
+    export PERF_GOVERNOR=performance
+else
+    log "CPU left at ${governor:-unknown} (couldn't switch to performance): clock speeds will follow the load"
+    export PERF_GOVERNOR=${governor:-unknown}
+fi
+
 log "running: perf.py $*"
 PERF_REF="$PERF_REF" python3 -I tools/perf/perf.py "$@"
 status=$?
+restore_governor
+trap - EXIT
 
 if [ -n "$ref" ]; then
     log "putting this tree's jar ($here) back on pluginDev"

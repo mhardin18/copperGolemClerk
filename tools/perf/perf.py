@@ -425,7 +425,7 @@ def run_chests(point):
 def report(points, meta, compare_with):
     lines = [f"# Performance run {meta['started']}", "",
              f"Plugin {meta['plugin']}, {meta['paper']}. {meta['ref']}. Warm-up {meta['opts']['warmup']} s, "
-             f"{meta['opts']['measure']} s measured per point, {meta['opts']['reps']} repeats.", ""]
+             f"{meta['opts']['measure']} s measured per point, {meta['opts']['reps']} repeats. CPU governor: {meta.get('governor')}.", ""]
     base = {}
     for p in points:
         if p["test"] == "golems" and p["params"].get("golems") == 0:
@@ -540,7 +540,8 @@ def main(argv):
     meta = {"started": started.isoformat(timespec="seconds"), "label": a.label, "opts": opts,
             "plugin": L.strip_colours(srv.cmd("version CopperGolemClerk")).strip().splitlines()[0][:120],
             "paper": L.strip_colours(srv.cmd("version")).strip().splitlines()[0][:120],
-            "ref": os.environ.get("PERF_REF", "jar as deployed"), "host_throttles_before": throttles()}
+            "ref": os.environ.get("PERF_REF", "jar as deployed"),
+            "governor": os.environ.get("PERF_GOVERNOR") or open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").read().strip(), "host_throttles_before": throttles()}
     log(f"results: {out_dir}")
     settings = Settings(srv)
     arena = Arena(srv)
