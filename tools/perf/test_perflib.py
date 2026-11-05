@@ -112,5 +112,15 @@ class Planning(unittest.TestCase):
         self.assertNotIn("golems [plugin] golems 150", rows, "not in the old run")
 
 
+class PaperVersionTest(unittest.TestCase):
+    def test_still_checking(self):
+        self.assertIsNone(L.paper_version("§f§oChecking version, please wait...\n"))
+
+    def test_running(self):
+        reply = ("§fThis server is running Paper version 26.3-237-main@7e88a0d (2026-11-01T19:08:12Z) "
+                 "(Implementing API version 26.3.build.237-stable)§r\n§eYou are 5 version(s) behind\n")
+        self.assertEqual(L.paper_version(reply), "Paper version 26.3-237-main@7e88a0d")
+
+
 if __name__ == "__main__":
     unittest.main()
