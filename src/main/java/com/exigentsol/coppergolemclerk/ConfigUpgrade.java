@@ -30,7 +30,9 @@ final class ConfigUpgrade {
      */
     static final Map<String, String> RETIRED = Map.of(
             "matching-chest-timeout-seconds",
-            "golems now get as long as the walk to each chest takes; see search-distance");
+            "golems now get as long as the walk to each chest takes; see search-distance",
+            "max-golems-outside-claims",
+            "golems on unclaimed land aren't limited; see max-golems-per-claim");
 
     /**
      * The new text, the settings added to it, the settings whose explanation was brought up to

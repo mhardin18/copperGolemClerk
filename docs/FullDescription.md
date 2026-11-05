@@ -157,7 +157,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 - `/cgc golems` shows where the golems are, what they're carrying and whether any are lost.
 - `/cgc stats` shows how much the golems have sorted, server-wide.
 - Players only see what they could open themselves; admins can see into every claim.
-- Optional golem limits cap how many golems in one claim use the plugin (off by default).
+- Optional golem limits cap how many golems in one claim use the plugin, with more for bigger claims if you like (off by default).
 - Load tested with up to 200 golems: a working golem costs about 0.1 ms per tick, the same as
   in vanilla.
 - Nearly every feature can be switched off or tuned in `config.yml`, and `/cgc reload`

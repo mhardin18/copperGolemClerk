@@ -151,7 +151,7 @@ error or exception in the server log during a scenario fails it.
 | dimensions | sorting, overflow, fetching, returns, giving way and `/cgc check` in the Nether and the End |
 | reach | chests stacked above vanilla's reach: delivering and taking with `deliver-reach` / `take-reach` raised, and at the default |
 | greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit |
-| limits | `max-golems-per-claim` / `max-golems-outside-claims`: the newest golem over a limit sorts like vanilla and the owner is told; under the limit, unclaimed land, vanilla-mode golems not counted, bad values |
+| limits | `max-golems-per-claim` / `claim-blocks-per-extra-golem`: the newest golem over a limit sorts like vanilla and the owner is told; each claim on its own, admin claims, bigger claims get more, under the limit, unclaimed land not limited, vanilla-mode golems not counted, the removed `max-golems-outside-claims` warned about, bad values |
 | work-order | what an idle golem does first: furnace upkeep before sorting, sorting before taking out finished items, `furnace-jobs-before-sorting` (1, and 0 for the old order); manual `work-order-balance-<n>` benchmarks for choosing its default |
 | modes | golems switched to vanilla (sort like vanilla, no marker), antenna markers through switches, unloads and statues; iron and snow golems untouched |
 

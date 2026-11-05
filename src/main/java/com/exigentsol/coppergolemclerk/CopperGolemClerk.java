@@ -81,7 +81,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private StorageReport storageReport;
     private GolemLimits limits;
     private volatile int maxGolemsPerClaim;
-    private volatile int maxGolemsOutsideClaims;
+    private volatile int claimBlocksPerExtraGolem;
     private final Claims claims = new Claims(this);
     private volatile boolean findOutsideOwnClaims;
     private volatile boolean golemsCommandForPlayers;
@@ -335,7 +335,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         findEnabled = config.getBoolean("find-enabled", true);
         maxGolemsPerClaim = rangeSetting(config, "max-golems-per-claim", 0, 0, 100_000);
-        maxGolemsOutsideClaims = rangeSetting(config, "max-golems-outside-claims", 0, 0, 100_000);
+        claimBlocksPerExtraGolem = rangeSetting(config, "claim-blocks-per-extra-golem", 0, 0, 10_000_000);
+        if (config.contains("max-golems-outside-claims")) {
+            getLogger().warning("max-golems-outside-claims is no longer used: golems on unclaimed land aren't limited"
+                    + " (see max-golems-per-claim). Delete it from config.yml.");
+        }
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
         findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
@@ -548,14 +552,14 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return furnaceFuel;
     }
 
-    /** max-golems-per-claim: golems in one claim that use the plugin (0 = no limit). */
+    /** max-golems-per-claim: golems in one claim that use the plugin (0 = no limit unless claim-blocks-per-extra-golem). */
     int maxGolemsPerClaim() {
         return maxGolemsPerClaim;
     }
 
-    /** max-golems-outside-claims: golems on unclaimed land in one world that use the plugin (0 = no limit). */
-    int maxGolemsOutsideClaims() {
-        return maxGolemsOutsideClaims;
+    /** claim-blocks-per-extra-golem: each claim's limit grows by one golem per this many claim blocks (0 = off). */
+    int claimBlocksPerExtraGolem() {
+        return claimBlocksPerExtraGolem;
     }
 
     GolemLimits limits() {
