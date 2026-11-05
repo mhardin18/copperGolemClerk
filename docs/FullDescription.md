@@ -82,6 +82,7 @@ over for every ingot.
 - **Step aside** for each other in one-wide aisles instead of getting stuck.
 - Optional, with a setting:
   - reach chests stacked up to **6 high** (vanilla: 2);
+  - look up to **128 blocks** away for chests (vanilla: 32);
   - carry up to **64 items** a trip (vanilla: 16);
   - use **barrels and shulker boxes** as well as chests.
 
@@ -191,7 +192,7 @@ All permissions are standard nodes, so they work with LuckPerms or any other per
 
 | Permission | Default | Allows |
 |---|---|---|
-| `coppergolemclerk.find`, `.check`, `.overflow`, `.stats` | everyone | the player commands, limited to their own claims or what they could open |
+| `coppergolemclerk.find`, `.check`, `.label`, `.overflow`, `.storage`, `.stats` | everyone | the player commands, limited to their own claims or what they could open |
 | `coppergolemclerk.golems` | everyone | `/cgc golems` for their own golems, if the server turns it on |
 | `coppergolemclerk.toggle` | everyone | switching a golem to vanilla and back |
 | `coppergolemclerk.allclaims` | op | the commands above see into every claim |

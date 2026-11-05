@@ -760,15 +760,16 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   It ends with sign-label advice, as `/cgc label` gives: for an unlabelled chest, labels
   for what's in it, most specific first, and which items wouldn't fit; for a labelled
   chest, anything inside its label doesn't cover, and a label that would; for an empty
-  chest, labels for the item in your hand. `[Overflow]`, `[Fuel]` and `[Furnace Supply]`
-  chests and copper chests get no label advice. Players can only check containers they
+  chest, labels for the item in your hand. `[Fuel]` and `[Furnace Supply]` chests and
+  copper chests get no label advice, and an `[Overflow]` chest points to `/cgc overflow`. Players can only check containers they
   could open.
 - `/cgc check` while not looking at a chest: which groups the item in your hand belongs to.
 - `/cgc label` while looking at a chest: what to write on its sign, from what's in it. One kind of item: its own
   label, then its groups; several kinds: the most specific group they all share; no shared group: the group most
   of them fit, and which items don't. On a labelled chest it says whether everything in it matches. It only
   suggests: you place the sign. Players only get suggestions for containers they could open.
-- `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you, split into
+- `/cgc overflow`: what's in the `[Overflow]` chests within golem range of you
+  (`search-distance` blocks sideways, 8 up or down), split into
   items with no chest (with a sign label to use for each group), items whose chest is
   full, and items golems will move on their own. Players see only the `[Overflow]` chests
   they could open.
@@ -786,8 +787,8 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   there are no claims, so everyone sees the server's numbers. With `join-summary` (on by
   default) players are told when they join what golems sorted in their claims while they
   were away and how many of their chests filled up. Numbers are kept in `stats.yml`.
-- `/cgc storage`: how full the storage around you is. Containers within golem range (32 blocks sideways, 8 up
-  or down) are grouped by label, or for unlabelled ones by what they hold, fullest first, with full and nearly
+- `/cgc storage`: how full the storage around you is. Containers within golem range (`search-distance` blocks sideways,
+  8 up or down) are grouped by label, or for unlabelled ones by what they hold, fullest first, with full and nearly
   full (90%) ones flagged; then `[Overflow]` chests, how many empty chests are left for new kinds of items, and
   how many items are waiting in copper chests. Players only see containers they could open.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
@@ -824,7 +825,7 @@ with its line number and the old settings are kept.
 | Setting | Default | What it does |
 |---|---|---|
 | `match-mode` | `all` | When a chest counts as a group match by its contents. `all`: every item in the chest must share a group with the carried item, so one stray item stops group matching and chests stay tidy. `any`: one item from the group is enough. |
-| `prefer-matching-chests` | `true` | A golem first looks over every chest in range (32 blocks sideways, 8 up or down) and walks straight to the best one that has room, instead of trying the nearest chests one by one and dropping its item in the first empty one. |
+| `prefer-matching-chests` | `true` | A golem first looks over every chest in range (`search-distance` blocks sideways, 8 up or down) and walks straight to the best one that has room, instead of trying the nearest chests one by one and dropping its item in the first empty one. |
 | `return-unsortable-items` | `true` | After the last step, put the item back into the copper chest it came from (or the nearest one with room), instead of carrying it around for ever. |
 | `homeless-retry-minutes` | `5` | Items put back are marked "no home" in that copper chest for this long: golems take other items first and skip a chest with only those left. A new or changed sign or item frame label nearby clears the marks within `search-distance`; `/cgc reload` clears them all. |
 | `allow-empty-chests` | `true` | Golems may use an empty chest as a last resort. `false`: only labelled chests, chests already holding the item or its group, and `[Overflow]` chests. |
