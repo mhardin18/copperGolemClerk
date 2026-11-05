@@ -20,7 +20,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * /cgc storage: how full the storage around a spot is (golems' range: 32 blocks sideways,
+ * /cgc storage: how full the storage around a spot is (golems' range: search-distance blocks sideways,
  * 8 up or down). Containers are grouped by their label, or for unlabelled ones by what's in
  * them, fullest first, with full and nearly-full ones flagged; then [Overflow] chests, empty
  * chests (room for new kinds of items) and items waiting in copper chests.
@@ -159,7 +159,8 @@ final class StorageReport {
     void report(CommandSender sender, Location center, Predicate<BlockState> visible) {
         Survey s = survey(center, visible);
         if (s.containers() == 0 && s.copperChests() == 0) {
-            say(sender, NamedTextColor.YELLOW, "No storage chests within golem range (32 blocks sideways, 8 up or down)"
+            say(sender, NamedTextColor.YELLOW, "No storage chests within golem range (" + HomeFinder.searchDistance()
+                    + " blocks sideways, 8 up or down)"
                     + (sender instanceof org.bukkit.entity.Player ? " that you can open." : "."));
             return;
         }
