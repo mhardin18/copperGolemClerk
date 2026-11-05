@@ -41,6 +41,10 @@ last line it prints says where the results were saved.
 It needs the `minecraft` group (to deploy and read pluginDev's RCON password) and
 passwordless `sudo systemctl start|restart|stop mcd`.
 
+Performance tests (what golems cost in server time, rather than what they do) are a separate
+set: see [tools/perf/README.md](../perf/README.md). They use pluginDev too, so they can't run
+alongside these.
+
 ### Before you start
 
 - **Test the right code.** The script tests the checkout it lives in: for a feature
