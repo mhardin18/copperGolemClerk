@@ -46,6 +46,7 @@ class Statistics(unittest.TestCase):
         self.assertEqual(len(reasons), 2, reasons)
         self.assertTrue(L.noise([dict(cool, survival_players=2)] * 3)[0].startswith("players on survival"))
         self.assertEqual(L.noise([]), ["no samples"])
+        self.assertEqual(L.noise([dict(cool, mhz_top=1600)] * 5), [], "a cool CPU idling slow is fine")
 
 
 class Layout(unittest.TestCase):

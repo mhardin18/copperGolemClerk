@@ -56,7 +56,7 @@ blocks. Each sample records:
 - survival's player count and tick time.
 
 A point is marked **noisy** when more than a fifth of its samples had the CPU at 90 °C or more,
-its fastest core below 3,300 MHz, a player on survival, or survival over 20 ms per tick. This machine's
+its fastest core below 3,300 MHz while at 80 °C or more (at light load the CPU idles slow anyway), a player on survival, or survival over 20 ms per tick. This machine's
 CPU reaches 96 °C and slows to about 2.9 GHz under full load, so check the notes before trusting
 a number, especially at 150 and 200 golems.
 

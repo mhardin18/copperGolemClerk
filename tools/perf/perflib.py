@@ -19,6 +19,7 @@ FILLER_DY = 4            # filler chests hang 4 above the floor: in search range
 # power limits; idle cores drop to 800 MHz on their own), or survival busy.
 HOT_C = 90
 SLOW_MHZ = 3300
+WARM_C = 80        # a slow clock only counts when the CPU is this hot: at light load it idles slow anyway
 SURVIVAL_BUSY_MSPT = 20
 NOISY_SHARE = 0.2        # a point is noisy if this share of its samples is
 
@@ -80,7 +81,8 @@ def noise(samples):
         return ["no samples"]
     checks = [
         ("CPU at or over %d°C" % HOT_C, lambda s: (s.get("temp_c") or 0) >= HOT_C),
-        ("CPU held below %d MHz" % SLOW_MHZ, lambda s: s.get("mhz_top") is not None and s["mhz_top"] < SLOW_MHZ),
+        ("CPU hot and held below %d MHz" % SLOW_MHZ,
+         lambda s: s.get("mhz_top") is not None and s["mhz_top"] < SLOW_MHZ and (s.get("temp_c") or 0) >= WARM_C),
         ("players on survival", lambda s: (s.get("survival_players") or 0) > 0),
         ("survival over %d ms per tick" % SURVIVAL_BUSY_MSPT, lambda s: (s.get("survival_mspt") or 0) > SURVIVAL_BUSY_MSPT),
     ]

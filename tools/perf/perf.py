@@ -19,6 +19,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -153,7 +154,7 @@ class Sampler:
         holding = None
         if self.selector:
             out = self.srv.cmd(f"execute if items entity {self.selector} weapon.mainhand *")
-            holding = int(out.split("count:")[1].split()[0]) if "count:" in out.lower() else 0
+            holding = count(out)
         s_mspt = self.srv.survival("mspt")
         s_list = self.srv.survival("list")
         return {"t": round(now - t0, 1), "mspt": mspt[0] if mspt else None, "mspt_max": mspt[2] if mspt else None,
@@ -295,7 +296,8 @@ class Arena:
 
 
 def count(out):
-    return int(out.split("count:")[1].split()[0]) if "count:" in out.lower() else 0
+    m = re.search(r"count: (\d+)", out, re.I)
+    return int(m.group(1)) if m else 0
 
 
 # ---- settings
