@@ -12,9 +12,6 @@ cobblestone.
 
 ## New in 3.1.0
 
-- **Golem limits count per claim.** With GriefPrevention, `max-golems-per-claim` now applies to
-  each claim on its own, admin claims too. The newest golems over the limit sort like vanilla,
-  and the claim owner is told.
 - **Bigger claims, more golems.** Set `claim-blocks-per-extra-golem` and each claim gets one more
   golem for every that many claim blocks. It's off (0) by default.
 - **Unclaimed land isn't limited any more.** `max-golems-outside-claims` is retired. Upgrading
