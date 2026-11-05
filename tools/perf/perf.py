@@ -477,6 +477,16 @@ def save(out_dir, points, meta, compare_with):
 
 # ---- main
 
+def paper_version(srv):
+    # Paper's first /version reply is only "Checking version, please wait...".
+    for _ in range(10):
+        v = L.paper_version(srv.cmd("version"))
+        if v:
+            return v
+        time.sleep(1)
+    return "Paper version unknown"
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("tests", nargs="+")
@@ -538,8 +548,8 @@ def main(argv):
         os.remove(latest)
     os.symlink(out_dir, latest)
     meta = {"started": started.isoformat(timespec="seconds"), "label": a.label, "opts": opts,
-            "plugin": L.strip_colours(srv.cmd("version CopperGolemClerk")).split("Checking version")[0].strip(" .,\n").splitlines()[0][:120],
-            "paper": L.strip_colours(srv.cmd("version")).strip().splitlines()[0][:120],
+            "plugin": L.strip_colours(srv.cmd("version CopperGolemClerk")).strip().splitlines()[0][:120],
+            "paper": paper_version(srv),
             "ref": os.environ.get("PERF_REF", "jar as deployed"),
             "governor": os.environ.get("PERF_GOVERNOR") or open("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor").read().strip(), "host_throttles_before": throttles()}
     log(f"results: {out_dir}")

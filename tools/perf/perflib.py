@@ -34,6 +34,12 @@ def strip_colours(text):
     return re.sub(r"§.", "", text)
 
 
+def paper_version(text):
+    """Paper's version from a /version reply, or None while it is still checking."""
+    m = re.search(r"running (Paper version \S+)", strip_colours(text))
+    return m.group(1) if m else None
+
+
 def parse_mspt(text):
     """Paper's /mspt reply -> (avg, min, max) over the last 5 seconds, in ms, or None."""
     nums = re.findall(r"(\d+(?:\.\d+)?)/(\d+(?:\.\d+)?)/(\d+(?:\.\d+)?)", strip_colours(text))
