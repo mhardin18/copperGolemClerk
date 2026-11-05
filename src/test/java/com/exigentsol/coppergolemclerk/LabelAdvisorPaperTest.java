@@ -147,4 +147,28 @@ class LabelAdvisorPaperTest extends PaperTest {
         assertFalse(check(over, org.bukkit.inventory.ItemStack.empty()).contains("Sign label"));
         assertFalse(check(copperChest(20, 0, item(Material.DIRT, 1)), org.bukkit.inventory.ItemStack.empty()).contains("Sign label"));
     }
+
+    @Test
+    void checkOnOverflowChestPointsToCgcOverflowButOtherChestsDoNot() {
+        Block over = chest(24, 0, item(Material.DIRT, 2));
+        sign(over, "[Overflow]");
+        String out = check(over, org.bukkit.inventory.ItemStack.empty());
+        assertTrue(out.contains("takes items that have no matching chest"), out);
+        assertTrue(out.contains("/cgc overflow lists what's in it"), out);
+        Block logs = chest(28, 0, item(Material.OAK_LOG, 2));
+        sign(logs, "[logs]");
+        assertFalse(check(logs, org.bukkit.inventory.ItemStack.empty()).contains("/cgc overflow"));
+    }
+
+    @Test
+    void noOverflowChestsMessageUsesTheConfiguredSearchDistance() {
+        setting("search-distance", "64");
+        ConsoleCommandSenderMock console = server.getConsoleSender();
+        while (console.nextMessage() != null) {
+            // drop older messages
+        }
+        new ChestReports(plugin).overflow(console, new org.bukkit.Location(server.getWorlds().getFirst(), 0, 0, 0), s -> true);
+        String line = console.nextMessage();
+        assertTrue(line != null && line.contains("No [Overflow] chests") && line.contains("64 blocks"), line);
+    }
 }

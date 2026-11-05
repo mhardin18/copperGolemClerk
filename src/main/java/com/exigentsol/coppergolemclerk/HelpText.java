@@ -39,7 +39,7 @@ final class HelpText {
                                     + " players only get suggestions for containers they could open.")),
             new Entry("overflow", "/cgc overflow", "/cgc overflow <x> <y> <z> [world]",
                     "What's in nearby [Overflow] chests, and what to do about it.",
-                    List.of("Looks at the [Overflow] chests within golem range of you (32 blocks across,"
+                    List.of("Looks at the [Overflow] chests within golem range of you (search-distance sideways,"
                                     + " 8 up and down) and sorts what's in them into:",
                             "- no chest for it: add a chest with the sign label shown",
                             "- its chest can't be used by golems: what to fix",
@@ -48,7 +48,7 @@ final class HelpText {
                             "Players see only the [Overflow] chests they could open.")),
             new Entry("storage", "/cgc storage", "/cgc storage <x> <y> <z> [world]",
                     "How full the storage around you is.",
-                    List.of("Groups the containers within golem range (32 blocks sideways, 8 up or down) by their label, or for"
+                    List.of("Groups the containers within golem range (search-distance sideways, 8 up or down) by their label, or for"
                                     + " unlabelled ones by what they hold, fullest first, and flags full and nearly full (90%) ones.",
                             "Also shows [Overflow] chests, how many empty chests are left for new kinds of items, and how"
                                     + " many items are waiting in copper chests. Players only see containers they could open.")),

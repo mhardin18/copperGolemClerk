@@ -211,6 +211,7 @@ final class ChestReports {
         }
         if (labels.overflow()) {
             say(player, NamedTextColor.AQUA, "  [Overflow] = takes items that have no matching chest in range");
+            say(player, NamedTextColor.AQUA, "  /cgc overflow lists what's in it and the label each item needs to get a home.");
         }
         if (labels.fuel() && plugin.furnaceFeeding()) {
             say(player, NamedTextColor.AQUA, "  [Fuel] = golems take furnace fuel from here"
@@ -464,7 +465,8 @@ final class ChestReports {
             }
         }
         if (overflowChests.isEmpty()) {
-            say(player, NamedTextColor.YELLOW, "No [Overflow] chests within golem range (32 blocks sideways, 8 up or down).");
+            say(player, NamedTextColor.YELLOW, "No [Overflow] chests within golem range (" + HomeFinder.searchDistance()
+                    + " blocks sideways, 8 up or down).");
             return;
         }
 
