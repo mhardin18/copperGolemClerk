@@ -684,16 +684,33 @@ after they close it).
 
 ### Golem limits
 
-Two settings cap how many copper golems use this plugin (both 0, no limit, by default):
+Two settings cap how many copper golems in one GriefPrevention claim use this plugin (both
+0, off, by default):
 
-- `max-golems-per-claim`: golems in one GriefPrevention claim. Each claim has its own limit, even
+- `max-golems-per-claim`: golems every claim may have. Each claim has its own limit, even
   when one player owns several; admin claims too. A subdivision counts with its claim.
-- `max-golems-outside-claims`: golems on unclaimed land, per world (without
-  GriefPrevention, every golem in the world).
+- `claim-blocks-per-extra-golem`: bigger claims get more. A claim gets one more golem for
+  every this many claim blocks of its area, on top of `max-golems-per-claim`.
+
+For example, with `max-golems-per-claim: 5` and `claim-blocks-per-extra-golem: 2500`:
+
+| Claim | Claim blocks | Golems that use the plugin |
+|---|---|---|
+| 9 × 9 | 81 | 5 |
+| 50 × 50 | 2,500 | 6 |
+| 100 × 100 | 10,000 | 9 |
+| 300 × 300 | 90,000 | 41 |
+
+With `max-golems-per-claim: 0`, a claim smaller than `claim-blocks-per-extra-golem` gets no
+golems with the plugin at all.
 
 The golems are recounted every few seconds. The oldest keep the plugin; the newest ones over
-the limit sort like vanilla, and the claim's owner (or, outside claims, players with
-`coppergolemclerk.alerts`) is told. Golems a player switched to vanilla don't count.
+the limit sort like vanilla, and the claim's owner (for an admin claim, players with
+`coppergolemclerk.alerts`) is told. Golems a player switched to vanilla don't count. Only
+golems in loaded chunks are counted, so in a claim bigger than players keep loaded, which
+golems use the plugin can change as parts of it load. Golems on unclaimed land, and every
+golem on a server without GriefPrevention, aren't limited. (`max-golems-outside-claims`,
+which shared one limit among all the unclaimed land in a world, was removed in 3.1.0.)
 
 **Tick cost.** A working copper golem costs about 0.1 ms per tick, whether it uses this plugin
 or sorts like vanilla: the cost is the golem's own AI and pathfinding, and the plugin adds
@@ -708,9 +725,11 @@ nothing measurable on top. Measured on Paper 26.3 with 0 to 200 golems all sorti
 | 200 | 21.4 ms | 19.4 ms |
 
 (1.7 ms with no golems; a server starts to lag at 50 ms per tick. Your numbers depend on your
-hardware.) Golems over the limit keep sorting like vanilla, so the limits don't lower tick
-time: they cap how many golems get this plugin's sorting. To limit the tick cost itself, limit
-the number of golems.
+hardware.) Golems over the limit keep sorting like vanilla, so at the default `search-distance` the limits
+don't lower tick time: they cap how many golems get this plugin's sorting. With
+`search-distance` raised, golems over the limit search only vanilla's 32 blocks, which saves the
+extra cost of the longer searches (see [Bigger storage areas](#bigger-storage-areas)). To
+limit the tick cost of the golems themselves, limit the number of golems.
 
 Every setting is listed in [Settings reference](#settings-reference) below.
 
@@ -850,8 +869,8 @@ with its line number and the old settings are kept.
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its copper chest, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
-| `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit). Each claim (admin claims too) has its own limit. The oldest keep it; the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
-| `max-golems-outside-claims` | `0` | The same for unclaimed land, per world (without GriefPrevention: every golem in the world). |
+| `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit, unless `claim-blocks-per-extra-golem` is set). Golems on unclaimed land aren't limited. Each claim (admin claims too) has its own limit. The oldest keep it; the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
+| `claim-blocks-per-extra-golem` | `0` | Each claim gets one more golem than `max-golems-per-claim` for every this many claim blocks of its area (0: off). |
 | `log-golem-deaths` | `true` | Log every copper golem death (cause, place, what it held) and every other removal (statue, `/kill`). |
 
 ### Players, alerts and tools

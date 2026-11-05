@@ -404,12 +404,15 @@ disabled-worlds: []
 # Golem limits: how many copper golems in one GriefPrevention claim (each claim on its own,
 # admin claims too) use this plugin. The oldest golems keep it; the newest over the limit
 # sort like vanilla, and the claim owner (or players with coppergolemclerk.alerts) is told.
+# Golems on unclaimed land, and every golem without GriefPrevention, aren't limited.
 # 0 = no limit. Each working golem costs about 0.1 ms per tick with or without this plugin,
 # so golems over the limit still cost the same tick time (see the README).
 max-golems-per-claim: 0
-# The same limit for copper golems on unclaimed land, per world (without GriefPrevention
-# that's every golem in the world). 0 = no limit.
-max-golems-outside-claims: 0
+
+# Bigger claims get more golems: one more for every this many claim blocks of the claim's
+# area, on top of max-golems-per-claim. E.g. 5 and 2500: a 100x100 claim (10,000 blocks)
+# gets 9. With max-golems-per-claim 0, a claim smaller than this gets none. 0 = off.
+claim-blocks-per-extra-golem: 0
 
 # Let players use /cgc golems to list their own golems (in claims they own, or whose
 # copper chest is in one; without GriefPrevention, the golems within 48 blocks of them).

@@ -60,10 +60,24 @@ final class Claims {
      * its parent), or null (unclaimed, or no GriefPrevention).
      */
     String claimKeyAt(Location place) {
+        ClaimInfo info = claimInfoAt(place);
+        return info != null ? info.key() : null;
+    }
+
+    /**
+     * The top-level claim at a spot (a subdivision counts as its parent): its key ("claim:<id>"),
+     * its owner (null for an admin claim) and its area in claim blocks (0 if it can't be read).
+     */
+    record ClaimInfo(String key, UUID owner, int area) {
+    }
+
+    /** The top-level claim at a spot, or null (unclaimed, or no GriefPrevention). */
+    ClaimInfo claimInfoAt(Location place) {
         Object claim = claimAt(place);
         if (claim == null) {
             return null;
         }
+        String key;
         try {
             for (int depth = 0; depth < 8; depth++) {
                 Object parent = claim.getClass().getField("parent").get(claim);
@@ -73,10 +87,23 @@ final class Claims {
                 claim = parent;
             }
             Object id = claim.getClass().getMethod("getID").invoke(claim);
-            return "claim:" + (id != null ? id : "@" + System.identityHashCode(claim));
+            key = "claim:" + (id != null ? id : "@" + System.identityHashCode(claim));
         } catch (ReflectiveOperationException | RuntimeException e) {
-            return "claim:@" + System.identityHashCode(claim);
+            key = "claim:@" + System.identityHashCode(claim);
         }
+        UUID owner = null;
+        try {
+            owner = (UUID) claim.getClass().getMethod("getOwnerID").invoke(claim);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            // an admin claim reads as null too
+        }
+        int area = 0;
+        try {
+            area = ((Number) claim.getClass().getMethod("getArea").invoke(claim)).intValue();
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            // unknown: the claim gets just max-golems-per-claim
+        }
+        return new ClaimInfo(key, owner, area);
     }
 
     /** True if there's a claim here. */
