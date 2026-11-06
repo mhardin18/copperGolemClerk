@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.exigentsol"
-version = "3.1.0"
+version = "3.2.0"
 
 repositories {
     mavenCentral()
@@ -17,7 +17,7 @@ repositories {
 
 // The newest Paper API to build and test against, and the oldest Paper build the plugin supports
 // (PaperSupport.MIN_BUILD: Paper added the golem sorting event in 26.3 build 190).
-val paperApi = "26.3.build.238-stable"
+val paperApi = "26.3.build.244-stable"
 val minPaperApi = "26.3.build.190-stable"
 
 // The oldest supported API, used only to check the plugin still compiles against it.

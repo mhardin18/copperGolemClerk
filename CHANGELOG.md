@@ -2,6 +2,11 @@
 
 All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 build 190 or newer. Versions before 2.0 were called SmartCopperGolems. To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup with their explanations, and the explanations of the settings you have are brought up to date (before that, new settings used their defaults until you added them).
 
+## 3.2.0 (in progress)
+
+### Changed
+- Built against the newest Paper API (26.3 build 244). It still runs on build 190 and later.
+
 ## 3.1.0 (2026-11-05)
 
 ### New
