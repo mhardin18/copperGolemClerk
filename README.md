@@ -50,7 +50,7 @@ that cover nearly every survival item; everything else is optional.
 - **`/cgc label`:** what to write on a chest's sign, from what's in it.
 - **`/cgc storage`:** how full the storage around you is, by label, fullest first.
 - **`/cgc stats`:** what golems have sorted in your claims today, in the last 7 days and all time.
-- **`/cgc golems`:** your own golems and where they are (only with `golems-command-for-players`).
+- **`/cgc golems [radius]`:** your own golems and where they are (only with `golems-command-for-players`).
 - **`/cgc help`:** the commands, and `/cgc help <command>` for one.
 - **Full-chest alerts** to the claim owner, even if they're offline.
 - **Status labels:** hold bamboo to see what each golem is doing.
@@ -390,6 +390,10 @@ over on their own. Items with no home are left in overflow, and so are items in
 an overflow chest golems can't open (locked, blocked or waterlogged). If an item loses
 its home while the golem is on its way (that chest fills up or is removed), the golem
 stops without taking it. Golems never walk to an empty copper chest.
+
+Whenever a golem takes from or puts into a chest, barrel or shulker box, its lid opens for a
+moment, as with vanilla golems: also when it fetches from `[Overflow]`, uses a `[Fuel]` or
+`[Furnace Supply]` container, or puts an item back in its copper chest.
 
 An `[Overflow]` chest that a hopper fills (a hopper above it facing down, or beside it
 facing into it, such as the output chest of a smelter) gets a few at a time. So golems

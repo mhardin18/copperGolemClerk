@@ -150,6 +150,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 
 - **`/cgc find diamond`:** lists the chests near you that hold diamonds, nearest first
   (including diamonds inside shulker boxes), and the nearest few glow for a few seconds.
+  It looks 32 blocks around you; add a number to look farther (`/cgc find diamond 60`, up to 64).
   By default it only looks in your own GriefPrevention claims, so nobody can use it to snoop.
   Search `torch` and it also tells you about the copper and soul torches nearby.
 - **`/cgc check`** explains a chest you can open: what its labels mean and what it takes.
@@ -159,7 +160,8 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 - **`/cgc label`** suggests what to write on a chest's sign, from what's in it.
 - **`/cgc storage`** shows how full the storage around you is, by label, fullest first.
 - **`/cgc stats`** shows what golems have sorted in your claims today, in the last 7 days and all time.
-- **`/cgc golems`** lists your own golems and where they are, if the server allows it.
+- **`/cgc golems`** lists your own golems and where they are, if the server allows it
+  (`/cgc golems 50`: only those within 50 blocks).
 - **`/cgc help`** lists the commands; `/cgc help <command>` explains one.
 - **Hold bamboo** to see a label over each golem saying what it's doing ("carrying 16 birch
   log", "fetching granite", "lost, walking home") and how weathered it is.
@@ -173,7 +175,8 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 - `/cgc check` explains any chest: what its labels mean, what it takes, and anything
   stopping golems from using it.
 - `/cgc overflow` lists what's in overflow chests and what label would give each item a home.
-- `/cgc golems` shows where the golems are, what they're carrying and whether any are lost.
+- `/cgc golems` shows where the golems are, what they're carrying and whether any are lost
+  (add a radius to list only those nearby).
 - `/cgc stats` shows how much the golems have sorted, server-wide.
 - Players only see what they could open themselves; admins can see into every claim.
 - Optional golem limits cap how many golems in one claim use the plugin, with more for bigger claims if you like (off by default).
