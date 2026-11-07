@@ -230,6 +230,8 @@ public final class ItemGroups {
      * finds the new templates group, and [templates] finds an older config's
      * smithing-templates. The old concrete-and-terracotta became two groups; [concrete]
      * and [terracotta] on an older config already mean those items by name.
+     * 3.2.0 merged utility-blocks into workstations: [utility blocks] finds the new
+     * workstations group, and an older config that has both keeps them apart.
      */
     static final Map<String, List<String>> RENAMED = Map.of(
             "concrete-and-terracotta", List.of("concrete", "terracotta"),
@@ -238,7 +240,9 @@ public final class ItemGroups {
             "smithing-templates", List.of("templates"),
             "foliage", List.of("saplings-and-leaves"),
             "materials", List.of("crafting-materials"),
-            "templates", List.of("smithing-templates"));
+            "templates", List.of("smithing-templates"),
+            "utility-blocks", List.of("workstations"),
+            "workstations", List.of("utility-blocks"));
 
     /** The group(s) a label names under its old or new default name, or null if none is in the config. */
     private Rule renamedGroup(String[] words) {

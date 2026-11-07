@@ -460,12 +460,14 @@ groups:
   # Smithing templates (19 items)
   templates:
     - "*TEMPLATE*"
-  # Rare & trophies (18 items)
+  # Rare & trophies (25 items)
   rare-items:
     - BEACON
     - CONDUIT
     - CREAKING_HEART
+    - CREEPER_HEAD
     - DRAGON_EGG
+    - DRAGON_HEAD
     - DRIED_GHAST
     - ECHO_SHARD
     - ENCHANTED_GOLDEN_APPLE
@@ -476,10 +478,15 @@ groups:
     - NETHER_STAR
     - OMINOUS_BOTTLE
     - OMINOUS_TRIAL_KEY
+    - PIGLIN_HEAD
+    - PLAYER_HEAD
+    - SKELETON_SKULL
     - SNIFFER_EGG
     - TOTEM_OF_UNDYING
     - TRIAL_KEY
     - TURTLE_EGG
+    - WITHER_SKELETON_SKULL
+    - ZOMBIE_HEAD
   # Buckets (12 items)
   buckets:
     - "*BUCKET*"
@@ -494,8 +501,10 @@ groups:
     - NETHER_WART
   # Books & enchanting (5 items)
   books:
-    - "*_BOOK"
     - BOOK
+    - ENCHANTED_BOOK
+    - WRITABLE_BOOK
+    - WRITTEN_BOOK
     - EXPERIENCE_BOTTLE
   # Maps & navigation (23 items)
   maps:
@@ -633,12 +642,14 @@ groups:
     - STICK
   # Amethyst (6 items)
   amethyst:
-    - "*AMETHYST*"
-  # Saddles & animal armor (30 items)
+    - "AMETHYST_*"
+    - "*_AMETHYST_BUD"
+  # Saddles & animal armor (31 items)
   animal-gear:
     - "#minecraft:harnesses"
     - "*_ARMOR"
     - LEAD
+    - NAME_TAG
     - SADDLE
   # Armor (31 items)
   armor:
@@ -659,7 +670,7 @@ groups:
     - MACE
     - TRIDENT
     - WIND_CHARGE
-  # Tools (35 items)
+  # Tools (34 items)
   tools:
     - "#minecraft:axes"
     - "#minecraft:hoes"
@@ -669,7 +680,6 @@ groups:
     - CARROT_ON_A_STICK
     - FISHING_ROD
     - FLINT_AND_STEEL
-    - NAME_TAG
     - SHEARS
     - WARPED_FUNGUS_ON_A_STICK
   # Boats (22 items)
@@ -678,7 +688,11 @@ groups:
   # Rails & minecarts (9 items)
   rails:
     - "#minecraft:rails"
-    - "*MINECART*"
+    - CHEST_MINECART
+    - FURNACE_MINECART
+    - HOPPER_MINECART
+    - MINECART
+    - TNT_MINECART
   # Redstone (72 items)
   redstone:
     - "#minecraft:buttons"
@@ -728,44 +742,49 @@ groups:
     - "#minecraft:shulker_boxes"
     - "*_CHEST"
     - CHEST
-  # Workstations (villager jobs) (13 items)
+  # Workstations (22 items)
   workstations:
+    - "*ANVIL*"
     - BARREL
+    - BELL
     - BLAST_FURNACE
     - BREWING_STAND
     - CARTOGRAPHY_TABLE
     - CAULDRON
     - COMPOSTER
+    - CRAFTING_TABLE
+    - ENCHANTING_TABLE
     - FLETCHING_TABLE
+    - FURNACE
     - GRINDSTONE
+    - JUKEBOX
     - LECTERN
     - LOOM
+    - RESPAWN_ANCHOR
     - SMITHING_TABLE
     - SMOKER
     - STONECUTTER
-  # Utility blocks (9 items)
-  utility-blocks:
-    - "*ANVIL*"
-    - BELL
-    - CRAFTING_TABLE
-    - ENCHANTING_TABLE
-    - FURNACE
-    - JUKEBOX
-    - RESPAWN_ANCHOR
-  # Decorations (143 items)
-  decorations:
-    - "#minecraft:skulls"
-    - "#minecraft:decorated_pot_sherds"
-    - "*_BED"
-    - "*SIGN*"
-    - "*GOLEM*"
-    - "*_SHELF"
+  # Signs (26 items)
+  signs:
+    - "*_SIGN"
+  # Banners & patterns (26 items)
+  banners:
     - "*BANNER*"
+  # Pottery sherds & decorated pot (24 items)
+  pottery:
+    - "#minecraft:decorated_pot_sherds"
+    - DECORATED_POT
+  # Beds (17 items)
+  beds:
+    - "*_BED"
+  # Decorations (44 items)
+  decorations:
+    - "*GOLEM_STATUE"
+    - "*_SHELF"
     - "*CUSHION*"
     - ARMOR_STAND
     - BOOKSHELF
     - CHISELED_BOOKSHELF
-    - DECORATED_POT
     - FLOWER_POT
     - GLOW_ITEM_FRAME
     - ITEM_FRAME
@@ -795,10 +814,36 @@ groups:
     - BROWN_MUSHROOM_BLOCK
     - MUSHROOM_STEM
     - RED_MUSHROOM_BLOCK
-  # Flowers (31 items)
+  # Flowers (27 items)
   flowers:
-    - "#minecraft:flowers"
-  # Saplings & leaves (23 items)
+    - ALLIUM
+    - AZURE_BLUET
+    - BLUE_ORCHID
+    - CACTUS_FLOWER
+    - CLOSED_EYEBLOSSOM
+    - CORNFLOWER
+    - DANDELION
+    - FLOWERING_AZALEA
+    - GOLDEN_DANDELION
+    - LILAC
+    - LILY_OF_THE_VALLEY
+    - OPEN_EYEBLOSSOM
+    - ORANGE_TULIP
+    - OXEYE_DAISY
+    - PEONY
+    - PINK_PETALS
+    - PINK_TULIP
+    - PITCHER_PLANT
+    - POPPY
+    - RED_TULIP
+    - ROSE_BUSH
+    - SPORE_BLOSSOM
+    - SUNFLOWER
+    - TORCHFLOWER
+    - WHITE_TULIP
+    - WILDFLOWERS
+    - WITHER_ROSE
+  # Saplings & leaves (26 items)
   foliage:
     - "*SAPLING*"
     - "*_POPLAR_LEAVES"
@@ -806,10 +851,13 @@ groups:
     - AZALEA
     - AZALEA_LEAVES
     - BIRCH_LEAVES
+    - CHERRY_LEAVES
     - DARK_OAK_LEAVES
+    - FLOWERING_AZALEA_LEAVES
     - JUNGLE_LEAVES
     - LEAF_LITTER
     - MANGROVE_LEAVES
+    - MANGROVE_PROPAGULE
     - OAK_LEAVES
     - PALE_OAK_LEAVES
     - SPRUCE_LEAVES
@@ -881,10 +929,11 @@ groups:
     - WARPED_ROOTS
     - WARPED_WART_BLOCK
     - WEEPING_VINES
-  # The End (10 items)
+  # The End (11 items)
   end:
     - "*PURPUR*"
     - "END_STONE_*"
+    - CHORUS_FLOWER
     - END_STONE
     - POPPED_CHORUS_FRUIT
   # Copper blocks (80 items)
@@ -972,12 +1021,13 @@ groups:
     - "#minecraft:stone_bricks"
     - "*TILE*"
     - "*TUFF*"
-    - "*MOSSY*"
+    - "MOSSY_COBBLESTONE*"
+    - "MOSSY_STONE_BRICK*"
     - "*COBBLED*"
     - "*DIORITE*"
     - "*GRANITE*"
     - "*ANDESITE*"
-    - "*COBBLESTONE*"
+    - "COBBLESTONE*"
     - "STONE_BRICK_*"
     - "DEEPSLATE_BRICK_*"
     - "POLISHED_DEEPSLATE_*"
