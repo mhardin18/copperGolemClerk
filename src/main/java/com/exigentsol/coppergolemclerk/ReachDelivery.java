@@ -165,14 +165,7 @@ final class ReachDelivery {
                 || HomeFinder.refuses(block.getType(), held.getType())) {
             return; // changed while the golem walked over; its search goes on
         }
-        if (container instanceof Lidded lid) {
-            lid.open();
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                if (block.getState(false) instanceof Lidded l) {
-                    l.close();
-                }
-            }, LID_OPEN_TICKS);
-        }
+        flashLid(plugin, block);
         int before = held.getAmount();
         Map<Integer, ItemStack> leftover = inventory.addItem(held.clone());
         ItemStack rest = leftover.isEmpty() ? ItemStack.empty() : leftover.values().iterator().next();
@@ -191,5 +184,22 @@ final class ReachDelivery {
                     golem.getType(), before - rest.getAmount(), held.getType(), block.getType(), p.x(), p.y(), p.z(),
                     job.far() ? "past vanilla's range" : "above vanilla's reach"));
         }
+    }
+
+    /**
+     * Open a chest's, barrel's or shulker box's lid for a moment, as vanilla golems do when they
+     * use one, so players can see a golem took or put something. Nothing for other blocks, or
+     * if the lid is already open (another golem is at it).
+     */
+    static void flashLid(org.bukkit.plugin.Plugin plugin, Block block) {
+        if (!(block.getState(false) instanceof Lidded lid) || lid.isOpen()) {
+            return;
+        }
+        lid.open();
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (block.getState(false) instanceof Lidded l) {
+                l.close();
+            }
+        }, LID_OPEN_TICKS);
     }
 }

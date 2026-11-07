@@ -119,6 +119,9 @@ final class GolemCarry implements Listener {
         } else {
             return;
         }
+        if (held.getAmount() != had) {
+            ReachDelivery.flashLid(plugin, source);
+        }
         if (held.getAmount() == had) {
             return;
         }

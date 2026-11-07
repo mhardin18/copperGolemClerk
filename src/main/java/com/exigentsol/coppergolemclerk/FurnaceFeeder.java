@@ -1174,6 +1174,9 @@ final class FurnaceFeeder {
         int left = container.getInventory().addItem(part).values().stream().mapToInt(ItemStack::getAmount).sum();
         int moved = amount - left;
         takeFromHand(golem, held, moved);
+        if (moved > 0) {
+            ReachDelivery.flashLid(plugin, block);
+        }
         debugPut(golem, moved, held.getType(), "inventory", block);
         return moved;
     }
@@ -1273,6 +1276,7 @@ final class FurnaceFeeder {
         if (taken == null) {
             return false;
         }
+        ReachDelivery.flashLid(plugin, sourceBlock);
         hand(golem, taken);
         // If it can't be delivered after all, it's sorted like any pickup and returns here.
         homes.startSearch(golem, taken.getType(), sourceBlock);
@@ -1305,6 +1309,7 @@ final class FurnaceFeeder {
         if (taken == null) {
             return false;
         }
+        ReachDelivery.flashLid(plugin, sourceBlock);
         hand(golem, taken);
         fromSupply.add(golem.getUniqueId());
         homes.startSearch(golem, taken.getType(), sourceBlock); // anything left over goes back here
@@ -1343,6 +1348,7 @@ final class FurnaceFeeder {
         if (bucket == null) {
             return false;
         }
+        ReachDelivery.flashLid(plugin, source);
         hand(golem, bucket);
         homes.startSearch(golem, Material.BUCKET, source);
         return start(golem, Kind.BUCKET_FILL, cauldron, null, Material.BUCKET, null, now) || refillOrStore(golem, bucket, now);
