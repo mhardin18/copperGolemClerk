@@ -151,7 +151,7 @@ def _(c):
     return lambda: [has(listing, "/cgc check <x> <y> <z> [world]"),
                     has(listing, "/cgc overflow <x> <y> <z> [world]"),
                     has(listing, "/cgc reload"),
-                    has(listing, "/cgc golems [<x> <y> <z> [world]] - Where the copper golems are"),
+                    has(listing, "/cgc golems [<x> <y> <z> [world]] [radius] - Where the copper golems are"),
                     has(listing, "/cgc stats - How much golems have sorted"),
                     has(listing, "/cgc help"),
                     has(one, "idle golems will move it"),
