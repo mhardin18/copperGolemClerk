@@ -264,6 +264,10 @@ find-outside-own-claims: false
 # How far /cgc find looks (1 to 64 blocks, sideways and up/down). Bigger finds more but
 # checks more blocks each time someone uses it.
 find-radius: 32
+# The most a player can ask for with /cgc find <item> <radius> and /cgc golems <radius>
+# (1 to 128 blocks). Bigger numbers are cut down to this. Ops (coppergolemclerk.allclaims)
+# and the console aren't limited. Only chunks that are already loaded are searched.
+find-max-radius: 64
 # How many of the containers /cgc find finds glow for the player who asked, nearest first
 # (0 to 30; 0 = no glow).
 find-highlight-count: 5

@@ -41,7 +41,7 @@ that cover nearly every survival item; everything else is optional.
 - Every golem death is logged with its cause, so none go missing unexplained.
 
 **For players**
-- **`/cgc find <item>`:** which chests near you hold something, and the nearest glow for you.
+- **`/cgc find <item> [radius]`:** which chests near you hold something, and the nearest glow for you.
   By default players only search their own GriefPrevention claims.
 - **`/cgc check`:** explains a chest you could open and suggests a sign label from what's in it,
   or says which groups the item in your hand is in.
@@ -788,6 +788,8 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   mode. Players (only with `golems-command-for-players: true`) see just their own golems:
   in claims they own, or whose copper chest is in one (without GriefPrevention: the golems
   within 48 blocks of them).
+  `/cgc golems <radius>` lists only the golems within that many blocks of you (players can
+  ask for up to `find-max-radius`, and are told if they are held to it; the header says "within N blocks").
   `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
   listed where they were last seen (the plugin keeps every golem's last spot in
   `golems.yml`, and forgets golems not seen for 30 days).
@@ -810,7 +812,11 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   that names one item finds just that item (`torch` is the torch, not copper or soul
   torches); under the results, an "Also nearby" line lists other items near you with the
   word in their name and suggests `*torch*` to find them all. It
-  looks `find-radius` blocks (32) around you, sideways and up or down. **By default it only looks in GriefPrevention
+  looks `find-radius` blocks (32) around you, sideways and up or down; `/cgc find <item> <radius>` (`/cgc find birch log 50`)
+  looks that far instead, up to `find-max-radius` (64) for players (ops and the console aren't limited). It
+  only searches chunks that are already loaded. A number that ends an item's name is part of
+  it (`music disc 13`, `disc fragment 5`): `/cgc find music disc 13` is the disc, and
+  `/cgc find music disc 13 50` is that disc within 50 blocks. **By default it only looks in GriefPrevention
   claims you own** (never in locked containers); nothing hints at anything else.
   `find-outside-own-claims: true` also lets players find things in unclaimed containers
   and in claims where they have container trust; other players' claims stay hidden
@@ -819,9 +825,9 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   `find-enabled: false`.
 
 From the console, give a position: `/cgc check <x> <y> <z> [world]`,
-`/cgc overflow <x> <y> <z> [world]`, `/cgc golems <x> <y> <z> [world]` (the 10 golems
-nearest that spot; without a position the console lists every golem),
-`/cgc find <item> <x> <y> <z> [world]`.
+`/cgc overflow <x> <y> <z> [world]`, `/cgc golems <x> <y> <z> [world] [radius]` (the 10 golems
+nearest that spot, within the radius if one is given; without a position the console lists
+every golem), `/cgc find <item> <x> <y> <z> [world] [radius]`.
 
 ## Settings reference
 
@@ -898,6 +904,7 @@ with its line number and the old settings are kept.
 | `find-enabled` | `true` | `/cgc find`. `false` turns the command off for everyone. |
 | `find-outside-own-claims` | `false` | `false`: players' `/cgc find` only looks in claims they own. `true`: also unclaimed containers and claims where they have container trust (never other players' claims or locked containers). |
 | `find-radius` | `32` | How far `/cgc find` looks, 1 to 64 blocks sideways and up or down. |
+| `find-max-radius` | `64` | The most a player can ask for with `/cgc find <item> <radius>` and `/cgc golems <radius>`, 1 to 128 blocks. Bigger requests are cut down to it. Ops (`coppergolemclerk.allclaims`) and the console aren't limited. |
 | `find-highlight-count` | `5` | How many of the containers `/cgc find` lists glow for the player, nearest first, 0 to 30 (0: no glow). |
 | `find-highlight-seconds` | `10` | How long the containers `/cgc find` lists glow for the player, 0 to 120 (0: no glow). |
 | `golems-command-for-players` | `false` | Let players use `/cgc golems` to list their own golems (in claims they own, or whose copper chest is in one). Off: admins only. |

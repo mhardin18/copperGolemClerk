@@ -166,8 +166,8 @@ error or exception in the server log during a scenario fails it.
 | claims | GriefPrevention claims: alerts go to the claim owner, lost-golem teleport by owner permission, `/cgc stats` counted per owner |
 | destinations | barrels and shulker boxes as destinations (`destination-containers`): labels, contents, blocked lids, reach, full-container alerts |
 | filters | `[Only <group>]` filters on copper chests: only matching items are taken, two filter lines, `/cgc check`, returns skip filtered chests |
-| find | `/cgc find`: items, groups, patterns and tags, shulker contents, other containers, radius, off switch, related-name hints |
-| finder | `/cgc golems`: loaded and unloaded golems, last-seen spots, killed golems forgotten, positions saved to `golems.yml` |
+| find | `/cgc find`: items, groups, patterns and tags, shulker contents, other containers, radius, a radius argument (and `find-max-radius` not limiting the console), off switch, related-name hints |
+| finder | `/cgc golems`: loaded and unloaded golems, last-seen spots, a radius argument, killed golems forgotten, positions saved to `golems.yml` |
 | labels | status labels over golems (bamboo in hand): what they say, off switch, removed with the golem, tick time with many |
 | overflow-hopper | hopper-fed [Overflow] chests: golems wait for `overflow-fetch-min` or `overflow-fetch-wait-seconds`; chests no hopper feeds are emptied at once |
 | portals | `avoid-portals`: golems stay out of Nether portals unless the option is off or they're in vanilla mode |
