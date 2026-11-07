@@ -197,7 +197,9 @@ final class ReachDelivery {
         }
         lid.open();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (block.getState(false) instanceof Lidded l) {
+            // An unloaded chunk drops the open lid anyway; don't load it again just to close it
+            if (block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4)
+                    && block.getState(false) instanceof Lidded l) {
                 l.close();
             }
         }, LID_OPEN_TICKS);
