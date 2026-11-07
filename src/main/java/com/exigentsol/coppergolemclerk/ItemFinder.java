@@ -11,6 +11,7 @@ import java.util.function.Predicate;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -64,8 +65,13 @@ final class ItemFinder implements Listener {
         this.plugin = plugin;
     }
 
-    /** Run /cgc find for this item text around a spot. */
+    /** Run /cgc find for this item text around a spot, within find-radius. */
     void find(CommandSender sender, String text, Location around) {
+        find(sender, text, around, null);
+    }
+
+    /** Run /cgc find for this item text around a spot, within this radius (null: find-radius). */
+    void find(CommandSender sender, String text, Location around, Integer askedRadius) {
         if (sender instanceof Player p && !p.hasPermission("coppergolemclerk.admin")) {
             long now = System.currentTimeMillis();
             Long last = lastSearch.get(p.getUniqueId());
@@ -83,47 +89,63 @@ final class ItemFinder implements Listener {
         Map<Material, Integer> relatedCounts = new java.util.EnumMap<>(Material.class);
         boolean seesAll = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS);
         Player player = sender instanceof Player p ? p : null;
-        int radius = plugin.findRadius();
+        int radius = askedRadius != null ? askedRadius : plugin.findRadius();
 
         List<Hit> hits = new ArrayList<>();
         Set<Block> seen = new HashSet<>();
         World world = around.getWorld();
         Block at = around.getBlock();
-        for (int cx = (at.getX() - radius) >> 4; cx <= (at.getX() + radius) >> 4; cx++) {
-            for (int cz = (at.getZ() - radius) >> 4; cz <= (at.getZ() + radius) >> 4; cz++) {
-                if (!world.isChunkLoaded(cx, cz)) {
+        // Only chunks that are already loaded are looked at, never loaded for the search. A big radius
+        // would make a lot of chunk spots to ask about, so then the loaded chunks are walked instead.
+        long spots = ((2L * radius >> 4) + 2) * ((2L * radius >> 4) + 2);
+        List<Chunk> chunks = new ArrayList<>();
+        Chunk[] loadedChunks = world.getLoadedChunks();
+        if (spots > loadedChunks.length) {
+            for (Chunk chunk : loadedChunks) {
+                if (Math.abs(((long) chunk.getX() << 4) + 8 - at.getX()) <= radius + 8
+                        && Math.abs(((long) chunk.getZ() << 4) + 8 - at.getZ()) <= radius + 8) {
+                    chunks.add(chunk);
+                }
+            }
+        } else {
+            for (int cx = (at.getX() - radius) >> 4; cx <= (at.getX() + radius) >> 4; cx++) {
+                for (int cz = (at.getZ() - radius) >> 4; cz <= (at.getZ() + radius) >> 4; cz++) {
+                    if (world.isChunkLoaded(cx, cz)) {
+                        chunks.add(world.getChunkAt(cx, cz));
+                    }
+                }
+            }
+        }
+        for (Chunk chunk : chunks) {
+            for (BlockState state : HomeFinder.blockEntities.apply(chunk)) {
+                if (!(state instanceof Container container) || seen.contains(state.getBlock())) {
                     continue;
                 }
-                for (BlockState state : HomeFinder.blockEntities.apply(world.getChunkAt(cx, cz))) {
-                    if (!(state instanceof Container container) || seen.contains(state.getBlock())) {
-                        continue;
-                    }
-                    Block block = state.getBlock();
-                    if (Math.abs(block.getX() - at.getX()) > radius || Math.abs(block.getZ() - at.getZ()) > radius
-                            || Math.abs(block.getY() - at.getY()) > radius) {
-                        continue;
-                    }
-                    Inventory inventory = container.getInventory();
-                    List<Block> blocks = ChestLabels.blocksOf(inventory);
-                    if (blocks.isEmpty()) {
-                        blocks = List.of(block);
-                    }
-                    seen.addAll(blocks);
-                    int[] count = count(inventory, wanted);
-                    Map<Material, Integer> others = related == null ? Map.of() : countByType(inventory, related);
-                    if (count[0] + count[1] == 0 && others.isEmpty()) {
-                        continue;
-                    }
-                    if (!seesAll && !visible(player, state)) {
-                        continue; // not theirs to look into: not even counted
-                    }
-                    others.forEach((type, n) -> relatedCounts.merge(type, n, Integer::sum));
-                    if (count[0] + count[1] == 0) {
-                        continue;
-                    }
-                    hits.add(new Hit(blocks, block, describe(state, inventory), count[0] + count[1], count[1],
-                            block.getLocation().clone().add(0.5, 0.5, 0.5).distance(around)));
+                Block block = state.getBlock();
+                if (Math.abs(block.getX() - at.getX()) > radius || Math.abs(block.getZ() - at.getZ()) > radius
+                        || Math.abs(block.getY() - at.getY()) > radius) {
+                    continue;
                 }
+                Inventory inventory = container.getInventory();
+                List<Block> blocks = ChestLabels.blocksOf(inventory);
+                if (blocks.isEmpty()) {
+                    blocks = List.of(block);
+                }
+                seen.addAll(blocks);
+                int[] count = count(inventory, wanted);
+                Map<Material, Integer> others = related == null ? Map.of() : countByType(inventory, related);
+                if (count[0] + count[1] == 0 && others.isEmpty()) {
+                    continue;
+                }
+                if (!seesAll && !visible(player, state)) {
+                    continue; // not theirs to look into: not even counted
+                }
+                others.forEach((type, n) -> relatedCounts.merge(type, n, Integer::sum));
+                if (count[0] + count[1] == 0) {
+                    continue;
+                }
+                hits.add(new Hit(blocks, block, describe(state, inventory), count[0] + count[1], count[1],
+                        block.getLocation().clone().add(0.5, 0.5, 0.5).distance(around)));
             }
         }
         hits.sort((a, b) -> Double.compare(a.distance(), b.distance()));

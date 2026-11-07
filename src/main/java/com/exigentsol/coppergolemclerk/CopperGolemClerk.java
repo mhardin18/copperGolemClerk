@@ -87,6 +87,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean golemsCommandForPlayers;
     private volatile boolean findEnabled = true;
     private volatile int findRadius = 32;
+    private volatile int findMaxRadius = 64;
     private volatile int findHighlightSeconds = 10;
     private volatile int findHighlightCount = 5;
     private GolemRescue rescue;
@@ -344,6 +345,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
         findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
+        findMaxRadius = rangeSetting(config, "find-max-radius", 64, 1, 128);
         findHighlightSeconds = rangeSetting(config, "find-highlight-seconds", 10, 0, 120);
         findHighlightCount = rangeSetting(config, "find-highlight-count", 5, 0, 30);
         homelessRetryMillis = Math.max(1, config.getInt("homeless-retry-minutes", 5)) * 60_000L;
@@ -580,7 +582,12 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     /** /cgc find (also used by unit tests). */
     void findItems(CommandSender sender, String text, org.bukkit.Location around) {
-        itemFinder.find(sender, text, around);
+        itemFinder.find(sender, text, around, null);
+    }
+
+    /** /cgc find with a radius (null = find-radius). */
+    void findItems(CommandSender sender, String text, org.bukkit.Location around, Integer radius) {
+        itemFinder.find(sender, text, around, radius);
     }
 
     GolemLabels labels() {
@@ -599,6 +606,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** find-radius: how far /cgc find looks (1-64). */
     int findRadius() {
         return findRadius;
+    }
+
+    /** find-max-radius: the biggest radius a player can ask /cgc find or /cgc golems for (1-128). */
+    int findMaxRadius() {
+        return findMaxRadius;
     }
 
     /** find-highlight-count: how many of the nearest containers /cgc find makes glow (0-30). */
@@ -890,7 +902,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             if (!admin && args.length > 2 && !sub.equals("find") && !sub.equals("help")) {
                 throw new IllegalArgumentException("Only admins can give a position or 'all'.");
             }
-            if (!admin && sub.equals("golems") && args.length > 1) {
+            if (!admin && sub.equals("golems") && args.length > 1 && !(args.length == 2 && RadiusArgs.isInt(args[1]))) {
                 throw new IllegalArgumentException("Only admins can give a position or 'all'.");
             }
             switch (sub) {
@@ -900,8 +912,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     }
                     if (args.length < 2) {
                         throw new IllegalArgumentException(sender instanceof Player
-                                ? "Usage: /cgc find <item, group, pattern or #tag>"
-                                : "Usage: /cgc find <item> <x> <y> <z> [world]");
+                                ? "Usage: /cgc find <item, group, pattern or #tag> [radius]"
+                                : "Usage: /cgc find <item> <x> <y> <z> [world] [radius]");
                     }
                     findCommand(sender, args);
                 }
@@ -994,8 +1006,19 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 case "version" -> updates.report(sender);
                 case "stats" -> stats.report(sender);
                 case "golems" -> {
-                    boolean all = args.length > 1 && args[1].equalsIgnoreCase("all");
-                    finder.report(sender, all, all ? null : spotArg(sender, args));
+                    RadiusArgs.Golems parsed = RadiusArgs.parseGolems(List.of(args).subList(1, args.length));
+                    org.bukkit.Location spot = null;
+                    if (parsed.hasPosition()) {
+                        World world = parsed.world() != null ? getServer().getWorld(parsed.world())
+                                : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
+                        if (world == null) {
+                            throw new IllegalArgumentException("No world named '" + parsed.world() + "'.");
+                        }
+                        spot = new org.bukkit.Location(world, parsed.x() + 0.5, parsed.y(), parsed.z() + 0.5);
+                    } else if (parsed.radius() != null && !(sender instanceof Player)) {
+                        throw new IllegalArgumentException("From the console: /cgc golems <x> <y> <z> [world] [radius]");
+                    }
+                    finder.report(sender, parsed.all(), spot, limitRadius(sender, parsed.radius()));
                 }
                 case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null, s -> mayUse(sender, s));
                 default -> {
@@ -1006,69 +1029,46 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
 
         /**
-         * /cgc find <item...> for players (around them), or /cgc find <item> <x> <y> <z> [world]
-         * (also from the console). The item may be several words: "birch log".
+         * /cgc find <item...> [radius] for players (around them), or
+         * /cgc find <item> <x> <y> <z> [world] [radius] (also from the console). The item may be
+         * several words ("birch log") and may end in a number ("music disc 13").
          */
         private void findCommand(CommandSender sender, String[] args) {
-            List<String> words = new ArrayList<>(List.of(args).subList(1, args.length));
+            List<String> words = List.of(args).subList(1, args.length);
+            RadiusArgs.Find parsed = RadiusArgs.parseFind(words, text -> {
+                ItemGroups.Rule rule = groups.signRule(text);
+                return rule != null && (rule.meaning().equals("item") || rule.meaning().equals("item and its dyed versions"));
+            });
             org.bukkit.Location around = null;
-            int n = words.size();
-            if (n >= 5 && isInt(words.get(n - 4)) && isInt(words.get(n - 3)) && isInt(words.get(n - 2)) && !isInt(words.get(n - 1))) {
-                World world = getServer().getWorld(words.get(n - 1));
+            if (parsed.hasPosition()) {
+                World world = parsed.world() != null ? getServer().getWorld(parsed.world())
+                        : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
                 if (world == null) {
-                    throw new IllegalArgumentException("No world named '" + words.get(n - 1) + "'.");
+                    throw new IllegalArgumentException("No world named '" + parsed.world() + "'.");
                 }
-                around = new org.bukkit.Location(world, Integer.parseInt(words.get(n - 4)) + 0.5,
-                        Integer.parseInt(words.get(n - 3)), Integer.parseInt(words.get(n - 2)) + 0.5);
-                words = words.subList(0, n - 4);
-            } else if (n >= 4 && isInt(words.get(n - 3)) && isInt(words.get(n - 2)) && isInt(words.get(n - 1))) {
-                World world = sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
-                around = new org.bukkit.Location(world, Integer.parseInt(words.get(n - 3)) + 0.5,
-                        Integer.parseInt(words.get(n - 2)), Integer.parseInt(words.get(n - 1)) + 0.5);
-                words = words.subList(0, n - 3);
+                around = new org.bukkit.Location(world, parsed.x() + 0.5, parsed.y(), parsed.z() + 0.5);
             }
             if (around == null) {
                 if (!(sender instanceof Player player)) {
-                    throw new IllegalArgumentException("From the console: /cgc find <item> <x> <y> <z> [world]");
+                    throw new IllegalArgumentException("From the console: /cgc find <item> <x> <y> <z> [world] [radius]");
                 }
                 around = player.getLocation();
             } else if (!sender.hasPermission("coppergolemclerk.admin")) {
                 throw new IllegalArgumentException("Only admins can search around another spot.");
             }
-            itemFinder.find(sender, String.join(" ", words), around);
+            Integer radius = limitRadius(sender, parsed.radius());
+            itemFinder.find(sender, parsed.item(), around, radius);
         }
 
-        private static boolean isInt(String s) {
-            try {
-                Integer.parseInt(s);
-                return true;
-            } catch (NumberFormatException e) {
-                return false;
+        /** The radius held to find-max-radius for a player who can't see into every claim (they're told); others as asked. */
+        private Integer limitRadius(CommandSender sender, Integer asked) {
+            boolean unlimited = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS);
+            Integer used = RadiusArgs.limit(asked, findMaxRadius, unlimited);
+            if (used != null && !used.equals(asked)) {
+                sender.sendMessage(Component.text("The most you can search is " + used + " blocks (find-max-radius); using "
+                        + used + ".", NamedTextColor.YELLOW));
             }
-        }
-
-        /** "<x> <y> <z> [world]" after the subcommand as a location (loaded or not), or null if not given. */
-        private org.bukkit.Location spotArg(CommandSender sender, String[] args) {
-            if (args.length == 2 || args.length == 3) {
-                throw new IllegalArgumentException("Give a whole position: <x> <y> <z> [world] (or 'all').");
-            }
-            if (args.length < 4) {
-                return null;
-            }
-            double x, y, z;
-            try {
-                x = Integer.parseInt(args[1]) + 0.5;
-                y = Integer.parseInt(args[2]);
-                z = Integer.parseInt(args[3]) + 0.5;
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Give whole-number coordinates: <x> <y> <z> [world]");
-            }
-            World world = args.length > 4 ? getServer().getWorld(args[4])
-                    : sender instanceof Player p ? p.getWorld() : getServer().getWorlds().getFirst();
-            if (world == null) {
-                throw new IllegalArgumentException("No world named '" + args[4] + "'.");
-            }
-            return new org.bukkit.Location(world, x, y, z);
+            return used;
         }
 
         /** The block at "<x> <y> <z> [world]" after the subcommand, or null if not given. */
@@ -1095,6 +1095,15 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             return world.getBlockAt(x, y, z);
         }
 
+        /** find-radius and find-max-radius as radius suggestions, for a word that is empty or digits so far. */
+        private List<String> radiusSuggestions(String typed) {
+            if (!typed.chars().allMatch(Character::isDigit)) {
+                return List.of();
+            }
+            return List.of(String.valueOf(findRadius), String.valueOf(findMaxRadius)).stream().distinct()
+                    .filter(r -> r.startsWith(typed)).toList();
+        }
+
         @Override
         public Collection<String> suggest(CommandSourceStack source, String[] args) {
             CommandSender who = source.getSender();
@@ -1119,8 +1128,15 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 }
                 return out;
             }
-            if (args.length == 2 && args[0].equalsIgnoreCase("golems") && admin) {
-                return "all".startsWith(args[1].toLowerCase(Locale.ROOT)) ? List.of("all") : List.of();
+            if (args.length >= 3 && args[0].equalsIgnoreCase("find")) {
+                return radiusSuggestions(args[args.length - 1]);
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("golems")) {
+                List<String> out = new ArrayList<>(radiusSuggestions(args[1]));
+                if (admin && "all".startsWith(args[1].toLowerCase(Locale.ROOT))) {
+                    out.add("all");
+                }
+                return out;
             }
             if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
                 String prefix = args[1].toLowerCase(Locale.ROOT);

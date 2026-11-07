@@ -66,6 +66,23 @@ def _(c):
     return check
 
 
+@scenario("golems-radius", "finder", 30, "/cgc golems <x> <y> <z> <radius> lists only golems within that many blocks and says so in the heading; without a radius the far golem is listed too.")
+def _(c):
+    named(c, 12, 10, "itest-gr-near", ",NoAI:1b")
+    named(c, 54, 10, "itest-gr-far", ",NoAI:1b")
+    x, y, z = c.abs(10, 10)
+
+    def check():
+        plain = re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z}"))
+        wide = re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z} 20"))
+        bad = re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z} 0"))
+        return [("itest-gr-far" in plain and "itest-gr-near" in plain, "without a radius both are listed"),
+                ("itest-gr-near" in wide and "itest-gr-far" not in wide, f"radius 20 lists only the near golem: {wide!r}"),
+                ("within 20 blocks" in wide, "the heading says 'within 20 blocks'"),
+                ("The radius must be a whole number of 1 or more." in bad, "radius 0 is refused")]
+    return check
+
+
 @scenario("golems-unloaded-last-seen", "finder", 120, "A golem whose chunk unloads is still listed, where it was last seen; it's live again once the chunk reloads.")
 def _(c):
     x, y, z = named(c, 6, 10, "itest-fu-sleeper", ",NoAI:1b")
