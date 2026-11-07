@@ -140,6 +140,15 @@ class RadiusArgsTest {
     }
 
     @Test
+    void aHugeRadiusIsHeldToTheWorldSize() {
+        assertEquals(RadiusArgs.MAX_RADIUS, golems("2147483647").radius());
+        assertEquals(RadiusArgs.MAX_RADIUS, golems("1 2 3 2147483647").radius());
+        assertEquals(RadiusArgs.MAX_RADIUS, RadiusArgs.parseFind(List.of("birch_log", "2147483647"), t -> false).radius());
+        assertEquals(RadiusArgs.MAX_RADIUS,
+                RadiusArgs.parseFind(List.of("birch_log", "1", "2", "3", "2147483647"), t -> false).radius());
+    }
+
+    @Test
     void golemsRadiusMustBePositive() {
         assertThrows(IllegalArgumentException.class, () -> golems("0"));
         assertThrows(IllegalArgumentException.class, () -> golems("-3"));

@@ -35,11 +35,14 @@ final class RadiusArgs {
         }
     }
 
+    /** A world is at most 30 million blocks from its centre; a bigger radius means the same, and would overflow. */
+    static final int MAX_RADIUS = 30_000_000;
+
     private static int radius(String s) {
         if (!isInt(s) || Integer.parseInt(s) < 1) {
             throw new IllegalArgumentException("The radius must be a whole number of 1 or more.");
         }
-        return Integer.parseInt(s);
+        return Math.min(Integer.parseInt(s), MAX_RADIUS);
     }
 
     /**
@@ -71,7 +74,7 @@ final class RadiusArgs {
         String text = String.join(" ", words);
         if (n >= 2 && isInt(words.get(n - 1)) && !exactItem.test(text) && Integer.parseInt(words.get(n - 1)) >= 1) {
             return new Find(String.join(" ", words.subList(0, n - 1)), null, null, null, null,
-                    Integer.parseInt(words.get(n - 1)));
+                    radius(words.get(n - 1)));
         }
         return new Find(text, null, null, null, null, null);
     }
