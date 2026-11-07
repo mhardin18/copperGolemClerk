@@ -23,6 +23,7 @@ import org.bukkit.block.Furnace;
 import org.bukkit.block.data.type.Speleothem;
 import org.bukkit.entity.CopperGolem;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.EntityEquipment;
@@ -32,6 +33,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
+import org.bukkit.util.BoundingBox;
 
 /**
  * furnace-feeding: golems keep labelled furnaces, smokers and blast furnaces going.
@@ -295,9 +297,16 @@ final class FurnaceFeeder {
         return !labels.noGolems() && labels.hasItemRules() && claimAllows(golem, furnace.getBlock());
     }
 
-    /** True if a hopper is right under the furnace: it collects what the furnace makes. */
+    /**
+     * True if a hopper, or a hopper minecart, is right under the furnace: it collects what the
+     * furnace makes, so golems leave the output alone.
+     */
     static boolean collectedByHopper(Block furnace) {
-        return HopperLines.isHopper(furnace.getRelative(BlockFace.DOWN).getType());
+        Block below = furnace.getRelative(BlockFace.DOWN);
+        if (HopperLines.isHopper(below.getType())) {
+            return true;
+        }
+        return !below.getWorld().getNearbyEntities(BoundingBox.of(below), e -> e instanceof HopperMinecart).isEmpty();
     }
 
     private Reach.Spot spotFor(CopperGolem golem, Block block) {
@@ -1223,8 +1232,8 @@ final class FurnaceFeeder {
     private void takeResult(CopperGolem golem, Furnace furnace) {
         FurnaceInventory inventory = furnace.getInventory();
         ItemStack result = inventory.getResult();
-        if (isEmpty(result)) {
-            return;
+        if (isEmpty(result) || collectedByHopper(furnace.getBlock())) {
+            return; // a hopper may have been put under it while the golem was on its way
         }
         int take = Math.min(result.getAmount(), GolemCarry.amountFor(result.getType(), plugin.carryAmount()));
         ItemStack taken = result.clone();

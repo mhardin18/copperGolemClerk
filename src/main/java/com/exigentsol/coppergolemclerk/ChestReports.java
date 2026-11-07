@@ -95,7 +95,7 @@ final class ChestReports {
                     + (names.size() > 15 ? ", and " + (names.size() - 15) + " more" : "") + ".");
         }
         if (FurnaceFeeder.collectedByHopper(furnace.getBlock())) {
-            say(player, NamedTextColor.AQUA, "A hopper under it collects what it makes, so golems leave the output to it.");
+            say(player, NamedTextColor.AQUA, "A hopper (or hopper minecart) under it collects what it makes, so golems leave the output to it.");
         } else {
             say(player, NamedTextColor.AQUA, "Golems take out whatever it makes and sort it (never back into a furnace).");
         }

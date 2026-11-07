@@ -190,6 +190,19 @@ def _(c):
     return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "ingots", "iron_ingot", 1), expect(c, "furnace", "iron_ingot", 10)]
 
 
+@scenario("furnace-collected-by-hopper-minecart", "furnace", 60, "A labelled furnace with a (disabled) hopper minecart under it: golems leave its ingots to the minecart.")
+def _(c):
+    furnace(c, "furnace", 8, 10, result=("iron_ingot", 10), label="[raw iron]")
+    x, y, z = c.abs(8, 10, -1)
+    c.run(f"setblock {x} {y} {z} minecraft:air")
+    # Enabled:0b: a disabled hopper minecart doesn't pull, so the ingots stay in the furnace
+    c.run(f'summon minecraft:hopper_minecart {x + 0.5} {y} {z + 0.5} {{NoGravity:1b,Enabled:0b,Tags:["cgc_test_cart"]}}')
+    c.cleanup.append(f"kill @e[type=hopper_minecart,tag=cgc_test_cart,x={x},y={y},z={z},distance=..3]")
+    c.chest("ingots", 14, 10, [("iron_ingot", 1)])
+    c.golem(4, 10)
+    return lambda: [(c.elapsed() > 40, "waited 40s"), expect(c, "ingots", "iron_ingot", 1), expect(c, "furnace", "iron_ingot", 10)]
+
+
 @scenario("furnace-no-loop", "furnace", 150, "Stone taken out of a furnace labelled [cobblestone] [stone] goes to the stone chest, not back into the furnace.")
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
