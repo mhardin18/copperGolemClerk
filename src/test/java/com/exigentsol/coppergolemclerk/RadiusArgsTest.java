@@ -121,7 +121,12 @@ class RadiusArgsTest {
     void golemsWithPosition() {
         // fewer than a whole position is refused
         assertThrows(IllegalArgumentException.class, () -> golems("1 2"));
-        assertThrows(IllegalArgumentException.class, () -> golems("1 2 3"));
+        RadiusArgs.Golems bare = golems("1 2 3");
+        assertTrue(bare.hasPosition());
+        assertEquals(3, bare.z());
+        assertNull(bare.world());
+        assertNull(bare.radius());
+        assertThrows(IllegalArgumentException.class, () -> golems("1 2 3 nether 40 extra"));
         RadiusArgs.Golems w = golems("1 2 3 nether");
         assertEquals("nether", w.world());
         assertNull(w.radius());
@@ -132,6 +137,15 @@ class RadiusArgsTest {
         assertEquals("nether", both.world());
         assertEquals(40, both.radius());
         assertThrows(IllegalArgumentException.class, () -> golems("a b c"));
+    }
+
+    @Test
+    void aHugeRadiusIsHeldToTheWorldSize() {
+        assertEquals(RadiusArgs.MAX_RADIUS, golems("2147483647").radius());
+        assertEquals(RadiusArgs.MAX_RADIUS, golems("1 2 3 2147483647").radius());
+        assertEquals(RadiusArgs.MAX_RADIUS, RadiusArgs.parseFind(List.of("birch_log", "2147483647"), t -> false).radius());
+        assertEquals(RadiusArgs.MAX_RADIUS,
+                RadiusArgs.parseFind(List.of("birch_log", "1", "2", "3", "2147483647"), t -> false).radius());
     }
 
     @Test

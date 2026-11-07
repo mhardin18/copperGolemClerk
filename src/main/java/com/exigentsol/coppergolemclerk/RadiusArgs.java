@@ -35,11 +35,14 @@ final class RadiusArgs {
         }
     }
 
+    /** A world is at most 30 million blocks from its centre; a bigger radius means the same, and would overflow. */
+    static final int MAX_RADIUS = 30_000_000;
+
     private static int radius(String s) {
         if (!isInt(s) || Integer.parseInt(s) < 1) {
             throw new IllegalArgumentException("The radius must be a whole number of 1 or more.");
         }
-        return Integer.parseInt(s);
+        return Math.min(Integer.parseInt(s), MAX_RADIUS);
     }
 
     /**
@@ -71,7 +74,7 @@ final class RadiusArgs {
         String text = String.join(" ", words);
         if (n >= 2 && isInt(words.get(n - 1)) && !exactItem.test(text) && Integer.parseInt(words.get(n - 1)) >= 1) {
             return new Find(String.join(" ", words.subList(0, n - 1)), null, null, null, null,
-                    Integer.parseInt(words.get(n - 1)));
+                    radius(words.get(n - 1)));
         }
         return new Find(text, null, null, null, null, null);
     }
@@ -105,9 +108,9 @@ final class RadiusArgs {
                 return new Golems(false, null, null, null, null, radius(rest.getFirst()));
             }
         }
-        if (n < 4 || n > 5) {
+        if (n < 3 || n > 5) {
             throw new IllegalArgumentException(
-                    "Give a radius, or a whole position: <x> <y> <z> [world] [radius] (or 'all').");
+                    "Give a whole position: <x> <y> <z> [world] [radius], a radius, or 'all'.");
         }
         if (!ints(rest, 0, 3)) {
             throw new IllegalArgumentException("Give whole-number coordinates: <x> <y> <z> [world] [radius]");
@@ -117,9 +120,9 @@ final class RadiusArgs {
         if (n == 5) {
             world = rest.get(3);
             radius = radius(rest.get(4));
-        } else if (isInt(rest.get(3))) {
+        } else if (n == 4 && isInt(rest.get(3))) {
             radius = radius(rest.get(3));
-        } else {
+        } else if (n == 4) {
             world = rest.get(3);
         }
         return new Golems(false, Integer.parseInt(rest.get(0)), Integer.parseInt(rest.get(1)),
