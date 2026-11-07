@@ -105,9 +105,9 @@ final class RadiusArgs {
                 return new Golems(false, null, null, null, null, radius(rest.getFirst()));
             }
         }
-        if (n < 4 || n > 5) {
+        if (n < 3 || n > 5) {
             throw new IllegalArgumentException(
-                    "Give a radius, or a whole position: <x> <y> <z> [world] [radius] (or 'all').");
+                    "Give a whole position: <x> <y> <z> [world] [radius], a radius, or 'all'.");
         }
         if (!ints(rest, 0, 3)) {
             throw new IllegalArgumentException("Give whole-number coordinates: <x> <y> <z> [world] [radius]");
@@ -117,9 +117,9 @@ final class RadiusArgs {
         if (n == 5) {
             world = rest.get(3);
             radius = radius(rest.get(4));
-        } else if (isInt(rest.get(3))) {
+        } else if (n == 4 && isInt(rest.get(3))) {
             radius = radius(rest.get(3));
-        } else {
+        } else if (n == 4) {
             world = rest.get(3);
         }
         return new Golems(false, Integer.parseInt(rest.get(0)), Integer.parseInt(rest.get(1)),
