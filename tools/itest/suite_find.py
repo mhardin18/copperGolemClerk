@@ -96,7 +96,7 @@ def _(c):
 @scenario("find-radius-argument", "find", 40, "/cgc find <item> <x> <y> <z> <radius> finds a chest 42 blocks away that the default 32 misses; 'music disc 13' stays one item, '<item> <n>' is a radius.")
 def _(c):
     c.chest("near", 12, 10, [("birch_log", 2)])
-    c.chest("far", 52, 10, [("birch_log", 9), ("music_disc_13", 3)])
+    c.chest("far", 52, 10, [("birch_log", 9), ("music_disc_13", 1)])
     x, y, z = c.abs(10, 10)
 
     def ask(text):
@@ -113,7 +113,7 @@ def _(c):
                 has(wide, "11 birch log in 2 containers within 50 blocks"),
                 has(words, "11 birch log in 2 containers within 50 blocks"),
                 has(disc, "No music disc 13 in containers within 32 blocks"),
-                has(disc_wide, "3 music disc 13 in 1 container within 50 blocks"),
+                has(disc_wide, "1 music disc 13 in 1 container within 50 blocks"),
                 has(bad, "The radius must be a whole number of 1 or more.")]
     return check
 

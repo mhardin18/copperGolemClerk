@@ -195,8 +195,11 @@ def _(c):
     furnace(c, "furnace", 8, 10, result=("iron_ingot", 10), label="[raw iron]")
     x, y, z = c.abs(8, 10, -1)
     c.run(f"setblock {x} {y} {z} minecraft:air")
+    # Minecarts ignore NoGravity, so give the cart a block to sit on or it falls out of the arena
+    c.run(f"setblock {x} {y - 1} {z} minecraft:stone")
+    c.cleanup.append(f"setblock {x} {y - 1} {z} minecraft:air")
     # Enabled:0b: a disabled hopper minecart doesn't pull, so the ingots stay in the furnace
-    c.run(f'summon minecraft:hopper_minecart {x + 0.5} {y} {z + 0.5} {{NoGravity:1b,Enabled:0b,Tags:["cgc_test_cart"]}}')
+    c.run(f'summon minecraft:hopper_minecart {x + 0.5} {y} {z + 0.5} {{Enabled:0b,Tags:["cgc_test_cart"]}}')
     c.cleanup.append(f"kill @e[type=hopper_minecart,tag=cgc_test_cart,x={x},y={y},z={z},distance=..3]")
     c.chest("ingots", 14, 10, [("iron_ingot", 1)])
     c.golem(4, 10)
