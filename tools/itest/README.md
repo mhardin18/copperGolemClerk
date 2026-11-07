@@ -197,6 +197,13 @@ platform), or `logged(c, text)` from `suite_furnace_edge`, which uses it. Until 
 waiting scenario, which broke a supply chest or killed a golem before it had picked
 anything up. `c.log_lines()` is fine for warnings from scenarios that run `alone`.
 
+## Minecarts in a scenario
+
+Minecarts ignore `NoGravity`. A cart summoned over a hole drops out of the arena within a
+second, and the plugin never sees it. Put a block under it (and add that block to
+`c.cleanup`), as `furnace-collected-by-hopper-minecart` does. Until 3.2.0 that scenario
+removed the floor under the furnace and always failed.
+
 ## Golems near and far from players
 
 Paper only runs a mob's AI in short bursts (about 100 ticks a minute) when no player is
