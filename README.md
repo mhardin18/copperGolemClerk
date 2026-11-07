@@ -146,14 +146,14 @@ The same forms work on signs; see [`*` patterns, `#` tags and `@` properties](#-
 
 #### The default groups
 
-A fresh `config.yml` has these 51 groups. Every name fits on one sign line. The
+A fresh `config.yml` has these 54 groups. Every name fits on one sign line. The
 item counts are for Paper 26.3; an item can be in more than one group.
 
 | Sign label | What's in it | Items |
 |---|---|---|
 | `[music discs]` | Music discs | 23 |
 | `[templates]` | Smithing templates | 19 |
-| `[rare items]` | Rare & trophies | 18 |
+| `[rare items]` | Rare & trophies, incl. mob heads and skulls | 25 |
 | `[buckets]` | Buckets | 12 |
 | `[brewing]` | Potions & brewing | 9 |
 | `[books]` | Books & enchanting | 5 |
@@ -168,38 +168,43 @@ item counts are for Paper 26.3; an item can be in more than one group.
 | `[ingots and gems]` | Ingots & gems | 19 |
 | `[materials]` | Crafting materials | 9 |
 | `[amethyst]` | Amethyst | 6 |
-| `[animal gear]` | Saddles & animal armor | 30 |
+| `[animal gear]` | Saddles & animal armor, lead, name tag | 31 |
 | `[armor]` | Armor | 31 |
 | `[weapons]` | Weapons & ammo | 23 |
-| `[tools]` | Tools | 35 |
+| `[tools]` | Tools | 34 |
 | `[boats]` | Boats | 22 |
 | `[rails]` | Rails & minecarts | 9 |
 | `[redstone]` | Redstone | 72 |
 | `[light sources]` | Light sources | 40 |
 | `[storage]` | Storage | 45 |
-| `[workstations]` | Workstations (villager jobs) | 13 |
-| `[utility blocks]` | Utility blocks | 9 |
-| `[decorations]` | Decorations | 143 |
+| `[workstations]` | Workstations: villager job blocks, crafting table, furnace, anvils, enchanting table, jukebox, bell, respawn anchor | 22 |
+| `[signs]` | Signs and hanging signs | 26 |
+| `[banners]` | Banners & banner patterns | 26 |
+| `[pottery]` | Pottery sherds & decorated pot | 24 |
+| `[beds]` | Beds | 17 |
+| `[decorations]` | Shelves, cushions, copper golem statues, item frames, painting, armor stand, bookshelves, flower pot | 44 |
 | `[wool]` | Wool & carpet | 64 |
 | `[concrete]` | Concrete: blocks, powder, slabs & stairs | 64 |
 | `[terracotta]` | Terracotta: plain, dyed & glazed | 33 |
 | `[glass]` | Glass | 35 |
 | `[dyes]` | Dyes | 16 |
 | `[mushrooms]` | Mushrooms | 6 |
-| `[flowers]` | Flowers | 31 |
-| `[foliage]` | Saplings & leaves | 23 |
+| `[flowers]` | Flowers | 27 |
+| `[foliage]` | Saplings & leaves, cherry and flowering azalea leaves, mangrove propagule | 26 |
 | `[sculk]` | Sculk | 4 |
 | `[sulfur]` | Sulfur & cinnabar | 28 |
 | `[ocean]` | Ocean | 45 |
 | `[nether]` | Nether | 44 |
-| `[end]` | The End | 10 |
+| `[end]` | The End, incl. chorus flower | 11 |
 | `[copper]` | Copper blocks | 80 |
 | `[logs]` | Logs & planks | 64 |
 | `[wooden building]` | Wooden building | 80 |
 | `[dirt and sand]` | Dirt, sand & gravel | 12 |
 | `[ice and snow]` | Ice & snow | 6 |
 | `[plants]` | Plants | 26 |
-| `[stone]` | Stone & deepslate | 81 |
+| `[stone]` | Stone | 47 |
+| `[deepslate]` | Deepslate | 20 |
+| `[tuff]` | Tuff | 14 |
 | `[sandstone]` | Sandstone | 20 |
 | `[building]` | Bricks, quartz & other building | 29 |
 
@@ -212,6 +217,11 @@ either way: `[foliage]` finds an older config's `saplings-and-leaves`, and
 `[crafting materials]` finds the new `materials`. To get the new groups themselves,
 copy them from the [default
 `config.yml`](https://github.com/mhardin18/copperGolemClerk/blob/main/src/main/resources/config.yml).
+
+In 3.2.0 `utility-blocks` was merged into `workstations`, and `decorations` was split
+into `signs`, `banners`, `pottery` and `beds` (mob heads moved to `rare-items`). A
+`[utility blocks]` sign finds the new `workstations` on a fresh config, and an older config
+keeps its own `utility-blocks` and `decorations` groups.
 
 ### Smarter use of empty chests
 

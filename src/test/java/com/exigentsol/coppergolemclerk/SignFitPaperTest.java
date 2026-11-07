@@ -42,6 +42,9 @@ class SignFitPaperTest extends PaperTest {
         assertTrue(groups.signRule("smithing templates").test().test(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
         assertTrue(groups.signRule("Saplings and leaves").test().test(Material.OAK_LEAVES));
         assertTrue(groups.signRule("crafting-materials").test().test(Material.PAPER));
+        // utility-blocks was merged into workstations in 3.2.0
+        assertTrue(groups.signRule("utility blocks").test().test(Material.ANVIL));
+        assertTrue(groups.signRule("utility blocks").test().test(Material.BARREL));
     }
 
     @Test
@@ -74,6 +77,23 @@ class SignFitPaperTest extends PaperTest {
         assertTrue(concrete.test().test(Material.WHITE_CONCRETE_POWDER));
         assertFalse(concrete.test().test(Material.TERRACOTTA));
         assertNull(groups.signRule("frobnitz"));
+    }
+
+    @Test
+    void utilityBlocksAndWorkstationsWorkOnEitherConfig() {
+        // A new config has only workstations; an older one has both, so each name keeps its own group.
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("groups.workstations", List.of("BARREL"));
+        yaml.set("groups.utility-blocks", List.of("ANVIL"));
+        ItemGroups both = ItemGroups.load(yaml.getConfigurationSection("groups"), plugin.getLogger());
+        assertTrue(both.signRule("utility blocks").test().test(Material.ANVIL));
+        assertFalse(both.signRule("utility blocks").test().test(Material.BARREL));
+        assertTrue(both.signRule("workstations").test().test(Material.BARREL));
+        YamlConfiguration onlyOld = new YamlConfiguration();
+        onlyOld.set("groups.utility-blocks", List.of("ANVIL"));
+        ItemGroups old = ItemGroups.load(onlyOld.getConfigurationSection("groups"), plugin.getLogger());
+        assertTrue(old.signRule("workstations").test().test(Material.ANVIL));
+        assertTrue(plugin.groups().signRule("utility blocks").test().test(Material.CRAFTING_TABLE));
     }
 
     @Test
