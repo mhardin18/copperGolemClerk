@@ -1016,34 +1016,36 @@ groups:
     - RED_SHRUB
     - SMALL_DRIPLEAF
     - VINE
-  # Stone & deepslate (81 items)
+  # Stone (47 items)
   stone:
     - "#minecraft:stone_bricks"
-    - "*TILE*"
-    - "*TUFF*"
     - "MOSSY_COBBLESTONE*"
     - "MOSSY_STONE_BRICK*"
-    - "*COBBLED*"
     - "*DIORITE*"
     - "*GRANITE*"
     - "*ANDESITE*"
     - "COBBLESTONE*"
     - "STONE_BRICK_*"
-    - "DEEPSLATE_BRICK_*"
-    - "POLISHED_DEEPSLATE_*"
     - CALCITE
-    - CHISELED_DEEPSLATE
-    - CRACKED_DEEPSLATE_BRICKS
-    - DEEPSLATE
-    - DEEPSLATE_BRICKS
     - DRIPSTONE_BLOCK
     - POINTED_DRIPSTONE
-    - POLISHED_DEEPSLATE
     - SMOOTH_STONE
     - SMOOTH_STONE_SLAB
     - STONE
     - STONE_SLAB
     - STONE_STAIRS
+  # Deepslate (20 items)
+  deepslate:
+    - DEEPSLATE
+    - CHISELED_DEEPSLATE
+    - "COBBLED_DEEPSLATE*"
+    - "POLISHED_DEEPSLATE*"
+    - "DEEPSLATE_BRICK*"
+    - "DEEPSLATE_TILE*"
+    - "CRACKED_DEEPSLATE_*"
+  # Tuff (14 items)
+  tuff:
+    - "*TUFF*"
   # Sandstone (20 items)
   sandstone:
     - "*SANDSTONE*"

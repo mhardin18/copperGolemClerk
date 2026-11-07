@@ -202,7 +202,9 @@ item counts are for Paper 26.3; an item can be in more than one group.
 | `[dirt and sand]` | Dirt, sand & gravel | 12 |
 | `[ice and snow]` | Ice & snow | 6 |
 | `[plants]` | Plants | 26 |
-| `[stone]` | Stone & deepslate | 81 |
+| `[stone]` | Stone | 47 |
+| `[deepslate]` | Deepslate | 20 |
+| `[tuff]` | Tuff | 14 |
 | `[sandstone]` | Sandstone | 20 |
 | `[building]` | Bricks, quartz & other building | 29 |
 
