@@ -8,6 +8,9 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 - Built against the newest Paper API (26.3 build 244). It still runs on build 190 and later.
 - Default groups cleaned up. `decorations` is split into `signs`, `banners` (and banner patterns), `pottery` (sherds and the decorated pot) and `beds`; mob heads and skulls moved to `rare-items`; `decorations` keeps shelves, cushions, copper golem statues, item frames, the painting, armor stand, bookshelves and the flower pot. `utility-blocks` is merged into `workstations` (22 items). Cherry leaves, flowering azalea leaves and the mangrove propagule moved from `flowers` to `foliage`, the chorus flower from `flowers` to `end`, and the name tag from `tools` to `animal-gear`. `stone` (81 items) is split into `stone` (47), `deepslate` (20) and `tuff` (14), so each fits in a double chest. A `[deepslate]` sign now means the deepslate group, without the deepslate ores (before, it took every item with deepslate in its name). Creative-only items (budding amethyst, infested cobblestone and mossy stone bricks, the command block minecart, the knowledge book, and the copper, iron and snow golem spawn eggs) are in no group now. Existing servers keep their groups: upgrading doesn't rewrite `groups:`, so copy the new ones from the default `config.yml` if you want them. `[utility blocks]` still works on a fresh config (it finds `workstations`), and `[workstations]` works on an older config.
 
+### Fixed
+- Golems leave a furnace's output alone when a hopper minecart is under it, as they already did for a hopper. They also check again when they get to the furnace, so a hopper put under it while a golem was on its way is respected too.
+
 ## 3.1.0 (2026-11-05)
 
 ### New

@@ -437,7 +437,7 @@ you mined with Silk Touch), so `/cgc check` on the furnace lists exactly which i
 will put in, and points out label entries that add nothing.
 
 **What comes out.** An idle golem takes out what the furnace has made and sorts it like
-anything else, unless a hopper under the furnace collects it. It waits until 8 are ready
+anything else, unless a hopper (or hopper minecart) under the furnace collects it. It waits until 8 are ready
 (`furnace-take-out-at`) so a trip is worth it, unless the furnace has stopped: nothing left
 to cook, out of fuel, its output slot full, or its output slot holding something else (an item
 a player left there), which keeps it from lighting until that's taken out. If no chest in range would
@@ -861,7 +861,7 @@ with its line number and the old settings are kept.
 | `furnace-fuel-ahead` | `16` | Fuel golems bring covers what's waiting plus this many more items (0 to 64), so the next load doesn't need a fuel trip of its own. 0 = just enough for what's waiting (a fuel trip after nearly every load); higher = fewer trips, more fuel sitting in fuel slots. |
 | `furnace-refill-below` | `16` | A furnace gets more to cook only once this many items or fewer are left in it (0 to 64). Lower (0 = only when empty) can leave furnaces idle while golems are busy; 64 = top up after every item (many wasted trips). |
 | `furnace-split-min` | `8` | A load is split between 2 furnaces (never more) only if each gets at least this many items (1 to 64); the emptiest furnaces go first. Above half of `carry-amount` = whole loads to one furnace. |
-| `furnace-take-out-at` | `8` | Golems take finished items out once this many are ready (1 to 64), or sooner when the furnace has stopped. 1 = a trip for every item; higher = fewer trips, items wait longer. Furnaces with a hopper under them are never emptied by golems. |
+| `furnace-take-out-at` | `8` | Golems take finished items out once this many are ready (1 to 64), or sooner when the furnace has stopped. 1 = a trip for every item; higher = fewer trips, items wait longer. Furnaces with a hopper or hopper minecart under them are never emptied by golems. |
 | `furnace-jobs-before-sorting` | `3` | Furnace upkeep comes before sorting; after this many furnace jobs in a row while a copper chest has items (0 to 64), a golem sorts once. 0 = sorting always first (the order before 3.1.0); higher = busier furnaces, copper chests wait longer. |
 | `furnace-wait-seconds` | `20` | How long a golem waits at a furnace that filled up before it arrived (0 to 300), before taking the rest back to the `[Furnace Supply]`. 0 = straight back (can loop); long waits keep that golem idle. |
 | `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
