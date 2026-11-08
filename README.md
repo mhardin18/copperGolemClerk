@@ -908,7 +908,7 @@ with its line number and the old settings are kept.
 | `find-enabled` | `true` | `/cgc find`. `false` turns the command off for everyone. |
 | `find-outside-own-claims` | `false` | `false`: players' `/cgc find` only looks in claims they own. `true`: also unclaimed containers and claims where they have container trust (never other players' claims or locked containers). |
 | `find-radius` | `32` | How far `/cgc find` looks, 1 to 64 blocks sideways and up or down. |
-| `find-max-radius` | `64` | The most a player can ask for with `/cgc find <item> <radius>` and `/cgc golems <radius>`, 1 to 128 blocks. Bigger requests are cut down to it. Ops (`coppergolemclerk.allclaims`) and the console aren't limited. |
+| `find-max-radius` | `64` | The most a player can ask for with `/cgc find <item> <radius>` and `/cgc golems <radius>`, 1 to 128 blocks. Bigger requests are cut down to it. It never counts as less than `find-radius`. Ops (`coppergolemclerk.allclaims`) and the console aren't limited. |
 | `find-highlight-count` | `5` | How many of the containers `/cgc find` lists glow for the player, nearest first, 0 to 30 (0: no glow). |
 | `find-highlight-seconds` | `10` | How long the containers `/cgc find` lists glow for the player, 0 to 120 (0: no glow). |
 | `golems-command-for-players` | `false` | Let players use `/cgc golems` to list their own golems (in claims they own, or whose copper chest is in one). Off: admins only. |

@@ -6,7 +6,7 @@ All versions are for **Paper 26.3** (Java 25); 2.6.0 and later need Paper 26.3 b
 
 ### New
 - `/cgc find <item> [radius]` and `/cgc golems [radius]` take an optional search radius, and from the console `/cgc find <item> <x> <y> <z> [world] [radius]` and `/cgc golems <x> <y> <z> [world] [radius]`. `/cgc find birch log 50` looks 50 blocks around you (only in chunks that are already loaded); `/cgc golems 50` lists the golems within 50 blocks, nearest first, and the header says "within 50 blocks". A number that ends an item's name is part of it: `/cgc find music disc 13` is the disc, `/cgc find music disc 13 50` the disc within 50 blocks. Without a radius both work as before.
-- `find-max-radius` (default 64, 1 to 128): the most a player can ask for; more is cut down to it, with a note. Ops (`coppergolemclerk.allclaims`) and the console aren't limited.
+- `find-max-radius` (default 64, 1 to 128): the most a player can ask for; more is cut down to it, with a note. It never counts as less than `find-radius`. Ops (`coppergolemclerk.allclaims`) and the console aren't limited.
 
 ### Changed
 - Golems now always open a chest's, barrel's or shulker box's lid for a moment when the plugin moves items for them: fetching from an `[Overflow]` chest, taking from or putting into a `[Fuel]` or `[Furnace Supply]` container, putting an item with no home back in its copper chest, and taking more from a copper chest for `carry-amount`, as vanilla golems do. Before, the items just went with a pickup sound and the lid stayed shut, so it looked as if nothing had touched the chest.

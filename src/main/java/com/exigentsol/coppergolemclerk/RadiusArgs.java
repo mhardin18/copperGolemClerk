@@ -129,11 +129,14 @@ final class RadiusArgs {
                 Integer.parseInt(rest.get(2)), world, radius);
     }
 
-    /** The radius to use: what was asked, held to find-max-radius unless the sender is unlimited. Null if none asked. */
-    static Integer limit(Integer asked, int max, boolean unlimited) {
+    /**
+     * The radius to use: what was asked, held to find-max-radius unless the sender is unlimited. Null if
+     * none asked. The limit is never below find-radius: asking for the default gives what not asking gives.
+     */
+    static Integer limit(Integer asked, int max, int findRadius, boolean unlimited) {
         if (asked == null || unlimited) {
             return asked;
         }
-        return Math.min(asked, max);
+        return Math.min(asked, Math.max(max, findRadius));
     }
 }

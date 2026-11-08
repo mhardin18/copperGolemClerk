@@ -100,10 +100,14 @@ class RadiusArgsTest {
 
     @Test
     void playersAreHeldToTheMaxButAdminsAndConsoleAreNot() {
-        assertEquals(64, RadiusArgs.limit(100, 64, false));
-        assertEquals(40, RadiusArgs.limit(40, 64, false));
-        assertEquals(100, RadiusArgs.limit(100, 64, true));
-        assertNull(RadiusArgs.limit(null, 64, false));
+        assertEquals(64, RadiusArgs.limit(100, 64, 32, false));
+        assertEquals(40, RadiusArgs.limit(40, 64, 32, false));
+        assertEquals(100, RadiusArgs.limit(100, 64, 32, true));
+        assertNull(RadiusArgs.limit(null, 64, 32, false));
+        // find-max-radius below find-radius: asking for the default still gets it
+        assertEquals(32, RadiusArgs.limit(32, 10, 32, false));
+        assertEquals(32, RadiusArgs.limit(50, 10, 32, false));
+        assertEquals(20, RadiusArgs.limit(20, 10, 32, false));
     }
 
     @Test
