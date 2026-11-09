@@ -819,7 +819,8 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   word in their name and suggests `*torch*` to find them all. It
   looks `find-radius` blocks (32) around you, sideways and up or down; `/cgc find <item> <radius>` (`/cgc find birch log 50`)
   looks that far instead, up to `find-max-radius` (64) for players (ops and the console aren't limited). It
-  only searches chunks that are already loaded. A number that ends an item's name is part of
+  only searches chunks that are already loaded, and says how many in range weren't (so a
+  "No birch log" far from any player isn't taken as certain). A number that ends an item's name is part of
   it (`music disc 13`, `disc fragment 5`): `/cgc find music disc 13` is the disc, and
   `/cgc find music disc 13 50` is that disc within 50 blocks. **By default it only looks in GriefPrevention
   claims you own** (never in locked containers); nothing hints at anything else.

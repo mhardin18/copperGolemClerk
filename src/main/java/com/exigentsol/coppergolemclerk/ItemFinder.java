@@ -150,6 +150,7 @@ final class ItemFinder implements Listener {
         }
         hits.sort((a, b) -> Double.compare(a.distance(), b.distance()));
         report(sender, text, rule, hits, radius, around);
+        unloadedNote(sender, at, radius, chunks);
         hint(sender, text, relatedCounts);
         if (player != null) {
             highlight(player, hits);
@@ -250,6 +251,24 @@ final class ItemFinder implements Listener {
         String type = state.getType().getKey().getKey().replace('_', ' ');
         ChestLabels.Labels labels = ChestLabels.of(inventory, plugin.groups(), plugin.itemFrameLabels(), plugin.signLabels());
         return labels.names().isEmpty() ? type : type + " " + String.join("", labels.names());
+    }
+
+    /** Say so when some chunks in range weren't loaded: they weren't searched, so "no X" may be wrong. */
+    private static void unloadedNote(CommandSender sender, Block at, int radius, List<Chunk> searched) {
+        int minX = (at.getX() - radius) >> 4, maxX = (at.getX() + radius) >> 4;
+        int minZ = (at.getZ() - radius) >> 4, maxZ = (at.getZ() + radius) >> 4;
+        long inRange = (long) (maxX - minX + 1) * (maxZ - minZ + 1);
+        long loaded = searched.stream().filter(c -> c.getX() >= minX && c.getX() <= maxX
+                && c.getZ() >= minZ && c.getZ() <= maxZ).count();
+        long unloaded = inRange - loaded;
+        if (unloaded <= 0) {
+            return;
+        }
+        String note = inRange <= 100_000
+                ? unloaded + " of the " + inRange + " chunks in range " + (unloaded == 1 ? "isn't" : "aren't")
+                        + " loaded, so " + (unloaded == 1 ? "it wasn't" : "they weren't") + " searched."
+                : "Only loaded chunks were searched; most of this area isn't loaded.";
+        sender.sendMessage(Component.text(note, NamedTextColor.GRAY));
     }
 
     private void report(CommandSender sender, String text, ItemGroups.Rule rule, List<Hit> hits,
