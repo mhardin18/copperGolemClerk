@@ -178,7 +178,10 @@ final class GolemFinder implements Listener {
         report(sender, all, spot, null);
     }
 
-    /** As above; with a radius, only golems within that many blocks of the spot (or the player), nearest first. */
+    /**
+     * As above; with a radius, only golems within that many blocks of the spot (or the player) along
+     * each axis, as /cgc find counts it; nearest first.
+     */
     void report(CommandSender sender, boolean all, Location spot, Integer radius) {
         Player player = sender instanceof Player p ? p : null;
         Location here = spot != null ? spot : player == null ? null : player.getLocation();
@@ -213,7 +216,7 @@ final class GolemFinder implements Listener {
             rows.removeIf(r -> !mine(player, r)); // players see their own golems only
         }
         if (radius != null && !everywhere) {
-            rows.removeIf(r -> r.distance() > radius);
+            rows.removeIf(r -> !withinBox(here, r, radius));
         }
         rows.sort(Comparator.comparingDouble(Row::distance)
                 .thenComparing(r -> r.seen() == null ? "" : r.seen().world())
@@ -263,6 +266,18 @@ final class GolemFinder implements Listener {
             return w != null && claims.ownsClaimAt(player, new Location(w, home.x(), home.y(), home.z()));
         }
         return false;
+    }
+
+    /**
+     * Within the radius the way /cgc find counts it: at most that many blocks away along each axis
+     * (sideways and up/down), not in a straight line.
+     */
+    private boolean withinBox(Location here, Row row, int radius) {
+        Location at = row.live() != null ? row.live().getLocation() : locationOf(row.seen());
+        return at != null && at.getWorld().equals(here.getWorld())
+                && Math.abs(at.getBlockX() - here.getBlockX()) <= radius
+                && Math.abs(at.getBlockY() - here.getBlockY()) <= radius
+                && Math.abs(at.getBlockZ() - here.getBlockZ()) <= radius;
     }
 
     private Location locationOf(Seen s) {

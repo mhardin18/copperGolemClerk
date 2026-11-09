@@ -83,6 +83,19 @@ def _(c):
     return check
 
 
+@scenario("golems-radius-counts-like-find", "finder", 30, "/cgc golems <x> <y> <z> <radius> counts the radius along each axis, as /cgc find does: a golem 15 east and 15 south (21 in a straight line) is within 18.")
+def _(c):
+    named(c, 10, 10, "itest-grb-diag", ",NoAI:1b")
+    x, y, z = c.abs(-5, -5)
+
+    def check():
+        wide = re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z} 18"))
+        narrow = re.sub(r"§.", "", c.r.cmd(f"cgc golems {x} {y} {z} 14"))
+        return [("itest-grb-diag" in wide, f"radius 18 lists the golem 15 blocks off on each axis: {wide!r}"),
+                ("itest-grb-diag" not in narrow, f"radius 14 doesn't: {narrow!r}")]
+    return check
+
+
 @scenario("golems-unloaded-last-seen", "finder", 120, "A golem whose chunk unloads is still listed, where it was last seen; it's live again once the chunk reloads.")
 def _(c):
     x, y, z = named(c, 6, 10, "itest-fu-sleeper", ",NoAI:1b")
