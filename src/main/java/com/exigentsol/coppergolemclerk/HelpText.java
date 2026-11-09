@@ -57,7 +57,7 @@ final class HelpText {
                     List.of("Lists the copper golems in your world, nearest first (the 10 nearest;"
                                     + " /cgc golems all lists every golem in every world).",
                             "Give a radius (/cgc golems 50) to list only golems within that many blocks"
-                                    + " (up to find-max-radius for players; the 10 nearest still).",
+                                    + " (the 10 nearest still).",
                             "Players see only golems in claims they own or whose copper chest is in one (and only if"
                                     + " golems-command-for-players is on); 'all' and positions are for admins.",
                             "Each line has the golem's position (admins can click it to teleport there), how far away it is,"
