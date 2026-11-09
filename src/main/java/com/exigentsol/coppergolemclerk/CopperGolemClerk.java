@@ -1063,7 +1063,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         /** The radius held to find-max-radius for a player who can't see into every claim (they're told); others as asked. */
         private Integer limitRadius(CommandSender sender, Integer asked) {
             boolean unlimited = !(sender instanceof Player) || sender.hasPermission(Claims.ALL_CLAIMS);
-            Integer used = RadiusArgs.limit(asked, findMaxRadius, unlimited);
+            Integer used = RadiusArgs.limit(asked, findMaxRadius, findRadius, unlimited);
             if (used != null && !used.equals(asked)) {
                 sender.sendMessage(Component.text("The most you can search is " + used + " blocks (find-max-radius); using "
                         + used + ".", NamedTextColor.YELLOW));
