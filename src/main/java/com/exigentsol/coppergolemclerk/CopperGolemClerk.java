@@ -608,7 +608,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return findRadius;
     }
 
-    /** find-max-radius: the biggest radius a player can ask /cgc find or /cgc golems for (1-128). */
+    /** find-max-radius: the biggest radius a player can ask /cgc find for (1-128). */
     int findMaxRadius() {
         return findMaxRadius;
     }
@@ -1018,7 +1018,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     } else if (parsed.radius() != null && !(sender instanceof Player)) {
                         throw new IllegalArgumentException("From the console: /cgc golems <x> <y> <z> [world] [radius]");
                     }
-                    finder.report(sender, parsed.all(), spot, limitRadius(sender, parsed.radius()));
+                    // not held to find-max-radius: listing golems searches nothing, and players see only their own
+                    finder.report(sender, parsed.all(), spot, parsed.radius());
                 }
                 case "", "help", "?" -> HelpText.send(sender, args.length > 1 ? args[1] : null, s -> mayUse(sender, s));
                 default -> {
