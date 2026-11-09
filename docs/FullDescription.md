@@ -161,7 +161,7 @@ Neither chest receives sorted items unless it also has an item label: `[Fuel] [c
 - **`/cgc storage`** shows how full the storage around you is, by label, fullest first.
 - **`/cgc stats`** shows what golems have sorted in your claims today, in the last 7 days and all time.
 - **`/cgc golems`** lists your own golems and where they are, if the server allows it
-  (`/cgc golems 50`: only those within 50 blocks).
+  (`/cgc golems 50`: only those within 50 blocks on each axis, as find counts it).
 - **`/cgc help`** lists the commands; `/cgc help <command>` explains one.
 - **Hold bamboo** to see a label over each golem saying what it's doing ("carrying 16 birch
   log", "fetching granite", "lost, walking home") and how weathered it is.

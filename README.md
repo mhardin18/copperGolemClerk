@@ -796,7 +796,8 @@ position or `all`, are for admins (`coppergolemclerk.admin`, op by default).
   ask for up to `find-max-radius`, and are told if they are held to it; the header says "within N blocks").
   `/cgc golems all` lists every golem in every world. Golems in unloaded chunks are
   listed where they were last seen (the plugin keeps every golem's last spot in
-  `golems.yml`, and forgets golems not seen for 30 days).
+  `golems.yml`, and forgets golems not seen for 30 days). A radius counts along each axis
+  (sideways and up/down), as `/cgc find` does, not in a straight line.
 - `/cgc stats`: how many items golems have put into chests in your claims today, in the
   last 7 days and all time. Admins (`coppergolemclerk.allclaims`) also see the whole
   server's numbers, the most-sorted items and the busiest claims. Without GriefPrevention
