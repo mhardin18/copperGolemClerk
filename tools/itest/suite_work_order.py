@@ -1,6 +1,6 @@
 """work-order: what an idle golem does first. Furnace upkeep (stopped furnaces, buckets, fuel,
-items to cook) comes before sorting copper chests, sorting before taking out finished items,
-and furnace-jobs-before-sorting makes a golem sort once after that many furnace jobs in a row.
+items to cook, taking out finished items) comes before sorting copper chests, and
+furnace-jobs-before-sorting makes a golem sort once after that many furnace jobs in a row.
 """
 from arena import expect, scenario
 from suite_furnace import furnace, slot
@@ -130,7 +130,7 @@ def _(c):
     return check
 
 
-@scenario("take-out-after-sorting", "work-order", 150, "A furnace still cooking with 8 ingots ready (worth a trip, not urgent) and a copper chest of logs: the golem sorts the logs before it takes the ingots out.")
+@scenario("take-out-before-sorting", "work-order", 150, "A furnace still cooking with 8 ingots ready (furnace-take-out-at) and a copper chest of logs: the golem takes the ingots out before it takes any logs, then sorts them.")
 def _(c):
     sorting_waits(c, logs=16)
     furnace(c, "furnace", 10, 4, input=("raw_iron", 16), fuel=("coal", 4), result=("iron_ingot", 8), label="[raw iron]")
@@ -142,9 +142,9 @@ def _(c):
         if not at_take_out and c.count("ingots", "iron_ingot") > 1:
             at_take_out.append(c.count("copper", "birch_log"))
         return [(bool(at_take_out), "the ingots were taken out"),
-                (bool(at_take_out) and at_take_out[0] == 0,
-                 f"copper chest had {at_take_out[0] if at_take_out else '?'} logs when the ingots came out (want 0: sorted first)"),
-                no_errors(c)]
+                (bool(at_take_out) and at_take_out[0] == 16,
+                 f"copper chest had {at_take_out[0] if at_take_out else '?'} logs when the ingots came out (want 16: none taken yet)"),
+                expect(c, "logs", "birch_log", 16), no_errors(c)]
     return check
 
 

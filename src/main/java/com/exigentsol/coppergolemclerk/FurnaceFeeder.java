@@ -536,8 +536,9 @@ final class FurnaceFeeder {
 
     /**
      * Upkeep, the furnace work that comes before sorting: empty a furnace that has stopped (full
-     * output slot), take out an empty bucket, refill one at a lava cauldron, bring fuel, or bring
-     * items to cook from a [Furnace Supply].
+     * output slot), take out an empty bucket, refill one at a lava cauldron, bring fuel, bring
+     * items to cook from a [Furnace Supply], or take out finished items once it's worth a trip
+     * (furnace-take-out-at) or the furnace won't make more for now.
      */
     void findUpkeep(CopperGolem golem) {
         if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
@@ -599,19 +600,11 @@ final class FurnaceFeeder {
             }
         }
         // 4. Items to cook from a [Furnace Supply], for furnaces running low.
-        startSupply(golem, now);
-    }
-
-    /**
-     * After sorting: take out what's done, once it's worth a trip (furnace-take-out-at) or the
-     * furnace won't make more for now.
-     */
-    void findTakeOut(CopperGolem golem) {
-        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
+        if (startSupply(golem, now)) {
             return;
         }
-        long now = System.currentTimeMillis();
-        startEmpty(golem, usableFurnaces(golem, now), false, now);
+        // 5. Finished items, once it's worth a trip or the furnace won't make more for now.
+        startEmpty(golem, furnaces, false, now);
     }
 
     /**

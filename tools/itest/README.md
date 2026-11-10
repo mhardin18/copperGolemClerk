@@ -190,7 +190,7 @@ error or exception in the server log during a scenario fails it.
 | reach | chests stacked above vanilla's reach: delivering and taking with `deliver-reach` / `take-reach` raised, and at the default |
 | greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit |
 | limits | `max-golems-per-claim` / `claim-blocks-per-extra-golem`: the newest golem over a limit sorts like vanilla and the owner is told; each claim on its own, admin claims, bigger claims get more, under the limit, unclaimed land not limited, vanilla-mode golems not counted, the removed `max-golems-outside-claims` warned about, bad values |
-| work-order | what an idle golem does first: furnace upkeep before sorting, sorting before taking out finished items, `furnace-jobs-before-sorting` (1, and 0 for the old order); manual `work-order-balance-<n>` benchmarks for choosing its default |
+| work-order | what an idle golem does first: furnace upkeep (including taking out finished items) before sorting, `furnace-jobs-before-sorting` (1, and 0 for the old order); manual `work-order-balance-<n>` benchmarks for choosing its default |
 | distance | `search-distance` above 32: golems finding, walking to and moving items for chests, copper chests, `[Overflow]` chests and furnaces past vanilla's range |
 | lava | lava bucket fuel, a cauldron dripping lava refills, `furnace-lava-min-items`, and cauldron search range |
 | furnace, furnace-edge, furnace-trips, furnace-refill | furnace feeding, fuelling and taking out, mid-job changes, fewer fuller trips, `furnace-refill-below` and `furnace-wait-seconds` |

@@ -518,11 +518,10 @@ collects the output.
 
 1. Furnace upkeep: empty a furnace that has stopped (full output slot), take out empty
    buckets and refill them at a lava cauldron, bring fuel, bring items to cook to furnaces
-   running low.
+   running low, and take out finished items (`furnace-take-out-at`).
 2. Sort copper chests.
-3. Take out finished items (`furnace-take-out-at`).
-4. Re-sort `[Overflow]` chests.
-5. Say hello to iron and snow golems.
+3. Re-sort `[Overflow]` chests.
+4. Say hello to iron and snow golems.
 
 A big bank of furnaces can't keep copper chests waiting for ever. A golem that has done 3
 furnace jobs in a row while a copper chest has items sorts once before more furnace work

@@ -171,13 +171,7 @@ final class OverflowFetcher {
             }
             return;
         }
-        // 3. Take out finished furnace items, before re-sorting overflow.
-        if (furnaces != null) {
-            furnaces.findTakeOut(golem);
-            if (furnaces.isBusy(golem.getUniqueId())) {
-                return;
-            }
-        }
+        // 3. Re-sort [Overflow] chests.
         if (!plugin.fetchFromOverflow()) {
             return;
         }
