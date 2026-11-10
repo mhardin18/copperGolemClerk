@@ -45,11 +45,11 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
 ## 3.1.0 (2026-11-05)
 
 ### New
-- Golems tend furnaces before they sort. Before, they tended furnaces only when there was nothing to sort. An idle golem now picks its next job in this order:
-  1. Furnace upkeep: empty furnaces that stopped because their output is full, take out empty lava buckets, bring fuel, and bring items to cook from a `[Furnace Supply]`.
-  2. Sort the copper chests.
-  3. Take finished items out of furnaces.
-  4. Re-sort the `[Overflow]` chests.
+- Golems tend furnaces before they sort. Before, they tended furnaces only when there was nothing to sort. An idle golem now picks its next job in this order:\
+  **1.** Furnace upkeep: empty furnaces that stopped because their output is full, take out empty lava buckets, bring fuel, and bring items to cook from a `[Furnace Supply]`.\
+  **2.** Sort the copper chests.\
+  **3.** Take finished items out of furnaces.\
+  **4.** Re-sort the `[Overflow]` chests.
 
   While a copper chest has items, `furnace-jobs-before-sorting` (default 3) sets how many furnace jobs in a row a golem does before it sorts once. Set it to 0 to go back to the old order.
 - A sign label too wide for one line can carry on to the next. Leave the `[` open and close it with `]` on a later line: `[Only light` / `sources]` is `[Only light sources]`.
