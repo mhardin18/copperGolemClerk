@@ -4,6 +4,8 @@ All versions are for **Paper 26.3** (Java 25). Version 2.6.0 and later need Pape
 
 To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new one and restart. Your `config.yml` is kept. From 3.0.0 on, settings new in a version are added to it at startup, with their explanations, and the explanations of the settings you have are updated. Before 3.0.0, new settings used their defaults until you added them.
 
+Changes to the developer tools in `tools/` (tests and scripts that aren't part of the plugin) are in [tools/CHANGELOG.md](tools/CHANGELOG.md).
+
 ## 3.2.0 (in progress)
 
 ### New
@@ -79,7 +81,6 @@ To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new
 - Adding or changing a sign or item frame label clears the "no home" marks on chests within `search-distance`. Golems try those items again straight away, not after `homeless-retry-minutes`.
 - `max-golems-outside-claims` is gone, and golems on unclaimed land are no longer limited. It shared one limit among all the unclaimed land in a world, oldest golems first. One player's golems could leave another player's golems sorting like vanilla, with no explanation. Golems also switched between the two as players came and went. The setting is removed from `config.yml` on upgrade, and the console says why. `max-golems-per-claim` is unchanged.
 - Console messages about updating `config.yml` link to that version's `config.yml` on GitHub instead of pointing into the jar.
-- New developer tool `tools/perf` (see its README). It measures how much server time golems cost, with the plugin off and at each `search-distance`, and compares versions. It changes nothing in the plugin.
 - Built against the newest Paper API (26.3 build 238). Every build also checks that the plugin compiles against build 190's API, so it keeps running on every build from 190 on.
 
 ### Fixed
