@@ -276,12 +276,14 @@ furnace-take-out-at: 8
 # same items as the furnace frees up.
 # Very long waits keep that golem standing there, doing no sorting, the whole time.
 furnace-wait-seconds: 20
-# Furnace upkeep comes before sorting. An idle golem works in this order: empty stopped
-# furnaces, take out empty buckets, bring fuel, bring items to cook from a
-# [Furnace Supply], sort copper chests, take out finished items (furnace-take-out-at),
-# then re-sort [Overflow].
-# So that a big bank of furnaces can't keep sorting waiting forever, the golem sorts
-# once after this many furnace jobs in a row (0 to 64) while a copper chest has items.
+# Furnace upkeep comes before sorting. An idle golem picks its next job in this order:
+#   1. Furnace upkeep: empty furnaces that stopped because their output is full, take
+#      out empty lava buckets, bring fuel, and bring items to cook from a [Furnace Supply].
+#   2. Sort the copper chests.
+#   3. Take finished items out of furnaces (see furnace-take-out-at).
+#   4. Re-sort the [Overflow] chests.
+# So a big bank of furnaces can't hold up sorting forever: while a copper chest has
+# items, the golem sorts once after this many furnace jobs in a row (0 to 64).
 # 0: sorting always comes first (how golems worked before 3.1.0).
 # Higher: furnaces stay busier, and copper chests (and the hoppers filling them) wait
 # longer.
