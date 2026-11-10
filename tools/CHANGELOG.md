@@ -9,6 +9,7 @@ Versions are the plugin release each change came out with.
 ## 3.2.0 (in progress)
 
 ### Changed
+- `work-order`: `take-out-after-sorting` is now `take-out-before-sorting`. It checks that the golem takes finished items out of the furnace before it takes any logs from the copper chest, then sorts them.
 - Updated the `itest` scenarios for the optional `[radius]` on `/cgc find` and `/cgc golems`, for the furnace-output hopper minecart (#130), and for the new `/cgc find` chunk message.
 - The `itest` test hooks plugin builds against Paper API 26.3 build 244.
 

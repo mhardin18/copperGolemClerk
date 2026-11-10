@@ -17,6 +17,7 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
 - `find-max-radius` (default 64, 1 to 128) is the most a player can ask `/cgc find` for. A larger number is cut down to it, with a note. `/cgc golems` isn't limited. It never counts as less than `find-radius`. Ops (`coppergolemclerk.allclaims`) and the console aren't limited.
 
 ### Changed
+- Golems take finished items out of furnaces before they go back to sorting. Before, a golem sorted every copper chest first, so cooked items sat in the furnace while there was sorting to do. Taking items out is now part of furnace upkeep and counts toward `furnace-jobs-before-sorting`, so a busy copper chest still gets sorted. `furnace-take-out-at` still decides when a furnace is worth a trip.
 - Golems now open a chest, barrel or shulker box lid briefly whenever the plugin moves items for them. This covers:
   - fetching from an `[Overflow]` chest
   - taking from or putting into a `[Fuel]` or `[Furnace Supply]` container
