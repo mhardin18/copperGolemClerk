@@ -5,114 +5,119 @@
 # (a sign like [logs] or an item in a frame on the chest), and into [Overflow]
 # chests when nothing else fits.
 #
-# Every setting below has a default, so a setting missing from this file still
-# works. The README lists them all: https://github.com/mhardin18/copperGolemClerk
-# When you upgrade the plugin, settings new in that version are added to this file
-# at startup, each with its explanation, and the explanation above every other setting
-# is replaced with the new version's. Your values are never changed. Keep notes of your
-# own at the end of a setting's line (carry-amount: 32  # our farm): those stay; a
-# comment on its own line above a setting is replaced. The old file is kept as
-# config-before-<version>.yml.
+# Every setting has a default, so a setting missing from this file still works.
+# The README lists them all: https://github.com/mhardin18/copperGolemClerk
 #
-# Use /cgc reload after editing this file (no restart needed).
+# When you upgrade the plugin, settings that are new in that version are added to this
+# file at startup, each with its explanation. The explanation above every other setting
+# is replaced with the new version's. Your values are never changed.
+# To keep a note of your own, put it at the end of a setting's line
+# (carry-amount: 32  # our farm). A comment on its own line above a setting is replaced.
+# The old file is kept as config-before-<version>.yml.
+#
+# Run /cgc reload after editing this file. No restart is needed.
 
 # How a chest qualifies for a group match:
 #   all - every item in the chest must share a group with the carried item.
-#         This keeps sorted chests tidy: one stray item stops group matching.
+#         One stray item stops group matching, which keeps sorted chests tidy.
 #   any - one item from the same group is enough.
 match-mode: all
 
-# Vanilla golems walk to the nearest chest they haven't tried, and drop their
-# item into the first empty chest they reach, often before finding the chest
-# where it belongs.
+# Vanilla golems walk to the nearest chest they haven't tried. They drop their item
+# into the first empty chest they reach, often before finding the chest it belongs in.
 #
-# With prefer-matching-chests on, a golem carrying an item first looks over every
-# chest in its range (search-distance sideways, 8 up/down, loaded chunks only). If
-# one matches the item (item frame label, same item, or same group) and has room,
+# With prefer-matching-chests on, a golem carrying an item first looks at every chest
+# in its range (search-distance sideways, 8 up and down, loaded chunks only). If a
+# chest matches the item (item frame label, same item or same group) and has room,
 # the golem walks straight to it and ignores empty chests. Empty chests are used
 # only when no matching chest has room.
 #
-# If a golem can't deliver its item, it works through these steps. Each lasts as
-# long as walking to the farthest chest it tries takes (30 seconds or more), and a
-# step with nothing new to try is skipped:
+# If a golem can't deliver its item, it works through these steps. Each step lasts as
+# long as it takes to walk to the farthest chest it tries (30 seconds or more).
+# A step with nothing new to try is skipped.
 #   1. Go to the most specific matching chest (labels first, then contents),
 #      then an [Overflow] chest, then an empty chest.
-#   2. The most specific chest may be unreachable: any matching chest.
-#   3. Assume matching chests are unreachable: [Overflow] or empty chests only.
+#   2. The most specific chest may be unreachable, so try any matching chest.
+#   3. Assume matching chests are unreachable and try [Overflow] or empty chests only.
 #   4. Vanilla behavior for 30 seconds: wander from chest to chest.
 #   5. Put the item back into the copper chest it came from (see below).
-# An item with no home in range goes straight to step 4. Time only counts while
-# the golem is likely active: walking, or with a player within spigot.yml's
-# entity-activation-range for animals (32 by default). Further away, Paper runs
-# golems in short bursts about once a minute, and a paused golem shouldn't run
-# out of time. A golem waiting in line next to a chest that takes its item is
-# never sent back.
+# An item with no home in range goes straight to step 4.
+#
+# Time only counts while the golem is likely active: walking, or with a player within
+# spigot.yml's entity-activation-range for animals (32 by default). Further away,
+# Paper runs golems in short bursts about once a minute, and a paused golem should
+# not run out of time. A golem waiting in line next to a chest that takes its item
+# is never sent back.
 prefer-matching-chests: true
 
-# After step 4, put the item back into the copper chest the golem took it from
-# (or the nearest copper chest in range with room). Golems can't walk to a copper
-# chest while carrying something, so the item is moved back directly.
-# Returned items are marked "no home" for that copper chest: golems take other
-# items first, and skip the chest if only "no home" items are left. The mark
-# lasts homeless-retry-minutes, until /cgc reload, or until a sign or item frame
-# label is added or changed within search-distance of the chest: then golems try
-# the item again straight away.
+# After step 4, put the item back into the copper chest the golem took it from, or the
+# nearest copper chest in range with room. Golems can't walk to a copper chest while
+# carrying something, so the plugin moves the item back directly.
+# Returned items are marked "no home" for that copper chest. Golems take other items
+# first, and skip the chest if only "no home" items are left. The mark ends after
+# homeless-retry-minutes, on /cgc reload, or when a sign or item frame label is added
+# or changed within search-distance of the chest. Golems then try the item again at once.
 # false: golems hold an item with no home forever, as vanilla golems do.
 return-unsortable-items: true
-# How long a returned item stays marked "no home" for its copper chest (minutes, 1 or more). While
-# marked, golems take other items from that chest first and skip it if only "no home" items
-# are left. Lower means golems retry sooner (more wasted trips if it still has no home);
-# higher means a home you add later is used only after this long (a new label nearby, or
-# /cgc reload, clears the mark at once).
+# How long a returned item stays marked "no home" for its copper chest, in minutes
+# (1 or more). While it is marked, golems skip it (see return-unsortable-items).
+# Lower: golems retry sooner, with more wasted trips if the item still has no home.
+# Higher: a home you add later is used only after this long. A new label nearby or
+# /cgc reload clears the mark at once.
 homeless-retry-minutes: 5
 
-# Set to false to stop golems from ever using empty chests. Put one item into
-# each chest (or use item frame labels) to say what goes there, and keep a
-# labeled catch-all chest for anything without a home, or golems will carry
-# unsortable items around forever.
+# Set to false to stop golems from ever using empty chests. Then put one item in each
+# chest (or use item frame labels) to say what goes there. Also keep a labeled
+# catch-all chest for items without a home, or golems will carry them around forever.
 allow-empty-chests: true
 
-# Item frame labels: hang an item frame (or glow item frame) holding an item on
-# any side of a chest, and golems will put ONLY that exact item in that chest.
-# This overrides groups and allow-empty-chests. Several frames on one chest
-# allow each framed item. Empty frames are ignored. Matching is by item type
-# (all enchanted books count as the same item, for example).
+# Item frame labels: hang an item frame (or glow item frame) holding an item on any
+# side of a chest, and golems put ONLY that exact item in that chest.
+# This overrides groups and allow-empty-chests. Several frames on one chest allow
+# each framed item. Empty frames are ignored. Matching is by item type, so all
+# enchanted books count as the same item, for example.
 item-frame-labels: true
 
-# Sign labels: put a wall sign on any side of a chest (or a standing sign on
-# top) and write rules on it in square brackets, one or more per line. A rule too
-# wide for one line can carry on to the next: leave the [ open and close it later
-# ("[Only light" then "sources]" = [Only light sources]). Lines are joined with a
-# space, or with nothing after a - or _. An unclosed rule is ignored (/cgc check says so).
+# Sign labels: put a wall sign on any side of a chest (or a standing sign on top)
+# and write rules on it in square brackets, one or more per line.
+# A rule too long for one line can continue on the next. Leave the [ open and close
+# it later: "[Only light" then "sources]" gives [Only light sources]. Lines are joined
+# with a space, or with nothing after a - or _. An unclosed rule is ignored
+# (/cgc check says so).
 #   [logs]           a group from the list below
 #   [oak log]        one item (spaces or underscores, any capitalization)
-#   [*_ORE]          a name pattern: * stands for any letters (or none) in the item's ID,
-#                    and the whole ID must fit. [*sand] = IDs ending in sand (sand, red
-#                    sand, soul sand; not sandstone), [sand*] = starting with sand (sand,
-#                    sandstone...), [*sand*] = containing it. [*] alone = every item: on a
-#                    chest that's picked before [Overflow] and empty chests (use
-#                    [Overflow] for a catch-all); on a furnace, anything it can cook.
+#   [*_ORE]          a name pattern. * stands for any letters (or none) in the item's ID,
+#                    and the whole ID must fit. [*sand] matches IDs ending in sand
+#                    (sand, red sand, soul sand, not sandstone). [sand*] matches IDs
+#                    starting with sand (sand, sandstone...). [*sand*] matches IDs
+#                    containing it. [*] alone matches every item. On a chest it is
+#                    picked before [Overflow] and empty chests, so use [Overflow] for
+#                    a catch-all. On a furnace it matches anything the furnace can cook.
 #   [#planks]        an item tag: # then a vanilla or datapack tag name ([#logs] or
 #                    [#minecraft:logs]). An unknown tag, or a bare [#], matches nothing.
 #   [@edible]        a property: @edible, @fuel (burns in a furnace) or @record
 # A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
-# If a word is both a group and an item, the group wins: [stone] = stone group,
-# [terracotta] = terracotta group (glazed too).
-# Groups renamed in 3.1.0 answer to both names: [smithing templates] = [templates],
-# [crafting materials] = [materials], [saplings and leaves] = [foliage], and
-# [concrete and terracotta] = both the concrete and terracotta groups.
-# Group names work singular or plural: [Rail] = rails, [ore] = ores,
-# [light source] = light-sources. If a word matches no group and no item, it
-# matches items with that word in their name: [carpet] = every carpet.
-# When several chests accept an item, golems use the most specific one: a
-# framed item or exact match first, then the label or group with the fewest
-# items ([stews] beats [food] for a stew).
+#
+# Name rules:
+# - If a word is both a group and an item, the group wins: [stone] is the stone group,
+#   [terracotta] is the terracotta group (glazed too).
+# - Groups renamed in 3.1.0 answer to both names: [smithing templates] = [templates],
+#   [crafting materials] = [materials], [saplings and leaves] = [foliage], and
+#   [concrete and terracotta] = both the concrete and terracotta groups.
+# - Group names work singular or plural: [Rail] = rails, [ore] = ores,
+#   [light source] = light-sources.
+# - If a word matches no group and no item, it matches items with that word in their
+#   name: [carpet] = every carpet.
+#
+# When several chests accept an item, golems use the most specific one: a framed item
+# or exact match first, then the label or group with the fewest items
+# ([stews] beats [food] for a stew).
 # Frames and signs on one chest combine: any matching label accepts the item.
 #
-# [Overflow] (any capitalization) makes a catch-all chest: golems put an item
-# there only when no matching chest has room for it. Overflow chests never
-# attract items just because a similar item is already inside.
+# [Overflow] (any capitalization) makes a catch-all chest. Golems put an item there
+# only when no matching chest has room for it. Overflow chests never attract items
+# just because a similar item is already inside.
 sign-labels: true
 
 # When no matching chest has room, use overflow chests before empty chests.
@@ -120,336 +125,393 @@ sign-labels: true
 overflow-before-empty: true
 
 # When a golem has nothing to do (empty hand, and no copper chest in range has
-# anything it would take), send it to an [Overflow] chest to fetch an item that
+# anything it would take), it can fetch an item from an [Overflow] chest if that item
 # now has a home, e.g. ores after you add an [ores] chest. It takes up to
-# carry-amount (16 by default), like a normal pickup, and sorts them. Items that would just go back to overflow are
-# left alone. If it stops getting closer to the overflow chest for 10 seconds
-# (or the walk outlasts its limit, which grows with search-distance) it gives
-# up and waits a minute. If the item loses its home on the way (that chest fills
-# up or is removed), it stops without taking anything. Items it can't deliver go
-# back to that chest.
+# carry-amount (16 by default), like a normal pickup, and sorts them.
+# Items that would just go back to overflow are left alone.
+# The golem gives up and waits a minute if it stops getting closer to the overflow
+# chest for 10 seconds, or if the walk takes longer than its limit (the limit grows
+# with search-distance). If the item loses its home on the way (that chest fills up
+# or is removed), the golem stops without taking anything. Items it can't deliver
+# go back to that chest.
 fetch-from-overflow: true
 
-# How many golems may fetch from one overflow chest at the same time (each takes
-# a different item). Higher empties overflow faster but can crowd the chest.
+# How many golems may fetch from one overflow chest at the same time (each takes a
+# different item). Higher empties overflow faster but can crowd the chest.
 fetchers-per-overflow-chest: 2
 
-# For an [Overflow] chest that a hopper fills (a hopper above it facing down, or beside
-# it facing into it, like a smelter's output chest): golems fetch an item from it only
-# once this many of it are there (1 to 64), so they don't walk over for every ingot the
-# hopper drops in. Items that stack to less than this (ender pearls, tools) are fetched
-# once a full carry of them is there. Overflow chests without a hopper feeding them are
-# emptied right away as usual. 1 = no waiting (a trip for every item, as before 3.0.0);
-# carry-amount (16) = only full trips; anything above carry-amount works like carry-amount.
+# For an [Overflow] chest that a hopper fills (a hopper above it facing down, or
+# beside it facing into it, like a smelter's output chest): golems fetch an item from
+# it only once this many of it are there (1 to 64). This stops them walking over for
+# every ingot the hopper drops in. Items that stack to less than this (ender pearls,
+# tools) are fetched once a full carry of them is there.
+# Overflow chests without a hopper feeding them are emptied right away as usual.
+# 1: no waiting, a trip for every item, as before 3.0.0.
+# carry-amount (16): only full trips. Anything above carry-amount works the same.
 # See also overflow-fetch-wait-seconds.
 overflow-fetch-min: 8
-# For an [Overflow] chest that a hopper fills: golems also fetch an item once it has waited
-# there this many seconds (0 to 3600), even with fewer than overflow-fetch-min of it, so
-# the last few items of a smelting run still get sorted. Each fetch starts the wait again
-# for what's left. 0 = no waiting at all (same as overflow-fetch-min: 1). Higher means
-# items can sit in the overflow chest longer before they're put away.
+# For an [Overflow] chest that a hopper fills: golems also fetch an item once it has
+# waited there this many seconds (0 to 3600), even with fewer than overflow-fetch-min
+# of it. This way the last few items of a smelting run still get sorted. Each fetch
+# starts the wait again for what is left.
+# 0: no waiting at all (same as overflow-fetch-min: 1).
+# Higher: items can sit in the overflow chest longer before they are put away.
 overflow-fetch-wait-seconds: 120
 
 # How many items a golem carries per trip (1 to 64; vanilla is 16). Right after a golem
-# takes items out of a copper chest, it takes more of the same from that chest (or puts
-# some back, below 16). Items that stack to 16 or 1 (ender pearls, tools) are carried
-# that many at most. Higher means fewer trips for big sorting jobs.
+# takes items out of a copper chest, it takes more of the same item from that chest
+# (or puts some back, below 16). Items that stack to 16 or 1 (ender pearls, tools) are
+# carried up to that many. Higher means fewer trips for big sorting jobs.
 carry-amount: 16
 
-# Golems run furnaces, smokers and blast furnaces that have a label (a sign or item frame,
-# like a chest's) saying what to cook there: [raw iron], [sand]... Unlabelled furnaces are
-# left alone. Items to cook come ONLY from containers with a [Furnace Supply] sign; idle
-# golems fetch from them and split each load between up to 2 labelled furnaces that take it.
-# Only items the label covers AND that kind of furnace can cook go in (/cgc check on the
-# furnace lists them). Idle golems take out what's done and sort it, unless a hopper under
-# the furnace collects it; things taken out of a furnace never go back into one. A chest
-# sitting on a hopper that leads into a furnace (a hand-built smelter) is never sorted into.
-# false turns ALL of this off: golems leave every furnace alone, [Fuel] and [Furnace Supply]
-# signs mean nothing (those chests are sorted into like any other), and chests on a
-# smelter's hopper are ordinary chests again (golems may sort random items into them).
-# An idle golem picks its furnace job in this order: empty a furnace whose output slot is
-# full (it has stopped), take out an empty lava bucket, bring fuel, bring items to cook to
-# a furnace running low, and last take out finished items (see furnace-take-out-at).
+# Golems run furnaces, smokers and blast furnaces that have a label (a sign or item
+# frame, like a chest's) saying what to cook there: [raw iron], [sand]...
+# Unlabelled furnaces are left alone.
+# Items to cook come ONLY from containers with a [Furnace Supply] sign. Idle golems
+# fetch from them and split each load between up to 2 labelled furnaces that take it.
+# Only items that the label covers AND that kind of furnace can cook go in
+# (/cgc check on the furnace lists them).
+# Idle golems take out what is done and sort it, unless a hopper under the furnace
+# collects it. Things taken out of a furnace never go back into one.
+# A chest sitting on a hopper that leads into a furnace (a hand-built smelter) is
+# never sorted into.
+#
+# false turns ALL of this off:
+# - Golems leave every furnace alone.
+# - [Fuel] and [Furnace Supply] signs mean nothing, so those chests are sorted into
+#   like any other.
+# - Chests on a smelter's hopper are ordinary chests again, so golems may sort random
+#   items into them.
+#
+# An idle golem picks its furnace job in this order:
+#   1. Empty a furnace whose output slot is full (it has stopped).
+#   2. Take out an empty lava bucket.
+#   3. Bring fuel.
+#   4. Bring items to cook to a furnace running low.
+#   5. Take out finished items (see furnace-take-out-at).
 # Two golems never take the same job at the same furnace.
 furnace-feeding: true
-# Fuel, most preferred first. Golems take fuel ONLY from containers with a [Fuel] sign,
-# use the first fuel in this list that one of them holds, and bring enough for what's
-# waiting plus furnace-fuel-ahead. A furnace burning a fuel lower on the list is left to burn
-# out before it gets the better one. Fuel you put in yourself (not in this list) is left
-# alone. Fuel a golem couldn't put in (the furnace got fuelled meanwhile) goes back to a
-# [Fuel] container. Empty buckets left by lava are refilled only at a lava cauldron nearby
-# (never from lava in the world) and put back in a [Fuel] container. A cauldron that dripping
-# lava refills (pointed dripstone hanging over it, with lava on top of the block the
-# dripstone hangs from) is waited for: until it's full, empty buckets go into a [Fuel]
-# container, and an idle golem fills one as soon as it is. With no such cauldron nearby and
-# none full, an empty bucket is sorted like anything else.
+# Fuel, most preferred first. Golems take fuel ONLY from containers with a [Fuel] sign.
+# They use the first fuel in this list that one of those containers holds, and bring
+# enough for what is waiting plus furnace-fuel-ahead.
+# A furnace burning a fuel lower on the list is left to burn out before it gets the
+# better one. Fuel you put in yourself that is not in this list is left alone.
+# Fuel a golem couldn't put in (the furnace got fuelled meanwhile) goes back to a
+# [Fuel] container.
+# Empty buckets left by lava are refilled only at a lava cauldron nearby (never from
+# lava in the world) and put back in a [Fuel] container.
+# A cauldron refilled by dripping lava (pointed dripstone hanging over it, with lava on
+# top of the block the dripstone hangs from) is waited for. Until it is full, empty
+# buckets go into a [Fuel] container, and an idle golem fills one as soon as it is full.
+# With no such cauldron nearby and none full, an empty bucket is sorted like anything
+# else.
 furnace-fuel: [charcoal, coal, lava_bucket]
-# Fuel golems bring also covers this many MORE items than are waiting (0 to 64), so the
-# next load of items to cook doesn't need a fuel trip of its own. Golems only fetch fuel
-# when what's waiting isn't covered; this only changes how much they bring then. One
-# charcoal or coal cooks 8 items: at the default 16, a furnace with 8 items waiting gets 3
-# charcoal instead of 1. 0 = just enough for what's waiting (about one fuel trip after
-# every load, and a furnace can go out between them). Higher means fewer fuel trips, but
-# more fuel sits in furnaces' fuel slots instead of the [Fuel] chest (it isn't lost: it
-# burns once there's something to cook). Set it about the same as carry-amount.
+# The fuel golems bring also covers this many MORE items than are waiting (0 to 64).
+# The next load of items then doesn't need a fuel trip of its own. Golems only fetch
+# fuel when what is waiting isn't covered. This setting only changes how much they
+# bring then.
+# One charcoal or coal cooks 8 items. At the default 16, a furnace with 8 items waiting
+# gets 3 charcoal instead of 1.
+# 0: just enough for what is waiting. That is about one fuel trip after every load,
+# and a furnace can go out between them.
+# Higher: fewer fuel trips, but more fuel sits in furnaces' fuel slots instead of the
+# [Fuel] chest. It isn't lost, it burns once there is something to cook.
+# Set it about the same as carry-amount.
 furnace-fuel-ahead: 16
-# Lava buckets go into a furnace only when it has a backlog of at least this many items to
-# cook (0 to 1000), as long as a [Fuel] container also has another fuel from furnace-fuel.
-# The backlog is what's waiting in the furnace, plus what other golems are bringing it, plus
-# its share of the matching items in [Furnace Supply] containers in range (shared with the
-# other labelled furnaces that take them). A lit furnace keeps burning its fuel even after it
-# runs out of things to cook, and one lava bucket lasts 100 items, so at the default 100 a
-# bucket is used only when it will burn out cooking. Below this, golems bring the next fuel on
-# the list instead (just enough, see furnace-fuel-ahead); with no other fuel there, they use
-# lava anyway. 0 = lava whenever it's its turn in furnace-fuel. Lower uses lava more often and
-# can waste some; higher uses it only for big piles. Items you add to the supply later aren't
-# counted until they're there. Only matters when lava comes before another fuel in
-# furnace-fuel, or that fuel runs out. /cgc check on a furnace shows its backlog.
+# Lava buckets go into a furnace only when it has a backlog of at least this many items
+# to cook (0 to 1000), and only if a [Fuel] container also has another fuel from
+# furnace-fuel.
+# The backlog is what is waiting in the furnace, plus what other golems are bringing
+# it, plus its share of the matching items in [Furnace Supply] containers in range
+# (shared with the other labelled furnaces that take them). Items you add to the supply
+# later aren't counted until they are there. /cgc check on a furnace shows its backlog.
+# A lit furnace keeps burning its fuel even after it runs out of things to cook, and
+# one lava bucket lasts 100 items. At the default 100, a bucket is used only when it
+# will burn out while cooking.
+# Below this backlog, golems bring the next fuel on the list instead (just enough, see
+# furnace-fuel-ahead). If there is no other fuel, they use lava anyway.
+# 0: lava whenever it is its turn in furnace-fuel.
+# Lower: lava is used more often and some can be wasted.
+# Higher: lava is used only for big piles.
+# Only matters when lava comes before another fuel in furnace-fuel, or that fuel runs out.
 furnace-lava-min-items: 100
-# When golems top a furnace up: only once this many items or fewer are left waiting in it
-# (0 to 64). At the default 16 a furnace has about 160 seconds of cooking left (80 for a
-# smoker or blast furnace): time for a golem that is busy elsewhere (sorting, fuel, emptying
-# other furnaces) to get there before it runs dry. Lower (0 = only when empty) means a
-# furnace can sit idle while golems are busy; 8 is enough with one golem and one furnace.
-# Higher means more, smaller trips; at 64 golems top up after every single item, walking
-# back and forth all the time (busy golems, wasted trips and a little more server work).
+# When golems top a furnace up: only once this many items or fewer are left waiting in
+# it (0 to 64). At the default 16, a furnace has about 160 seconds of cooking left
+# (80 for a smoker or blast furnace). That gives a golem busy elsewhere (sorting, fuel,
+# emptying other furnaces) time to get there before the furnace runs dry.
+# Lower: a furnace can sit idle while golems are busy. 0 means only when empty.
+# 8 is enough with one golem and one furnace.
+# Higher: more, smaller trips. At 64, golems top up after every single item and walk
+# back and forth all the time (wasted trips and a little more server work).
 furnace-refill-below: 16
-# A load is split between 2 furnaces only if each gets at least this many items (1 to 64);
-# otherwise it all goes into one. A load never goes to more than 2 furnaces: while a golem
-# carries a load, the other golems leave its furnaces alone, so a load spread over many
-# furnaces kept them waiting (in tests, carry-amount 64 over 6 furnaces cooked 20% less).
-# At the default 8, a golem carrying 16 (carry-amount) splits it 8 + 8; if more furnaces are
-# running low, the emptiest get it and the rest get the next load. Lower than half of
-# carry-amount changes nothing; set it above half of carry-amount (9 or more at the default
-# 16) to always take a whole load to one furnace: fewer stops per trip, but furnaces start
-# one at a time.
+# A load is split between 2 furnaces only if each gets at least this many items (1 to 64).
+# Otherwise it all goes into one furnace. A load never goes to more than 2 furnaces.
+# While a golem carries a load, other golems leave its furnaces alone, so a load spread
+# over many furnaces kept them waiting (in tests, carry-amount 64 over 6 furnaces cooked
+# 20% less).
+# At the default 8, a golem carrying 16 (carry-amount) splits it 8 + 8. If more furnaces
+# are running low, the emptiest get it and the rest get the next load.
+# Lower than half of carry-amount changes nothing.
+# Above half of carry-amount (9 or more at the default 16): the whole load always goes
+# to one furnace. That means fewer stops per trip, but furnaces start one at a time.
 furnace-split-min: 8
-# Golems take what a furnace made out once this many are ready (1 to 64), or sooner when
-# the furnace won't make more for now: nothing left to cook, or not burning (out of fuel, or
-# its output slot holds something else, like an item a player left there, so it can't
-# light), or its output slot is full. Only matters for furnaces without a hopper under them. At the
-# default 8 one trip carries 8 or more; 1 = take out every single item as it's done (a
-# golem walks to the furnace for each one, and has less time for refills and sorting).
-# Higher means fewer trips but finished items wait longer in the furnace; a full output
+# Golems take what a furnace made out once this many are ready (1 to 64). They also go
+# sooner when the furnace won't make more for now:
+# - nothing left to cook,
+# - not burning (out of fuel, or its output slot holds something else, like an item a
+#   player left there, so it can't light),
+# - or its output slot is full.
+# Only matters for furnaces without a hopper under them.
+# At the default 8, one trip carries 8 or more.
+# 1: take out every single item as it is done. A golem walks to the furnace for each
+# one and has less time for refills and sorting.
+# Higher: fewer trips, but finished items wait longer in the furnace. A full output
 # slot (64) stops the furnace, so golems always empty a full one first.
 furnace-take-out-at: 8
-# If a furnace has filled up by the time a golem gets there (another golem or a player got
-# there first), the golem waits beside it this many seconds (0 to 300) for an item or two to
-# finish, then puts the rest in, and takes whatever still doesn't fit back to the
-# [Furnace Supply] it came from. 0 = take it straight back, which can turn into a loop of
-# fetching and returning the same items as the furnace frees up. Very long waits keep that
-# golem standing there doing nothing else (no sorting) for the whole time.
+# If a furnace has filled up by the time a golem gets there (another golem or a player
+# got there first), the golem waits beside it this many seconds (0 to 300) for an item
+# or two to finish. Then it puts the rest in and takes whatever still doesn't fit back
+# to the [Furnace Supply] it came from.
+# 0: take it straight back. This can turn into a loop of fetching and returning the
+# same items as the furnace frees up.
+# Very long waits keep that golem standing there, doing no sorting, the whole time.
 furnace-wait-seconds: 20
-# Furnace upkeep comes before sorting: an idle golem first empties stopped furnaces, takes
-# out empty buckets, brings fuel and brings items to cook from a [Furnace Supply], then
-# sorts copper chests, then takes out finished items (furnace-take-out-at), then re-sorts
-# [Overflow]. So a big bank of furnaces can't keep sorting waiting forever, after this many
-# furnace jobs in a row (0 to 64) while a copper chest has items, the golem sorts once.
-# 0 = sorting always comes first (how golems worked before 3.1.0). Higher = furnaces stay
-# busier, copper chests (and the hoppers filling them) wait longer.
+# Furnace upkeep comes before sorting. An idle golem picks its next job in this order:
+#   1. Furnace upkeep: empty furnaces that stopped because their output is full, take
+#      out empty lava buckets, bring fuel, and bring items to cook from a [Furnace Supply].
+#   2. Sort the copper chests.
+#   3. Take finished items out of furnaces (see furnace-take-out-at).
+#   4. Re-sort the [Overflow] chests.
+# So a big bank of furnaces can't hold up sorting forever: while a copper chest has
+# items, the golem sorts once after this many furnace jobs in a row (0 to 64).
+# 0: sorting always comes first (how golems worked before 3.1.0).
+# Higher: furnaces stay busier, and copper chests (and the hoppers filling them) wait
+# longer.
 furnace-jobs-before-sorting: 3
 # With GriefPrevention, golems use furnaces and [Fuel]/[Furnace Supply] containers
-# in the claim their copper chest is in. true: also in claims where that claim's owner has
-# container trust.
+# in the claim their copper chest is in.
+# true: also in claims where that claim's owner has container trust.
 furnace-trusted-claims: true
 
-# /cgc find <item>: which containers near a player hold an item. By default players only
-# see containers inside GriefPrevention claims they own (never locked ones);
-# coppergolemclerk.allclaims (ops) sees everything. false turns the command off.
+# /cgc find <item> shows which containers near a player hold an item. By default,
+# players only see containers inside GriefPrevention claims they own (never locked
+# ones). The coppergolemclerk.allclaims permission (ops) sees everything.
+# false turns the command off.
 find-enabled: true
-# true: /cgc find also shows unclaimed containers and claims where the player has container
-# trust; other players' claims stay hidden either way. Without GriefPrevention there are no
-# claims, so players find nothing unless this is true.
+# true: /cgc find also shows unclaimed containers and claims where the player has
+# container trust. Other players' claims stay hidden either way.
+# Without GriefPrevention there are no claims, so players find nothing unless this
+# is true.
 find-outside-own-claims: false
-# How far /cgc find looks (1 to 64 blocks, sideways and up/down). Bigger finds more but
-# checks more blocks each time someone uses it.
+# How far /cgc find looks (1 to 64 blocks, sideways and up/down). Bigger finds more
+# but checks more blocks each time someone uses it.
 find-radius: 32
 # The most a player can ask for with /cgc find <item> <radius> (1 to 128 blocks; never
-# less than find-radius). Bigger numbers are cut down to this. /cgc golems <radius> isn't
-# limited: it searches nothing, and players see only their own golems.
-# Ops (coppergolemclerk.allclaims) and the console aren't limited. Only chunks that are
-# already loaded are searched.
+# less than find-radius). Bigger numbers are cut down to this.
+# Ops (coppergolemclerk.allclaims) and the console aren't limited.
+# Only chunks that are already loaded are searched.
+# /cgc golems <radius> isn't limited either: it searches nothing, and players see only
+# their own golems.
 find-max-radius: 64
-# How many of the containers /cgc find finds glow for the player who asked, nearest first
-# (0 to 30; 0 = no glow).
+# How many of the containers /cgc find finds glow for the player who asked, nearest
+# first (0 to 30; 0 = no glow).
 find-highlight-count: 5
 # How long those containers glow, in seconds (0 = no glow).
 find-highlight-seconds: 10
 
-# Golems give way to each other instead of getting stuck nose to nose. When a
-# golem is stuck (trying to walk but barely moving for a second) because another
-# golem is in its way, one of them steps one block aside and waits for the other
-# to pass: a golem with empty hands gives way to one carrying an item. If both
-# carry something (or both are empty), the same golem of the pair always gives
-# way. Golems busy at a chest never step aside.
+# Golems give way to each other instead of getting stuck nose to nose. When a golem is
+# stuck (trying to walk but barely moving for a second) because another golem is in
+# its way, one of them steps one block aside and waits for the other to pass.
+# A golem with empty hands gives way to one carrying an item. If both carry something
+# (or both are empty), the same golem of the pair always gives way.
+# Golems busy at a chest never step aside.
 golems-give-way: true
 
-# Golems never walk onto or through a trapdoor, open or closed. Vanilla golems
-# treat an open trapdoor as floor and fall through it into the hole below.
+# Golems never walk onto or through a trapdoor, open or closed. Vanilla golems treat
+# an open trapdoor as floor and fall through it into the hole below.
 # Golems stepping aside for each other (golems-give-way) avoid trapdoors too.
 avoid-trapdoors: true
 
-# Golems never go through a Nether portal, End portal or End gateway, so one that
-# wanders into a portal stays in its own world near its copper chest. Golems on a
-# lead or riding something go through as usual (a player is taking them).
+# Golems never go through a Nether portal, End portal or End gateway. One that wanders
+# into a portal stays in its own world near its copper chest.
+# Golems on a lead or riding something go through as usual (a player is taking them).
 avoid-portals: true
 
-# Once a week (and a minute after the server starts), check GitHub for a newer
-# release of this plugin. If there is one, it's logged and admins (op, or the
-# coppergolemclerk.admin permission) are told once when they join. Nothing is
-# downloaded or sent besides the request itself. /cgc version checks right away.
+# Once a week (and a minute after the server starts), check GitHub for a newer release
+# of this plugin. If there is one, it is logged, and admins (op, or the
+# coppergolemclerk.admin permission) are told once when they join.
+# Nothing is downloaded or sent besides the request itself.
+# /cgc version checks right away.
 update-check: true
 
 # How high golems reach, in chest rows counted up from the floor they stand on:
 # 1 is the chest at their feet, 2 the one on top of it. Vanilla golems reach 2.
-# Raise these (up to 6) for taller stacks of chests: golems walk to the foot of the
-# stack and the plugin moves the items for them. They need floor to stand on in
-# front of the chest.
+# Raise these (up to 6) for taller stacks of chests. Golems walk to the foot of the
+# stack and the plugin moves the items for them. They need floor to stand on in front
+# of the chest.
 # deliver-reach: chests golems put items into (labelled, matching, [Overflow], empty), 2 to 6.
 deliver-reach: 2
-# take-reach: copper chests golems take items from, and [Overflow] chests that idle golems
-# fetch from (2 to 6 rows, like deliver-reach). Above 2 the plugin does the taking.
+# take-reach: copper chests golems take items from, and [Overflow] chests that idle
+# golems fetch from (2 to 6 rows, like deliver-reach). Above 2 the plugin does the taking.
 take-reach: 2
 
-# How far golems look for things to do: chests to put items into, copper chests to
-# take from, [Overflow] chests to fetch from and furnaces to keep going. In blocks
-# each way sideways from where the golem stands (a square, like vanilla's); up and
-# down stays 8. 32 is vanilla's own range and the lowest allowed; the most is 128.
-# Above 32 the plugin walks golems to chests vanilla golems can't see and moves the
-# items for them, walks take longer, and each search covers more chunks: about 2.5
-# times as many at 64 as at 32, about 7.4 times at 128. Chests in unloaded chunks are
-# never found, whatever this is.
+# How far golems look for things to do: chests to put items into, copper chests to take
+# from, [Overflow] chests to fetch from, and furnaces to keep going.
+# The distance is in blocks each way sideways from where the golem stands (a square,
+# like vanilla's). Up and down stays 8. 32 is vanilla's own range and the lowest
+# allowed. The most is 128.
+# Above 32, the plugin walks golems to chests that vanilla golems can't see and moves
+# the items for them. Walks take longer, and each search covers more chunks: about 2.5
+# times as many at 64 as at 32, and about 7.4 times at 128.
+# Chests in unloaded chunks are never found, whatever this is set to.
+#
 # Tick-rate cost: the time golems add to each server tick grows with this setting.
 # Measured with 20 working golems among 1,817 chests, per golem per tick: about
 # 0.055 ms at 32, 0.09 ms at 64, 0.15 ms at 96 and 0.26 ms at 128. A tick has 50 ms
-# (20 TPS) for everything on the server, so 100 golems at 128 would use about half of
-# it; the same golems at 32 about a tenth. Raise it only as far as your storage needs,
-# and check /mspt (or /tps) after you do. See "Bigger storage areas" in the README.
+# (20 TPS) for everything on the server. So 100 golems at 128 would use about half of
+# it, and the same golems at 32 about a tenth.
+# Raise it only as far as your storage needs, and check /mspt (or /tps) after you do.
+# See "Bigger storage areas" in the README.
 search-distance: 32
 
 # Which containers golems put items into. Vanilla golems only use chests and trapped
-# chests. Add barrel and/or shulker_box (every colour) and golems use those too: the
+# chests. Add barrel and/or shulker_box (every colour) and golems use those too. The
 # golem walks up to it and the plugin puts the item in, with labels, contents matching
-# and [Overflow] working as for chests. Take chest out to keep golems away from plain
-# chests. (Golems always take items from copper chests.)
+# and [Overflow] working as for chests.
+# Take chest out to keep golems away from plain chests.
+# Golems always take items from copper chests.
 destination-containers: [chest, trapped_chest]
 
 # Players can switch a single copper golem back to plain vanilla behavior (and back
-# again) by right-clicking it with this item. While a player holds it, golems using
-# this plugin show that player a small green light on their antenna; vanilla golems
-# don't. Where GriefPrevention is
-# installed, only players allowed to build where the golem stands can switch it.
+# again) by right-clicking it with this item.
+# While a player holds it, golems using this plugin show that player a small green
+# light on their antenna. Vanilla golems don't.
+# Where GriefPrevention is installed, only players allowed to build where the golem
+# stands can switch it.
 # Needs the coppergolemclerk.toggle permission (everyone has it by default).
 # Set to none to turn switching off.
 golem-toggle-item: bamboo
 # Show the green light (to players holding the toggle item) on golems that use this plugin.
 mode-markers: true
-# While a player holds the toggle item, golems near them also show a small label
-# saying what they're doing ("carrying 12 birch log", "fetching granite", "lost,
-# walking home", "idle") and how weathered their copper is. Only players holding the
-# item see them.
+# While a player holds the toggle item, golems near them also show a small label saying
+# what they are doing ("carrying 12 birch log", "fetching granite", "lost, walking
+# home", "idle") and how weathered their copper is. Only players holding the item see
+# the labels.
 status-labels: true
 
-# A copper golem with nothing to do walks over to say hello to an iron or snow
-# golem within 16 blocks, then goes back to its routine. It doesn't follow them,
-# and waits greet-cooldown-minutes before greeting again. false: no greetings.
+# A copper golem with nothing to do walks over to say hello to an iron or snow golem
+# within 16 blocks, then goes back to its routine. It doesn't follow them, and waits
+# greet-cooldown-minutes before greeting again.
+# false: no greetings.
 greet-other-golems: true
-# How long a golem waits after greeting before it greets again (minutes). Lower means more
-# visits (purely for show; any work that turns up ends a visit).
+# How long a golem waits after greeting before it greets again (minutes). Lower means
+# more visits. They are purely for show, and any work that turns up ends a visit.
 greet-cooldown-minutes: 5
 
-# Lost golems: each golem remembers the copper chest it last took items from. If it ends
-# up far from any copper chest (more than 40 blocks from its own, or 12 up or down, e.g.
-# after falling down a shaft), it walks back. If it can't get any closer, or it's stuck
-# where it can't walk to a copper chest (a pit, walled in), its owner gets an alert
-# (see below) saying where it is, and it tries again every 5 minutes. A golem moved to a
-# place with its own copper chest just adopts that one. Golems on a lead are left alone.
+# Lost golems: each golem remembers the copper chest it last took items from. If it
+# ends up far from any copper chest (more than 40 blocks from its own, or 12 up or
+# down, e.g. after falling down a shaft), it walks back.
+# If it can't get any closer, or it is stuck where it can't walk to a copper chest
+# (a pit, walled in), its owner gets an alert (see below) saying where it is. The golem
+# tries again every 5 minutes.
+# A golem moved to a place with its own copper chest just adopts that one.
+# Golems on a lead are left alone.
 rescue-lost-golems: true
-# Teleport a golem that can't walk back to its copper chest, instead of only telling the
-# owner. Off by default. Even when on, a golem is only teleported if the owner of the
-# GriefPrevention claim its copper chest is in has the coppergolemclerk.teleport
-# permission (nobody has it unless you grant it, e.g. with LuckPerms; for an owner who's
-# offline the plugin asks LuckPerms). Golems whose chest isn't in a claim are never
-# teleported.
+# Teleport a golem that can't walk back to its copper chest, instead of only telling
+# the owner. Off by default.
+# Even when on, a golem is teleported only if the owner of the GriefPrevention claim its
+# copper chest is in has the coppergolemclerk.teleport permission. Nobody has it unless
+# you grant it, e.g. with LuckPerms. For an owner who is offline, the plugin asks
+# LuckPerms. Golems whose chest isn't in a claim are never teleported.
 lost-golem-teleport-home: false
 
 # Alerts: players are told when a golem is lost (above), finds a labelled chest full, or
-# an [Overflow] chest is filling up. An alert goes to the owner of the GriefPrevention claim where it
-# happens (an owner who's offline is told when they join); outside claims, or without
-# GriefPrevention, to online players with coppergolemclerk.alerts (ops by default).
+# an [Overflow] chest is filling up.
+# An alert goes to the owner of the GriefPrevention claim where it happens (an owner who
+# is offline is told when they join). Outside claims, or without GriefPrevention, it
+# goes to online players with coppergolemclerk.alerts (ops by default).
 # Every alert is also written to the server log.
 full-chest-alerts: true
 # Warn when an [Overflow] chest has at least this many of its slots in use (percent).
-# 0: only when it's completely full.
+# 0: only when it is completely full.
 overflow-alert-percent: 90
 # Don't repeat an alert about the same chest more often than this.
 alert-cooldown-minutes: 30
 
-# When a player joins, tell them how many items golems sorted in their claims while
-# they were away, and how many of their chests filled up (without GriefPrevention:
-# server-wide numbers, for players with coppergolemclerk.alerts). /cgc stats shows
-# the numbers any time.
+# When a player joins, tell them how many items golems sorted in their claims while they
+# were away, and how many of their chests filled up. Without GriefPrevention, these are
+# server-wide numbers, shown to players with coppergolemclerk.alerts.
+# /cgc stats shows the numbers any time.
 join-summary: true
 
-# Write a line in the server log when a copper golem dies (with the cause, e.g.
-# lava, fall or a mob, and what it was holding) or is removed another way (turned
-# into a statue, /kill, another plugin). Golems never despawn, so this explains
-# every golem that goes missing.
+# Write a line in the server log when a copper golem dies (with the cause, e.g. lava,
+# fall or a mob, and what it was holding) or is removed another way (turned into a
+# statue, /kill, another plugin). Golems never despawn, so this explains every golem
+# that goes missing.
 log-golem-deaths: true
 
-# Golems tidy a chest while putting something in it: partial stacks of the same
-# item are merged, and like items are moved next to each other (by group, in the
-# order the groups are listed below). Copper chests and chests a player has open
-# are left alone.
+# Golems tidy a chest while putting something in it. Partial stacks of the same item
+# are merged, and like items are moved next to each other (by group, in the order the
+# groups are listed below). Copper chests and chests a player has open are left alone.
 tidy-chests: true
 
-# Worlds where the plugin does nothing (golems there behave as in vanilla), by
-# folder name, e.g. [world_nether, world_the_end].
+# Worlds where the plugin does nothing (golems there behave as in vanilla), by folder
+# name, e.g. [world_nether, world_the_end].
 disabled-worlds: []
 
-# Golem limits: how many copper golems in one GriefPrevention claim (each claim on its own,
-# admin claims too) use this plugin. The oldest golems keep it; the newest over the limit
-# sort like vanilla, and the claim owner (or players with coppergolemclerk.alerts) is told.
+# Golem limits: how many copper golems in one GriefPrevention claim use this plugin.
+# Each claim counts on its own, admin claims too. The oldest golems keep the plugin
+# behavior. The newest over the limit sort like vanilla, and the claim owner (or players
+# with coppergolemclerk.alerts) is told.
 # Golems on unclaimed land, and every golem without GriefPrevention, aren't limited.
-# 0 = no limit. Each working golem costs about 0.1 ms per tick with or without this plugin,
-# so golems over the limit still cost the same tick time (see the README).
+# 0 = no limit.
+# Each working golem costs about 0.1 ms per tick with or without this plugin, so golems
+# over the limit still cost the same tick time (see the README).
 max-golems-per-claim: 0
 
-# Bigger claims get more golems: one more for every this many claim blocks of the claim's
-# area, on top of max-golems-per-claim. E.g. 5 and 2500: a 100x100 claim (10,000 blocks)
-# gets 9. With max-golems-per-claim 0, a claim smaller than this gets none. 0 = off.
+# Bigger claims get more golems: one more for every this many claim blocks of the
+# claim's area, on top of max-golems-per-claim. E.g. 5 and 2500: a 100x100 claim
+# (10,000 blocks) gets 9.
+# With max-golems-per-claim 0, a claim smaller than this gets none.
+# 0 = off.
 claim-blocks-per-extra-golem: 0
 
-# Let players use /cgc golems to list their own golems (in claims they own, or whose
-# copper chest is in one; without GriefPrevention, the golems within 48 blocks of them).
+# Let players use /cgc golems to list their own golems: those in claims they own, or
+# whose copper chest is in one. Without GriefPrevention, it lists the golems within
+# 48 blocks of them.
 # Off by default: only admins can use it.
 golems-command-for-players: false
 
 # true: write a line to the server console (and logs/latest.log) for every decision the
-# plugin makes, with the reason. It doesn't change what golems do, and players never see
-# it. It covers which chests a golem may go to and why a delivery is accepted or refused
-# (label, group, exact match, [Overflow], empty chest); furnace jobs (fetching supply or
-# fuel, putting items in, taking output out, waiting, giving up on a furnace it can't
-# reach); [Overflow] fetches and items returned to their copper chest; and golems giving
-# way, greeting, topping up a carry, reaching higher chests, avoiding portals, being
-# switched to vanilla, tidying chests, and update checks. Use it while setting up groups
-# and labels or when golems do something unexpected, then turn it off: it's several lines
-# per golem per delivery, which fills the log fast with many golems. /cgc reload applies
-# it without a restart. For each golem's every move, see trace-golems.
+# plugin makes, with the reason. It doesn't change what golems do, and players never
+# see it. It covers:
+# - which chests a golem may go to, and why a delivery is accepted or refused (label,
+#   group, exact match, [Overflow], empty chest)
+# - furnace jobs (fetching supply or fuel, putting items in, taking output out,
+#   waiting, giving up on a furnace it can't reach)
+# - [Overflow] fetches and items returned to their copper chest
+# - golems giving way, greeting, topping up a carry, reaching higher chests, avoiding
+#   portals, being switched to vanilla, tidying chests, and update checks
+# Use it while setting up groups and labels, or when golems do something unexpected,
+# then turn it off. It writes several lines per golem per delivery, which fills the
+# log fast with many golems.
+# /cgc reload applies it without a restart.
+# For each golem's every move, see trace-golems.
 debug: false
 
-# true: once a second, log each copper golem's animation state, block position, held item
-# and whether it's walking somewhere, whenever any of those changed (so up to a line a
-# second per walking golem), plus a reminder line every 5 seconds while it carries
-# something. Even chattier than debug: turn it on only to follow exactly what golems are
-# doing (for example during long pauses), and off again after. It doesn't change what
-# golems do.
+# true: once a second, log each copper golem's animation state, block position, held
+# item and whether it is walking somewhere, whenever any of those changed. That is up
+# to a line a second per walking golem, plus a reminder line every 5 seconds while it
+# carries something.
+# Even chattier than debug. Turn it on only to follow exactly what golems are doing
+# (for example during long pauses), and off again after. It doesn't change what golems do.
 trace-golems: false
 
 # Each group is a list of entries. An item can be in more than one group.
 # A group's name is its sign label ([light sources] for light-sources), so keep names
-# short: a sign line holds about 15 letters (a longer label can carry on to the next
-# line, but one line is easier). Upgrading never changes this list.
+# short. A sign line holds about 15 letters. A longer label can continue on the next
+# line, but one line is easier.
+# Upgrading never changes this list.
 # Entry formats:
 #   DIAMOND            one item (minecraft:diamond also works)
 #   *_ORE              name pattern; * matches any letters (or none), whole ID must fit
