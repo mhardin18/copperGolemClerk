@@ -421,7 +421,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             getLogger().warning("matching-chest-timeout-seconds is no longer used: golems now get as long as the walk"
                     + " to each chest takes (see search-distance). Delete it from config.yml.");
         }
-        groups = ItemGroups.load(config.getConfigurationSection("groups"), getLogger());
+        groups = ItemGroups.load(config.getConfigurationSection("groups"),
+                config.getConfigurationSection("group-aliases"), getLogger());
         getLogger().info("Loaded " + groups.groupCount() + " item groups (match-mode: " + mode + ").");
         return null;
     }

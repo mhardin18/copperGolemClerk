@@ -245,6 +245,33 @@ split into `signs`, `banners`, `pottery` and `beds`, and mob heads moved to `rar
 `[utility blocks]` sign finds the new `workstations` on a fresh config. An older config
 keeps its own `utility-blocks` and `decorations` groups.
 
+#### Other names for groups
+
+Give a group more names with `group-aliases` in `config.yml`. A sign with an alias works
+the same as one with the group's own name:
+
+```yaml
+group-aliases:
+  mechanisms: redstone        # [mechanisms] means the redstone group
+  contraptions: redstone      # a group can have several aliases
+  cooking: [food, seeds]      # one alias can mean several groups
+```
+
+- Aliases work everywhere a group name does: sign labels, `[Only ...]` filters,
+  `/cgc find` and `/cgc check`.
+- Spaces, dashes and plurals work as for group names: `[mechanism]` is `mechanisms`.
+- A group's own name always wins. An alias that is already a group's name is ignored.
+- An alias that points to a group that isn't in `groups:` is ignored. So is one with
+  `#`, `@` or `*` in it, or one that would read as `[Overflow]` or `[No Golems]`. The
+  console says why.
+- `/cgc check` on an item in your hand lists its groups with their aliases:
+  `REPEATER: redstone (also mechanisms, contraptions)`.
+- When a group's name is too wide for a sign line, `/cgc label` and the other label
+  suggestions use an alias that fits.
+
+There are no aliases by default. Upgrading adds an empty `group-aliases: {}` to your
+config. Run `/cgc reload` after editing it.
+
 ### Smarter use of empty chests
 
 Vanilla golems walk to the nearest chest they haven't tried. They drop their item into the
@@ -295,6 +322,8 @@ How a label is read:
   group's name, use a framed item instead.
 - Group names work singular or plural: `[Rail]` is `rails`, `[ore]` is `ores`,
   `[light source]` is `light-sources`.
+- A group's other names from `group-aliases` work too
+  ([see Other names for groups](#other-names-for-groups)).
 - If a word matches no group and no item, it matches items with that word in their name.
   `[carpet]` is every carpet.
 - An item that comes in all 16 dye colours also covers them. `[Shulker Box]`, `[Candle]`
@@ -1017,6 +1046,7 @@ line number, and the old settings are kept.
 | `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use. Copper chests and chests a player has open are left alone. |
 | `destination-containers` | `[chest, trapped_chest]` | What golems put items into. Add `barrel` and/or `shulker_box` (every colour). Leave `chest` out to keep golems away from plain chests. Golems always take from copper chests. |
 | `groups` | 56 groups | The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
+| `group-aliases` | none (`{}`) | Other names for groups on signs: `alias: group`, or `alias: [group, group]` for several. A group's own name wins. See [Other names for groups](#other-names-for-groups). |
 
 ### Busier golems
 

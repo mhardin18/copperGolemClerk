@@ -177,7 +177,7 @@ error or exception in the server log during a scenario fails it.
 | core | groups, frame and sign labels, plurals, most-specific chest, overflow, returns, fetching, golems far from players |
 | world | the world changing mid-task: chests or signs destroyed or edited, golem killed, chunk unloaded, double chest split |
 | setup | blocked chests, trapped chests and barrels, enchanted items, partial deliveries, crowds |
-| edge | locked chests, hoppers, shulker/bundle contents, odd sign text and placement, range limits, fetch limits |
+| edge | locked chests, hoppers, shulker/bundle contents, odd sign text and placement, renamed groups and `group-aliases`, range limits, fetch limits |
 | scenes | whole sorting rooms end to end; a manual 15-minute soak |
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
 | commands | `/cgc check` on chests, `/cgc overflow`, `disabled-worlds` |

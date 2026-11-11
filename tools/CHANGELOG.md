@@ -8,6 +8,9 @@ Versions are the plugin release each change came out with.
 
 ## 3.2.0 (in progress)
 
+### New
+- `edge`: `group-alias-signs` checks that `[mechanisms]` and `[cooking]` signs take the groups their `group-aliases` point to. `group-alias-warnings` checks the console warnings for an alias that points to a missing group, and for one that is already a group's name.
+
 ### Changed
 - `work-order`: `take-out-after-sorting` is now `take-out-before-sorting`. It checks that the golem takes finished items out of the furnace before it takes any logs from the copper chest, then sorts them.
 - Updated the `itest` scenarios for the optional `[radius]` on `/cgc find` and `/cgc golems`, for the furnace-output hopper minecart (#130), and for the new `/cgc find` chunk message.
