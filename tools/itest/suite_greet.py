@@ -99,13 +99,16 @@ def _(c):
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{Tags:[\"itest_other\"],NoAI:1b}}")
     golem(c, 4, 4)
     killed = Trigger()
+    back = Trigger()
     def check():
         killed.fire_when(lambda: c.elapsed() > 3 and hellos(c, "going to say hello") and not golem_near(c, 3, 4, 4),
                          lambda: c.r.cmd(f"kill {c.selector('iron_golem')}"))  # this platform's only
+        # Once back it may wander off again like any idle golem: note when it got there.
+        back.fire_when(lambda: killed.at is not None and golem_near(c, 2, 4, 4), lambda: None)
         return [(killed.at is not None and killed.since() > 15, "visit started, golem killed on the way, 15 seconds passed"),
                 (not hellos(c), "no hello to a dead golem"),
                 (bool(hellos(c, "stopped going to say hello: the golem it was visiting is gone")), "the visit's end was logged"),
-                (golem_near(c, 2, 4, 4), "the copper golem walked back to its copper chest")]
+                (back.at is not None, "the copper golem walked back to its copper chest after the visit ended")]
     return check
 
 
@@ -148,7 +151,7 @@ def _(c):
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     c.chest("logs", 2, 16, [("oak_log", 1)])
-    x, y, z = c.abs(20, 2)
+    x, y, z = c.abs(16, 4)  # within 16 blocks of the copper chest (greetings stay near work), 13 from the golem
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{NoAI:1b}}")
     golem(c, 4, 10)
     t = Trigger()

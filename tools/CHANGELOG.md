@@ -15,6 +15,7 @@ Versions are the plugin release each change came out with.
 - `commands`: `check-says-more-specific-chest-wins` checks that `/cgc check` and `/cgc label` say golems take copper ingots from a `[*copper*]` chest to a nearby `[ingots and gems]` chest, and how to keep them. It also checks that a chest with no rival says nothing of the kind.
 
 ### Changed
+- `greet-interrupted-by-work`: the iron golem now stands within 16 blocks of the copper chest, so the visit can start now that greetings stay near work.
 - `greet`: `greet-other-dies-on-the-way` also checks that the end of the visit is logged and that the golem walks back to its copper chest. `greet-unreachable` looks for the new "stopped going to say hello" log line.
 - `run.py` sets clear weather (`weather clear 1000000`) at the start of every run. Rain hurts snow golems and made `greet-snow-golem` fail once.
 - `work-order`: `take-out-after-sorting` is now `take-out-before-sorting`. It checks that the golem takes finished items out of the furnace before it takes any logs from the copper chest, then sorts them.

@@ -226,8 +226,9 @@ final class GolemGreetings {
         }
         end(golem, now, cooldown);
         if (visit != null && idle(golem) && flat(golem.getLocation(), visit.anchor()) > BACK_DISTANCE) {
-            returning.put(golem.getUniqueId(), new Return(visit.anchor(), now));
-            golem.getPathfinder().moveTo(visit.anchor(), 1.0);
+            Location to = standBeside(visit.anchor());
+            returning.put(golem.getUniqueId(), new Return(to, now));
+            golem.getPathfinder().moveTo(to, 1.0);
         }
     }
 
@@ -272,6 +273,16 @@ final class GolemGreetings {
             }
         }
         return best != null ? best : at.clone();
+    }
+
+    /**
+     * Where to walk to get back to a chest or furnace: the free spot beside it a golem stands on
+     * to use it (a path can't end inside the block itself), else the top of it.
+     */
+    private static Location standBeside(Location anchor) {
+        HomeFinder.Pos pos = new HomeFinder.Pos(anchor.getBlockX(), anchor.getBlockY(), anchor.getBlockZ());
+        Reach.Spot spot = Reach.spotFor(anchor.getWorld(), java.util.Set.of(pos));
+        return spot != null ? spot.target() : anchor.clone().add(0, 1, 0);
     }
 
     /** Distance sideways (x and z), ignoring height. */
