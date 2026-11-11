@@ -209,6 +209,23 @@ def run_batch(r, log, batch, keep, results=None):
     return cells, done
 
 
+def read_or_none(path):
+    """A file's text, or None if it doesn't exist."""
+    return open(path).read() if os.path.exists(path) else None
+
+
+def restore(path, before):
+    """Put a file back as it was (None: it didn't exist). True if it had changed."""
+    if read_or_none(path) == before:
+        return False
+    if before is None:
+        os.remove(path)
+    else:
+        with open(path, "w") as f:
+            f.write(before)
+    return True
+
+
 def main(argv):
     problem = check_args(argv)
     if problem:
@@ -233,6 +250,7 @@ def main(argv):
     r = from_properties(os.path.join(arena.SERVER, "server.properties"))
     log = arena.Log(os.path.join(arena.SERVER, "logs/latest.log"))
     config_before = open(arena.CONFIG).read()
+    aliases_before = read_or_none(arena.PLAYER_ALIASES)
     r.cmd("coppergolemclerk reload")  # start clean: clears "no home" marks from earlier runs
 
     parallel = [(i, s) for i, s in chosen if not s["alone"]]
@@ -252,15 +270,20 @@ def main(argv):
                     cells, done = run_batch(r, log, [(i, s)], keep, results)
                     results.update({i: (cells[i], d) for i, d in done.items()})
                 finally:
+                    changed = restore(arena.PLAYER_ALIASES, aliases_before)  # player-alias tests write it
                     if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
                         with open(arena.CONFIG, "w") as f:
                             f.write(config_before)
+                        changed = True
+                    if changed:
                         r.cmd("coppergolemclerk reload")
         finally:
             if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
                 with open(arena.CONFIG, "w") as f:
                     f.write(config_before)
                 print("Restored config.yml.")
+            if restore(arena.PLAYER_ALIASES, aliases_before):
+                print("Restored player-aliases.yml.")
             r.cmd("coppergolemclerk reload")
     except KeyboardInterrupt:
         interrupted = True

@@ -482,6 +482,22 @@ claim-blocks-per-extra-golem: 0
 # Off by default: only admins can use it.
 golems-command-for-players: false
 
+# true: players can give groups their own other names with /cgc alias, for example
+# /cgc alias add mechanisms redstone. A player's aliases work on signs on chests in
+# GriefPrevention claims they own, and in their own /cgc find and /cgc check.
+# Without GriefPrevention, signs don't use players' aliases.
+# A group's own name, group-aliases and item names always come first, so a player's
+# alias can't change what a sign means for anyone else.
+# Players need the coppergolemclerk.alias permission (everyone has it by default; take
+# it away with a permissions plugin).
+# false: /cgc alias is turned off and signs ignore players' aliases. They're kept in
+# player-aliases.yml, so turning it back on brings them back.
+player-aliases: true
+
+# How many aliases each player can have (0 to 1000). 0 means no limit.
+# Changing an alias a player already has doesn't count toward it.
+player-aliases-max: 20
+
 # true: write a line to the server console (and logs/latest.log) for every decision the
 # plugin makes, with the reason. It doesn't change what golems do, and players never
 # see it. It covers:

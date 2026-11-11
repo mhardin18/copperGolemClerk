@@ -80,7 +80,9 @@ final class ItemFinder implements Listener {
             }
             lastSearch.put(p.getUniqueId(), now);
         }
-        ItemGroups.Rule rule = plugin.groups().signRule(text);
+        ItemGroups.Rule rule = sender instanceof Player own && plugin.playerAliasesEnabled()
+                ? plugin.groups().signRule(text, own.getUniqueId(), plugin.playerAliases().of(own.getUniqueId()))
+                : plugin.groups().signRule(text);
         if (rule == null) {
             throw new IllegalArgumentException("'" + text + "' isn't an item, group, pattern or tag.");
         }

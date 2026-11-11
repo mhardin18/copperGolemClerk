@@ -10,7 +10,7 @@ Each scenario's platform sits inside one of the claims (place=...), so they run 
 import os
 import re
 
-from arena import SERVER, Skip, scenario
+from arena import PLAYER_ALIASES, SERVER, Skip, expect, scenario
 from suite_options import set_options
 from suite_rescue import FAR, far_golems, lost_golem, walkway
 from suite_alerts import alerts, full_logs_chest
@@ -86,3 +86,63 @@ def _(c):
         return [(c.count("logs", "acacia_log") == 16, f"logs has {c.count('logs', 'acacia_log')} acacia logs (want 16)"),
                 (OWNER_A[:8] in line, f"claim A's owner listed: '{line.strip()}'")]
     return check
+
+
+# ---- players' own aliases (/cgc alias): the claim owner's aliases apply to signs in their claims
+
+def owner_a_alias(c, text):
+    """Give claim A's owner aliases (player-aliases.yml lines under the UUID), then /cgc reload."""
+    with open(PLAYER_ALIASES, "w") as f:
+        f.write(f"{OWNER_A}:\n" + "".join(f"  {line}\n" for line in text))
+    reply = re.sub(r"§.", "", c.r.cmd("coppergolemclerk reload"))
+    if "reloaded" not in reply:
+        raise RuntimeError(f"reload failed: {reply}")
+
+
+def gizmo_chests(c):
+    c.chest("copper", 2, 10, [("repeater", 8)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("gizmos", 12, 10)
+    c.sign(12, 10, "[gizmos]")
+    c.golem(4, 10)
+
+
+@scenario("player-alias-in-own-claim", "claims", 180, "Claim A's owner has the alias gizmos = redstone: in claim A, a [gizmos] chest takes repeaters (not the nearer empty chest).", alone=True, place=PLACE_A)
+def _(c):
+    need_fixture()
+    owner_a_alias(c, ["gizmos: redstone"])
+    gizmo_chests(c)
+    return lambda: [expect(c, "gizmos", "repeater", 8), expect(c, "empty", "*", 0)]
+
+
+@scenario("player-alias-not-in-others-claim", "claims", 180, "The same alias and chests in claim B (another owner): [gizmos] means nothing there, so the repeaters go to the empty chest.", alone=True, place=PLACE_B)
+def _(c):
+    need_fixture()
+    owner_a_alias(c, ["gizmos: redstone"])
+    gizmo_chests(c)
+    return lambda: [expect(c, "empty", "repeater", 8), expect(c, "gizmos", "*", 0)]
+
+
+@scenario("player-aliases-off", "claims", 180, "player-aliases: false: in claim A, [gizmos] is ignored even though the owner has the alias; the repeaters go to the empty chest.", alone=True, place=PLACE_A)
+def _(c):
+    need_fixture()
+    owner_a_alias(c, ["gizmos: redstone"])
+    set_options(c, player_aliases="false")
+    gizmo_chests(c)
+    return lambda: [expect(c, "empty", "repeater", 8), expect(c, "gizmos", "*", 0)]
+
+
+@scenario("player-alias-console-commands", "claims", 30, "/cgc alias list <owner> shows the alias from player-aliases.yml; /cgc alias clear <owner> removes it.", alone=True)
+def _(c):
+    owner_a_alias(c, ["gizmos: redstone", "kitchen: [food, seeds]"])
+    got = {}
+
+    def check():
+        if not got:
+            got["list"] = re.sub(r"§.", "", c.r.cmd(f"cgc alias list {OWNER_A}"))
+            got["clear"] = re.sub(r"§.", "", c.r.cmd(f"cgc alias clear {OWNER_A}"))
+            got["after"] = open(PLAYER_ALIASES).read() if os.path.exists(PLAYER_ALIASES) else ""
+        return [("[gizmos] = redstone" in got["list"] and "[kitchen] = food + seeds" in got["list"], f"list: {got['list'][:160]!r}"),
+                ("Removed 2 aliases" in got["clear"], f"clear: {got['clear'][:120]!r}")]
+    return check
+

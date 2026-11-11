@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.bukkit.Bukkit;
@@ -40,10 +42,28 @@ public final class ItemGroups {
     private final List<String> groupNames;
     private final Map<Material, BitSet> membership;
     private List<Alias> aliases = List.of();
+    /** Where players' own aliases come from (/cgc alias); null = none (tests, or player-aliases off). */
+    private OwnerAliases ownerAliases;
+
+    /** Players' own aliases, and who owns the claim a chest is in. */
+    interface OwnerAliases {
+        /** False when no player has an alias (or the feature is off): label reading skips the claim lookup. */
+        boolean any();
+
+        UUID ownerAt(org.bukkit.Location place);
+
+        Map<String, List<String>> of(UUID owner);
+    }
+
+    void ownerAliases(OwnerAliases source) {
+        this.ownerAliases = source;
+    }
     private final List<Material> items;
     private final int[] groupSizes;
     /** Parsed sign rules by their bracket text; empty Optional = matches nothing. */
     private final Map<String, Optional<Rule>> signRules = new HashMap<>();
+    /** The same, for signs in a claim whose owner has aliases (/cgc alias), per owner. */
+    private final Map<UUID, Map<String, Optional<Rule>>> ownerRules = new HashMap<>();
 
     private ItemGroups(List<String> groupNames, Map<Material, BitSet> membership, List<Material> items) {
         this.groupNames = groupNames;
@@ -252,30 +272,41 @@ public final class ItemGroups {
     private Optional<Rule> parseSignRule(String key) {
         boolean plainName = !key.startsWith("#") && !key.startsWith("@") && !key.contains("*");
         if (plainName) {
-            // A group wins: exact name first, then allowing singular/plural ("rail" = "rails").
-            String[] words = words(key);
-            int fuzzy = -1;
-            for (int i = 0; i < groupNames.size(); i++) {
-                String[] groupWords = words(groupNames.get(i));
-                if (String.join("-", groupWords).equals(String.join("-", words))) {
-                    return Optional.of(new Rule(inGroup(i), groupSizes[i], "group " + groupNames.get(i)));
-                }
-                if (fuzzy < 0 && sameWordsIgnoringPlural(words, groupWords)) {
-                    fuzzy = i;
-                }
-            }
-            if (fuzzy >= 0) {
-                return Optional.of(new Rule(inGroup(fuzzy), groupSizes[fuzzy], "group " + groupNames.get(fuzzy)));
-            }
-            Rule aliased = aliasRule(words);
-            if (aliased != null) {
-                return Optional.of(aliased);
-            }
-            Rule renamed = renamedGroup(words);
-            if (renamed != null) {
-                return Optional.of(renamed);
+            Rule group = groupLevelRule(words(key));
+            if (group != null) {
+                return Optional.of(group);
             }
         }
+        return Optional.ofNullable(itemRule(key, plainName));
+    }
+
+    /**
+     * A plain name read as a group: its own name (exactly, then singular/plural: "rail" =
+     * "rails"), then the server's group-aliases, then a default group's old name. Null if none.
+     */
+    private Rule groupLevelRule(String[] words) {
+        int fuzzy = -1;
+        for (int i = 0; i < groupNames.size(); i++) {
+            String[] groupWords = words(groupNames.get(i));
+            if (String.join("-", groupWords).equals(String.join("-", words))) {
+                return new Rule(inGroup(i), groupSizes[i], "group " + groupNames.get(i));
+            }
+            if (fuzzy < 0 && sameWordsIgnoringPlural(words, groupWords)) {
+                fuzzy = i;
+            }
+        }
+        if (fuzzy >= 0) {
+            return new Rule(inGroup(fuzzy), groupSizes[fuzzy], "group " + groupNames.get(fuzzy));
+        }
+        Rule aliased = aliasRule(words);
+        if (aliased != null) {
+            return aliased;
+        }
+        return renamedGroup(words);
+    }
+
+    /** A label that isn't a group: an item (and its dyed versions), tag, property or pattern, or item-name words. */
+    private Rule itemRule(String key, boolean plainName) {
         String entry = key.startsWith("#") ? key.replace(' ', '_') : key.replace(' ', '_').replace('-', '_');
         String meaning = key.startsWith("#") ? "item tag " + entry
                 : key.startsWith("@") ? "items that are " + entry.substring(1)
@@ -291,7 +322,123 @@ public final class ItemGroups {
             // Last try: items with these words in their name ([stew] = mushroom/rabbit/suspicious stew).
             rule = ruleFor(m -> containsWords(m.name(), words(key)), "items with \"" + key + "\" in their name");
         }
-        return Optional.ofNullable(rule);
+        return rule;
+    }
+
+    /**
+     * The rule for a sign label in a claim whose owner has their own aliases (/cgc alias).
+     * Group names, the server's group-aliases and old default names still come first; then
+     * the owner's aliases; then items. owner null or no aliases: the same as signRule(text).
+     */
+    Rule signRule(String text, UUID owner, Map<String, List<String>> ownerAliases) {
+        if (owner == null || ownerAliases == null || ownerAliases.isEmpty()) {
+            return signRule(text);
+        }
+        String key = text.trim().toLowerCase(Locale.ROOT);
+        return ownerRules.computeIfAbsent(owner, k -> new HashMap<>())
+                .computeIfAbsent(key, k -> Optional.ofNullable(parseOwnerRule(k, ownerAliases))).orElse(null);
+    }
+
+    private Rule parseOwnerRule(String key, Map<String, List<String>> ownerAliases) {
+        boolean plainName = !key.startsWith("#") && !key.startsWith("@") && !key.contains("*");
+        if (plainName) {
+            String[] words = words(key);
+            Rule group = groupLevelRule(words);
+            if (group != null) {
+                return group;
+            }
+            for (var e : ownerAliases.entrySet()) {
+                if (!sameWordsIgnoringPlural(words, words(e.getKey()))) {
+                    continue;
+                }
+                List<Integer> found = new ArrayList<>();
+                for (String target : e.getValue()) {
+                    int i = namedGroup(target);
+                    if (i >= 0) {
+                        found.add(i); // a group since removed from config.yml is skipped
+                    }
+                }
+                if (!found.isEmpty()) {
+                    return groupsRule(found, "the claim owner's alias " + e.getKey());
+                }
+            }
+        }
+        return signRule(key);
+    }
+
+    /**
+     * The rule for a sign label on a chest at this place: with the aliases of the claim's
+     * owner, if players have any. The owner is looked up at most once per supplier, and only
+     * if some player has aliases.
+     */
+    Rule signRuleAt(String text, Supplier<UUID> owner) {
+        OwnerAliases source = ownerAliases;
+        if (source == null || !source.any()) {
+            return signRule(text);
+        }
+        UUID who = owner.get();
+        return who == null ? signRule(text) : signRule(text, who, source.of(who));
+    }
+
+    /** The claim owner at a place, looked up once, on first use (null without GriefPrevention or a claim). */
+    Supplier<UUID> ownerOnce(org.bukkit.Location place) {
+        return new Supplier<>() {
+            private boolean looked;
+            private UUID owner;
+
+            @Override
+            public UUID get() {
+                if (!looked) {
+                    looked = true;
+                    owner = ownerAliases == null ? null : ownerAliases.ownerAt(place);
+                }
+                return owner;
+            }
+        };
+    }
+
+    /** Players' aliases were read again (/cgc reload): forget every owner's rules. */
+    void forgetOwners() {
+        ownerRules.clear();
+    }
+
+    /** A player's aliases changed: forget the rules read with the old ones. */
+    void forgetOwner(UUID owner) {
+        ownerRules.remove(owner);
+    }
+
+    /**
+     * Why this can't be a player's alias, or null if it can. It must be a plain name, not a
+     * special label ([Overflow], [Fuel] ...), and not already mean something on a sign: a
+     * group, the server's group-aliases, an old default group name, or an item.
+     */
+    String whyNotAnAlias(String alias) {
+        String name = alias.trim();
+        if (name.isEmpty() || !name.matches("[\\p{L}\\p{N}_-]+")) {
+            return "An alias is one word of letters and numbers. Use - for a space: light-stuff is [light stuff] on a sign.";
+        }
+        String spaced = name.replace('-', ' ').replace('_', ' ');
+        if (spaced.equalsIgnoreCase("overflow") || ChestLabels.isNoGolems(spaced) || ChestLabels.isFuel(spaced)
+                || ChestLabels.isFurnaceSupply(spaced) || ChestLabels.onlyLabel(spaced) != null) {
+            return "[" + spaced + "] already has a special meaning on a sign.";
+        }
+        String[] words = words(name);
+        Rule group = groupLevelRule(words);
+        if (group != null) {
+            return "[" + spaced + "] already means " + group.meaning() + ".";
+        }
+        String entry = name.replace('-', '_').toUpperCase(Locale.ROOT);
+        Material item = Material.matchMaterial(entry);
+        if (item != null && item.isItem()) {
+            return "[" + spaced + "] already means the item " + item.getKey().getKey() + ".";
+        }
+        return null;
+    }
+
+    /** The group with this name (dashes, spaces, singular or plural alike), or -1. */
+    int namedGroupIndex(String name) {
+        int exact = namedGroup(name);
+        return exact >= 0 ? exact : groupMatching(words(name));
     }
 
     /**
@@ -557,6 +704,25 @@ public final class ItemGroups {
                 result.add(groupNames.get(i) + (also.isEmpty() ? "" : " (also " + String.join(", ", also) + ")"));
             }
         }
+        return result;
+    }
+
+    /** A player's own aliases (/cgc alias) that cover this item through one of its groups, as sign text. */
+    List<String> ownAliasesFor(Material material, Map<String, List<String>> own) {
+        BitSet bits = membership.get(material);
+        List<String> result = new ArrayList<>();
+        if (bits == null) {
+            return result;
+        }
+        own.forEach((alias, targets) -> {
+            for (String target : targets) {
+                int i = namedGroup(target);
+                if (i >= 0 && bits.get(i)) {
+                    result.add(alias.replace('-', ' ').replace('_', ' '));
+                    return;
+                }
+            }
+        });
         return result;
     }
 

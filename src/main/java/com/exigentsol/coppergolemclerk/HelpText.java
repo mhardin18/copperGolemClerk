@@ -88,6 +88,17 @@ final class HelpText {
                             "Admins (coppergolemclerk.allclaims) also see the whole server's numbers, the most-sorted"
                                     + " items and the busiest claims.",
                             "Players are also told what golems sorted while they were away when they join (join-summary).")),
+            new Entry("alias", "/cgc alias [list | add <alias> <group> | remove <alias>]",
+                    "/cgc alias list <player> | clear <player>",
+                    "Your own other names for groups, for signs in your claims.",
+                    List.of("/cgc alias add mechanisms redstone: [mechanisms] on a sign in your claims now means the"
+                                    + " redstone group. Several groups: /cgc alias add cooking food seeds.",
+                            "An alias is one word; use - for a space (light-stuff is [light stuff]).",
+                            "/cgc alias list shows yours, /cgc alias remove <alias> takes one away."
+                                    + " Your /cgc find and /cgc check use them too.",
+                            "A group's own name, the server's group-aliases and item names always come first,"
+                                    + " so an alias can't change what a sign means anywhere else.",
+                            "Admins: /cgc alias list <player> and /cgc alias clear <player> (a name or a UUID).")),
             new Entry("reload", "/cgc reload", "/cgc reload",
                     "Reload config.yml.",
                     List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",

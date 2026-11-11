@@ -83,6 +83,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile int maxGolemsPerClaim;
     private volatile int claimBlocksPerExtraGolem;
     private final Claims claims = new Claims(this);
+    private final PlayerAliases playerAliases = new PlayerAliases(this);
+    private final AliasCommand aliasCommand = new AliasCommand(this);
+    private volatile boolean playerAliasesEnabled = true;
+    private volatile int playerAliasesMax = 20;
     private volatile boolean findOutsideOwnClaims;
     private volatile boolean golemsCommandForPlayers;
     private volatile boolean findEnabled = true;
@@ -125,6 +129,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         saveDefaultConfig();
         addMissingSettings();
+        playerAliases.load();
         loadSettings();
         stats = new GolemStats(this);
         getServer().getPluginManager().registerEvents(stats, this);
@@ -280,6 +285,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         if (finder != null) {
             finder.save();
         }
+        playerAliases.saveNow(); // a save still waiting off the main thread may not run once the plugin stops
         if (stats != null) {
             stats.everyoneLeaves(); // players are disconnected after plugins stop: note them as leaving now
             stats.save();
@@ -344,6 +350,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         findOutsideOwnClaims = config.getBoolean("find-outside-own-claims", false);
         golemsCommandForPlayers = config.getBoolean("golems-command-for-players", false);
+        playerAliasesEnabled = config.getBoolean("player-aliases", true);
+        playerAliasesMax = rangeSetting(config, "player-aliases-max", 20, 0, 1000);
         findRadius = rangeSetting(config, "find-radius", 32, 1, 64);
         findMaxRadius = rangeSetting(config, "find-max-radius", 64, 1, 128);
         findHighlightSeconds = rangeSetting(config, "find-highlight-seconds", 10, 0, 120);
@@ -423,6 +431,22 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         groups = ItemGroups.load(config.getConfigurationSection("groups"),
                 config.getConfigurationSection("group-aliases"), getLogger());
+        groups.ownerAliases(new ItemGroups.OwnerAliases() {
+            @Override
+            public boolean any() {
+                return playerAliasesEnabled && playerAliases.any() && claims.present();
+            }
+
+            @Override
+            public java.util.UUID ownerAt(org.bukkit.Location place) {
+                return claims.ownerAt(place);
+            }
+
+            @Override
+            public java.util.Map<String, List<String>> of(java.util.UUID owner) {
+                return playerAliases.of(owner);
+            }
+        });
         getLogger().info("Loaded " + groups.groupCount() + " item groups (match-mode: " + mode + ").");
         return null;
     }
@@ -598,6 +622,26 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** GriefPrevention claims and LuckPerms permissions. */
     Claims claims() {
         return claims;
+    }
+
+    PlayerAliases playerAliases() {
+        return playerAliases;
+    }
+
+    boolean playerAliasesEnabled() {
+        return playerAliasesEnabled;
+    }
+
+    /** player-aliases-max: 0 = no limit. */
+    int playerAliasesMax() {
+        return playerAliasesMax;
+    }
+
+    /** Forget which items had no home (labels may read differently now), so golems try them again. */
+    void clearHomeless() {
+        if (listener != null) {
+            listener.clearHomeless();
+        }
     }
 
     boolean findEnabled() {
@@ -856,6 +900,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             case "storage" -> "coppergolemclerk.storage";
             case "stats" -> "coppergolemclerk.stats";
             case "golems" -> "coppergolemclerk.golems";
+            case "alias" -> "coppergolemclerk.alias";
             case "", "help", "?" -> null;
             default -> "coppergolemclerk.admin";
         };
@@ -864,6 +909,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** True if this sender may use this subcommand now (permission, and the setting that turns it on). */
     boolean mayUse(CommandSender sender, String sub) {
         if (sub.equals("find") && !findEnabled) {
+            return false;
+        }
+        if (sub.equals("alias") && !playerAliasesEnabled) {
             return false;
         }
         if (sender.hasPermission("coppergolemclerk.admin")) {
@@ -893,6 +941,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             boolean admin = sender.hasPermission("coppergolemclerk.admin");
             if (!mayUse(sender, sub)) {
                 String why = sub.equals("find") && !findEnabled ? "/cgc find is turned off on this server (find-enabled: false)."
+                        : sub.equals("alias") && !playerAliasesEnabled ? "Player aliases are turned off on this server (player-aliases: false)."
                         : sub.equals("golems") && !golemsCommandForPlayers ? "/cgc golems is for admins on this server."
                         : HelpText.names().contains(sub) ? "You don't have permission for /cgc " + sub + "."
                         : "Unknown command '" + sub + "'.";
@@ -900,7 +949,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 HelpText.send(sender, null, s -> mayUse(sender, s));
                 return;
             }
-            if (!admin && args.length > 2 && !sub.equals("find") && !sub.equals("help")) {
+            if (!admin && args.length > 2 && !sub.equals("find") && !sub.equals("help") && !sub.equals("alias")) {
                 throw new IllegalArgumentException("Only admins can give a position or 'all'.");
             }
             if (!admin && sub.equals("golems") && args.length > 1 && !(args.length == 2 && RadiusArgs.isInt(args[1]))) {
@@ -919,7 +968,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     findCommand(sender, args);
                 }
                 case "reload" -> {
+                    playerAliases.load(); // also picks up hand edits to player-aliases.yml
                     String problem = loadSettings();
+                    groups.forgetOwners(); // if config.yml had a problem, the old groups stay: drop their alias rules
                     if (problem != null) {
                         sender.sendMessage(Component.text(problem + " Nothing changed; fix the file and reload again.",
                                 NamedTextColor.RED));
@@ -956,8 +1007,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         return;
                     }
                     List<String> names = groups.namesOf(hand.getType());
+                    List<String> own = playerAliasesEnabled ? groups.ownAliasesFor(hand.getType(), playerAliases.of(player.getUniqueId()))
+                            : List.of();
                     sender.sendMessage(Component.text(hand.getType().name() + ": "
-                            + (names.isEmpty() ? "no groups (exact-match sorting only)" : String.join(", ", names)),
+                            + (names.isEmpty() ? "no groups (exact-match sorting only)" : String.join(", ", names))
+                            + (own.isEmpty() ? "" : ". Your aliases: [" + String.join("], [", own) + "]"),
                             NamedTextColor.AQUA));
                 }
                 case "label" -> {
@@ -1004,6 +1058,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         sender.sendMessage(Component.text("From the console: /cgc storage <x> <y> <z> [world]", NamedTextColor.RED));
                     }
                 }
+                case "alias" -> aliasCommand.run(sender, args);
                 case "version" -> updates.report(sender);
                 case "stats" -> stats.report(sender);
                 case "golems" -> {
@@ -1140,6 +1195,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 }
                 return out;
             }
+            if (args.length >= 2 && args[0].equalsIgnoreCase("alias")) {
+                return aliasCommand.suggest(who, args);
+            }
             if (args.length == 2 && args[0].equalsIgnoreCase("help")) {
                 String prefix = args[1].toLowerCase(Locale.ROOT);
                 return HelpText.names().stream().filter(s -> s.startsWith(prefix)).toList();
@@ -1149,7 +1207,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
         @Override
         public boolean canUse(CommandSender sender) {
-            for (String sub : List.of("find", "check", "label", "overflow", "storage", "stats", "golems")) {
+            for (String sub : List.of("find", "check", "label", "overflow", "storage", "stats", "golems", "alias")) {
                 if (mayUse(sender, sub)) {
                     return true;
                 }

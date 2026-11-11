@@ -85,7 +85,7 @@ To stop the run early:
 pkill -TERM -f 'tools/itest/run.py'
 ```
 
-The run then restores pluginDev's `config.yml` and saves the results of every scenario that
+The run then restores pluginDev's `config.yml` and `player-aliases.yml` and saves the results of every scenario that
 finished. The rest are `NOT RUN`. The script stops pluginDev if it had started it.
 Don't use `kill -9`, which skips all of this.
 
@@ -106,7 +106,7 @@ newest. Older runs are kept.
     plugin's log lines for the scenario's platform.
 
 Scenario status is `PASS`, `FAIL`, `SKIP`, or `NOT RUN` when the run was stopped first.
-A stopped run (Ctrl-C or SIGTERM) still restores `config.yml` and saves what finished.
+A stopped run (Ctrl-C or SIGTERM) still restores `config.yml` and `player-aliases.yml`, and saves what finished.
 
 A quick look from the shell:
 
@@ -197,7 +197,7 @@ error or exception in the server log during a scenario fails it.
 | modes | golems switched to vanilla (sort like vanilla, no marker), antenna markers through switches, unloads and statues; iron and snow golems untouched |
 | alerts | full-chest and filling-[Overflow] alerts: the chest and item named once, no alert when there's room, `full-chest-alerts` and `overflow-alert-percent` |
 | carry | `carry-amount`: bigger loads per trip, stack-size caps, fetching from [Overflow], out-of-range values |
-| claims | GriefPrevention claims: alerts go to the claim owner, lost-golem teleport by owner permission, `/cgc stats` counted per owner |
+| claims | GriefPrevention claims: alerts go to the claim owner, lost-golem teleport by owner permission, `/cgc stats` counted per owner, the owner's own aliases (`/cgc alias`) on signs in their claims |
 | destinations | barrels and shulker boxes as destinations (`destination-containers`): labels, contents, blocked lids, reach, full-container alerts |
 | filters | `[Only <group>]` filters on copper chests: only matching items are taken, two filter lines, `/cgc check`, returns skip filtered chests |
 | find | `/cgc find`: items, groups, patterns and tags, shulker contents, other containers, radius, a radius argument (and `find-max-radius` not limiting the console), the note on unloaded chunks, off switch, related-name hints |
@@ -211,7 +211,7 @@ error or exception in the server log during a scenario fails it.
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |
 
 Scenarios that change something server-wide (config, reloads, tick timing) run one at a
-time after the others. The runner restores `config.yml` after each.
+time after the others. The runner restores `config.yml` and `player-aliases.yml` after each.
 
 ## Reading containers in a check
 

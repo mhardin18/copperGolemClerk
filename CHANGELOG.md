@@ -6,6 +6,18 @@ To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new
 
 Changes to the developer tools in `tools/` (tests and scripts that aren't part of the plugin) are in [tools/CHANGELOG.md](tools/CHANGELOG.md).
 
+## Future release (not scheduled)
+
+### New
+- Players can give groups their own other names with `/cgc alias`. For example, `/cgc alias add mechanisms redstone` makes `[mechanisms]` mean the redstone group on signs in claims they own.
+  - `/cgc alias add <alias> <group> [more groups]`, `/cgc alias remove <alias>` and `/cgc alias list` (a bare `/cgc alias` lists). Admins also get `/cgc alias list <player>` and `/cgc alias clear <player>`. From the console, only those two work.
+  - An alias is one word (letters, numbers, `-` and `_`). A `-` is a space on a sign: `light-stuff` is `[light stuff]`.
+  - Aliases apply to signs on chests in GriefPrevention claims the player owns, and to their own `/cgc find` and `/cgc check`. Without GriefPrevention, signs don't use them.
+  - An alias can't shadow anything: a group name, a `group-aliases` alias, an old default group name, an item name or a special label such as `[Overflow]` is refused with the reason. So is one for a group that doesn't exist. On a sign, group names, `group-aliases` and old default names come first, then the claim owner's aliases, then item names.
+  - `player-aliases` (default `true`) turns it on or off. Off keeps the saved aliases. `player-aliases-max` (default 20, 0 to 1000, 0 = no limit) is how many each player can have.
+  - `coppergolemclerk.alias` allows the command. Everyone has it by default.
+  - Saved in `plugins/CopperGolemClerk/player-aliases.yml` by player UUID. Changing an alias makes golems retry items that had no home straight away.
+
 ## 3.2.0 (in progress)
 
 ### New

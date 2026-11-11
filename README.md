@@ -272,6 +272,43 @@ group-aliases:
 There are no aliases by default. Upgrading adds an empty `group-aliases: {}` to your
 config. Run `/cgc reload` after editing it.
 
+#### Players' own aliases
+
+Players can give groups their own other names with `/cgc alias`. It is on by default
+(`player-aliases`).
+
+- `/cgc alias add <alias> <group> [more groups]` makes an alias. `/cgc alias add mechanisms
+  redstone` makes `[mechanisms]` mean the redstone group.
+- `/cgc alias remove <alias>` takes one away. `/cgc alias list` shows yours. A bare
+  `/cgc alias` is the same as `list`.
+- Admins can use `/cgc alias list <player>` and `/cgc alias clear <player>`, with a player's
+  name or UUID. From the console, only those two work.
+- An alias is one word of letters, numbers, `-` and `_`. A `-` is a space on a sign:
+  `light-stuff` is `[light stuff]`. Plurals work as for group names.
+- A player's aliases work on signs on chests in GriefPrevention claims they own, and in their
+  own `/cgc find` and `/cgc check`. Holding an item, `/cgc check` adds a line,
+  "Your aliases: [...]". Without GriefPrevention, signs don't use players' aliases. Only
+  their `/cgc find` and `/cgc check` do.
+- An alias can't take over a name that already means something. It is refused, with the
+  reason, if it is a group's name, a `group-aliases` alias, an old default group name (like
+  `utility-blocks`), an item name, or a special label (`[Overflow]`, `[No Golems]`,
+  `[Fuel]`, `[Furnace Supply]`, `[Only ...]`). It is also refused if it names a group that
+  doesn't exist. So one player's alias never changes what a sign means for anyone else.
+- On a sign, the order is: group name, then `group-aliases`, then old default names, then the
+  claim owner's aliases, then item names.
+- Adding an alias that already exists changes it. That doesn't count toward the limit.
+- `player-aliases-max` (default 20, 0 to 1000, 0 = no limit) is how many each player can
+  have. At the limit the player is told: "Your golems are flattered, but they can only keep
+  20 nicknames straight before they start calling the cobblestone "Gerald". Free one up with
+  /cgc alias remove <alias> (see /cgc alias list)." The 20 is the setting.
+- Players need `coppergolemclerk.alias`. Everyone has it by default. Take it away with a
+  permissions plugin.
+- Aliases are saved in `plugins/CopperGolemClerk/player-aliases.yml` by player UUID, so golems
+  still sort while the owner is offline. Changing an alias makes golems retry items that had
+  no home straight away. `/cgc reload` reads the file again, so admins can also edit it by hand.
+- `player-aliases: false` turns the command off and signs ignore players' aliases. The saved
+  aliases are kept for when it is turned back on.
+
 ### Smarter use of empty chests
 
 Vanilla golems walk to the nearest chest they haven't tried. They drop their item into the
@@ -889,7 +926,7 @@ list. `/cgc version` checks right away. Turn it off with `update-check: false`.
 
 The alias is `/cgc`.
 
-Players can use `help`, `find`, `check`, `label`, `overflow`, `storage` and `stats`. They can
+Players can use `help`, `find`, `check`, `label`, `overflow`, `storage`, `stats` and `alias`. They can
 use `golems` too if `golems-command-for-players` is on. Players only ever see their own
 claims or containers they could open. See [Permissions](#permissions).
 
@@ -1014,6 +1051,18 @@ It only searches chunks that are already loaded, and says how many in range were
 - Ops see everything (`coppergolemclerk.allclaims`).
 - Turn the command off with `find-enabled: false`.
 
+### `/cgc alias`
+
+Your own other names for groups, for signs in your claims. See
+[Players' own aliases](#players-own-aliases).
+
+- `/cgc alias add <alias> <group> [more groups]`: make or change an alias.
+- `/cgc alias remove <alias>`: take one away.
+- `/cgc alias list`: show yours. A bare `/cgc alias` does the same.
+- Admins: `/cgc alias list <player>` and `/cgc alias clear <player>` (a name or a UUID). These
+  are the only forms that work from the console.
+- Turn it off with `player-aliases: false`.
+
 ### From the console
 
 Give a position:
@@ -1104,6 +1153,8 @@ line number, and the old settings are kept.
 | `find-highlight-count` | `5` | How many of the containers `/cgc find` lists glow for the player, nearest first, 0 to 30 (0: no glow). |
 | `find-highlight-seconds` | `10` | How long the containers `/cgc find` lists glow for the player, 0 to 120 (0: no glow). |
 | `golems-command-for-players` | `false` | Let players use `/cgc golems` to list their own golems (in claims they own, or whose copper chest is in one). Off: admins only. |
+| `player-aliases` | `true` | Players can give groups their own other names with `/cgc alias`. They work on signs in claims the player owns (GriefPrevention) and in their own `/cgc find` and `/cgc check`. `false` turns it off and keeps the saved aliases. See [Players' own aliases](#players-own-aliases). |
+| `player-aliases-max` | `20` | How many aliases each player can have, 0 to 1000. 0 = no limit. Changing an alias they already have doesn't count. |
 
 ### Server
 
@@ -1124,6 +1175,7 @@ line number, and the old settings are kept.
 | `coppergolemclerk.overflow` | everyone | `/cgc overflow`: the `[Overflow]` chests near you that you could open. |
 | `coppergolemclerk.storage` | everyone | `/cgc storage`: how full the containers near you that you could open are. |
 | `coppergolemclerk.stats` | everyone | `/cgc stats`: what golems sorted in your claims. |
+| `coppergolemclerk.alias` | everyone | `/cgc alias`: your own other names for groups. Only works if `player-aliases` is `true`. |
 | `coppergolemclerk.golems` | everyone | `/cgc golems`: your own golems. Only works if `golems-command-for-players` is `true` (it's `false` by default). |
 | `coppergolemclerk.toggle` | everyone | Switching golems between the plugin and vanilla with the toggle item (with GriefPrevention, only where you may build). |
 | `coppergolemclerk.allclaims` | op | `find`, `check`, `overflow`, `stats` and `golems` see into every claim and locked containers. |

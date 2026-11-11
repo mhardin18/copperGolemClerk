@@ -64,7 +64,7 @@ love to hear about it.)
 A golem carrying spruce planks uses your chest of oak planks. Stews go with the food,
 swords with the weapons, every colour of wool together. Groups are plain lists in the
 config, so you can change them or make your own. Give a group other names with
-`group-aliases` (say `mechanisms: redstone`), and `[mechanisms]` on a sign means that group.
+`group-aliases` (say `mechanisms: redstone`), and `[mechanisms]` on a sign means that group. Players can add their own with `/cgc alias`, for signs in claims they own.
 
 ### 🏷️ Read signs and item frames
 Write `[logs]`, `[ores]`, `[oak log]`, `[*_ORE]` or `[#planks]` on a sign on a chest, or

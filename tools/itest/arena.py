@@ -6,6 +6,7 @@ import time
 
 SERVER = "/opt/minecraft/pluginDev"
 CONFIG = SERVER + "/plugins/CopperGolemClerk/config.yml"
+PLAYER_ALIASES = SERVER + "/plugins/CopperGolemClerk/player-aliases.yml"
 X0, Y, Z0, SPACING, SIZE = -500, 150, 0, 80, 21
 
 # Paper logs this whenever an item frame is summoned by command; the frame is fine.

@@ -6,6 +6,14 @@ jar. Plugin changes are in the main [CHANGELOG](../CHANGELOG.md).
 
 Versions are the plugin release each change came out with.
 
+## Future release (not scheduled)
+
+### New
+- `claims`: `player-alias-in-own-claim`, `player-alias-not-in-others-claim`, `player-aliases-off` and `player-alias-console-commands` test players' own aliases (`/cgc alias`). They give claim A's owner an alias by writing `player-aliases.yml` and running `/cgc reload`.
+
+### Changed
+- `run.py` puts `player-aliases.yml` back after each one-at-a-time scenario, as it does `config.yml`.
+
 ## 3.2.0 (in progress)
 
 ### New

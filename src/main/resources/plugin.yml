@@ -29,6 +29,9 @@ permissions:
   coppergolemclerk.golems:
     description: /cgc golems - your own golems (only if golems-command-for-players is true).
     default: true
+  coppergolemclerk.alias:
+    description: /cgc alias - your own other names for groups, used on signs in your claims (player-aliases).
+    default: true
   coppergolemclerk.allclaims:
     description: /cgc find, check, overflow, stats and golems see into every claim and locked containers.
     default: op

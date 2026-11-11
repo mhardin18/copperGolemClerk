@@ -110,7 +110,11 @@ final class ChestLabels {
         List<ItemGroups.Rule> only = new ArrayList<>();
         List<String> onlyNames = new ArrayList<>();
 
+        java.util.function.Supplier<java.util.UUID> owner = null; // the claim owner, for their own aliases
         for (Block block : blocksOf(container)) {
+            if (owner == null) {
+                owner = groups.ownerOnce(block.getLocation());
+            }
             if (frames) {
                 readFrames(block, rules, names);
             }
@@ -144,7 +148,7 @@ final class ChestLabels {
                             }
                             String filter = onlyLabel(inner);
                             if (filter != null) {
-                                ItemGroups.Rule rule = groups.signRule(filter);
+                                ItemGroups.Rule rule = groups.signRuleAt(filter, owner);
                                 if (rule != null) {
                                     only.add(rule);
                                     onlyNames.add("[" + inner + "]");
@@ -153,7 +157,7 @@ final class ChestLabels {
                                 }
                                 continue;
                             }
-                            ItemGroups.Rule rule = groups.signRule(inner);
+                            ItemGroups.Rule rule = groups.signRuleAt(inner, owner);
                             if (rule != null) {
                                 rules.add(rule);
                                 names.add("[" + inner + "]");
