@@ -14,8 +14,8 @@ These are not committed. Regenerate them when Minecraft updates.
 
 - `classify.py <dir>`: the starting rules that sorted all survival items into themes.
 - `board.template.html`: the board page. `/*ITEMS*/[]` is replaced with the item list.
-- `to_config.py <dir> <layout.json> <out.yml>`: turns the board's saved layout (db doc
-  `board/layout`) into compact groups. It uses descriptive tags, name patterns and item
+- `to_config.py <dir> <layout.json> <out.yml>`: turns the board's saved layout (the `board/layout` document in the
+  board's database) into compact groups. It uses descriptive tags, name patterns and item
   names, and checks that every item lands in exactly one group.
 
 ## Group names
@@ -28,3 +28,7 @@ In 3.1.0 the board's single "Concrete & terracotta" category was split in two (`
 `terracotta`) in `classify.py` and in `config.yml`. A board layout saved before then still
 has the one category. Split it on the board before regenerating, or `to_config.py`
 reports the long name.
+
+The 3.2.0 clean-up of the default groups (`decorations`, `stone`, `utility-blocks` and
+others) was made in `config.yml` by hand. `classify.py` and the board don't have it, so
+groups regenerated from a board layout won't include it.

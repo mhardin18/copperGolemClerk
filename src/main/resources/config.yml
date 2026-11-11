@@ -303,20 +303,20 @@ find-enabled: true
 # Without GriefPrevention there are no claims, so players find nothing unless this
 # is true.
 find-outside-own-claims: false
-# How far /cgc find looks (1 to 64 blocks, sideways and up/down). Bigger finds more
+# How far /cgc find looks (1 to 64 blocks, sideways and up and down). Bigger finds more
 # but checks more blocks each time someone uses it.
 find-radius: 32
 # The most a player can ask for with /cgc find <item> <radius> (1 to 128 blocks; never
 # less than find-radius). Bigger numbers are cut down to this.
 # Ops (coppergolemclerk.allclaims) and the console aren't limited.
 # Only chunks that are already loaded are searched.
-# /cgc golems <radius> isn't limited either: it searches nothing, and players see only
-# their own golems.
+# /cgc golems <radius> isn't limited either, because it searches nothing and players see
+# only their own golems.
 find-max-radius: 64
 # How many of the containers /cgc find finds glow for the player who asked, nearest
 # first (0 to 30; 0 = no glow).
 find-highlight-count: 5
-# How long those containers glow, in seconds (0 = no glow).
+# How long those containers glow, in seconds (0 to 120; 0 = no glow).
 find-highlight-seconds: 10
 
 # Golems give way to each other instead of getting stuck nose to nose. When a golem is
@@ -400,9 +400,11 @@ mode-markers: true
 status-labels: true
 
 # A copper golem with nothing to do walks over to say hello to an iron or snow golem
-# within 16 blocks of its nearest copper chest or furnace (or of where it stands, if it
-# has neither), then goes back to its routine. It doesn't follow them, and waits
-# greet-cooldown-minutes before greeting again.
+# within 16 blocks of its home (see rescue-lost-golems). With no home in range, it uses
+# its nearest copper chest or furnace, or else where it stands. It turns back if it gets
+# more than 20 blocks from there. After a visit it goes back to its routine, and walks
+# back to its chest or furnace if the visit ended without a hello. It doesn't follow
+# them, and waits greet-cooldown-minutes before greeting again.
 # true (default): greetings on.
 # false: no greetings.
 greet-other-golems: true
@@ -541,8 +543,7 @@ group-aliases: {}
 #   @edible            items you can eat
 #   @fuel              items that burn in a furnace
 #   @record            music discs
-# Generated from the Golem Sorting Board (https://claude.ai/artifact/2saszixj5PGgx7Q5bUfA23):
-# every item you can get in survival on 26.3 is in exactly one group.
+# The default groups cover nearly every item you can get in survival on 26.3.
 groups:
   # Music discs (23 items)
   music-discs:
