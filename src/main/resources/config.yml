@@ -507,6 +507,21 @@ debug: false
 # (for example during long pauses), and off again after. It doesn't change what golems do.
 trace-golems: false
 
+# Other names for groups. A sign with an alias means the same as the group's own name,
+# so [mechanisms] can mean the redstone group. Aliases work everywhere a group name
+# does: sign labels, [Only ...] filters, /cgc find and /cgc check.
+# Each line is alias: group, or alias: [group, group] for several groups at once.
+# Spaces, dashes and plurals work as for group names ([mechanism] = mechanisms).
+# Examples:
+#   group-aliases:
+#     mechanisms: redstone
+#     cooking: [food, seeds]
+# A group's own name always wins over an alias. An alias that names a group that
+# doesn't exist is ignored, and the console says why.
+# When a group's name is too wide for a sign line, label suggestions use an alias
+# that fits. Empty ({}) by default. /cgc reload applies changes.
+group-aliases: {}
+
 # Each group is a list of entries. An item can be in more than one group.
 # A group's name is its sign label ([light sources] for light-sources), so keep names
 # short. A sign line holds about 15 letters. A longer label can continue on the next

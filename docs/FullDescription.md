@@ -63,7 +63,8 @@ love to hear about it.)
 ### 🧩 Sort by kind, not just by exact item
 A golem carrying spruce planks uses your chest of oak planks. Stews go with the food,
 swords with the weapons, every colour of wool together. Groups are plain lists in the
-config, so you can change them or make your own.
+config, so you can change them or make your own. Give a group other names with
+`group-aliases` (say `mechanisms: redstone`), and `[mechanisms]` on a sign means that group.
 
 ### 🏷️ Read signs and item frames
 Write `[logs]`, `[ores]`, `[oak log]`, `[*_ORE]` or `[#planks]` on a sign on a chest, or

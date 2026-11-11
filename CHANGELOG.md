@@ -9,6 +9,7 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
 ## 3.2.0 (in progress)
 
 ### New
+- Groups can have other names. Add them under `group-aliases` in `config.yml`, as `alias: group` (for example `mechanisms: redstone`) or `alias: [group, group]`. A sign, `[Only ...]` filter or `/cgc find` with an alias means that group. A group's own name always wins, and the console warns about aliases it can't use. Empty by default; upgrading adds `group-aliases: {}`.
 - `/cgc find <item> [radius]` and `/cgc golems [radius]` take an optional search radius. From the console, use `/cgc find <item> <x> <y> <z> [world] [radius]` and `/cgc golems <x> <y> <z> [world] [radius]`.
   - `/cgc find birch log 50` looks 50 blocks around you. It only searches loaded chunks, and says how many in range weren't loaded.
   - `/cgc golems 50` lists the golems within 50 blocks (along each axis, as find counts it), nearest first. The header says "within 50 blocks".
