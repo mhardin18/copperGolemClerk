@@ -1232,6 +1232,7 @@ final class FurnaceFeeder {
             return; // a hopper may have been put under it while the golem was on its way
         }
         int take = Math.min(result.getAmount(), GolemCarry.amountFor(result.getType(), plugin.carryAmount()));
+        plugin.rescue().noteHome(golem, furnace.getBlock()); // the furnace it works from is its home now
         ItemStack taken = result.clone();
         taken.setAmount(take);
         ItemStack left = result.clone();
@@ -1269,6 +1270,7 @@ final class FurnaceFeeder {
         if (taken == null) {
             return false;
         }
+        plugin.rescue().noteHome(golem, container.getBlock()); // its [Fuel] or [Furnace Supply] container is its home now
         ReachDelivery.flashLid(plugin, sourceBlock);
         hand(golem, taken);
         // If it can't be delivered after all, it's sorted like any pickup and returns here.
@@ -1302,6 +1304,7 @@ final class FurnaceFeeder {
         if (taken == null) {
             return false;
         }
+        plugin.rescue().noteHome(golem, container.getBlock()); // its [Fuel] or [Furnace Supply] container is its home now
         ReachDelivery.flashLid(plugin, sourceBlock);
         hand(golem, taken);
         fromSupply.add(golem.getUniqueId());
@@ -1323,6 +1326,7 @@ final class FurnaceFeeder {
             return false;
         }
         furnace.getInventory().setFuel(null);
+        plugin.rescue().noteHome(golem, block);
         hand(golem, fuel.clone());
         homes.startSearch(golem, Material.BUCKET, block); // if it isn't refilled or stored, it's sorted like anything else
         return refillOrStore(golem, golem.getEquipment().getItemInMainHand(), now);
@@ -1341,6 +1345,7 @@ final class FurnaceFeeder {
         if (bucket == null) {
             return false;
         }
+        plugin.rescue().noteHome(golem, container.getBlock());
         ReachDelivery.flashLid(plugin, source);
         hand(golem, bucket);
         homes.startSearch(golem, Material.BUCKET, source);

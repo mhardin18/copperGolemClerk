@@ -9,10 +9,14 @@ Versions are the plugin release each change came out with.
 ## 3.2.0 (in progress)
 
 ### New
+- `greet`: `greet-stays-near-work` checks that a golem doesn't visit an iron golem that is within 16 blocks of it but more than 16 from its copper chest.
+- `rescue`: `rescue-home-from-furnace-supply` checks that taking from a `[Furnace Supply]` container makes it the golem's home. `rescue-walks-back-to-furnace` checks that a lost golem walks back to its furnace. `rescue-no-home-seeks-work` checks that a golem with no home walks to a work place up to 64 blocks away.
 - `edge`: `group-alias-signs` checks that `[mechanisms]` and `[cooking]` signs take the groups their `group-aliases` point to. `group-alias-warnings` checks the console warnings for an alias that points to a missing group, and for one that is already a group's name.
 - `commands`: `check-says-more-specific-chest-wins` checks that `/cgc check` and `/cgc label` say golems take copper ingots from a `[*copper*]` chest to a nearby `[ingots and gems]` chest, and how to keep them. It also checks that a chest with no rival says nothing of the kind.
 
 ### Changed
+- `greet`: `greet-other-dies-on-the-way` also checks that the end of the visit is logged and that the golem walks back to its copper chest. `greet-unreachable` looks for the new "stopped going to say hello" log line.
+- `run.py` sets clear weather (`weather clear 1000000`) at the start of every run. Rain hurts snow golems and made `greet-snow-golem` fail once.
 - `work-order`: `take-out-after-sorting` is now `take-out-before-sorting`. It checks that the golem takes finished items out of the furnace before it takes any logs from the copper chest, then sorts them.
 - Updated the `itest` scenarios for the optional `[radius]` on `/cgc find` and `/cgc golems`, for the furnace-output hopper minecart (#130), and for the new `/cgc find` chunk message.
 - The `itest` test hooks plugin builds against Paper API 26.3 build 244.

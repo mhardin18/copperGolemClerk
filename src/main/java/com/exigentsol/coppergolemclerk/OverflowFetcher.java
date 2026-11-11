@@ -422,6 +422,7 @@ final class OverflowFetcher {
         }
         if (taken != null) {
             int take = taken.getAmount();
+            plugin.rescue().noteHome(golem, block); // a copper or [Overflow] chest it works from: its home now
 
             EntityEquipment equipment = golem.getEquipment();
             if (plugin.carry() != null) {
