@@ -85,6 +85,29 @@ def _(c):
                     (not logged(lines, "Exception"), "no exception in the log")]
 
 
+@scenario("settings-report", "config", 30, "/cgc settings names an old default, a typo (with the real name), a retired setting and a load warning, and explains one setting.", alone=True)
+def _(c):
+    text = re.sub(r"(?m)^fetchers-per-overflow-chest: .*$", "fetchers-per-overflow-chest: 2", original())
+    text = re.sub(r"(?m)^search-distance: .*$", "search-distance: -5", text)
+    text = text.rstrip("\n") + "\ncarry-amont: 32\nmatching-chest-timeout-seconds: 30\n"
+    original()
+    try:
+        with open(CONFIG, "w") as f:
+            f.write(text)
+        c.r.cmd("coppergolemclerk reload")
+        report = re.sub(r"§.", "", c.r.cmd("coppergolemclerk settings"))
+        one = re.sub(r"§.", "", c.r.cmd("coppergolemclerk settings fetchers-per-overflow-chest"))
+    finally:
+        restore(c)
+    return lambda: [("fetchers-per-overflow-chest: 2 (the default until 3.3.0; now 4)" in report, "old default named"),
+                    ("carry-amont: 32 (did you mean carry-amount?)" in report, "typo named, with the real setting"),
+                    ("matching-chest-timeout-seconds (" in report, "retired setting named"),
+                    ("search-distance must be" in report, "load warning shown"),
+                    ("groups" not in report.replace("item groups not checked", ""), "item groups left out"),
+                    (one.startswith("fetchers-per-overflow-chest: 2") and "0 = no limit" in one,
+                     f"one setting explained: {one[:120]}")]
+
+
 @scenario("missing-groups", "config", 30, "A config with no groups section is reported, and loads with 0 groups.", alone=True)
 def _(c):
     text = original()[:original().index("\ngroups:\n")] + "\n"

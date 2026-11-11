@@ -202,6 +202,19 @@ final class ConfigUpgrade {
         return !line.isEmpty() && (Character.isWhitespace(line.charAt(0)) || line.startsWith("- "));
     }
 
+    /** The comment right above each top-level setting of the shipped config, without the '#'. */
+    static Map<String, List<String>> explanations(String shipped) {
+        Map<String, List<String>> out = new java.util.LinkedHashMap<>();
+        for (Setting setting : parse(shipped.replace("\r\n", "\n"))) {
+            List<String> text = new ArrayList<>();
+            for (String line : setting.comment()) {
+                text.add(line.replaceFirst("^# ?", ""));
+            }
+            out.put(setting.key(), text);
+        }
+        return out;
+    }
+
     /** The shipped config's top-level settings, in order, each with the comment lines right above it. */
     private static List<Setting> parse(String shipped) {
         List<String> lines = new ArrayList<>(List.of(shipped.split("\n", -1)));

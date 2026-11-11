@@ -79,6 +79,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private ItemFinder itemFinder;
     private LabelAdvisor labelAdvisor;
     private StorageReport storageReport;
+    private SettingsReport settingsReport;
+    /** config.yml as last loaded (null if it couldn't be read at startup), and the warnings that load logged about settings. */
+    private volatile YamlConfiguration loadedConfig;
+    private volatile List<String> settingWarnings = List.of();
     private GolemLimits limits;
     private volatile int maxGolemsPerClaim;
     private volatile int claimBlocksPerExtraGolem;
@@ -164,6 +168,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         itemFinder = new ItemFinder(this);
         labelAdvisor = new LabelAdvisor(this);
         storageReport = new StorageReport(this);
+        settingsReport = new SettingsReport(this);
         limits = new GolemLimits(this);
         getServer().getScheduler().runTaskTimer(this, limits::tick, 100, 100);
         getServer().getPluginManager().registerEvents(itemFinder, this);
@@ -300,9 +305,82 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
      * @return null on success, otherwise a short description of the problem
      */
     String loadSettings() { // package-private: unit tests reload settings
+        List<String> warnings = new ArrayList<>();
+        java.util.logging.Handler catcher = new java.util.logging.Handler() {
+            @Override
+            public void publish(java.util.logging.LogRecord record) {
+                if (record.getLevel().intValue() >= java.util.logging.Level.WARNING.intValue() && record.getMessage() != null) {
+                    warnings.add(record.getMessage());
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        getLogger().addHandler(catcher);
+        try {
+            String problem = readSettings();
+            if (problem == null) {
+                settingWarnings = settingsOnly(warnings);
+            }
+            return problem;
+        } finally {
+            getLogger().removeHandler(catcher);
+        }
+    }
+
+    /** The warnings about top-level settings (they start with the setting's name), not about item groups. */
+    private List<String> settingsOnly(List<String> warnings) {
+        Set<String> keys = new HashSet<>(shippedConfig().getKeys(false));
+        YamlConfiguration loaded = loadedConfig;
+        if (loaded != null) {
+            keys.addAll(loaded.getKeys(false));
+        }
+        keys.remove("groups");
+        keys.remove("group-aliases");
+        List<String> out = new ArrayList<>();
+        for (String w : warnings) {
+            for (String key : keys) {
+                if (w.startsWith(key + " ") || w.startsWith(key + ":")) {
+                    out.add(w);
+                    break;
+                }
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    YamlConfiguration loadedConfig() {
+        return loadedConfig;
+    }
+
+    List<String> settingWarnings() {
+        return settingWarnings;
+    }
+
+    /** This version's config.yml, as shipped in the jar. */
+    String shippedConfigText() {
+        try (var in = getResource("config.yml")) {
+            return in == null ? "" : new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    YamlConfiguration shippedConfig() {
+        return defaultConfig();
+    }
+
+    private String readSettings() {
         YamlConfiguration config = new YamlConfiguration();
         try {
             config.load(new File(getDataFolder(), "config.yml"));
+            loadedConfig = config;
         } catch (IOException | InvalidConfigurationException e) {
             String problem = "config.yml could not be read: " + firstLine(e.getMessage());
             if (groups != null) {
@@ -1010,6 +1088,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     }
                 }
                 case "version" -> updates.report(sender);
+                case "settings" -> settingsReport.report(sender, args.length > 1 ? args[1] : null);
                 case "stats" -> stats.report(sender);
                 case "golems" -> {
                     RadiusArgs.Golems parsed = RadiusArgs.parseGolems(List.of(args).subList(1, args.length));
@@ -1142,6 +1221,19 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 List<String> out = new ArrayList<>(radiusSuggestions(args[1]));
                 if (admin && "all".startsWith(args[1].toLowerCase(Locale.ROOT))) {
                     out.add("all");
+                }
+                return out;
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("settings") && admin) {
+                String prefix = args[1].toLowerCase(Locale.ROOT);
+                List<String> out = new ArrayList<>();
+                if ("all".startsWith(prefix)) {
+                    out.add("all");
+                }
+                for (String key : shippedConfig().getKeys(false)) {
+                    if (key.startsWith(prefix) && !key.equals("groups") && !key.equals("group-aliases")) {
+                        out.add(key);
+                    }
                 }
                 return out;
             }
