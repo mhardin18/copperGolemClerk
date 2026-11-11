@@ -1,7 +1,7 @@
 # Sorting board tools
 
-The [Golem Sorting Board](https://claude.ai/artifact/2saszixj5PGgx7Q5bUfA23) groups every
-survival item into categories. The `groups:` section of `config.yml` is generated from it.
+These scripts build the Golem Sorting Board (`board.template.html`), a page that puts every
+survival item into a category, and generate the `groups:` section of `config.yml` from it.
 
 ## Inputs
 
