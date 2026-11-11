@@ -416,6 +416,14 @@ signs) come before contents. The order is:
 So a stew goes to `[stews]` before `[food]`, and a `[logs]` chest wins over an unlabelled
 chest that happens to hold birch logs. Frame and sign labels on one chest combine.
 
+To see this at work, hold an item and run `/cgc check` on a chest, or run `/cgc label`. If a
+broader chest matches but golems would take the item to a more specific chest nearby, the
+command names that chest, where it is and the label to add. A `[*copper*]` chest holds 100
+or more items, and `[ingots and gems]` about 18, so copper ingots go to the second one. To
+keep them in the `[*copper*]` chest, add `[copper ingot]` to its sign. Nearby means within
+`search-distance` of the chest sideways and 8 blocks up or down. Chests golems can't use
+(locked, blocked, full, hopper-fed) don't count.
+
 Where a golem puts an item, in order:
 
 1. A matching chest with room (label, same item or group).
@@ -906,10 +914,14 @@ Looking at a chest, it shows:
 
 - What each label on it means (`[Horse]` = items with "horse" in their name, 9 items: ...).
 - Labels that match nothing.
-- What the chest takes, and whether it takes the item in your hand.
+- What the chest takes, and whether it takes the item in your hand. If golems would take
+  that item to a more specific chest in range, it names that chest, how far away it is, and
+  what to add to this chest's sign to keep the item here. If the other chest is labelled for
+  exactly that item, it says to take the item off that label.
 - Anything stopping golems from using it: a block on top, a lock, a hopper feeding a copper
   chest, or a full chest.
-- Sign-label advice, as `/cgc label` gives (below).
+- Sign-label advice, as `/cgc label` gives (below), including items golems would take to
+  more specific chests.
 
 The label advice depends on the chest:
 
@@ -933,6 +945,11 @@ Looking at a chest, it says what to write on its sign, from what's in it:
 
 On a labelled chest it says whether everything in it matches. It only suggests. You place the
 sign. Players only get suggestions for containers they could open.
+
+It also lists items in the chest that golems would take to a more specific chest nearby
+("Golems will take these to more specific chests instead:"). Each line gives the chest, where
+it is and the label to add to keep the item here. It shows 5 lines, then "... and N more".
+For an unlabelled chest it checks against the label it suggests.
 
 ### `/cgc overflow`
 

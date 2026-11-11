@@ -26,7 +26,7 @@ import org.bukkit.inventory.ItemStack;
 final class LabelAdvisor {
 
     /** A suggested label: the sign text, what it covers, and whether it fits on a sign line. */
-    record Suggestion(String label, String meaning, boolean fits) {
+    record Suggestion(String label, String meaning, boolean fits, int size) {
     }
 
     /** What the advisor found: suggestions, and items a label wouldn't cover. */
@@ -63,7 +63,7 @@ final class LabelAdvisor {
         if (contents.size() == 1) {
             Material only = contents.keySet().iterator().next();
             String label = "[" + name(only) + "]";
-            out.add(new Suggestion(label, "just " + name(only), ChestReports.fitsOnSign(label)));
+            out.add(new Suggestion(label, "just " + name(only), ChestReports.fitsOnSign(label), 1));
         }
         // Groups shared by every kind of item here, most specific (fewest items) first.
         BitSet shared = null;
@@ -121,7 +121,7 @@ final class LabelAdvisor {
     private void addGroup(List<Suggestion> out, int index) {
         String label = plugin.groups().signLabel(index);
         out.add(new Suggestion(label, "group " + plugin.groups().groupName(index) + " ("
-                + plugin.groups().groupSize(index) + " items)", ChestReports.fitsOnSign(label)));
+                + plugin.groups().groupSize(index) + " items)", ChestReports.fitsOnSign(label), plugin.groups().groupSize(index)));
     }
 
     private static List<Suggestion> cap(List<Suggestion> list) {
@@ -181,6 +181,7 @@ final class LabelAdvisor {
                     say(sender, NamedTextColor.AQUA, "  To keep them here, add " + s.label() + "  = " + s.meaning() + tooWide(s));
                 }
             }
+            takenElsewhere(sender, inventory, contents, labels::specificity);
             return;
         }
         if (contents.isEmpty()) {
@@ -213,7 +214,47 @@ final class LabelAdvisor {
         if (!advice.strays().isEmpty()) {
             say(sender, NamedTextColor.YELLOW, "Doesn't fit that label (move these out first): " + amounts(advice.strays()) + ".");
         }
+        int size = advice.suggestions().getFirst().size();
+        takenElsewhere(sender, inventory, contents, m -> size);
         say(sender, NamedTextColor.GRAY, "Write it in square brackets on a sign on the " + what + "; /cgc help explains labels.");
+    }
+
+    /** At most this many "taken elsewhere" lines. */
+    private static final int MAX_ELSEWHERE = 5;
+
+    /**
+     * Items in this chest that golems would take to a more specific chest in range, even with
+     * this chest's label (specificity: how specific this chest's match is for each item). One
+     * line each, with how to keep them here.
+     */
+    private void takenElsewhere(CommandSender sender, Inventory inventory, Map<Material, Integer> contents,
+            java.util.function.ToIntFunction<Material> specificity) {
+        ChestReports reports = plugin.reports();
+        org.bukkit.Location at = inventory.getLocation();
+        if (reports == null || at == null) {
+            return;
+        }
+        org.bukkit.block.Block block = at.getBlock();
+        List<String> lines = new ArrayList<>();
+        for (Material m : contents.keySet()) {
+            int mine = specificity.applyAsInt(m);
+            if (mine == Integer.MAX_VALUE) {
+                continue; // the label doesn't cover it: already said
+            }
+            HomeFinder.Rival rival = reports.rivalFor(block, inventory, new ItemStack(m), mine);
+            if (rival != null) {
+                lines.add("  " + name(m) + ": the " + ChestReports.describe(block, rival) + ". "
+                        + ChestReports.keepHere(m, rival));
+            }
+        }
+        if (lines.isEmpty()) {
+            return;
+        }
+        say(sender, NamedTextColor.YELLOW, "Golems will take these to more specific chests instead:");
+        lines.stream().limit(MAX_ELSEWHERE).forEach(line -> say(sender, NamedTextColor.YELLOW, line));
+        if (lines.size() > MAX_ELSEWHERE) {
+            say(sender, NamedTextColor.GRAY, "  ... and " + (lines.size() - MAX_ELSEWHERE) + " more.");
+        }
     }
 
     private static String tooWide(Suggestion s) {

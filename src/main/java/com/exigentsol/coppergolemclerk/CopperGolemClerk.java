@@ -1161,4 +1161,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     LabelAdvisor labelAdvisor() {
         return labelAdvisor;
     }
+
+    ChestReports reports() {
+        return reports;
+    }
 }

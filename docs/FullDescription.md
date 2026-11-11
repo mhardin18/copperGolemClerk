@@ -161,7 +161,7 @@ Neither chest receives sorted items unless it also has an item label. Put both o
   - By default it only looks in your own GriefPrevention claims, so nobody can use it to snoop.
   - Search `torch` and it also tells you about the copper and soul torches nearby.
 - **`/cgc check`** explains a chest you can open: what its labels mean and what it takes.
-  Looking at nothing, it says which groups the item in your hand belongs to.
+  Looking at nothing, it says which groups the item in your hand belongs to. It also tells you when golems would take an item to a more specific chest nearby.
 - **`/cgc overflow`** shows what's piling up in the overflow chests near you, and what label
   would give each item a home.
 - **`/cgc label`** suggests what to write on a chest's sign, from what's in it.

@@ -10,6 +10,7 @@ Versions are the plugin release each change came out with.
 
 ### New
 - `edge`: `group-alias-signs` checks that `[mechanisms]` and `[cooking]` signs take the groups their `group-aliases` point to. `group-alias-warnings` checks the console warnings for an alias that points to a missing group, and for one that is already a group's name.
+- `commands`: `check-says-more-specific-chest-wins` checks that `/cgc check` and `/cgc label` say golems take copper ingots from a `[*copper*]` chest to a nearby `[ingots and gems]` chest, and how to keep them. It also checks that a chest with no rival says nothing of the kind.
 
 ### Changed
 - `work-order`: `take-out-after-sorting` is now `take-out-before-sorting`. It checks that the golem takes finished items out of the furnace before it takes any logs from the copper chest, then sorts them.

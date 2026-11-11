@@ -767,6 +767,53 @@ final class HomeFinder {
     }
 
     /** Chests and trapped chests: the only containers vanilla golems put items into themselves. */
+    /** A chest golems would pick over another for an item: where it is and why (for /cgc check and /cgc label). */
+    record Rival(Block block, int specificity, String reason) {
+    }
+
+    /**
+     * The chest in range of a spot that golems would put this item in instead of a chest whose
+     * match is this specific: a home for the item (label, same item or group) that is more
+     * specific (lower) than `than`, has room, and that golems may use. Uses the same rules as a
+     * golem's own search, minus where the golem stands. Most specific first, then nearest.
+     * Null if there's none. exclude: the chest being asked about (both halves).
+     */
+    static Rival moreSpecificHome(CopperGolemClerk plugin, ChestMatcher matcher, Location around, ItemStack held,
+            Set<Pos> exclude, int than) {
+        World world = around.getWorld();
+        Rival best = null;
+        double bestDistance = Double.MAX_VALUE;
+        Set<Pos> seen = new HashSet<>(exclude);
+        for (BlockState state : containersInRange(around, false, HomeFinder::isDestination)) {
+            if (!(state instanceof Container container) || !seen.add(Pos.of(state.getBlock()))) {
+                continue;
+            }
+            Inventory inventory = container.getInventory();
+            Set<Pos> halves = halvesOf(inventory, state.getBlock());
+            boolean excluded = false;
+            for (Pos half : halves) {
+                excluded |= exclude.contains(half);
+            }
+            seen.addAll(halves);
+            if (excluded || cannotOpen(world, state, halves) || isWaterlogged(world, halves) || isLocked(state)
+                    || feedsCopperChest(world, halves) || (plugin.furnaceFeeding() && HopperLines.feedsFurnace(world, halves))
+                    || refuses(state.getType(), held.getType())) {
+                continue;
+            }
+            ChestMatcher.Match match = matcher.classify(held, inventory);
+            if (!match.kind().isHome() || match.specificity() >= than || !ChestMatcher.hasRoom(held, inventory)) {
+                continue;
+            }
+            double distance = state.getLocation().distanceSquared(around);
+            if (best == null || match.specificity() < best.specificity()
+                    || (match.specificity() == best.specificity() && distance < bestDistance)) {
+                best = new Rival(state.getBlock(), match.specificity(), match.reason());
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
     static boolean isVanillaTarget(Material type) {
         return type == Material.CHEST || type == Material.TRAPPED_CHEST;
     }
