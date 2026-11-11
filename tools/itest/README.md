@@ -15,8 +15,8 @@ anything that changes how tests are run, chosen or reported (`run.py`, `run-test
 
 ```
 python3 -I tools/itest/run.py smoke               # quick sanity check, ~3 min
-python3 -I tools/itest/run.py --changed --parallel-only   # smoke + what this branch touches, ~15 min
-python3 -I tools/itest/run.py --changed           # the same with the one-at-a-time scenarios, ~1-1.5 h
+python3 -I tools/itest/run.py --changed --parallel-only   # smoke + what this branch touches, ~15-35 min
+python3 -I tools/itest/run.py --changed           # the same with the one-at-a-time scenarios, up to ~1.5 h
 python3 -I tools/itest/run.py                     # everything except manual scenarios (~1.5 h)
 python3 -I tools/itest/run.py core world          # suites or scenario names (substring match)
 python3 -I tools/itest/run.py server-restart      # manual: asks you to restart the server
@@ -131,7 +131,7 @@ were tested. Then it says whether each failure is a plugin bug or a test-timing 
 | `pluginDev didn't answer RCON within 5 minutes` | The server didn't come up. See `/opt/minecraft/pluginDev/logs/latest.log`. |
 | `unknown option(s)` | A typo in an option. Unknown options are refused (an unknown one used to start a full run). |
 | A scenario fails in a big run but passes on its own | Probably timing under load. Re-run it by name (`run-tests.sh <name>`). If it keeps failing, it's real. |
-| `note: checking N scenario(s) took 25s this round` | One round of checks took longer than 10 seconds. Scenarios that act while a golem walks (break a chest, kill the golem) can miss their moment and fail. Rounds used to take most of a minute in a full run, because every scenario re-read the whole server log. That is fixed, so this note means something else is slow (RCON, or a very busy server). |
+| `note: checking N scenario(s) took 25s this round` | One round of checks took longer than 10 seconds. Scenarios that act while a golem walks (break a chest, kill the golem) can miss their moment and fail. Something is slow: RCON, or a very busy server. |
 | The machine rebooted, or `kill -9` was used, mid-run | The results are cut off. pluginDev's `config.yml` may still have a test setting, and test golems and force-loaded chunks may be left around x=-500. Check the config against the shipped defaults and clear the leftovers. The next run that reuses a platform clears it too. |
 
 ## Which tests to run
@@ -163,8 +163,7 @@ Two mapping rules:
 `--parallel-only` leaves out the scenarios that run one at a time, except ones the branch
 edits. Those scenarios change server-wide settings, so they can't share the server.
 
-Add `--list` to any of these to see what would run without running it. Unknown options are
-refused (an unknown one used to start a full run).
+Add `--list` to any of these to see what would run without running it.
 
 Exit code 0 means all passed. On failure, the run prints each check and the plugin's debug
 log lines for that scenario's area (pluginDev runs with `debug: true`). Any unexpected
@@ -267,5 +266,7 @@ folder. Without it the `conflicts` suite is skipped.
 `./gradlew test` in the project root runs the JUnit tests (sign word matching, YAML error
 summaries). They need no server.
 
-Reads `/opt/minecraft/pluginDev/server.properties` for the RCON port and password, so run
-it as a user in the `minecraft` group. Standard library only.
+## RCON access
+
+`run.py` reads `/opt/minecraft/pluginDev/server.properties` for the RCON port and password,
+so run it as a user in the `minecraft` group. It uses the Python standard library only.

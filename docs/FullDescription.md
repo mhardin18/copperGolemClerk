@@ -3,12 +3,38 @@
 **Now hiring: storage clerks.** Must be small, shiny and good with chests. Pay is one copper
 block and a pumpkin. Your new clerks sort the way you would: birch logs in with the oak logs,
 pickaxes with the tools, whatever your signs say where they say it. Every chest they touch is
-left tidy. About 50 ready-made item groups mean they start work the moment you drop the plugin in.
+left tidy. More than 50 ready-made item groups mean they start work the moment you drop the plugin in.
 
 For server owners, the clerks come with good manners. Commands respect GriefPrevention claims,
 claim owners get full-chest alerts, golem limits per claim are optional, and nearly every
 feature can be tuned in one config file. They never ask for a raise and never complain about the
 cobblestone.
+
+## New in 3.2.0
+
+- **Other names for groups.** Add `group-aliases` to `config.yml`, for example
+  `mechanisms: redstone`, and `[mechanisms]` on a sign means that group. Aliases work in
+  `[Only ...]` filters and `/cgc find` too. It's empty by default.
+- **Finished items come out first.** Golems take what a furnace made out before they go back
+  to sorting, so cooked items don't wait behind a busy copper chest.
+  `furnace-jobs-before-sorting` still keeps sorting moving.
+- **`/cgc check` and `/cgc label` name the rival.** When golems would take an item to a more
+  specific chest, they say which chest and how to keep the item in this one.
+- **Search a radius.** `/cgc find diamond 50` and `/cgc golems 50` look within 50 blocks.
+  `find-max-radius` (default 64) is the most a player can ask `/cgc find` for.
+- **Greetings stay near work.** Idle golems only visit an iron or snow golem close to their
+  home, and walk back to their chest or furnace afterwards.
+- **Home is the last place a golem got work from.** That can be a furnace, an `[Overflow]`
+  chest or a `[Fuel]` or `[Furnace Supply]` chest, not only a copper chest. Lost golems walk
+  back to it.
+- **Tidier default groups.** `decorations` is split into `signs`, `banners`, `pottery` and
+  `beds`, `stone` into `stone`, `deepslate` and `tuff`, and `utility-blocks` is now part of
+  `workstations`. Your own `groups:` are left alone. Copy the new ones from the default
+  `config.yml` if you want them.
+- **Chest lids open.** A chest, barrel or shulker box opens briefly when a golem takes from
+  it or fills it for you.
+- **Hopper minecarts respected.** Golems leave a furnace's output alone when a hopper minecart
+  under it collects it, as they already did for a hopper.
 
 ## New in 3.1.0
 
@@ -145,8 +171,8 @@ Neither chest receives sorted items unless it also has an item label. Put both o
 `[Fuel] [charcoal]` or `[Furnace Supply] [raw iron]`.
 
 ### 🦺 Look after themselves
-- A golem that falls down a shaft or wanders off **walks back home**, the last place it got work from. One that's stuck gets
-  reported, with where it is.
+- A golem that falls down a shaft or wanders off **walks back home**, the last place it got
+  work from. One that's stuck gets reported, with where it is.
 - Golems **keep off trapdoors** and **stay out of portals**.
 - Every copper golem death is written to the server log with its cause, so you can see what
   happened to a golem that went missing.
@@ -157,11 +183,12 @@ Neither chest receives sorted items unless it also has an item label. Put both o
 
 - **`/cgc find diamond`** lists the chests near you that hold diamonds, nearest first, including
   diamonds inside shulker boxes. The nearest few glow for a few seconds.
-  - It looks 32 blocks around you. Add a number to look farther: `/cgc find diamond 60`, up to 64.
+  - It looks 32 blocks around you. Add a number to change that: `/cgc find diamond 60`, up to 64 by default (`find-max-radius`).
   - By default it only looks in your own GriefPrevention claims, so nobody can use it to snoop.
   - Search `torch` and it also tells you about the copper and soul torches nearby.
 - **`/cgc check`** explains a chest you can open: what its labels mean and what it takes.
-  Looking at nothing, it says which groups the item in your hand belongs to. It also tells you when golems would take an item to a more specific chest nearby.
+  Looking at nothing, it says which groups the item in your hand belongs to. It also tells you
+  when golems would take an item to a more specific chest nearby.
 - **`/cgc overflow`** shows what's piling up in the overflow chests near you, and what label
   would give each item a home.
 - **`/cgc label`** suggests what to write on a chest's sign, from what's in it.

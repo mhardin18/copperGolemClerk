@@ -22,6 +22,11 @@ Versions are the plugin release each change came out with.
 - Updated the `itest` scenarios for the optional `[radius]` on `/cgc find` and `/cgc golems`, for the furnace-output hopper minecart (#130), and for the new `/cgc find` chunk message.
 - The `itest` test hooks plugin builds against Paper API 26.3 build 244.
 
+### Fixed
+- `furnace-collected-by-hopper-minecart` put the minecart over a hole, so it fell out of the arena and the test always failed. It now sits on a block.
+- The music disc scenarios put one disc in each slot, so a stack can't hide a miscount.
+- The `/cgc help` scenario expects the `[radius]` argument.
+
 ## 3.1.0 (2026-11-05)
 
 ### New
@@ -32,7 +37,7 @@ Versions are the plugin release each change came out with.
 - Every `run.py` run saves its results under `~/claude/itest-results/`, with `output.txt` and `summary.json` per run and a `latest` link. `ITEST_RESULTS` changes the folder.
 - `run.py smoke` runs a short list of quick scenarios (`impact.SMOKE`) as a sanity check (#103).
 - `run.py --changed[=ref]` runs the suites that exercise the files your branch changed, plus the smoke set and the scenarios the branch adds or edits. `--parallel-only` leaves out the one-at-a-time scenarios (#103).
-- New suites `distance` (`search-distance`, including a value that isn't a multiple of 16) and `work_order` (furnace upkeep before sorting).
+- New suites `distance` (`search-distance`, including a value that isn't a multiple of 16) and `work-order` (furnace upkeep before sorting).
 - Regression scenarios for 3.1.0 fixes.
 
 ### Changed
@@ -49,7 +54,7 @@ Versions are the plugin release each change came out with.
 ## 3.0.0 (2026-11-02)
 
 ### New
-- New suites `limits`, `furnace_edge`, `furnace_refill`, `furnace_trips`, `overflow_hopper`, `lava` and `edge30`.
+- New suites `limits`, `furnace-edge`, `furnace-refill`, `furnace-trips`, `overflow-hopper`, `lava` and `edge30`.
 - New tuning harness (`tune.py` and the `tuning` suite) that measures furnace behavior, including fuel still burning and wasted burn.
 - `cfg_upgrade_test.py` tests config upgrades, including a config that can't be written.
 - The `furnace` suite covers `[Fuel]` chests, fuel order, burn-out and the `/cgc check` report.
