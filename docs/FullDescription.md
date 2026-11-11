@@ -145,7 +145,7 @@ Neither chest receives sorted items unless it also has an item label. Put both o
 `[Fuel] [charcoal]` or `[Furnace Supply] [raw iron]`.
 
 ### 🦺 Look after themselves
-- A golem that falls down a shaft or wanders off **walks back home**. One that's stuck gets
+- A golem that falls down a shaft or wanders off **walks back home**, the last place it got work from. One that's stuck gets
   reported, with where it is.
 - Golems **keep off trapdoors** and **stay out of portals**.
 - Every copper golem death is written to the server log with its cause, so you can see what

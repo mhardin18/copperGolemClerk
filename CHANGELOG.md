@@ -18,6 +18,15 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
 - `find-max-radius` (default 64, 1 to 128) is the most a player can ask `/cgc find` for. A larger number is cut down to it, with a note. `/cgc golems` isn't limited. It never counts as less than `find-radius`. Ops (`coppergolemclerk.allclaims`) and the console aren't limited.
 
 ### Changed
+- A golem's home is now the last place it got work from, not only the last copper chest it took from. Lost-golem rescue uses it.
+  - Home is the copper chest it took items from, the `[Overflow]` chest it fetched from, the `[Furnace Supply]` or `[Fuel]` container it took from, or the furnace it took finished items (or an empty lava bucket) out of. Chests it only delivers into never become home.
+  - A golem is lost when no work place (copper chest, furnace, smoker, blast furnace, `[Overflow]`, `[Fuel]` or `[Furnace Supply]` container) is in its range and its home is more than 40 blocks away (12 up or down). Alerts name the home ("its furnace", "its [Overflow] chest"). Copper chests still read "its copper chest".
+  - If the home stops being a work place (broken, sign removed), the golem forgets it.
+  - A golem with no home takes the nearest work place in its range as home. With none in range it walks to the nearest one within 64 blocks (12 up or down). With none within 64 blocks it's left alone, like vanilla, until there is one.
+- Greeting visits stay near the golem's work. An idle copper golem only visits an iron or snow golem within 16 blocks of its home (if that is within `search-distance`), else of its nearest copper chest or furnace, else of where it stands, and turns back if it gets more than 20 blocks from there.
+  - It gives up if it can't get within reach in 20 seconds, if it gets no closer for 8 seconds, if the other golem can no longer be reached, or if that golem dies or disappears. Work turning up still ends a visit at once.
+  - A visit that ends without a hello walks the golem back to its copper chest or furnace, for up to 15 seconds. It stops if work turns up.
+  - With `debug: true`, every visit that ends without a hello is logged with the reason ("stopped going to say hello: ...").
 - Golems take finished items out of furnaces before they go back to sorting. Before, a golem sorted every copper chest first, so cooked items sat in the furnace while there was sorting to do. Taking items out is now part of furnace upkeep and counts toward `furnace-jobs-before-sorting`, so a busy copper chest still gets sorted. `furnace-take-out-at` still decides when a furnace is worth a trip.
 - Golems now open a chest, barrel or shulker box lid briefly whenever the plugin moves items for them. This covers:
   - fetching from an `[Overflow]` chest

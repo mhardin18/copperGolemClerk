@@ -400,29 +400,36 @@ mode-markers: true
 status-labels: true
 
 # A copper golem with nothing to do walks over to say hello to an iron or snow golem
-# within 16 blocks, then goes back to its routine. It doesn't follow them, and waits
+# within 16 blocks of its nearest copper chest or furnace (or of where it stands, if it
+# has neither), then goes back to its routine. It doesn't follow them, and waits
 # greet-cooldown-minutes before greeting again.
+# true (default): greetings on.
 # false: no greetings.
 greet-other-golems: true
 # How long a golem waits after greeting before it greets again (minutes). Lower means
 # more visits. They are purely for show, and any work that turns up ends a visit.
 greet-cooldown-minutes: 5
 
-# Lost golems: each golem remembers the copper chest it last took items from. If it
-# ends up far from any copper chest (more than 40 blocks from its own, or 12 up or
-# down, e.g. after falling down a shaft), it walks back.
+# Lost golems: a golem's home is the last place it got work from (the copper chest it
+# took items from, the [Overflow] chest it fetched from, the [Furnace Supply] or [Fuel]
+# container it took from, or the furnace it took finished items out of). If no work place
+# (copper chest, furnace, [Overflow], [Fuel] or [Furnace Supply] container) is in its
+# range and its home is more than 40 blocks away (or 12 up or down, e.g. after falling
+# down a shaft), it walks back.
 # If it can't get any closer, or it is stuck where it can't walk to a copper chest
 # (a pit, walled in), its owner gets an alert (see below) saying where it is. The golem
 # tries again every 5 minutes.
+# A golem with no home takes the nearest work place in its range as home, or walks to
+# one up to 64 blocks away. With none that close it is left alone.
 # A golem moved to a place with its own copper chest just adopts that one.
 # Golems on a lead are left alone.
 rescue-lost-golems: true
-# Teleport a golem that can't walk back to its copper chest, instead of only telling
+# Teleport a golem that can't walk back to its home, instead of only telling
 # the owner. Off by default.
 # Even when on, a golem is teleported only if the owner of the GriefPrevention claim its
-# copper chest is in has the coppergolemclerk.teleport permission. Nobody has it unless
+# home is in has the coppergolemclerk.teleport permission. Nobody has it unless
 # you grant it, e.g. with LuckPerms. For an owner who is offline, the plugin asks
-# LuckPerms. Golems whose chest isn't in a claim are never teleported.
+# LuckPerms. Golems whose home isn't in a claim are never teleported.
 lost-golem-teleport-home: false
 
 # Alerts: players are told when a golem is lost (above), finds a labelled chest full, or

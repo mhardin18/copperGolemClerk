@@ -1,6 +1,7 @@
-"""rescue: lost golems walk back to their copper chest (rescue-lost-golems).
+"""rescue: lost golems walk back to their work (rescue-lost-golems).
 
-A golem's home is the copper chest it last took items from, kept on the golem as
+A golem's home is the last place it got work from (a copper chest, an [Overflow], [Fuel] or
+[Furnace Supply] chest, or a furnace), kept on the golem as
 coppergolemclerk:home = "<world>;x;y;z". Most scenarios set it directly, then put the
 golem out on a walkway east of the platform, beyond 40 blocks from the chest.
 """
@@ -20,10 +21,12 @@ def home_nbt(c, dx, dz, dy=0):
 
 
 def lost_golem(c, dx, dz, home=(2, 10), name=None, extra=""):
+    """A golem with this home (None: no home)."""
     x, y, z = c.abs(dx, dz)
     tag = f',CustomName:"{name}"' if name else ""
+    known = "," + home_nbt(c, *home) if home else ""
     c.run(f"summon minecraft:copper_golem {x + 0.5} {y} {z + 0.5} "
-          f"{{active_effects:[{LUCK}],{home_nbt(c, *home)}{tag}{extra}}}")
+          f"{{active_effects:[{LUCK}]{known}{tag}{extra}}}")
 
 
 def walkway(c, to=FAR + 4):
@@ -159,3 +162,42 @@ def _(c):
         return [(t.since() > 30, "waited 30s"), (not logged(c, "is lost"), "not walked back"),
                 (far_golems(c) == 1, "still out on the walkway")]
     return check
+
+
+# ---- homes that aren't copper chests, and golems with no home
+
+@scenario("rescue-home-from-furnace-supply", "rescue", 120, "No copper chest: a golem that takes raw iron from a [Furnace Supply] chest for a furnace makes that chest its home.")
+def _(c):
+    from suite_furnace import furnace  # here, not at the top: suite_furnace's imports come back to this one
+    furnace(c, "furnace", 10, 10, label="[raw iron]")
+    c.chest("supply", 2, 10, [("raw_iron", 8)])
+    c.sign(2, 10, "[Furnace Supply]")
+    c.golem(5, 10)
+    x, y, z = c.abs(2, 10)
+
+    def check():
+        data = c.r.cmd(f"data get entity {c.selector('copper_golem')[:-1]},limit=1] BukkitValues")
+        return [(f"{WORLD};{x};{y};{z}" in data, f"home is the [Furnace Supply] chest at {x},{y},{z}: {data.strip()[-90:]}")]
+    return check
+
+
+@scenario("rescue-walks-back-to-furnace", "rescue", 150, "A golem whose home is a furnace (no copper chest anywhere) is 48 blocks away: it walks back to the furnace.")
+def _(c):
+    from suite_furnace import furnace  # here, not at the top: suite_furnace's imports come back to this one
+    furnace(c, "furnace", 2, 10, label="[raw iron]")
+    walkway(c)
+    lost_golem(c, FAR, 10)
+    return lambda: [(bool(logged(c, "blocks from its furnace at")), "logged that it's lost, 'from its furnace'"),
+                    (bool(logged(c, "is back near its furnace")), "logged that it's back near its furnace"),
+                    (far_golems(c) == 0, "no golem left out on the walkway")]
+
+
+@scenario("rescue-no-home-seeks-work", "rescue", 150, "A golem with no home, 48 blocks from the only copper chest (out of its range): it walks to that copper chest.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    walkway(c)
+    lost_golem(c, FAR, 10, home=None)
+    return lambda: [(bool(logged(c, "has no work nearby; walking it to the copper chest")), "logged that it's walking to work"),
+                    (bool(logged(c, "is back near its copper chest")), "logged that it got there"),
+                    (far_golems(c) == 0, "no golem left out on the walkway")]
+

@@ -752,14 +752,30 @@ with anything to sort) walks over to an iron or snow golem within 16 blocks and 
 They face each other, it waves, and hearts float up. Then it goes back to its routine and
 doesn't greet again for `greet-cooldown-minutes` (default 5).
 
-It never follows. If it can't get there in 20 seconds it gives up, and any work turning up
-ends the visit at once. Turn it off with `greet-other-golems: false`.
+It only visits a golem within 16 blocks of its home (if that is within `search-distance`),
+else of its nearest copper chest or furnace, or of where it stands if it has neither, and it turns back if it gets more than 20 blocks from there. It
+never follows. It gives up if it can't get within reach in 20 seconds, if it gets no closer
+for 8 seconds, if the other golem can no longer be reached, or if that golem dies or
+disappears. Any work turning up (items in a copper chest, a fetch or furnace job, an item in
+hand) ends the visit at once.
+
+A visit that ends without a hello goes back to the copper chest or furnace for up to 15
+seconds, and stops if work turns up. After work ends a visit, vanilla takes the golem to the
+work. With `debug: true`, each such visit is logged with the reason ("stopped going to say
+hello: ..."). Turn greetings off with `greet-other-golems: false`.
 
 ### Lost golems find their way home
 
-Each golem remembers the copper chest it last took items from. It counts as far from home if
-it ends up more than 40 blocks from its own copper chest, or 12 up or down (say after
-falling down a shaft), and from any other copper chest too. Then it walks back.
+A golem's home is the last place it got work from. That is the copper chest it took items
+from, the `[Overflow]` chest it fetched from, the `[Furnace Supply]` or `[Fuel]` container
+it took from, or the furnace it took finished items (or an empty lava bucket) out of. Chests
+it only delivers into never become home. If the home stops being a work place (it's broken,
+or its sign is removed), the golem forgets it.
+
+A golem counts as lost when no work place is in its range and its home is more than 40
+blocks away, or 12 up or down (say after falling down a shaft). Work places are copper
+chests, furnaces, smokers, blast furnaces, and `[Overflow]`, `[Fuel]` and `[Furnace Supply]`
+containers. A lost golem walks back home.
 
 Its owner gets an alert saying where it is if either of these happens:
 
@@ -770,9 +786,16 @@ Its owner gets an alert saying where it is if either of these happens:
 
 > [Golem Clerk] A copper golem is lost at -757, -55, 102, 118 blocks from its copper chest at -760, 63, 98, and can't find a way back.
 
-The golem tries again every 5 minutes. A golem moved somewhere with its own copper chest (on
-a lead, say) adopts that chest as its new home. Golems on a lead are left alone. `/cgc golems`
-shows which golems are lost. Turn this off with `rescue-lost-golems: false`.
+The message names the home: "its copper chest", "its furnace", "its `[Overflow]` chest" and
+so on. The golem tries again every 5 minutes.
+
+A golem with no home takes the nearest work place in its range as its home. If none is in
+range, it looks for one up to 64 blocks away (12 up or down) and walks there. If there is
+nothing within 64 blocks, it's left alone and behaves like vanilla until there is.
+
+A golem moved somewhere with its own copper chest (on a lead, say) adopts that chest as its
+new home. Golems on a lead are left alone. `/cgc golems` shows which golems are lost. Turn
+this off with `rescue-lost-golems: false`.
 
 Teleporting stuck golems home is possible but off by default. It needs both of these:
 
@@ -1078,9 +1101,9 @@ line number, and the old settings are kept.
 | `golems-give-way` | `true` | A golem stuck nose to nose with another steps aside (backing up in a one-wide corridor). Empty hands give way to full ones. |
 | `avoid-trapdoors` | `true` | Golems never walk onto or through trapdoors (vanilla golems fall through open ones). |
 | `avoid-portals` | `true` | Golems never go through Nether portals, End portals or End gateways, unless on a lead or riding something. |
-| `rescue-lost-golems` | `true` | A golem far from any copper chest (40 blocks from its own, or 12 up or down) walks back. One that can't, or is stuck where it can't reach a copper chest, triggers an alert. |
-| `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its copper chest, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
-| `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
+| `rescue-lost-golems` | `true` | A golem with no work place in range and its home (the last place it got work from) more than 40 blocks away, or 12 up or down, walks back. One that can't, or is stuck where it can't reach a copper chest, triggers an alert. A golem with no home goes to the nearest work place within 64 blocks. |
+| `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its home, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
+| `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks of its nearest copper chest or furnace. |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
 | `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit, unless `claim-blocks-per-extra-golem` is set). Golems on unclaimed land aren't limited. Each claim (admin claims too) has its own limit. The oldest keep it, the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
 | `claim-blocks-per-extra-golem` | `0` | Each claim gets one more golem than `max-golems-per-claim` for every this many claim blocks of its area (0: off). |

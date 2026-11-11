@@ -188,7 +188,7 @@ error or exception in the server log during a scenario fails it.
 | perf | hundreds of chests in range, many golems: tick time stays healthy |
 | dimensions | sorting, overflow, fetching, returns, giving way and `/cgc check` in the Nether and the End |
 | reach | chests stacked above vanilla's reach: delivering and taking with `deliver-reach` / `take-reach` raised, and at the default |
-| greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit |
+| greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit, a golem that dies on the way, no visits far from the copper chest |
 | limits | `max-golems-per-claim` / `claim-blocks-per-extra-golem`: the newest golem over a limit sorts like vanilla and the owner is told; each claim on its own, admin claims, bigger claims get more, under the limit, unclaimed land not limited, vanilla-mode golems not counted, the removed `max-golems-outside-claims` warned about, bad values |
 | work-order | what an idle golem does first: furnace upkeep (including taking out finished items) before sorting, `furnace-jobs-before-sorting` (1, and 0 for the old order); manual `work-order-balance-<n>` benchmarks for choosing its default |
 | distance | `search-distance` above 32: golems finding, walking to and moving items for chests, copper chests, `[Overflow]` chests and furnaces past vanilla's range |
@@ -205,7 +205,7 @@ error or exception in the server log during a scenario fails it.
 | labels | status labels over golems (bamboo in hand): what they say, off switch, removed with the golem, tick time with many |
 | overflow-hopper | hopper-fed [Overflow] chests: golems wait for `overflow-fetch-min` or `overflow-fetch-wait-seconds`; chests no hopper feeds are emptied at once |
 | portals | `avoid-portals`: golems stay out of Nether portals unless the option is off or they're in vanilla mode |
-| rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their copper chest, alerts, teleport home, adopting a new home |
+| rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their home (copper chest, furnace, `[Furnace Supply]`), alerts, teleport home, adopting a new home, golems with no home seeking work |
 | stats | `/cgc stats` counts deliveries and saves them to `stats.yml` |
 | traffic | `golems-give-way`: golems meeting in corridors and doorways step aside or back out, avoiding fire, cobwebs and holes |
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |

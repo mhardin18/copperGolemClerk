@@ -455,11 +455,14 @@ final class HomeFinder {
     static java.util.function.Function<org.bukkit.Chunk, BlockState[]> blockEntities = chunk -> chunk.getTileEntities(false);
 
     static List<BlockState> containersInRange(Location center, boolean riding, Predicate<Material> types) {
+        return containersWithin(center, riding ? 1 : searchDistance, riding ? 1 : 8, types);
+    }
+
+    /** Containers of these types within h blocks sideways and v up or down of a spot, nearest first. */
+    static List<BlockState> containersWithin(Location center, int h, int v, Predicate<Material> types) {
         List<BlockState> found = new ArrayList<>();
         World world = center.getWorld();
         Block at = center.getBlock();
-        int h = riding ? 1 : searchDistance;
-        int v = riding ? 1 : 8;
         int chunkX = at.getX() >> 4;
         int chunkZ = at.getZ() >> 4;
         int chunkRadius = Math.floorDiv(h, 16) + 1;
