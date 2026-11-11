@@ -3,7 +3,7 @@
 Reads the plugin's debug lines ("going to say hello", "said hello"), so pluginDev must
 run with debug: true.
 """
-from arena import Trigger, expect, scenario
+from arena import Trigger, _count, expect, scenario
 from suite_modes import golem
 from suite_options import set_options
 
@@ -17,6 +17,13 @@ def boxed(c, kind, dx, dz):
 
 def hellos(c, text="said hello"):
     return [l for l in c.cell_lines() if text in l]
+
+
+def golem_near(c, dx, dz, blocks=4):
+    """True if a copper golem is within this many blocks of a spot on the platform."""
+    x, y, z = c.abs(dx, dz)
+    return _count(c.r.cmd(f"execute if entity @e[type=minecraft:copper_golem,x={x + 0.5},y={y},z={z + 0.5},"
+                          f"distance=..{blocks}]")) > 0
 
 
 @scenario("greet-iron-golem", "greet", 90, "An idle copper golem walks over to an iron golem and says hello.")
@@ -85,17 +92,32 @@ def _(c):
     return lambda: [(c.elapsed() > 30, "waited 30 seconds"), (not hellos(c, "say hello"), "no visit")]
 
 
-@scenario("greet-other-dies-on-the-way", "greet", 60, "The iron golem is killed while the copper golem walks over: the visit ends quietly, no errors.")
+@scenario("greet-other-dies-on-the-way", "greet", 60, "The iron golem is killed while the copper golem walks over: the visit ends (logged), there's no hello, and the copper golem walks back to its copper chest.")
 def _(c):
-    x, y, z = c.abs(18, 18)
+    c.chest("copper", 2, 4, block="waxed_copper_chest")  # its work: empty, so the golem is idle
+    x, y, z = c.abs(14, 10)  # 13 blocks from the copper chest, 12 from the golem
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{Tags:[\"itest_other\"],NoAI:1b}}")
-    golem(c, 2, 2)  # about 22 blocks from the iron golem: a walk the check catches
+    golem(c, 4, 4)
     killed = Trigger()
+    back = Trigger()
     def check():
-        killed.fire_when(lambda: hellos(c, "going to say hello"), lambda: c.r.cmd(f"kill {c.selector('iron_golem')}"))  # this platform's only
-        return [(killed.at is not None and killed.since() > 10, "visit started, golem killed, 10 seconds passed"),
-                (not hellos(c), "no hello to a dead golem")]
+        killed.fire_when(lambda: c.elapsed() > 3 and hellos(c, "going to say hello") and not golem_near(c, 3, 4, 4),
+                         lambda: c.r.cmd(f"kill {c.selector('iron_golem')}"))  # this platform's only
+        # Once back it may wander off again like any idle golem: note when it got there.
+        back.fire_when(lambda: killed.at is not None and golem_near(c, 2, 4, 4), lambda: None)
+        return [(killed.at is not None and killed.since() > 15, "visit started, golem killed on the way, 15 seconds passed"),
+                (not hellos(c), "no hello to a dead golem"),
+                (bool(hellos(c, "stopped going to say hello: the golem it was visiting is gone")), "the visit's end was logged"),
+                (back.at is not None, "the copper golem walked back to its copper chest after the visit ended")]
     return check
+
+
+@scenario("greet-stays-near-work", "greet", 45, "An iron golem 14 blocks from the copper golem but 18 from its copper chest: too far from its work, so no visit.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    boxed(c, "iron_golem", 20, 10)
+    golem(c, 6, 10)
+    return lambda: [(c.elapsed() > 30, "waited 30 seconds"), (not hellos(c, "going to say hello"), "no visit")]
 
 
 @scenario("greet-unreachable", "greet", 60, "An iron golem sealed in a glass box: the copper golem never gets to say hello and isn't left walking at it forever.")
@@ -107,7 +129,7 @@ def _(c):
     golem(c, 4, 10)
     def check():
         visits = hellos(c, "going to say hello")
-        gave_up = hellos(c, "to say hello; giving up")
+        gave_up = hellos(c, "stopped going to say hello")
         return [(c.elapsed() > 45, "waited 45 seconds"), (not hellos(c), "no hello through the glass"),
                 (not visits or gave_up, "any visit was given up")]
     return check
@@ -129,7 +151,7 @@ def _(c):
 def _(c):
     c.chest("copper", 2, 10, block="waxed_copper_chest")
     c.chest("logs", 2, 16, [("oak_log", 1)])
-    x, y, z = c.abs(20, 2)
+    x, y, z = c.abs(16, 4)  # within 16 blocks of the copper chest (greetings stay near work), 13 from the golem
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y} {z + 0.5} {{NoAI:1b}}")
     golem(c, 4, 10)
     t = Trigger()

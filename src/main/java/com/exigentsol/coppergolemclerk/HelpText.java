@@ -22,7 +22,7 @@ final class HelpText {
                             "- what each sign or item-frame label on it means, and labels that match nothing"
                                     + " or never close (a label can carry on to the next sign line: [Only light / sources])",
                             "- what the chest takes, from its labels or its contents",
-                            "- whether the item in your hand would go there",
+                            "- whether the item in your hand would go there, or to which more specific chest nearby instead",
                             "- anything stopping golems from using it: a block on top, a lock, a hopper"
                                     + " under it feeding a copper chest, or no room",
                             "- what to write on its sign: labels for what's in it (most specific first), what its label"
@@ -35,6 +35,8 @@ final class HelpText {
                     List.of("Looks at what's in the chest and suggests what to write on its sign: the item's own label for"
                                     + " one kind of item, else the most specific group they all share, most specific first.",
                             "With no shared group it names the group most of the items fit and lists the ones that don't.",
+                            "It also lists items here that golems would take to a more specific chest nearby, and the"
+                                    + " label that keeps them here.",
                             "A labelled chest: says whether everything in it matches. You place the sign yourself;"
                                     + " players only get suggestions for containers they could open.")),
             new Entry("overflow", "/cgc overflow", "/cgc overflow <x> <y> <z> [world]",
@@ -52,23 +54,29 @@ final class HelpText {
                                     + " unlabelled ones by what they hold, fullest first, and flags full and nearly full (90%) ones.",
                             "Also shows [Overflow] chests, how many empty chests are left for new kinds of items, and how"
                                     + " many items are waiting in copper chests. Players only see containers they could open.")),
-            new Entry("golems", "/cgc golems [all]", "/cgc golems [<x> <y> <z> [world]]",
+            new Entry("golems", "/cgc golems [all | radius]", "/cgc golems [<x> <y> <z> [world]] [radius]",
                     "Where the copper golems are, nearest first.",
                     List.of("Lists the copper golems in your world, nearest first (the 10 nearest;"
                                     + " /cgc golems all lists every golem in every world).",
+                            "Give a radius (/cgc golems 50) to list only golems within that many blocks"
+                                    + " (the 10 nearest still).",
                             "Players see only golems in claims they own or whose copper chest is in one (and only if"
                                     + " golems-command-for-players is on); 'all' and positions are for admins.",
                             "Each line has the golem's position (admins can click it to teleport there), how far away it is,"
                                     + " what it's carrying, its copper and its mode.",
                             "Golems in unloaded chunks are listed where they were last seen: the plugin"
                                     + " remembers every golem's last spot in golems.yml.",
-                            "Give a position (/cgc golems <x> <y> <z> [world]) for the 10 nearest to it;"
+                            "Give a position (/cgc golems <x> <y> <z> [world] [radius]) for the 10 nearest to it;"
                                     + " from the console without one, every golem in every world.")),
-            new Entry("find", "/cgc find <item>", "/cgc find <item> <x> <y> <z> [world]",
+            new Entry("find", "/cgc find <item> [radius]", "/cgc find <item> <x> <y> <z> [world] [radius]",
                     "Which containers near you hold an item; they glow for a few seconds.",
                     List.of("Lists the containers within find-radius blocks (default 32) holding an item, nearest first,"
                                     + " counting items inside shulker boxes too. They glow for you for"
                                     + " find-highlight-seconds (default 10).",
+                            "Add a radius to look farther or nearer (/cgc find birch log 50), up to find-max-radius"
+                                    + " (default 64) for players; only chunks that are loaded are searched. A number that ends"
+                                    + " the item's name (music disc 13) is part of it; /cgc find music disc 13 50 is that disc"
+                                    + " within 50 blocks.",
                             "Search for anything a sign label takes: an item (birch log), a group (logs), a pattern"
                                     + " (*_log) or a tag (#minecraft:logs).",
                             "An item name finds just that item (torch: not copper or soul torches); an \"Also nearby\""

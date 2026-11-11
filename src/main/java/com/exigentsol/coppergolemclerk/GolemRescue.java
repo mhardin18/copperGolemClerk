@@ -15,19 +15,25 @@ import org.bukkit.entity.CopperGolem;
 import org.bukkit.persistence.PersistentDataType;
 
 /**
- * rescue-lost-golems: golems that end up away from their copper chest walk back, and if
+ * rescue-lost-golems: golems that end up away from their work walk back, and if
  * they can't, their owner is told (or, with lost-golem-teleport-home, they're teleported).
  *
- * A golem's home is the copper chest it last took items from (kept on the golem). Every
- * five seconds each golem is checked:
- * - lost: no copper chest within its range, and its home more than 40 blocks away (or 12
- *   up or down), for 10 seconds. It walks home (Paper's pathfinder, re-aimed every second)
- *   until a copper chest is in range again. If it gets no closer for 20 seconds, it gives up.
+ * A golem's home is the last place it got work from (kept on the golem): the copper chest it
+ * took items from, the [Overflow] chest it fetched from, the [Furnace Supply] or [Fuel]
+ * container it took from, or the furnace it took finished items out of. If that place stops
+ * being one (broken, sign removed), the home is forgotten until the golem works somewhere else.
+ * Every five seconds each golem is checked:
+ * - lost: no work place (copper chest, furnace, [Overflow], [Fuel] or [Furnace Supply]
+ *   container) within its range, and its home more than 40 blocks away (or 12 up or down),
+ *   for 10 seconds. It walks home (Paper's pathfinder, re-aimed every second) until a work
+ *   place is in range again. If it gets no closer for 20 seconds, it gives up.
  * - stuck: a copper chest is in range, but the golem has stood in one spot for two minutes
  *   more than 4 blocks from it and there's no path there (fell into a pit, walled in).
  * A golem that gives up (or is stuck) is reported with an alert (once per alert cooldown)
  * and checked again five minutes later. A golem moved to a new place with its own copper
- * chest just adopts that chest as its home. Golems on a lead or riding are left alone.
+ * chest just adopts that chest as its home. A golem with no home takes the nearest work place
+ * in its range as home; with none in range it walks to the nearest one within 64 blocks (12 up
+ * or down), and with none that close it's left alone. Golems on a lead or riding are left alone.
  */
 final class GolemRescue {
 
@@ -38,9 +44,12 @@ final class GolemRescue {
     private static final long STUCK_MILLIS = 2 * 60_000;
     private static final long RETRY_MILLIS = 5 * 60_000;
     private static final int FAR_SIDEWAYS = 40;
+    /** How far a golem with no home looks for a place to work from. */
+    private static final int SEEK_SIDEWAYS = 64;
+    private static final int SEEK_UP_DOWN = 12;
     private static final int FAR_UP_DOWN = 12;
 
-    /** A golem's home copper chest. */
+    /** A golem's home: the last place it got work from. */
     record Home(String world, int x, int y, int z) {
         Location location(World w) {
             return new Location(w, x + 0.5, y, z + 0.5);
@@ -74,9 +83,9 @@ final class GolemRescue {
 
     // ---- homes
 
-    /** The golem took items from this copper chest: that's its home. */
+    /** The golem got work from this place (see isWorkPlace): that's its home. */
     void noteHome(org.bukkit.entity.Entity golem, Block chest) {
-        if (!(golem instanceof CopperGolem) || chest == null || !Returns.isCopperChest(chest.getType())) {
+        if (!(golem instanceof CopperGolem) || chest == null || !isWorkPlace(chest)) {
             return;
         }
         String value = chest.getWorld().getName() + ";" + chest.getX() + ";" + chest.getY() + ";" + chest.getZ();
@@ -103,10 +112,65 @@ final class GolemRescue {
         golem.getPersistentDataContainer().remove(homeKey);
     }
 
+    /**
+     * A place a golem gets work from: a copper chest, a furnace (or smoker, blast furnace), or a
+     * container labelled [Overflow], [Fuel] or [Furnace Supply].
+     */
+    boolean isWorkPlace(Block block) {
+        org.bukkit.Material type = block.getType();
+        if (Returns.isCopperChest(type) || FurnaceFeeder.isFurnace(type)) {
+            return true;
+        }
+        if (!HomeFinder.isDestination(type) || !(block.getState(false) instanceof org.bukkit.block.Container container)) {
+            return false;
+        }
+        ChestLabels.Labels labels = ChestLabels.of(container.getInventory(), plugin.groups(), plugin.itemFrameLabels(),
+                plugin.signLabels());
+        return labels.overflow() || labels.fuel() || labels.supply();
+    }
+
+    /** True if any work place is in the golem's range. Copper chests and furnaces first (no signs to read). */
+    private boolean workPlaceInRange(CopperGolem golem) {
+        if (!HomeFinder.containersInRange(golem, t -> Returns.isCopperChest(t) || FurnaceFeeder.isFurnace(t)).isEmpty()) {
+            return true;
+        }
+        for (BlockState state : HomeFinder.containersInRange(golem, HomeFinder::isDestination)) {
+            if (isWorkPlace(state.getBlock())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** "copper chest", "furnace", "[Overflow] chest" ...: what a home is, for messages. */
+    private String kindOf(Home home) {
+        World world = plugin.getServer().getWorld(home.world());
+        if (world == null || !world.isChunkLoaded(home.x() >> 4, home.z() >> 4)) {
+            return "copper chest";
+        }
+        Block block = world.getBlockAt(home.x(), home.y(), home.z());
+        org.bukkit.Material type = block.getType();
+        if (Returns.isCopperChest(type)) {
+            return "copper chest";
+        }
+        if (FurnaceFeeder.isFurnace(type)) {
+            return ChestReports.pretty(type).toLowerCase(java.util.Locale.ROOT);
+        }
+        if (block.getState(false) instanceof org.bukkit.block.Container container) {
+            ChestLabels.Labels labels = ChestLabels.of(container.getInventory(), plugin.groups(), plugin.itemFrameLabels(),
+                    plugin.signLabels());
+            String what = ChestReports.pretty(type).toLowerCase(java.util.Locale.ROOT);
+            return labels.overflow() ? "[Overflow] " + what : labels.supply() ? "[Furnace Supply] " + what
+                    : labels.fuel() ? "[Fuel] " + what : what;
+        }
+        return "work place";
+    }
+
     /** A note for /cgc golems: walking home, or why it couldn't. Null if nothing to say. */
     String note(CopperGolem golem) {
-        if (walks.containsKey(golem.getUniqueId())) {
-            return "lost, walking back to its copper chest";
+        Walk walk = walks.get(golem.getUniqueId());
+        if (walk != null) {
+            return "lost, walking back to its " + kindOf(walk.home());
         }
         return trouble.get(golem.getUniqueId());
     }
@@ -179,12 +243,13 @@ final class GolemRescue {
         }
         Home home = homeOf(golem);
         if (home == null) {
+            seekWork(golem, at, now);
             return;
         }
         World homeWorld = plugin.getServer().getWorld(home.world());
         if (homeWorld != null && homeWorld.isChunkLoaded(home.x() >> 4, home.z() >> 4)
-                && !Returns.isCopperChest(homeWorld.getBlockAt(home.x(), home.y(), home.z()).getType())) {
-            clearHome(golem); // its copper chest is gone: nothing to go back to
+                && !isWorkPlace(homeWorld.getBlockAt(home.x(), home.y(), home.z()))) {
+            clearHome(golem); // its work place is gone: nothing to go back to
             trouble.remove(id);
             return;
         }
@@ -209,6 +274,10 @@ final class GolemRescue {
             lostSince.remove(id);
             return; // near home; its copper chest just isn't in vanilla's view from here
         }
+        if (workPlaceInRange(golem)) {
+            lostSince.remove(id);
+            return; // no copper chest, but a furnace or [Overflow], [Fuel] or [Furnace Supply] chest to work from
+        }
         long since = lostSince.computeIfAbsent(id, k -> now);
         if (now - since < LOST_FOR_MILLIS) {
             return;
@@ -216,14 +285,52 @@ final class GolemRescue {
         lostSince.remove(id);
         if (homeWorld == null || !homeWorld.equals(at.getWorld())) {
             gaveUp(golem, home, "is in " + at.getWorld().getName() + " at " + Alerts.at(at)
-                    + ", in a different world from its copper chest", now);
+                    + ", in a different world from its " + kindOf(home), now);
             return;
         }
         double d = distance(at, home);
         walks.put(id, new Walk(home, now, d, now));
         golem.getPathfinder().moveTo(target(homeWorld, home), 1.0);
-        plugin.getLogger().info(String.format("A copper golem at %s is lost (%d blocks from its copper chest at %d, %d, %d);"
-                + " walking it back", Alerts.at(at), Math.round(d), home.x(), home.y(), home.z()));
+        plugin.getLogger().info(String.format("A copper golem at %s is lost (%d blocks from its %s at %d, %d, %d);"
+                + " walking it back", Alerts.at(at), Math.round(d), kindOf(home), home.x(), home.y(), home.z()));
+    }
+
+    /**
+     * A golem with no home: the nearest work place in its range becomes its home. With none in
+     * range, it looks up to SEEK_SIDEWAYS blocks away (SEEK_UP_DOWN up or down) and walks there.
+     * With nothing that close either, it's left alone until there is.
+     */
+    private void seekWork(CopperGolem golem, Location at, long now) {
+        Block near = nearestWorkPlace(at, HomeFinder.searchDistance(), 8);
+        if (near != null) {
+            noteHome(golem, near);
+            return;
+        }
+        Block far = nearestWorkPlace(at, SEEK_SIDEWAYS, SEEK_UP_DOWN);
+        if (far == null) {
+            return;
+        }
+        noteHome(golem, far);
+        Home home = homeOf(golem);
+        if (home == null) {
+            return;
+        }
+        double d = distance(at, home);
+        walks.put(golem.getUniqueId(), new Walk(home, now, d, now));
+        golem.getPathfinder().moveTo(target(at.getWorld(), home), 1.0);
+        plugin.getLogger().info(String.format("A copper golem at %s has no work nearby; walking it to the %s %d blocks"
+                + " away at %d, %d, %d", Alerts.at(at), kindOf(home), Math.round(d), home.x(), home.y(), home.z()));
+    }
+
+    /** The nearest work place (see isWorkPlace) within h blocks sideways and v up or down, or null. */
+    private Block nearestWorkPlace(Location at, int h, int v) {
+        for (BlockState state : HomeFinder.containersWithin(at, h, v,
+                t -> Returns.isCopperChest(t) || FurnaceFeeder.isFurnace(t) || HomeFinder.isDestination(t))) {
+            if (isWorkPlace(state.getBlock())) {
+                return state.getBlock();
+            }
+        }
+        return null;
     }
 
     /** One step of a walk home. True when it's over (home, or gave up). */
@@ -234,11 +341,11 @@ final class GolemRescue {
             golem.getPathfinder().stopPathfinding();
             return true;
         }
-        if (inRange(at, walk.home()) && !HomeFinder.containersInRange(golem, Returns::isCopperChest).isEmpty()) {
+        if (inRange(at, walk.home()) && workPlaceInRange(golem)) {
             golem.getPathfinder().stopPathfinding();
             trouble.remove(golem.getUniqueId());
-            plugin.getLogger().info(String.format("The lost copper golem is back near its copper chest at %d, %d, %d (now at %s)",
-                    walk.home().x(), walk.home().y(), walk.home().z(), Alerts.at(at)));
+            plugin.getLogger().info(String.format("The lost copper golem is back near its %s at %d, %d, %d (now at %s)",
+                    kindOf(walk.home()), walk.home().x(), walk.home().y(), walk.home().z(), Alerts.at(at)));
             return true;
         }
         double d = distance(at, walk.home());
@@ -248,7 +355,7 @@ final class GolemRescue {
         if (now - walk.bestAt() > NO_PROGRESS_MILLIS || now - walk.started() > MAX_WALK_MILLIS) {
             golem.getPathfinder().stopPathfinding();
             gaveUp(golem, walk.home(), "is lost at " + Alerts.at(at) + ", " + Math.round(d)
-                    + " blocks from its copper chest at " + walk.home().x() + ", " + walk.home().y() + ", "
+                    + " blocks from its " + kindOf(walk.home()) + " at " + walk.home().x() + ", " + walk.home().y() + ", "
                     + walk.home().z() + ", and can't find a way back", now);
             return true;
         }

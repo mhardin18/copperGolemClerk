@@ -136,6 +136,7 @@ final class Returns {
             equipment.setItemInMainHand(rest);
 
             markHomeless(inventory, type);
+            ReachDelivery.flashLid(plugin, block);
             Location at = block.getLocation().clone().add(0.5, 0.5, 0.5);
             block.getWorld().playSound(at, Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
             if (plugin.debug()) {

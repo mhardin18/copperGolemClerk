@@ -171,4 +171,13 @@ class LabelAdvisorPaperTest extends PaperTest {
         String line = console.nextMessage();
         assertTrue(line != null && line.contains("No [Overflow] chests") && line.contains("64 blocks"), line);
     }
+
+    @Test
+    void keepHereSaysWhichLabelToAdd() {
+        HomeFinder.Rival group = new HomeFinder.Rival(null, 18, "label matches [ingots and gems]");
+        assertEquals("To keep it here, add [copper ingot] to this chest's sign.",
+                ChestReports.keepHere(Material.COPPER_INGOT, group));
+        HomeFinder.Rival exact = new HomeFinder.Rival(null, 1, "label matches [copper ingot]");
+        assertTrue(ChestReports.keepHere(Material.COPPER_INGOT, exact).contains("labelled for exactly this item"));
+    }
 }

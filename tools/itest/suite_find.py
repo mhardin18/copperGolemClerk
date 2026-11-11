@@ -93,6 +93,60 @@ def _(c):
     return lambda: [has(find(c, "birch_log"), "2 birch log in 1 container within 5 blocks")]
 
 
+@scenario("find-radius-argument", "find", 40, "/cgc find <item> <x> <y> <z> <radius> finds a chest 42 blocks away that the default 32 misses; 'music disc 13' stays one item, '<item> <n>' is a radius.")
+def _(c):
+    c.chest("near", 12, 10, [("birch_log", 2)])
+    c.chest("far", 52, 10, [("birch_log", 9), ("music_disc_13", 1)])
+    x, y, z = c.abs(10, 10)
+
+    def ask(text):
+        return re.sub(r"§.", "", c.r.cmd(f"cgc find {text}"))
+
+    def check():
+        default = ask(f"birch_log {x} {y} {z}")
+        wide = ask(f"birch_log {x} {y} {z} 50")
+        words = ask(f"birch log {x} {y} {z} 50")
+        disc = ask(f"music disc 13 {x} {y} {z}")
+        disc_wide = ask(f"music disc 13 {x} {y} {z} 50")
+        bad = ask(f"birch_log {x} {y} {z} 0")
+        return [has(default, "2 birch log in 1 container within 32 blocks"),
+                has(wide, "11 birch log in 2 containers within 50 blocks"),
+                has(words, "11 birch log in 2 containers within 50 blocks"),
+                has(disc, "No music disc 13 in containers within 32 blocks"),
+                has(disc_wide, "1 music disc 13 in 1 container within 50 blocks"),
+                has(bad, "The radius must be a whole number of 1 or more.")]
+    return check
+
+
+@scenario("find-says-unloaded-chunks", "find", 30, "/cgc find says when chunks in range weren't loaded (so weren't searched), and says nothing when all were.")
+def _(c):
+    c.chest("near", 12, 10, [("birch_log", 2)])
+    x, y, z = c.abs(10, 10)
+
+    def check():
+        here = ask_find(c, f"birch_log {x} {y} {z} 5")
+        # far from any arena: nothing there is loaded (x 4990..5010 -> 3 chunks, z 899990..900010 -> 2)
+        away = ask_find(c, f"birch_log 5000 {y} 900000 10")
+        return [has(here, "2 birch log in 1 container within 5 blocks"),
+                ("loaded" not in here, f"no note when every chunk in range is loaded: {here!r}"),
+                has(away, "No birch log in containers within 10 blocks"),
+                has(away, "6 of the 6 chunks in range aren't loaded, so they weren't searched.")]
+    return check
+
+
+def ask_find(c, text):
+    return re.sub(r"§.", "", c.r.cmd(f"cgc find {text}"))
+
+
+@scenario("find-radius-above-max", "find", 40, "find-max-radius does not limit the console: a radius of 100 over a max of 40 still finds a chest 42 away.", alone=True)
+def _(c):
+    set_options(c, find_max_radius="40")
+    c.chest("far", 52, 10, [("birch_log", 9)])
+    x, y, z = c.abs(10, 10)
+    return lambda: [has(re.sub(r"§.", "", c.r.cmd(f"cgc find birch_log {x} {y} {z} 100")),
+                        "9 birch log in 1 container within 100 blocks")]
+
+
 @scenario("find-disabled", "find", 30, "find-enabled: false turns /cgc find off.", alone=True)
 def _(c):
     set_options(c, find_enabled="false")

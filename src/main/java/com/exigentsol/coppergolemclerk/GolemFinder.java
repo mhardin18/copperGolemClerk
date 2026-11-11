@@ -175,6 +175,14 @@ final class GolemFinder implements Listener {
      * (and from the console without a position) every golem in every world.
      */
     void report(CommandSender sender, boolean all, Location spot) {
+        report(sender, all, spot, null);
+    }
+
+    /**
+     * As above; with a radius, only golems within that many blocks of the spot (or the player) along
+     * each axis, as /cgc find counts it; nearest first.
+     */
+    void report(CommandSender sender, boolean all, Location spot, Integer radius) {
         Player player = sender instanceof Player p ? p : null;
         Location here = spot != null ? spot : player == null ? null : player.getLocation();
         boolean everywhere = here == null || all;
@@ -207,6 +215,9 @@ final class GolemFinder implements Listener {
         if (player != null && !player.hasPermission(Claims.ALL_CLAIMS)) {
             rows.removeIf(r -> !mine(player, r)); // players see their own golems only
         }
+        if (radius != null && !everywhere) {
+            rows.removeIf(r -> !withinBox(here, r, radius));
+        }
         rows.sort(Comparator.comparingDouble(Row::distance)
                 .thenComparing(r -> r.seen() == null ? "" : r.seen().world())
                 .thenComparingInt(r -> r.seen() == null ? 0 : r.seen().x()));
@@ -215,6 +226,9 @@ final class GolemFinder implements Listener {
         String scope = everywhere ? "on the server"
                 : spot != null ? "near " + spot.getBlockX() + " " + spot.getBlockY() + " " + spot.getBlockZ() + " in " + here.getWorld().getName()
                 : "in " + here.getWorld().getName();
+        if (radius != null && !everywhere) {
+            scope += " within " + radius + " blocks";
+        }
         if (rows.isEmpty()) {
             boolean ownOnly = player != null && !player.hasPermission(Claims.ALL_CLAIMS);
             sender.sendMessage(Component.text("No copper golems " + scope + (ownOnly ? " in or belonging to your claims."
@@ -230,7 +244,8 @@ final class GolemFinder implements Listener {
         }
         if (rows.size() > max) {
             sender.sendMessage(Component.text("...and " + (rows.size() - max) + " more"
-                    + (everywhere ? "." : ". /cgc golems all lists every one."), NamedTextColor.GRAY));
+                    + (everywhere ? "." : radius != null ? ", farther away." : ". /cgc golems all lists every one."),
+                    NamedTextColor.GRAY));
         }
     }
 
@@ -251,6 +266,18 @@ final class GolemFinder implements Listener {
             return w != null && claims.ownsClaimAt(player, new Location(w, home.x(), home.y(), home.z()));
         }
         return false;
+    }
+
+    /**
+     * Within the radius the way /cgc find counts it: at most that many blocks away along each axis
+     * (sideways and up/down), not in a straight line.
+     */
+    private boolean withinBox(Location here, Row row, int radius) {
+        Location at = row.live() != null ? row.live().getLocation() : locationOf(row.seen());
+        return at != null && at.getWorld().equals(here.getWorld())
+                && Math.abs(at.getBlockX() - here.getBlockX()) <= radius
+                && Math.abs(at.getBlockY() - here.getBlockY()) <= radius
+                && Math.abs(at.getBlockZ() - here.getBlockZ()) <= radius;
     }
 
     private Location locationOf(Seen s) {

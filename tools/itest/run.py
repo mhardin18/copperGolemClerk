@@ -234,6 +234,7 @@ def main(argv):
     log = arena.Log(os.path.join(arena.SERVER, "logs/latest.log"))
     config_before = open(arena.CONFIG).read()
     r.cmd("coppergolemclerk reload")  # start clean: clears "no home" marks from earlier runs
+    r.cmd("weather clear 1000000")  # rain hurts snow golems (greet tests) and changes nothing else we test
 
     parallel = [(i, s) for i, s in chosen if not s["alone"]]
     alone = [(i, s) for i, s in chosen if s["alone"]]

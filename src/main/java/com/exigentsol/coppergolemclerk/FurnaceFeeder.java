@@ -23,6 +23,7 @@ import org.bukkit.block.Furnace;
 import org.bukkit.block.data.type.Speleothem;
 import org.bukkit.entity.CopperGolem;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.minecart.HopperMinecart;
 import org.bukkit.inventory.BlastingRecipe;
 import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.EntityEquipment;
@@ -32,6 +33,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.SmokingRecipe;
+import org.bukkit.util.BoundingBox;
 
 /**
  * furnace-feeding: golems keep labelled furnaces, smokers and blast furnaces going.
@@ -295,9 +297,16 @@ final class FurnaceFeeder {
         return !labels.noGolems() && labels.hasItemRules() && claimAllows(golem, furnace.getBlock());
     }
 
-    /** True if a hopper is right under the furnace: it collects what the furnace makes. */
+    /**
+     * True if a hopper, or a hopper minecart, is right under the furnace: it collects what the
+     * furnace makes, so golems leave the output alone.
+     */
     static boolean collectedByHopper(Block furnace) {
-        return HopperLines.isHopper(furnace.getRelative(BlockFace.DOWN).getType());
+        Block below = furnace.getRelative(BlockFace.DOWN);
+        if (HopperLines.isHopper(below.getType())) {
+            return true;
+        }
+        return !below.getWorld().getNearbyEntities(BoundingBox.of(below), e -> e instanceof HopperMinecart).isEmpty();
     }
 
     private Reach.Spot spotFor(CopperGolem golem, Block block) {
@@ -527,8 +536,9 @@ final class FurnaceFeeder {
 
     /**
      * Upkeep, the furnace work that comes before sorting: empty a furnace that has stopped (full
-     * output slot), take out an empty bucket, refill one at a lava cauldron, bring fuel, or bring
-     * items to cook from a [Furnace Supply].
+     * output slot), take out an empty bucket, refill one at a lava cauldron, bring fuel, bring
+     * items to cook from a [Furnace Supply], or take out finished items once it's worth a trip
+     * (furnace-take-out-at) or the furnace won't make more for now.
      */
     void findUpkeep(CopperGolem golem) {
         if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
@@ -590,19 +600,11 @@ final class FurnaceFeeder {
             }
         }
         // 4. Items to cook from a [Furnace Supply], for furnaces running low.
-        startSupply(golem, now);
-    }
-
-    /**
-     * After sorting: take out what's done, once it's worth a trip (furnace-take-out-at) or the
-     * furnace won't make more for now.
-     */
-    void findTakeOut(CopperGolem golem) {
-        if (!plugin.furnaceFeeding() || jobs.containsKey(golem.getUniqueId())) {
+        if (startSupply(golem, now)) {
             return;
         }
-        long now = System.currentTimeMillis();
-        startEmpty(golem, usableFurnaces(golem, now), false, now);
+        // 5. Finished items, once it's worth a trip or the furnace won't make more for now.
+        startEmpty(golem, furnaces, false, now);
     }
 
     /**
@@ -1165,6 +1167,9 @@ final class FurnaceFeeder {
         int left = container.getInventory().addItem(part).values().stream().mapToInt(ItemStack::getAmount).sum();
         int moved = amount - left;
         takeFromHand(golem, held, moved);
+        if (moved > 0) {
+            ReachDelivery.flashLid(plugin, block);
+        }
         debugPut(golem, moved, held.getType(), "inventory", block);
         return moved;
     }
@@ -1223,10 +1228,11 @@ final class FurnaceFeeder {
     private void takeResult(CopperGolem golem, Furnace furnace) {
         FurnaceInventory inventory = furnace.getInventory();
         ItemStack result = inventory.getResult();
-        if (isEmpty(result)) {
-            return;
+        if (isEmpty(result) || collectedByHopper(furnace.getBlock())) {
+            return; // a hopper may have been put under it while the golem was on its way
         }
         int take = Math.min(result.getAmount(), GolemCarry.amountFor(result.getType(), plugin.carryAmount()));
+        plugin.rescue().noteHome(golem, furnace.getBlock()); // the furnace it works from is its home now
         ItemStack taken = result.clone();
         taken.setAmount(take);
         ItemStack left = result.clone();
@@ -1264,6 +1270,8 @@ final class FurnaceFeeder {
         if (taken == null) {
             return false;
         }
+        plugin.rescue().noteHome(golem, container.getBlock()); // its [Fuel] or [Furnace Supply] container is its home now
+        ReachDelivery.flashLid(plugin, sourceBlock);
         hand(golem, taken);
         // If it can't be delivered after all, it's sorted like any pickup and returns here.
         homes.startSearch(golem, taken.getType(), sourceBlock);
@@ -1296,6 +1304,8 @@ final class FurnaceFeeder {
         if (taken == null) {
             return false;
         }
+        plugin.rescue().noteHome(golem, container.getBlock()); // its [Fuel] or [Furnace Supply] container is its home now
+        ReachDelivery.flashLid(plugin, sourceBlock);
         hand(golem, taken);
         fromSupply.add(golem.getUniqueId());
         homes.startSearch(golem, taken.getType(), sourceBlock); // anything left over goes back here
@@ -1316,6 +1326,7 @@ final class FurnaceFeeder {
             return false;
         }
         furnace.getInventory().setFuel(null);
+        plugin.rescue().noteHome(golem, block);
         hand(golem, fuel.clone());
         homes.startSearch(golem, Material.BUCKET, block); // if it isn't refilled or stored, it's sorted like anything else
         return refillOrStore(golem, golem.getEquipment().getItemInMainHand(), now);
@@ -1334,6 +1345,8 @@ final class FurnaceFeeder {
         if (bucket == null) {
             return false;
         }
+        plugin.rescue().noteHome(golem, container.getBlock());
+        ReachDelivery.flashLid(plugin, source);
         hand(golem, bucket);
         homes.startSearch(golem, Material.BUCKET, source);
         return start(golem, Kind.BUCKET_FILL, cauldron, null, Material.BUCKET, null, now) || refillOrStore(golem, bucket, now);

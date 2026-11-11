@@ -97,11 +97,15 @@ class FeaturesPaperTest extends PaperTest {
     // ---- /cgc find
 
     private String findFromConsole(String what, Location around) {
+        return findFromConsole(what, around, null);
+    }
+
+    private String findFromConsole(String what, Location around, Integer radius) {
         ConsoleCommandSenderMock console = server.getConsoleSender();
         while (console.nextMessage() != null) {
             // drop older messages
         }
-        plugin.findItems(console, what, around);
+        plugin.findItems(console, what, around, radius);
         StringBuilder out = new StringBuilder();
         String line;
         while ((line = console.nextMessage()) != null) {
@@ -141,6 +145,18 @@ class FeaturesPaperTest extends PaperTest {
         assertTrue(reply.contains("2 birch log in 1 container within 10 blocks"), reply);
         assertThrows(IllegalArgumentException.class, () -> plugin.findItems(server.getConsoleSender(), "frobnitz",
                 new Location(world, 0, FLOOR, 0)));
+    }
+
+    @Test
+    void findWithARadiusReachesFartherThanFindRadius() {
+        chest(5, 0, item(Material.BIRCH_LOG, 2));
+        chest(30, 0, item(Material.BIRCH_LOG, 9));
+        setting("find-radius", "10");
+        Location here = new Location(world, 0.5, FLOOR, 0.5);
+        String reply = findFromConsole("birch_log", here, 40);
+        assertTrue(reply.contains("11 birch log in 2 containers within 40 blocks"), reply);
+        reply = findFromConsole("birch_log", here, 20);
+        assertTrue(reply.contains("2 birch log in 1 container within 20 blocks"), reply);
     }
 
     @Test

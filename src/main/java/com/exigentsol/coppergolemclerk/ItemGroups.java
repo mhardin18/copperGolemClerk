@@ -33,8 +33,13 @@ public final class ItemGroups {
     record Rule(Predicate<Material> test, int size, String meaning) {
     }
 
+    /** Another name for one or more groups, from group-aliases. */
+    record Alias(String name, String[] words, List<Integer> targets) {
+    }
+
     private final List<String> groupNames;
     private final Map<Material, BitSet> membership;
+    private List<Alias> aliases = List.of();
     private final List<Material> items;
     private final int[] groupSizes;
     /** Parsed sign rules by their bracket text; empty Optional = matches nothing. */
@@ -53,6 +58,17 @@ public final class ItemGroups {
     }
 
     public static ItemGroups load(ConfigurationSection section, Logger log) {
+        return load(section, null, log);
+    }
+
+    /** The groups, plus their other names from group-aliases (aliasSection may be null). */
+    public static ItemGroups load(ConfigurationSection section, ConfigurationSection aliasSection, Logger log) {
+        ItemGroups groups = loadGroups(section, log);
+        groups.aliases = loadAliases(groups, aliasSection, log);
+        return groups;
+    }
+
+    private static ItemGroups loadGroups(ConfigurationSection section, Logger log) {
         List<String> names = new ArrayList<>();
         Map<Material, BitSet> membership = new EnumMap<>(Material.class);
         if (section == null) {
@@ -92,6 +108,56 @@ public final class ItemGroups {
             }
         }
         return new ItemGroups(Collections.unmodifiableList(names), membership, items);
+    }
+
+    /**
+     * group-aliases: alias -> a group name, or a list of them. Skips (with a warning) an alias
+     * that is already a group's name, one with # @ or * (those mean tags, properties and
+     * patterns on a sign), one that would mean [Overflow] or [No Golems], and targets that
+     * aren't groups.
+     */
+    private static List<Alias> loadAliases(ItemGroups groups, ConfigurationSection section, Logger log) {
+        if (section == null) {
+            return List.of();
+        }
+        List<Alias> result = new ArrayList<>();
+        for (String name : section.getKeys(false)) {
+            String where = "group-aliases: '" + name + "'";
+            String[] words = words(name);
+            if (name.isBlank() || name.contains("#") || name.contains("@") || name.contains("*")) {
+                warn(log, where + " can't be an alias: # @ and * mean tags, properties and patterns on a sign. Ignored.");
+                continue;
+            }
+            if (String.join(" ", words).equals("overflow") || ChestLabels.isNoGolems(name)) {
+                warn(log, where + " can't be an alias: [" + name + "] always means "
+                        + (ChestLabels.isNoGolems(name) ? "keep golems away" : "an overflow chest") + ". Ignored.");
+                continue;
+            }
+            int same = groups.groupMatching(words);
+            if (same >= 0) {
+                warn(log, where + " is already the name of group '" + groups.groupNames.get(same)
+                        + "', so the group is used. Remove the alias.");
+                continue;
+            }
+            if (result.stream().anyMatch(a -> sameWordsIgnoringPlural(a.words(), words))) {
+                warn(log, where + " is listed twice; the first one is used.");
+                continue;
+            }
+            List<String> wanted = section.isList(name) ? section.getStringList(name) : List.of(String.valueOf(section.get(name)));
+            List<Integer> targets = new ArrayList<>();
+            for (String target : wanted) {
+                int index = groups.namedGroup(target);
+                if (index < 0) {
+                    warn(log, where + " points to '" + target + "', which isn't a group in groups. Ignored.");
+                } else if (!targets.contains(index)) {
+                    targets.add(index);
+                }
+            }
+            if (!targets.isEmpty()) {
+                result.add(new Alias(name, words, List.copyOf(targets)));
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static List<Material> allItems() {
@@ -201,6 +267,10 @@ public final class ItemGroups {
             if (fuzzy >= 0) {
                 return Optional.of(new Rule(inGroup(fuzzy), groupSizes[fuzzy], "group " + groupNames.get(fuzzy)));
             }
+            Rule aliased = aliasRule(words);
+            if (aliased != null) {
+                return Optional.of(aliased);
+            }
             Rule renamed = renamedGroup(words);
             if (renamed != null) {
                 return Optional.of(renamed);
@@ -230,6 +300,8 @@ public final class ItemGroups {
      * finds the new templates group, and [templates] finds an older config's
      * smithing-templates. The old concrete-and-terracotta became two groups; [concrete]
      * and [terracotta] on an older config already mean those items by name.
+     * 3.2.0 merged utility-blocks into workstations: [utility blocks] finds the new
+     * workstations group, and an older config that has both keeps them apart.
      */
     static final Map<String, List<String>> RENAMED = Map.of(
             "concrete-and-terracotta", List.of("concrete", "terracotta"),
@@ -238,7 +310,9 @@ public final class ItemGroups {
             "smithing-templates", List.of("templates"),
             "foliage", List.of("saplings-and-leaves"),
             "materials", List.of("crafting-materials"),
-            "templates", List.of("smithing-templates"));
+            "templates", List.of("smithing-templates"),
+            "utility-blocks", List.of("workstations"),
+            "workstations", List.of("utility-blocks"));
 
     /** The group(s) a label names under its old or new default name, or null if none is in the config. */
     private Rule renamedGroup(String[] words) {
@@ -246,27 +320,64 @@ public final class ItemGroups {
             if (!sameWordsIgnoringPlural(words, words(e.getKey()))) {
                 continue;
             }
-            BitSet wanted = new BitSet();
-            List<String> found = new ArrayList<>();
+            List<Integer> found = new ArrayList<>();
             for (String target : e.getValue()) {
                 int i = namedGroup(target);
                 if (i >= 0) {
-                    wanted.set(i);
-                    found.add(groupNames.get(i));
+                    found.add(i);
                 }
             }
-            if (found.isEmpty()) {
-                return null;
-            }
-            Predicate<Material> test = m -> {
-                BitSet bits = membership.get(m);
-                return bits != null && bits.intersects(wanted);
-            };
-            int size = (int) items.stream().filter(test).count();
-            return new Rule(test, size, (found.size() == 1 ? "group " : "groups ") + String.join(" + ", found)
-                    + " (renamed from " + e.getKey() + ")");
+            return found.isEmpty() ? null : groupsRule(found, "renamed from " + e.getKey());
         }
         return null;
+    }
+
+    /** The group(s) a label names by an alias from group-aliases, or null. */
+    private Rule aliasRule(String[] words) {
+        for (Alias alias : aliases) {
+            if (sameWordsIgnoringPlural(words, alias.words())) {
+                return groupsRule(alias.targets(), "also called " + alias.name());
+            }
+        }
+        return null;
+    }
+
+    /** A rule matching items in any of these groups, e.g. "groups concrete + terracotta (renamed from ...)". */
+    private Rule groupsRule(List<Integer> indexes, String note) {
+        BitSet wanted = new BitSet();
+        List<String> names = new ArrayList<>();
+        for (int i : indexes) {
+            wanted.set(i);
+            names.add(groupNames.get(i));
+        }
+        Predicate<Material> test = m -> {
+            BitSet bits = membership.get(m);
+            return bits != null && bits.intersects(wanted);
+        };
+        int size = (int) items.stream().filter(test).count();
+        return new Rule(test, size, (names.size() == 1 ? "group " : "groups ") + String.join(" + ", names)
+                + " (" + note + ")");
+    }
+
+    /** The group whose name is these words, exactly or singular/plural, or -1. */
+    private int groupMatching(String[] words) {
+        for (int i = 0; i < groupNames.size(); i++) {
+            if (sameWordsIgnoringPlural(words, words(groupNames.get(i)))) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** The aliases (group-aliases) that mean exactly this one group. */
+    List<String> aliasesOf(int index) {
+        List<String> result = new ArrayList<>();
+        for (Alias alias : aliases) {
+            if (alias.targets().equals(List.of(index))) {
+                result.add(alias.name());
+            }
+        }
+        return result;
     }
 
     /** The index of the group with exactly this name (dashes, spaces and underscores alike), or -1. */
@@ -282,14 +393,20 @@ public final class ItemGroups {
 
     /**
      * The sign label to suggest for a group: its name in brackets, or, if that's too wide
-     * for a sign line, a shorter name that means the same group (an older config's
-     * saplings-and-leaves -> [foliage]).
+     * for a sign line, a shorter name that means the same group: an alias from group-aliases,
+     * or an older config's saplings-and-leaves -> [foliage].
      */
     String signLabel(int index) {
         String name = groupNames.get(index);
         String label = "[" + name.replace('-', ' ') + "]";
         if (ChestReports.fitsOnSign(label)) {
             return label;
+        }
+        for (String alias : aliasesOf(index)) {
+            String shorter = "[" + alias.replace('-', ' ') + "]";
+            if (ChestReports.fitsOnSign(shorter)) {
+                return shorter;
+            }
         }
         for (var e : RENAMED.entrySet()) {
             String shorter = "[" + e.getKey().replace('-', ' ') + "]";
@@ -436,7 +553,8 @@ public final class ItemGroups {
         List<String> result = new ArrayList<>();
         if (bits != null) {
             for (int i = bits.nextSetBit(0); i >= 0; i = bits.nextSetBit(i + 1)) {
-                result.add(groupNames.get(i));
+                List<String> also = aliasesOf(i);
+                result.add(groupNames.get(i) + (also.isEmpty() ? "" : " (also " + String.join(", ", also) + ")"));
             }
         }
         return result;

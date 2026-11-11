@@ -171,13 +171,7 @@ final class OverflowFetcher {
             }
             return;
         }
-        // 3. Take out finished furnace items, before re-sorting overflow.
-        if (furnaces != null) {
-            furnaces.findTakeOut(golem);
-            if (furnaces.isBusy(golem.getUniqueId())) {
-                return;
-            }
-        }
+        // 3. Re-sort [Overflow] chests.
         if (!plugin.fetchFromOverflow()) {
             return;
         }
@@ -428,6 +422,7 @@ final class OverflowFetcher {
         }
         if (taken != null) {
             int take = taken.getAmount();
+            plugin.rescue().noteHome(golem, block); // a copper or [Overflow] chest it works from: its home now
 
             EntityEquipment equipment = golem.getEquipment();
             if (plugin.carry() != null) {
@@ -438,6 +433,7 @@ final class OverflowFetcher {
             // it turns into a statue, which drops only guaranteed items.
             equipment.setItemInMainHandDropChance(GUARANTEED_DROP);
             homes.startSearch(golem, type, block);
+            ReachDelivery.flashLid(plugin, block);
             block.getWorld().playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
             if (plugin.debug()) {
                 plugin.getLogger().info(String.format("%s took %d %s from %s at %d,%d,%d",

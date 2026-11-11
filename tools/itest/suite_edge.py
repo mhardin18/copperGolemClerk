@@ -2,6 +2,7 @@
 import re
 
 from arena import Trigger, conserved, expect, scenario
+from suite_options import set_options
 
 SIGN = 'setblock {x} {y} {z} minecraft:oak_wall_sign[facing=north]{{{side}:{{messages:[{msgs}]}}}}'
 
@@ -191,6 +192,32 @@ def _(c):
     c.golem(4, 10)
     return lambda: [expect(c, "leaves", "oak_leaves", 8), expect(c, "mats", "paper", 8),
                     expect(c, "tpl", "coast_armor_trim_smithing_template", 2), expect(c, "empty", "*", 0)]
+
+
+@scenario("group-alias-signs", "edge", 240, "group-aliases: {mechanisms: redstone, cooking: [food, seeds]}: [mechanisms] takes repeaters, [cooking] takes bread and wheat seeds, the empty chest gets nothing.", alone=True)
+def _(c):
+    set_options(c, group_aliases="{mechanisms: redstone, cooking: [food, seeds]}")
+    c.chest("copper", 2, 10, [("repeater", 8), ("bread", 8), ("wheat_seeds", 8)], block="waxed_copper_chest")
+    c.chest("empty", 6, 10)
+    c.chest("mech", 10, 10)
+    c.sign(10, 10, "[mechanisms]")
+    c.chest("cook", 14, 10)
+    c.sign(14, 10, "[cooking]")
+    c.golem(4, 10)
+    return lambda: [expect(c, "mech", "repeater", 8), expect(c, "cook", "bread", 8),
+                    expect(c, "cook", "wheat_seeds", 8), expect(c, "empty", "*", 0)]
+
+
+@scenario("group-alias-warnings", "edge", 30, "group-aliases: an alias for a group that doesn't exist, and one that is already a group's name, are warned about at reload.", alone=True)
+def _(c):
+    set_options(c, group_aliases="{gadgets: no-such-group, logs: redstone}")
+
+    def check():
+        log = "\n".join(c.log_lines())
+        return [("group-aliases: 'gadgets' points to 'no-such-group', which isn't a group in groups. Ignored." in log,
+                 "warned about gadgets -> no-such-group"),
+                ("group-aliases: 'logs' is already the name of group 'logs'" in log, "warned about logs (already a group)")]
+    return check
 
 
 @scenario("junk-sign-text", "edge", 120, "Signs that aren't labels ([no such thing], [[logs]], logs, [🍞]) are ignored; the chest acts on its contents.")

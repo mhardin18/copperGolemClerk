@@ -52,6 +52,30 @@ def _(c):
     return check
 
 
+@scenario("check-says-more-specific-chest-wins", "commands", 30, "A [*copper*] chest holding copper ingots, with an [ingots and gems] chest nearby: /cgc check and /cgc label say golems take the ingots to the [ingots and gems] chest and how to keep them; a chest with no rival says nothing of the kind.")
+def _(c):
+    c.chest("copper", 6, 10, [("copper_ingot", 4), ("cut_copper", 2)])
+    c.sign(6, 10, "[*copper*]")
+    c.chest("gems", 12, 10)
+    c.sign(12, 10, "[ingots and gems]")
+    c.chest("logs", 16, 4, [("oak_log", 3)])
+    c.sign(16, 4, "[logs]")
+    x, y, z = c.abs(6, 10)
+    gx, gy, gz = c.abs(12, 10)
+
+    def check():
+        reply = check_at(c, 6, 10)
+        label = say(c, f"cgc label {x} {y} {z}")
+        logs = check_at(c, 16, 4)
+        return [has(reply, "Golems will take these to more specific chests instead"),
+                has(reply, f"copper ingot: the [ingots and gems] chest at {gx} {gy} {gz} (6 blocks away)"),
+                has(reply, "To keep it here, add [copper ingot]"),
+                ("cut copper:" not in reply, "nothing said about cut copper (no other chest takes it)"),
+                has(label, "Golems will take these to more specific chests instead"),
+                ("more specific chests" not in logs, f"no rival for the [logs] chest; got: {logs.strip()[-160:]}")]
+    return check
+
+
 @scenario("check-label-over-two-lines", "commands", 30, "/cgc check reads a label carried on to the next sign line, and points out one that is never closed.")
 def _(c):
     c.chest("carried", 6, 10)
@@ -151,7 +175,7 @@ def _(c):
     return lambda: [has(listing, "/cgc check <x> <y> <z> [world]"),
                     has(listing, "/cgc overflow <x> <y> <z> [world]"),
                     has(listing, "/cgc reload"),
-                    has(listing, "/cgc golems [<x> <y> <z> [world]] - Where the copper golems are"),
+                    has(listing, "/cgc golems [<x> <y> <z> [world]] [radius] - Where the copper golems are"),
                     has(listing, "/cgc stats - How much golems have sorted"),
                     has(listing, "/cgc help"),
                     has(one, "idle golems will move it"),
