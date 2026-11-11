@@ -6,7 +6,7 @@ jar. Plugin changes are in the main [CHANGELOG](../CHANGELOG.md).
 
 Versions are the plugin release each change came out with.
 
-## 3.2.0 (in progress)
+## 3.2.0 (2026-11-10)
 
 ### New
 - `greet`: `greet-stays-near-work` checks that a golem doesn't visit an iron golem that is within 16 blocks of it but more than 16 from its copper chest.

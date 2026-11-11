@@ -6,7 +6,7 @@ To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new
 
 Changes to the developer tools in `tools/` (tests and scripts that aren't part of the plugin) are in [tools/CHANGELOG.md](tools/CHANGELOG.md).
 
-## 3.2.0 (in progress)
+## 3.2.0 (2026-11-10)
 
 ### New
 - Groups can have other names. Add them under `group-aliases` in `config.yml`, as `alias: group` (for example `mechanisms: redstone`) or `alias: [group, group]`. A sign, `[Only ...]` filter or `/cgc find` with an alias means that group. A group's own name always wins, and the console warns about aliases it can't use. Empty by default. Upgrading adds `group-aliases: {}`.
