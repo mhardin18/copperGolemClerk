@@ -180,7 +180,7 @@ error or exception in the server log during a scenario fails it.
 | edge | locked chests, hoppers, shulker/bundle contents, odd sign text and placement, renamed groups and `group-aliases`, range limits, fetch limits |
 | scenes | whole sorting rooms end to end; a manual 15-minute soak |
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
-| commands | `/cgc check` on chests, `/cgc overflow`, `disabled-worlds` |
+| commands | `/cgc check` on chests (including when a more specific chest wins), `/cgc overflow`, `disabled-worlds` |
 | config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands |
 | tidy | golems tidy chests they deliver to (while the lid is open): stacks merged, like items together, option off |
 | options | each config switch changes what golems do |

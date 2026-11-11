@@ -267,7 +267,7 @@ final class ChestReports {
         }
 
         if (!hand.isEmpty()) {
-            say(player, NamedTextColor.GREEN, "Your " + pretty(hand.getType()) + ": " + verdict(hand, inv, labels));
+            say(player, NamedTextColor.GREEN, "Your " + pretty(hand.getType()) + ": " + verdict(hand, inv, labels, block));
         }
         // Sign-label advice for storage chests: not for [Overflow], fuel or supply chests, or a smelter's input.
         boolean furnaceOnly = plugin.furnaceFeeding() && !labels.hasItemRules()
@@ -382,9 +382,18 @@ final class ChestReports {
         }
     }
 
-    private String verdict(ItemStack hand, Inventory inv, ChestLabels.Labels labels) {
+    private String verdict(ItemStack hand, Inventory inv, ChestLabels.Labels labels, Block block) {
         ChestMatcher.Match match = matcher.classify(hand, inv, labels);
         String full = ChestMatcher.hasRoom(hand, inv) ? "" : ", but there's no room for it";
+        if (match.kind().isHome()) {
+            HomeFinder.Rival rival = rivalFor(block, inv, hand, match.specificity());
+            if (rival != null) {
+                String yes = match.kind() == ChestMatcher.Kind.LABEL_MATCH ? "a label matches"
+                        : match.kind() == ChestMatcher.Kind.EXACT ? "it already holds that item" : "same group as what's inside";
+                return yes + ", but golems will take it to the " + describe(block, rival) + " instead, because that one is"
+                        + " more specific. " + keepHere(hand.getType(), rival);
+            }
+        }
         return switch (match.kind()) {
             case LABEL_MATCH -> "yes, a label matches" + full;
             case LABEL_OTHER -> "no, the labels are for other items";
@@ -395,6 +404,31 @@ final class ChestReports {
             case NONE -> "no (" + match.reason().toLowerCase(Locale.ROOT) + ")";
             case NO_GOLEMS -> "no, it has a [No Golems] sign";
         };
+    }
+
+    /** The chest golems would pick over this one for an item, or null: see HomeFinder.moreSpecificHome. */
+    HomeFinder.Rival rivalFor(Block block, Inventory inv, ItemStack item, int than) {
+        return HomeFinder.moreSpecificHome(plugin, matcher, block.getLocation().add(0.5, 0, 0.5), item.asOne(),
+                halvesOf(block, inv), than);
+    }
+
+    /** "[ingots and gems] chest at -120 64 33 (12 blocks away)". */
+    static String describe(Block from, HomeFinder.Rival rival) {
+        Block b = rival.block();
+        String reason = rival.reason();
+        String what = reason.startsWith("label matches ") ? reason.substring("label matches ".length()) + " chest"
+                : reason.equals("exact match") ? "chest that already holds it" : "chest of the same group";
+        long away = Math.round(b.getLocation().distance(from.getLocation()));
+        return what + " at " + b.getX() + " " + b.getY() + " " + b.getZ() + " (" + away + (away == 1 ? " block" : " blocks")
+                + " away)";
+    }
+
+    /** How to keep an item in this chest when a more specific one would win it. */
+    static String keepHere(Material item, HomeFinder.Rival rival) {
+        String label = "[" + item.getKey().getKey().replace('_', ' ') + "]";
+        return rival.specificity() <= 1
+                ? "That chest is labelled for exactly this item: take it off that label to send it here."
+                : "To keep it here, add " + label + " to this chest's sign.";
     }
 
     private String describe(ItemGroups.Rule rule) {

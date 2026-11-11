@@ -15,6 +15,10 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
   - `/cgc golems 50` lists the golems within 50 blocks (along each axis, as find counts it), nearest first. The header says "within 50 blocks".
   - A number that ends an item's name is part of it. `/cgc find music disc 13` is the disc. `/cgc find music disc 13 50` is the disc within 50 blocks.
   - Without a radius, both work as before.
+- `/cgc check` and `/cgc label` now say when golems would take an item to a more specific chest. The rule is unchanged: the sign label covering the fewest items wins, so `[ingots and gems]` beats `[*copper*]` for a copper ingot. Now the commands tell you.
+  - `/cgc check` with an item in hand says which chest wins, where it is, and to add `[copper ingot]` to this chest's sign to keep the item here. If that chest is labelled for exactly the item, it says to take it off that label.
+  - `/cgc label`, and the label advice at the end of `/cgc check`, list items in the chest that go to a more specific chest, 5 lines at most, then "... and N more". For an unlabelled chest it checks the label it suggests.
+  - Nearby means within `search-distance` sideways and 8 blocks up or down. Locked, blocked, full and hopper-fed chests don't count, as when golems choose.
 - `find-max-radius` (default 64, 1 to 128) is the most a player can ask `/cgc find` for. A larger number is cut down to it, with a note. `/cgc golems` isn't limited. It never counts as less than `find-radius`. Ops (`coppergolemclerk.allclaims`) and the console aren't limited.
 
 ### Changed
