@@ -28,8 +28,8 @@ import org.bukkit.inventory.ItemStack;
  * that a chest in range would accept (label, exact or group, with room), walks
  * there, and takes up to carry-amount (16 by default) of it, like a normal pickup. From then on, normal
  * sorting steers it to the item's home. At most fetchers-per-overflow-chest
- * golems fetch from one overflow chest at a time (each a different item), so
- * they don't crowd it.
+ * golems (0 = no limit) fetch from one overflow chest at a time (each a different
+ * item), so they don't crowd it.
  *
  * Vanilla only lets an empty-handed golem target copper chests, so the walk uses
  * Paper's pathfinder, and the item is handed over when the golem is within reach.

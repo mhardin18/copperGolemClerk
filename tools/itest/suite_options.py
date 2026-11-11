@@ -180,6 +180,32 @@ def _(c):
                    [expect(c, name, fetch, 16) for fetch, _, name in items]
 
 
+@scenario("option-unlimited-fetchers", "options", 240, "fetchers-per-overflow-chest: 0 (no limit): six idle golems, six fetchable items, more than 4 fetching at once.", alone=True)
+def _(c):
+    from suite_edge import fetch_log
+    set_options(c, fetchers_per_overflow_chest="0")
+    items = [("birch_log", "oak_log", "logs"), ("granite", "andesite", "stone"),
+             ("orange_wool", "white_wool", "wool"), ("blue_dye", "red_dye", "dyes"),
+             ("gold_ingot", "iron_ingot", "ingots"), ("melon_seeds", "wheat_seeds", "seeds")]
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    c.chest("overflow", 10, 2, [(fetch, 16) for fetch, _, _ in items])
+    c.sign(10, 2, "[Overflow]")
+    for n, (fetch, seed, name) in enumerate(items):
+        c.chest(name, 3 + 3 * n, 18, [(seed, 1)])
+    for n in range(6):
+        c.golem(3 + 2 * n, 10)
+
+    def peak():
+        active, top = set(), 0
+        for _, kind, item, _ in fetch_log(c):
+            active.add(item) if kind == "start" else active.discard(item)
+            top = max(top, len(active))
+        return top
+
+    return lambda: [(peak() > 4, f"at most {peak()} fetching at once (want more than 4)")] + \
+                   [expect(c, name, fetch, 16) for fetch, _, name in items]
+
+
 @scenario("option-homeless-retry", "options", 300, "homeless-retry-minutes: 1: a returned no-home item is picked up again about a minute later.", alone=True)
 def _(c):
     set_options(c, homeless_retry_minutes="1", fixed_step_seconds="5")

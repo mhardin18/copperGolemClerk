@@ -136,9 +136,22 @@ overflow-before-empty: true
 # go back to that chest.
 fetch-from-overflow: true
 
-# How many golems may fetch from one overflow chest at the same time (each takes a
-# different item). Higher empties overflow faster but can crowd the chest.
-fetchers-per-overflow-chest: 2
+# How many golems may fetch from one [Overflow] chest at the same time. 0 = no limit.
+# Each fetcher takes a different item, so a chest holding 2 kinds of items never
+# draws more than 2 golems, whatever this is set to.
+# Fetching is the last thing an idle golem does (after furnace jobs and copper
+# chests), so a higher limit never takes a golem away from other work. It only puts
+# golems to work that would otherwise stand around.
+# Too many crowd the chest: each golem walks to the open spot beside the chest
+# nearest to it, so golems coming from the same side queue for the same spot. A
+# chest set into a wall has 1 open spot in front (2 for a double chest). More than
+# about 2 golems per open spot mostly wait their turn and get in the way of players
+# using the chest. A pickup only takes a moment, so a short queue is still faster
+# than golems standing idle.
+# 4 suits a double chest open at the front. Use 2 for a single chest in a wall, and
+# more for a chest open on several sides. 0 can put a dozen golems at one chest on a
+# big farm.
+fetchers-per-overflow-chest: 4
 
 # For an [Overflow] chest that a hopper fills (a hopper above it facing down, or
 # beside it facing into it, like a smelter's output chest): golems fetch an item from
