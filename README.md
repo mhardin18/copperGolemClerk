@@ -17,7 +17,7 @@ is optional.
 **Sorting that understands your storage**
 - **Groups:** a golem carrying birch logs uses the chest of oak logs. A stew goes with the
   food, a pickaxe with the tools. About 50 groups ship ready to use. You can edit them or
-  add your own.
+  add your own, or give a group other names with `group-aliases`.
 - **Sign and item frame labels:** `[logs]`, `[oak log]`, `[*_ORE]`, `[#planks]`, or an item
   in a frame. The most specific chest wins: `[stews]` beats `[food]` for a stew.
 - **`[Overflow]` chests** catch anything without a home. Idle golems move items back out
@@ -36,6 +36,7 @@ is optional.
 - **Golems run your furnaces:** label a furnace `[raw iron]`. Golems feed it from your
   `[Furnace Supply]` chest, fuel it from your `[Fuel]` chest and sort what comes out.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
+- **Lids open** when golems move items for you, so you can see which chest they used.
 
 **Golems that look after themselves**
 - **Lost golems walk home**, and you're told where one is if it's stuck.
@@ -93,6 +94,20 @@ On first start the plugin creates `plugins/CopperGolemClerk/config.yml`. The def
 as they are: about 50 groups that cover nearly every survival item. After editing the file,
 run `/cgc reload` to apply it without a restart.
 
+### Quick start
+
+1. Place a copper chest and fill it with mixed items.
+2. Place a few chests nearby (within 32 blocks sideways, 8 up or down). Put one
+   item in each to say what goes there, or label it with a sign like `[logs]` or
+   an item frame.
+3. Build a copper golem (a carved pumpkin on top of a copper block) next to the
+   copper chest.
+4. Stay nearby. Golems only work in loaded chunks, and Paper slows them down
+   when no player is close.
+
+The golem now puts birch logs in your oak log chest, a diamond pickaxe in your
+tools chest, and so on.
+
 ### Updating
 
 Replace the old jar with the new one and restart. Your `config.yml` is kept and brought up
@@ -130,20 +145,6 @@ The command is now `/cgc` (or `/coppergolemclerk`). The permission is now
 `coppergolemclerk.admin`. If you granted `smartcoppergolems.admin` to anyone, grant the new
 one instead.
 
-### Quick start
-
-1. Place a copper chest and fill it with mixed items.
-2. Place a few chests nearby (within 32 blocks sideways, 8 up or down). Put one
-   item in each to say what goes there, or label it with a sign like `[logs]` or
-   an item frame.
-3. Build a copper golem (a carved pumpkin on top of a copper block) next to the
-   copper chest.
-4. Stay nearby. Golems only work in loaded chunks, and Paper slows them down
-   when no player is close.
-
-The golem now puts birch logs in your oak log chest, a diamond pickaxe in your
-tools chest, and so on.
-
 ## How it works
 
 A copper golem takes items out of a copper chest and looks for a chest to put them in.
@@ -163,7 +164,7 @@ Groups are defined in `config.yml`, and you can edit them. An entry can be:
 
 The same forms work on signs. See [`*` patterns, `#` tags and `@` properties](#-patterns--tags-and--properties).
 
-#### The default groups
+### The default groups
 
 A fresh `config.yml` has these 56 groups. Every name fits on one sign line. The
 item counts are for Paper 26.3. An item can be in more than one group.
@@ -240,12 +241,19 @@ config's `saplings-and-leaves`, and `[crafting materials]` finds the new `materi
 the new groups themselves, copy them from the [default
 `config.yml`](https://github.com/mhardin18/copperGolemClerk/blob/main/src/main/resources/config.yml).
 
-**Changed in 3.2.0.** `utility-blocks` was merged into `workstations`. `decorations` was
-split into `signs`, `banners`, `pottery` and `beds`, and mob heads moved to `rare-items`. A
-`[utility blocks]` sign finds the new `workstations` on a fresh config. An older config
-keeps its own `utility-blocks` and `decorations` groups.
+**Changed in 3.2.0.** The default groups were cleaned up:
 
-#### Other names for groups
+- `utility-blocks` was merged into `workstations`.
+- `decorations` was split into `signs`, `banners`, `pottery` and `beds`.
+- `stone` was split into `stone`, `deepslate` and `tuff`, so each fits in a double chest.
+  `[deepslate]` now means the deepslate group, not every item with deepslate in its name.
+- Mob heads moved to `rare-items`. Some flowers, the name tag and creative-only items also
+  moved or left their groups. See the [changelog](CHANGELOG.md).
+
+A `[utility blocks]` sign finds the new `workstations` on a fresh config. An older config
+keeps its own groups, so `[workstations]` works there too.
+
+### Other names for groups
 
 Give a group more names with `group-aliases` in `config.yml`. A sign with an alias works
 the same as one with the group's own name:
@@ -261,9 +269,10 @@ group-aliases:
   `/cgc find` and `/cgc check`.
 - Spaces, dashes and plurals work as for group names: `[mechanism]` is `mechanisms`.
 - A group's own name always wins. An alias that is already a group's name is ignored.
-- An alias that points to a group that isn't in `groups:` is ignored. So is one with
-  `#`, `@` or `*` in it, or one that would read as `[Overflow]` or `[No Golems]`. The
-  console says why.
+- These aliases are ignored, and the console says why:
+  - one that points to a group not in `groups:`
+  - one with `#`, `@` or `*` in it
+  - one that would read as `[Overflow]` or `[No Golems]`
 - `/cgc check` on an item in your hand lists its groups with their aliases:
   `REPEATER: redstone (also mechanisms, contraptions)`.
 - When a group's name is too wide for a sign line, `/cgc label` and the other label
@@ -453,6 +462,15 @@ signs) come before contents. The order is:
 So a stew goes to `[stews]` before `[food]`, and a `[logs]` chest wins over an unlabelled
 chest that happens to hold birch logs. Frame and sign labels on one chest combine.
 
+To see this at work, hold an item and run `/cgc check` on a chest, or run `/cgc label`. Say a
+broader chest matches, but golems would take the item to a more specific chest nearby. The
+command names that chest, says where it is and gives the label to add.
+
+For example, `[*copper*]` covers 100 or more items and `[ingots and gems]` about 18. Copper
+ingots go to the `[ingots and gems]` chest. To keep them in the `[*copper*]` chest, add
+`[copper ingot]` to its sign. "Nearby" means within `search-distance` sideways and 8 blocks
+up or down. Locked, blocked, full and hopper-fed chests don't count.
+
 Where a golem puts an item, in order:
 
 1. A matching chest with room (label, same item or group).
@@ -517,7 +535,8 @@ it over on their own.
 
 When a golem takes from or puts into a chest, barrel or shulker box, its lid opens for a
 moment, as with vanilla golems. This also happens when it fetches from `[Overflow]`, uses a
-`[Fuel]` or `[Furnace Supply]` container, or puts an item back in its copper chest.
+`[Fuel]` or `[Furnace Supply]` container, puts an item back in its copper chest, or takes
+more from it for `carry-amount`.
 
 **Overflow chests that a hopper fills.** A hopper above the chest facing down, or beside it
 facing in, fills it a few items at a time. The output chest of a smelter is an example. Golems
@@ -589,9 +608,9 @@ collects the output.
 3. Re-sort `[Overflow]` chests.
 4. Say hello to iron and snow golems.
 
-A big bank of furnaces can't keep copper chests waiting for ever. A golem that has done 3
-furnace jobs in a row while a copper chest has items sorts once before more furnace work
-(`furnace-jobs-before-sorting`). 0 puts sorting first, as before 3.1.0.
+A big bank of furnaces can't keep copper chests waiting for ever. After 3 furnace jobs in a
+row, a golem sorts once if a copper chest has items (`furnace-jobs-before-sorting`). Then it
+goes back to furnace work. 0 puts sorting first, as before 3.1.0.
 
 **Fuel.** Golems only take fuel from containers with a `[Fuel]` sign, so the coal in your
 other chests is never burned.
@@ -784,19 +803,45 @@ The plugin only ever changes copper golems. Iron and snow golems are never affec
 
 ### Golems say hello
 
-A copper golem with nothing to do (empty hands, nothing to fetch, no copper chest in range
-with anything to sort) walks over to an iron or snow golem within 16 blocks and says hello.
-They face each other, it waves, and hearts float up. Then it goes back to its routine and
-doesn't greet again for `greet-cooldown-minutes` (default 5).
+A copper golem with nothing to do walks over to an iron or snow golem within 16 blocks and
+says hello. Nothing to do means empty hands, nothing to fetch and nothing to sort in range.
+They face each other, it waves, and hearts float up. Then it goes back to work. It doesn't
+greet again for `greet-cooldown-minutes` (default 5).
 
-It never follows. If it can't get there in 20 seconds it gives up, and any work turning up
-ends the visit at once. Turn it off with `greet-other-golems: false`.
+It only visits a golem within 16 blocks of its home (if that is within `search-distance`).
+Without one, it uses its nearest copper chest or furnace, or where it stands if it has
+neither. It turns back if it gets more than 20 blocks from there. It never follows.
+
+It gives up when:
+
+- it can't get within reach in 20 seconds
+- it gets no closer for 8 seconds
+- the other golem can no longer be reached
+- the other golem dies or disappears
+
+Work turning up ends the visit at once. That means items in a copper chest, a fetch or
+furnace job, or an item in hand.
+
+A visit that ends without a hello goes back to the copper chest or furnace for up to 15
+seconds, and stops if work turns up. With `debug: true`, each such visit is logged with the
+reason ("stopped going to say hello: ..."). Turn greetings off with
+`greet-other-golems: false`.
 
 ### Lost golems find their way home
 
-Each golem remembers the copper chest it last took items from. It counts as far from home if
-it ends up more than 40 blocks from its own copper chest, or 12 up or down (say after
-falling down a shaft), and from any other copper chest too. Then it walks back.
+A golem's home is the last place it got work from. That is the copper chest it took items
+from, the `[Overflow]` chest it fetched from, the `[Furnace Supply]` or `[Fuel]` container
+it took from, or the furnace it took finished items (or an empty lava bucket) out of. Chests
+it only delivers into never become home. If the home stops being a work place (it's broken,
+or its sign is removed), the golem forgets it.
+
+A golem counts as lost when no work place is in its range and its home is more than 40
+blocks away, or 12 up or down (after falling down a shaft, say). A lost golem walks back
+home. Work places are:
+
+- copper chests
+- furnaces, smokers and blast furnaces
+- `[Overflow]`, `[Fuel]` and `[Furnace Supply]` containers
 
 Its owner gets an alert saying where it is if either of these happens:
 
@@ -807,9 +852,16 @@ Its owner gets an alert saying where it is if either of these happens:
 
 > [Golem Clerk] A copper golem is lost at -757, -55, 102, 118 blocks from its copper chest at -760, 63, 98, and can't find a way back.
 
-The golem tries again every 5 minutes. A golem moved somewhere with its own copper chest (on
-a lead, say) adopts that chest as its new home. Golems on a lead are left alone. `/cgc golems`
-shows which golems are lost. Turn this off with `rescue-lost-golems: false`.
+The message names the home: "its copper chest", "its furnace", "its `[Overflow]` chest" and
+so on. The golem tries again every 5 minutes.
+
+A golem with no home takes the nearest work place in its range as its home. If none is in
+range, it walks to the nearest one within 64 blocks (12 up or down). If there is none, it's
+left alone and behaves like vanilla until there is.
+
+A golem moved somewhere with its own copper chest (on a lead, say) adopts that chest as its
+new home. Golems on a lead are left alone. `/cgc golems` shows which golems are lost. Turn
+this off with `rescue-lost-golems: false`.
 
 Teleporting stuck golems home is possible but off by default. It needs both of these:
 
@@ -924,7 +976,7 @@ list. `/cgc version` checks right away. Turn it off with `update-check: false`.
 
 ## Commands
 
-The alias is `/cgc`.
+`/cgc` is short for `/coppergolemclerk`.
 
 Players can use `help`, `find`, `check`, `label`, `overflow`, `storage`, `stats` and `alias`. They can
 use `golems` too if `golems-command-for-players` is on. Players only ever see their own
@@ -944,9 +996,14 @@ Looking at a chest, it shows:
 - What each label on it means (`[Horse]` = items with "horse" in their name, 9 items: ...).
 - Labels that match nothing.
 - What the chest takes, and whether it takes the item in your hand.
+- If golems would take that item to a more specific chest in range, it names that chest and
+  says how far away it is. It also says what to add to this chest's sign to keep the item
+  here. If the other chest is labelled for exactly that item, it says to take the item off
+  that label.
 - Anything stopping golems from using it: a block on top, a lock, a hopper feeding a copper
   chest, or a full chest.
-- Sign-label advice, as `/cgc label` gives (below).
+- Sign-label advice, as `/cgc label` gives (below), including items golems would take to
+  more specific chests.
 
 The label advice depends on the chest:
 
@@ -970,6 +1027,11 @@ Looking at a chest, it says what to write on its sign, from what's in it:
 
 On a labelled chest it says whether everything in it matches. It only suggests. You place the
 sign. Players only get suggestions for containers they could open.
+
+It also lists items in the chest that golems would take to a more specific chest nearby
+("Golems will take these to more specific chests instead:"). Each line gives the chest, where
+it is and the label that keeps the item here. It shows 5 lines, then "... and N more".
+For an unlabelled chest it checks against the label it suggests.
 
 ### `/cgc overflow`
 
@@ -998,13 +1060,12 @@ to teleport there), distance and direction, what it carries, its copper and its 
 - **Players** (only with `golems-command-for-players: true`) see just their own golems: in
   claims they own, or whose copper chest is in one. Without GriefPrevention, that means the
   golems within 48 blocks of them.
-- `/cgc golems <radius>` lists only the golems within that many blocks of you. The header says
-  "within N blocks". `find-max-radius` doesn't apply, since nothing is searched.
+- `/cgc golems <radius>` lists only the golems within that many blocks of you, counted along
+  each axis as `/cgc find` does. The header says "within N blocks". `find-max-radius`
+  doesn't apply.
 - `/cgc golems all` lists every golem in every world.
 - Golems in unloaded chunks are listed where they were last seen. The plugin keeps every
   golem's last spot in `golems.yml` and forgets golems not seen for 30 days.
-- A radius counts along each axis (sideways and up/down), as `/cgc find` does, not in a
-  straight line.
 
 ### `/cgc stats`
 
@@ -1015,7 +1076,8 @@ all time. Numbers are kept in `stats.yml`.
   most-sorted items and the busiest claims.
 - Without GriefPrevention there are no claims, so everyone sees the server's numbers.
 - With `join-summary` (on by default), players are told when they join what golems sorted
-  in their claims while they were away and how many of their chests filled up.
+  in their claims while they were away and how many of their chests filled up. Without
+  claims, players with `coppergolemclerk.alerts` get the server's numbers instead.
 
 ### `/cgc find`
 
@@ -1037,8 +1099,8 @@ for you for `find-highlight-seconds` (10). Players can search once every 2 secon
 `/cgc find <item> <radius>` (`/cgc find birch log 50`) looks that far instead, up to
 `find-max-radius` (64) for players. Ops and the console aren't limited.
 
-It only searches chunks that are already loaded, and says how many in range weren't. So a
-"No birch log" far from any player isn't certain.
+It only searches loaded chunks, and says how many in range weren't loaded. So a "No birch
+log" far from any player isn't certain.
 
 **Where it looks.**
 
@@ -1113,7 +1175,7 @@ line number, and the old settings are kept.
 | `furnace-refill-below` | `16` | A furnace gets more to cook only once this many items or fewer are left in it (0 to 64). Lower (0 = only when empty) can leave furnaces idle while golems are busy. 64 = top up after every item (many wasted trips). |
 | `furnace-split-min` | `8` | A load is split between 2 furnaces (never more) only if each gets at least this many items (1 to 64). The emptiest furnaces go first. Above half of `carry-amount` = whole loads to one furnace. |
 | `furnace-take-out-at` | `8` | Golems take finished items out once this many are ready (1 to 64), or sooner when the furnace has stopped. 1 = a trip for every item. Higher = fewer trips, items wait longer. Furnaces with a hopper or hopper minecart under them are never emptied by golems. |
-| `furnace-jobs-before-sorting` | `3` | Furnace upkeep comes before sorting. After this many furnace jobs in a row while a copper chest has items (0 to 64), a golem sorts once. 0 = sorting always first (the order before 3.1.0). Higher = busier furnaces, copper chests wait longer. |
+| `furnace-jobs-before-sorting` | `3` | Furnace upkeep (including taking out finished items) comes before sorting. After this many furnace jobs in a row while a copper chest has items (0 to 64), a golem sorts once. 0 = sorting always first (the order before 3.1.0). Higher = busier furnaces, copper chests wait longer. |
 | `furnace-wait-seconds` | `20` | How long a golem waits at a furnace that filled up before it arrived (0 to 300), before taking the rest back to the `[Furnace Supply]`. 0 = straight back (can loop). Long waits keep that golem idle. |
 | `furnace-trusted-claims` | `true` | Golems also use furnaces and containers in claims where the owner of their copper chest's claim has container trust. |
 | `deliver-reach` | `2` | How many chest rows up golems put items in, 2 to 6. Above row 2 the golem walks to the foot of the stack and the plugin moves the items. |
@@ -1127,9 +1189,9 @@ line number, and the old settings are kept.
 | `golems-give-way` | `true` | A golem stuck nose to nose with another steps aside (backing up in a one-wide corridor). Empty hands give way to full ones. |
 | `avoid-trapdoors` | `true` | Golems never walk onto or through trapdoors (vanilla golems fall through open ones). |
 | `avoid-portals` | `true` | Golems never go through Nether portals, End portals or End gateways, unless on a lead or riding something. |
-| `rescue-lost-golems` | `true` | A golem far from any copper chest (40 blocks from its own, or 12 up or down) walks back. One that can't, or is stuck where it can't reach a copper chest, triggers an alert. |
-| `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its copper chest, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
-| `greet-other-golems` | `true` | An idle copper golem walks over to say hello to an iron or snow golem within 16 blocks. |
+| `rescue-lost-golems` | `true` | A golem walks home when it has no work place in range and its home (the last place it got work from) is more than 40 blocks away, or 12 up or down. If it can't get there, or is stuck where it can't reach a copper chest, its owner gets an alert. A golem with no home goes to the nearest work place within 64 blocks. |
+| `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its home, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
+| `greet-other-golems` | `true` | An idle copper golem says hello to an iron or snow golem within 16 blocks of its home (see [Golems say hello](#golems-say-hello)). |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
 | `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit, unless `claim-blocks-per-extra-golem` is set). Golems on unclaimed land aren't limited. Each claim (admin claims too) has its own limit. The oldest keep it, the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
 | `claim-blocks-per-extra-golem` | `0` | Each claim gets one more golem than `max-golems-per-claim` for every this many claim blocks of its area (0: off). |
@@ -1187,7 +1249,7 @@ line number, and the old settings are kept.
 
 You need Java 25. The Gradle wrapper downloads Gradle itself.
 
-```
+```bash
 git clone https://github.com/mhardin18/copperGolemClerk.git
 cd copperGolemClerk
 ./gradlew build

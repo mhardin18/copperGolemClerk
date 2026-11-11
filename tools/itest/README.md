@@ -15,8 +15,8 @@ anything that changes how tests are run, chosen or reported (`run.py`, `run-test
 
 ```
 python3 -I tools/itest/run.py smoke               # quick sanity check, ~3 min
-python3 -I tools/itest/run.py --changed --parallel-only   # smoke + what this branch touches, ~15 min
-python3 -I tools/itest/run.py --changed           # the same with the one-at-a-time scenarios, ~1-1.5 h
+python3 -I tools/itest/run.py --changed --parallel-only   # smoke + what this branch touches, ~15-35 min
+python3 -I tools/itest/run.py --changed           # the same with the one-at-a-time scenarios, up to ~1.5 h
 python3 -I tools/itest/run.py                     # everything except manual scenarios (~1.5 h)
 python3 -I tools/itest/run.py core world          # suites or scenario names (substring match)
 python3 -I tools/itest/run.py server-restart      # manual: asks you to restart the server
@@ -131,7 +131,7 @@ were tested. Then it says whether each failure is a plugin bug or a test-timing 
 | `pluginDev didn't answer RCON within 5 minutes` | The server didn't come up. See `/opt/minecraft/pluginDev/logs/latest.log`. |
 | `unknown option(s)` | A typo in an option. Unknown options are refused (an unknown one used to start a full run). |
 | A scenario fails in a big run but passes on its own | Probably timing under load. Re-run it by name (`run-tests.sh <name>`). If it keeps failing, it's real. |
-| `note: checking N scenario(s) took 25s this round` | One round of checks took longer than 10 seconds. Scenarios that act while a golem walks (break a chest, kill the golem) can miss their moment and fail. Rounds used to take most of a minute in a full run, because every scenario re-read the whole server log. That is fixed, so this note means something else is slow (RCON, or a very busy server). |
+| `note: checking N scenario(s) took 25s this round` | One round of checks took longer than 10 seconds. Scenarios that act while a golem walks (break a chest, kill the golem) can miss their moment and fail. Something is slow: RCON, or a very busy server. |
 | The machine rebooted, or `kill -9` was used, mid-run | The results are cut off. pluginDev's `config.yml` may still have a test setting, and test golems and force-loaded chunks may be left around x=-500. Check the config against the shipped defaults and clear the leftovers. The next run that reuses a platform clears it too. |
 
 ## Which tests to run
@@ -163,8 +163,7 @@ Two mapping rules:
 `--parallel-only` leaves out the scenarios that run one at a time, except ones the branch
 edits. Those scenarios change server-wide settings, so they can't share the server.
 
-Add `--list` to any of these to see what would run without running it. Unknown options are
-refused (an unknown one used to start a full run).
+Add `--list` to any of these to see what would run without running it.
 
 Exit code 0 means all passed. On failure, the run prints each check and the plugin's debug
 log lines for that scenario's area (pluginDev runs with `debug: true`). Any unexpected
@@ -180,7 +179,7 @@ error or exception in the server log during a scenario fails it.
 | edge | locked chests, hoppers, shulker/bundle contents, odd sign text and placement, renamed groups and `group-aliases`, range limits, fetch limits |
 | scenes | whole sorting rooms end to end; a manual 15-minute soak |
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
-| commands | `/cgc check` on chests, `/cgc overflow`, `disabled-worlds` |
+| commands | `/cgc check` on chests (including when a more specific chest wins), `/cgc overflow`, `disabled-worlds` |
 | config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands |
 | tidy | golems tidy chests they deliver to (while the lid is open): stacks merged, like items together, option off |
 | options | each config switch changes what golems do |
@@ -188,7 +187,7 @@ error or exception in the server log during a scenario fails it.
 | perf | hundreds of chests in range, many golems: tick time stays healthy |
 | dimensions | sorting, overflow, fetching, returns, giving way and `/cgc check` in the Nether and the End |
 | reach | chests stacked above vanilla's reach: delivering and taking with `deliver-reach` / `take-reach` raised, and at the default |
-| greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit |
+| greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit, a golem that dies on the way, no visits far from the copper chest |
 | limits | `max-golems-per-claim` / `claim-blocks-per-extra-golem`: the newest golem over a limit sorts like vanilla and the owner is told; each claim on its own, admin claims, bigger claims get more, under the limit, unclaimed land not limited, vanilla-mode golems not counted, the removed `max-golems-outside-claims` warned about, bad values |
 | work-order | what an idle golem does first: furnace upkeep (including taking out finished items) before sorting, `furnace-jobs-before-sorting` (1, and 0 for the old order); manual `work-order-balance-<n>` benchmarks for choosing its default |
 | distance | `search-distance` above 32: golems finding, walking to and moving items for chests, copper chests, `[Overflow]` chests and furnaces past vanilla's range |
@@ -205,7 +204,7 @@ error or exception in the server log during a scenario fails it.
 | labels | status labels over golems (bamboo in hand): what they say, off switch, removed with the golem, tick time with many |
 | overflow-hopper | hopper-fed [Overflow] chests: golems wait for `overflow-fetch-min` or `overflow-fetch-wait-seconds`; chests no hopper feeds are emptied at once |
 | portals | `avoid-portals`: golems stay out of Nether portals unless the option is off or they're in vanilla mode |
-| rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their copper chest, alerts, teleport home, adopting a new home |
+| rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their home (copper chest, furnace, `[Furnace Supply]`), alerts, teleport home, adopting a new home, golems with no home seeking work |
 | stats | `/cgc stats` counts deliveries and saves them to `stats.yml` |
 | traffic | `golems-give-way`: golems meeting in corridors and doorways step aside or back out, avoiding fire, cobwebs and holes |
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |
@@ -267,5 +266,7 @@ folder. Without it the `conflicts` suite is skipped.
 `./gradlew test` in the project root runs the JUnit tests (sign word matching, YAML error
 summaries). They need no server.
 
-Reads `/opt/minecraft/pluginDev/server.properties` for the RCON port and password, so run
-it as a user in the `minecraft` group. Standard library only.
+## RCON access
+
+`run.py` reads `/opt/minecraft/pluginDev/server.properties` for the RCON port and password,
+so run it as a user in the `minecraft` group. It uses the Python standard library only.

@@ -14,15 +14,26 @@ Versions are the plugin release each change came out with.
 ### Changed
 - `run.py` puts `player-aliases.yml` back after each one-at-a-time scenario, as it does `config.yml`.
 
-## 3.2.0 (in progress)
+## 3.2.0 (2026-11-10)
 
 ### New
+- `greet`: `greet-stays-near-work` checks that a golem doesn't visit an iron golem that is within 16 blocks of it but more than 16 from its copper chest.
+- `rescue`: `rescue-home-from-furnace-supply` checks that taking from a `[Furnace Supply]` container makes it the golem's home. `rescue-walks-back-to-furnace` checks that a lost golem walks back to its furnace. `rescue-no-home-seeks-work` checks that a golem with no home walks to a work place up to 64 blocks away.
 - `edge`: `group-alias-signs` checks that `[mechanisms]` and `[cooking]` signs take the groups their `group-aliases` point to. `group-alias-warnings` checks the console warnings for an alias that points to a missing group, and for one that is already a group's name.
+- `commands`: `check-says-more-specific-chest-wins` checks that `/cgc check` and `/cgc label` say golems take copper ingots from a `[*copper*]` chest to a nearby `[ingots and gems]` chest, and how to keep them. It also checks that a chest with no rival says nothing of the kind.
 
 ### Changed
+- `greet-interrupted-by-work`: the iron golem now stands within 16 blocks of the copper chest, so the visit can start now that greetings stay near work.
+- `greet`: `greet-other-dies-on-the-way` also checks that the end of the visit is logged and that the golem walks back to its copper chest. `greet-unreachable` looks for the new "stopped going to say hello" log line.
+- `run.py` sets clear weather (`weather clear 1000000`) at the start of every run. Rain hurts snow golems and made `greet-snow-golem` fail once.
 - `work-order`: `take-out-after-sorting` is now `take-out-before-sorting`. It checks that the golem takes finished items out of the furnace before it takes any logs from the copper chest, then sorts them.
 - Updated the `itest` scenarios for the optional `[radius]` on `/cgc find` and `/cgc golems`, for the furnace-output hopper minecart (#130), and for the new `/cgc find` chunk message.
 - The `itest` test hooks plugin builds against Paper API 26.3 build 244.
+
+### Fixed
+- `furnace-collected-by-hopper-minecart` put the minecart over a hole, so it fell out of the arena and the test always failed. It now sits on a block.
+- The music disc scenarios put one disc in each slot, so a stack can't hide a miscount.
+- The `/cgc help` scenario expects the `[radius]` argument.
 
 ## 3.1.0 (2026-11-05)
 
@@ -34,7 +45,7 @@ Versions are the plugin release each change came out with.
 - Every `run.py` run saves its results under `~/claude/itest-results/`, with `output.txt` and `summary.json` per run and a `latest` link. `ITEST_RESULTS` changes the folder.
 - `run.py smoke` runs a short list of quick scenarios (`impact.SMOKE`) as a sanity check (#103).
 - `run.py --changed[=ref]` runs the suites that exercise the files your branch changed, plus the smoke set and the scenarios the branch adds or edits. `--parallel-only` leaves out the one-at-a-time scenarios (#103).
-- New suites `distance` (`search-distance`, including a value that isn't a multiple of 16) and `work_order` (furnace upkeep before sorting).
+- New suites `distance` (`search-distance`, including a value that isn't a multiple of 16) and `work-order` (furnace upkeep before sorting).
 - Regression scenarios for 3.1.0 fixes.
 
 ### Changed
@@ -51,7 +62,7 @@ Versions are the plugin release each change came out with.
 ## 3.0.0 (2026-11-02)
 
 ### New
-- New suites `limits`, `furnace_edge`, `furnace_refill`, `furnace_trips`, `overflow_hopper`, `lava` and `edge30`.
+- New suites `limits`, `furnace-edge`, `furnace-refill`, `furnace-trips`, `overflow-hopper`, `lava` and `edge30`.
 - New tuning harness (`tune.py` and the `tuning` suite) that measures furnace behavior, including fuel still burning and wasted burn.
 - `cfg_upgrade_test.py` tests config upgrades, including a config that can't be written.
 - The `furnace` suite covers `[Fuel]` chests, fuel order, burn-out and the `/cgc check` report.

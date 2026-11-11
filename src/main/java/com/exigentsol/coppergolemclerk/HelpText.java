@@ -22,7 +22,7 @@ final class HelpText {
                             "- what each sign or item-frame label on it means, and labels that match nothing"
                                     + " or never close (a label can carry on to the next sign line: [Only light / sources])",
                             "- what the chest takes, from its labels or its contents",
-                            "- whether the item in your hand would go there",
+                            "- whether the item in your hand would go there, or to which more specific chest nearby instead",
                             "- anything stopping golems from using it: a block on top, a lock, a hopper"
                                     + " under it feeding a copper chest, or no room",
                             "- what to write on its sign: labels for what's in it (most specific first), what its label"
@@ -35,6 +35,8 @@ final class HelpText {
                     List.of("Looks at what's in the chest and suggests what to write on its sign: the item's own label for"
                                     + " one kind of item, else the most specific group they all share, most specific first.",
                             "With no shared group it names the group most of the items fit and lists the ones that don't.",
+                            "It also lists items here that golems would take to a more specific chest nearby, and the"
+                                    + " label that keeps them here.",
                             "A labelled chest: says whether everything in it matches. You place the sign yourself;"
                                     + " players only get suggestions for containers they could open.")),
             new Entry("overflow", "/cgc overflow", "/cgc overflow <x> <y> <z> [world]",

@@ -101,7 +101,7 @@ Each sample records:
 - The CPU's package temperature, its fastest core's clock speed, and the host's load. Idle
   cores drop to 800 MHz to save power. When the fastest core is slow, heat or power limits
   are holding the CPU back.
-- The server process's memory (resident, as spark's output doesn't reach RCON) and CPU use.
+- The server process's resident memory and CPU use, read from the process because spark's output doesn't reach RCON.
 - How many items the golems are holding, as a check that they're working.
 - Survival's player count and tick time.
 

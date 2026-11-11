@@ -18,27 +18,39 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
   - `coppergolemclerk.alias` allows the command. Everyone has it by default.
   - Saved in `plugins/CopperGolemClerk/player-aliases.yml` by player UUID. Changing an alias makes golems retry items that had no home straight away.
 
-## 3.2.0 (in progress)
+## 3.2.0 (2026-11-10)
 
 ### New
-- Groups can have other names. Add them under `group-aliases` in `config.yml`, as `alias: group` (for example `mechanisms: redstone`) or `alias: [group, group]`. A sign, `[Only ...]` filter or `/cgc find` with an alias means that group. A group's own name always wins, and the console warns about aliases it can't use. Empty by default; upgrading adds `group-aliases: {}`.
+- Groups can have other names. Add them under `group-aliases` in `config.yml`, as `alias: group` (for example `mechanisms: redstone`) or `alias: [group, group]`. A sign, `[Only ...]` filter or `/cgc find` with an alias means that group. A group's own name always wins, and the console warns about aliases it can't use. Empty by default. Upgrading adds `group-aliases: {}`.
 - `/cgc find <item> [radius]` and `/cgc golems [radius]` take an optional search radius. From the console, use `/cgc find <item> <x> <y> <z> [world] [radius]` and `/cgc golems <x> <y> <z> [world] [radius]`.
-  - `/cgc find birch log 50` looks 50 blocks around you. It only searches loaded chunks, and says how many in range weren't loaded.
-  - `/cgc golems 50` lists the golems within 50 blocks (along each axis, as find counts it), nearest first. The header says "within 50 blocks".
+  - `/cgc find birch log 50` looks 50 blocks around you. It searches loaded chunks only, and says how many chunks in range weren't loaded.
+  - `/cgc golems 50` lists the golems within 50 blocks, nearest first. Like find, it counts along each axis. The header says "within 50 blocks".
   - A number that ends an item's name is part of it. `/cgc find music disc 13` is the disc. `/cgc find music disc 13 50` is the disc within 50 blocks.
-  - Without a radius, both work as before.
-- `find-max-radius` (default 64, 1 to 128) is the most a player can ask `/cgc find` for. A larger number is cut down to it, with a note. `/cgc golems` isn't limited. It never counts as less than `find-radius`. Ops (`coppergolemclerk.allclaims`) and the console aren't limited.
+  - Without a radius, both work as before. No radius can go past 30,000,000.
+- `find-max-radius` (default 64, 1 to 128) is the most a player can ask `/cgc find` for. A larger number is cut down to it, with a note. It never counts as less than `find-radius`. Ops (`coppergolemclerk.allclaims`) and the console aren't limited. `/cgc golems` isn't limited either.
+- `/cgc check` and `/cgc label` now say when golems would take an item to a more specific chest. The rule is unchanged: the sign label covering the fewest items wins, so `[ingots and gems]` beats `[*copper*]` for a copper ingot. Now the commands tell you.
+  - `/cgc check` with an item in hand says which chest wins, where it is, and to add `[copper ingot]` to this chest's sign to keep the item here. If that chest is labelled for exactly the item, it says to take it off that label.
+  - `/cgc label`, and the label advice at the end of `/cgc check`, list the items in the chest that go to a more specific chest. They show 5 lines at most, then "... and N more". For an unlabelled chest they check the label they suggest.
+  - Nearby means within `search-distance` sideways and 8 blocks up or down. Locked, blocked, full and hopper-fed chests don't count, as when golems choose.
 
 ### Changed
 - Golems take finished items out of furnaces before they go back to sorting. Before, a golem sorted every copper chest first, so cooked items sat in the furnace while there was sorting to do. Taking items out is now part of furnace upkeep and counts toward `furnace-jobs-before-sorting`, so a busy copper chest still gets sorted. `furnace-take-out-at` still decides when a furnace is worth a trip.
+- A golem's home is now the last place it got work from, not only the last copper chest it took from. Lost-golem rescue uses it.
+  - Home is the copper chest it took items from, the `[Overflow]` chest it fetched from, the `[Furnace Supply]` or `[Fuel]` container it took from, or the furnace it took finished items (or an empty lava bucket) out of. Chests it only delivers into never become home.
+  - A golem is lost when no work place (copper chest, furnace, smoker, blast furnace, `[Overflow]`, `[Fuel]` or `[Furnace Supply]` container) is in its range and its home is more than 40 blocks away (12 up or down). Alerts name the home ("its furnace", "its [Overflow] chest"). Copper chests still read "its copper chest".
+  - If the home stops being a work place (broken, sign removed), the golem forgets it.
+  - A golem with no home takes the nearest work place in its range as home. With none in range it walks to the nearest one within 64 blocks (12 up or down). With none within 64 blocks it's left alone, like vanilla, until there is one.
+- Greeting visits stay near the golem's work. An idle copper golem only visits an iron or snow golem within 16 blocks of its home (if that is within `search-distance`), else of its nearest copper chest or furnace, else of where it stands. It turns back if it gets more than 20 blocks from there.
+  - It gives up if it can't get within reach in 20 seconds, if it gets no closer for 8 seconds, if the other golem can no longer be reached, or if that golem dies or disappears. Work turning up still ends a visit at once.
+  - A visit that ends without a hello walks the golem back to the spot beside its copper chest or furnace, for up to 15 seconds. It stops if work turns up.
+  - With `debug: true`, every visit that ends without a hello is logged with the reason ("stopped going to say hello: ...").
 - Golems now open a chest, barrel or shulker box lid briefly whenever the plugin moves items for them. This covers:
   - fetching from an `[Overflow]` chest
   - taking from or putting into a `[Fuel]` or `[Furnace Supply]` container
   - putting an item with no home back in its copper chest
   - taking more from a copper chest for `carry-amount`, as vanilla golems do
 
-  Before, the items just moved with a pickup sound and the lid stayed shut, so it looked as if nothing had touched the chest.
-- Built against the newest Paper API (26.3 build 244). It still runs on build 190 and later.
+  Before, the items just moved with a pickup sound and the lid stayed shut, so it looked as if nothing had touched the chest. Closing a lid never loads a chunk.
 - Default groups cleaned up:
   - `decorations` is split into `signs`, `banners` (and banner patterns), `pottery` (sherds and the decorated pot) and `beds`.
   - `decorations` keeps shelves, cushions, copper golem statues, item frames, the painting, armor stand, bookshelves and the flower pot.
@@ -52,6 +64,7 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
   - Creative-only items are in no group now: budding amethyst, infested cobblestone and mossy stone bricks, the command block minecart, the knowledge book, and the copper, iron and snow golem spawn eggs.
   - Existing servers keep their groups. Upgrading doesn't rewrite `groups:`, so copy the new ones from the default `config.yml` if you want them.
   - `[utility blocks]` still works on a fresh config (it finds `workstations`). `[workstations]` works on an older config.
+- Built against the newest Paper API (26.3 build 244). It still runs on build 190 and later.
 
 ### Fixed
 - Golems leave a furnace's output alone when a hopper minecart is under it, as they already did for a hopper. They check again when they reach the furnace, so a hopper placed while a golem was on its way is respected too.
