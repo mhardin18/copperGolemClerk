@@ -6,6 +6,8 @@ jar. Plugin changes are in the main [CHANGELOG](../CHANGELOG.md).
 
 Versions are the plugin release each change came out with.
 
+## 3.3.0 (in progress)
+
 ## 3.2.0 (2026-11-10)
 
 ### New

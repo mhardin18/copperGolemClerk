@@ -6,6 +6,8 @@ To upgrade, replace the old `SmartCopperGolems-*.jar` in `plugins/` with the new
 
 Changes to the developer tools in `tools/` (tests and scripts that aren't part of the plugin) are in [tools/CHANGELOG.md](tools/CHANGELOG.md).
 
+## 3.3.0 (in progress)
+
 ## 3.2.0 (2026-11-10)
 
 ### New
