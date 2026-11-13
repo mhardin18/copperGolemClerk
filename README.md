@@ -790,6 +790,7 @@ The plugin only ever changes copper golems. Iron and snow golems are never affec
 
 A copper golem with nothing to do walks over to an iron or snow golem within 16 blocks and
 says hello. Nothing to do means empty hands, nothing to fetch and nothing to sort in range.
+A golem at a chest finishes there first (until the lid closes), so it never leaves a lid open.
 They face each other, it waves, and hearts float up. Then it goes back to work. It doesn't
 greet again for `greet-cooldown-minutes` (default 5).
 

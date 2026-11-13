@@ -3,3 +3,10 @@ version: '1.0.0'
 main: com.exigentsol.golemtesthooks.GolemTestHooks
 api-version: '26.3'
 description: Test-only. Simulates other plugins deciding where golems may put items, inside the test arena only.
+commands:
+  golemlids:
+    description: Test-only. Lists open lids, and golems still holding a chest open, in a box.
+    permission: golemtesthooks.lids
+permissions:
+  golemtesthooks.lids:
+    default: op
