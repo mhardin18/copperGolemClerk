@@ -1,7 +1,9 @@
 """Chest lids left open. Each scenario keeps golems busy for a while and samples every lid
 on its platform each round with GolemTestHooks' /golemlids (vanilla's opener count, the
 Lidded.open() flag, and golems still holding a chest open). A lid open longer than any
-golem visit explains (STUCK seconds) fails the scenario, naming the lid and the golems."""
+golem visit explains (STUCK seconds) fails the scenario, naming the lid and the golems. So
+does a golem more than LEFT blocks from the chest vanilla says it has open: it was moved
+off mid-visit, which leaves the lid up whenever it then stays near."""
 import time
 
 from arena import SIZE, Y, Skip, Trigger, scenario
@@ -11,6 +13,7 @@ from suite_options import set_options
 from suite_scenes import build_room
 
 STUCK = 20  # a vanilla visit holds the lid about 3 s, a plugin flash 2 s; queues add a few
+LEFT = 3  # blocks; a golem at a chest stands next to it
 
 
 class LidWatch:
@@ -21,7 +24,7 @@ class LidWatch:
         self.query = f"golemlids {x1} {y1} {z1} {x2} {y2} {z2}"
         if "Unknown" in c.r.cmd(self.query) or "Usage" in c.r.cmd(self.query):
             raise Skip("needs GolemTestHooks with /golemlids on pluginDev")
-        self.since, self.found, self.golems, self.opened = {}, {}, [], 0
+        self.since, self.found, self.golems, self.opened, self.left = {}, {}, [], 0, []
 
     def sample(self):
         out = self.c.r.cmd(self.query).strip()
@@ -29,6 +32,10 @@ class LidWatch:
         parts = [] if out == "none" else [p.strip() for p in out.split("|")]
         lids = {p.split()[1]: p for p in parts if p.startswith("LID ")}
         self.golems = [p for p in parts if p.startswith("GOLEM ")]
+        for g in self.golems:  # GOLEM x,y,z -> x,y,z aware=...
+            at, chest = (tuple(int(v) for v in t.split(",")) for t in (g.split()[1], g.split("-> ")[1].split()[0]))
+            if max(abs(a - b) for a, b in zip(at, chest)) > LEFT and len(self.left) < 5:
+                self.left.append(f"{g} at {self.c.elapsed():.0f}s")
         for pos in list(self.since):
             if pos not in lids:
                 del self.since[pos]
@@ -50,6 +57,8 @@ class LidWatch:
                 out.append((False, f"lid stuck {held:.0f}s+: {line}; golems: {', '.join(golems) or 'none holding it'}"))
         else:
             out.append((True, f"no lid open longer than {STUCK}s"))
+        out.append((not self.left, f"no golem walked off with a chest still open for it"
+                    + (f": {'; '.join(self.left)}" if self.left else "")))
         return out
 
 
@@ -163,11 +172,11 @@ def _(c):
                                f"{len(hellos(c, 'has nothing to do; going to say hello'))} visits started")])
 
 
-def drop_loop(c, golems, soak, extra=lambda: [], refill=lambda: None):
-    """Golems keep carrying single logs from a copper chest to a [logs] chest (one log is put
-    back each time the chest and their hands are empty). Just after each drop a golem has
-    empty hands and nothing to sort while vanilla still holds the lid open: whatever sends it
-    off then must wait."""
+def between_jobs(c, golems, soak, extra=lambda: [], refill=lambda: None):
+    """Golems carry single logs from a copper chest to a [logs] chest; 10 s after the chest
+    and their hands are empty, another log is put in. In between they are idle and look into
+    the empty copper chest (empty hands while the lid is up): whatever sends them off must
+    wait for the lid."""
     c.chest("copper", 2, 10, [("birch_log", 1)], block="waxed_copper_chest")
     c.chest("logs", 14, 10)
     c.sign(14, 10, "[logs]")
@@ -176,31 +185,36 @@ def drop_loop(c, golems, soak, extra=lambda: [], refill=lambda: None):
     w = LidWatch(c, soak)
     x, y, z = c.chests["copper"][0]
 
+    empty = Trigger()
+
     def check():
         if c.count("copper") == 0 and c.holding("birch_log") == 0:
-            c.run(f"item replace block {x} {y} {z} container.0 with minecraft:birch_log 1")
+            empty.fire_when(lambda: True, lambda: None)
+            if empty.since() >= 10:
+                c.run(f"item replace block {x} {y} {z} container.0 with minecraft:birch_log 1")
+                empty.at = None
         refill()
         drops = c.count("logs", "birch_log")
-        return w.results([(drops >= 6, f"{drops} logs delivered (want 6+)")] + extra())
+        return w.results([(drops >= 4, f"{drops} logs delivered (want 4+)")] + extra())
     return check
 
 
-@scenario("lids-greet-after-drop", "lids", 300, "greet-cooldown-minutes: 0.25: a golem keeps carrying one log to a [logs] chest with an iron golem beside it; just after each drop it has nothing to do, but it doesn't leave to greet while the lid is up: no lid stays open.", alone=True)
+@scenario("lids-greet-between-jobs", "lids", 300, "greet-cooldown-minutes: 0.25: a golem carries a log now and then to a [logs] chest with an iron golem beside it, and looks into its empty copper chest in between; it greets, but never while a lid is up for it.", alone=True)
 def _(c):
     set_options(c, greet_cooldown_minutes="0.25")
     boxed(c, "iron_golem", 14, 14)
-    return drop_loop(c, 1, 240, lambda: [(len(hellos(c)) >= 2, f"{len(hellos(c))} hellos (want 2+: it still greets)")])
+    return between_jobs(c, 1, 240, lambda: [(len(hellos(c)) >= 2, f"{len(hellos(c))} hellos (want 2+: it still greets)")])
 
 
-@scenario("lids-greet-after-drop-crowd", "lids", 360, "greet-cooldown-minutes: 0.25: as lids-greet-after-drop with 4 golems and an iron and a snow golem beside the [logs] chest, for more drops: no lid stays open.", alone=True)
+@scenario("lids-greet-between-jobs-crowd", "lids", 360, "greet-cooldown-minutes: 0.25: as lids-greet-between-jobs with 4 golems and an iron and a snow golem, for more chances.", alone=True)
 def _(c):
     set_options(c, greet_cooldown_minutes="0.25")
     boxed(c, "iron_golem", 14, 14)
     boxed(c, "snow_golem", 10, 14)
-    return drop_loop(c, 4, 300, lambda: [(len(hellos(c)) >= 2, f"{len(hellos(c))} hellos (want 2+)")])
+    return between_jobs(c, 4, 300, lambda: [(len(hellos(c)) >= 2, f"{len(hellos(c))} hellos (want 2+)")])
 
 
-@scenario("lids-fetch-after-drop", "lids", 300, "A golem keeps carrying one log to a [logs] chest; an [Overflow] chest beside it keeps holding granite that belongs in [stone], so right after a drop the golem may be sent to fetch: no lid stays open.")
+@scenario("lids-fetch-between-jobs", "lids", 300, "A golem idle between log jobs is sent to fetch granite from an [Overflow] chest to [stone] (refilled): never while a lid is up for it.")
 def _(c):
     c.chest("overflow", 14, 6)
     c.sign(14, 6, "[Overflow]")
@@ -211,10 +225,10 @@ def _(c):
     def refill():
         if c.count("overflow", "granite") == 0 and c.holding("granite") == 0:
             c.run(f"item replace block {ox} {oy} {oz} container.0 with minecraft:granite 1")
-    return drop_loop(c, 1, 240, lambda: [(c.count("stone", "granite") >= 3, f"{c.count('stone', 'granite')} granite fetched to [stone] (want 3+)")], refill)
+    return between_jobs(c, 1, 240, lambda: [(c.count("stone", "granite") >= 1, f"{c.count('stone', 'granite')} granite fetched to [stone] (want 1+)")], refill)
 
 
-@scenario("lids-furnace-after-drop", "lids", 300, "A golem keeps carrying one log to a [logs] chest; a furnace beside it keeps running out of fuel with a [Fuel] chest nearby, so right after a drop the golem may be sent to refuel it: no lid stays open.")
+@scenario("lids-furnace-between-jobs", "lids", 300, "A golem idle between log jobs is sent to refuel a furnace (its fuel keeps being taken out) from a [Fuel] chest: never while a lid is up for it.")
 def _(c):
     furnace(c, "f1", 14, 14, input=("raw_iron", 64))
     c.chest("fuel", 10, 14, [("coal", 64)])
@@ -223,7 +237,7 @@ def _(c):
 
     def refill():  # burn the fuel off again so another refuel is due
         c.r.cmd(f"item replace block {fx} {fy} {fz} container.1 with minecraft:air")
-    return drop_loop(c, 1, 240, refill=refill)
+    return between_jobs(c, 1, 240, refill=refill)
 
 
 @scenario("lids-golem-killed-mid-open", "lids", 120, "A golem is killed while its chest lid is open: the lid closes.")
