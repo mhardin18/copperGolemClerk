@@ -326,7 +326,12 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         overflowBeforeEmpty = config.getBoolean("overflow-before-empty", true);
         returnUnsortableItems = config.getBoolean("return-unsortable-items", true);
         fetchFromOverflow = config.getBoolean("fetch-from-overflow", true);
-        fetchersPerOverflowChest = Math.max(1, config.getInt("fetchers-per-overflow-chest", 2));
+        int fetchers = config.getInt("fetchers-per-overflow-chest", 4);
+        if (fetchers < 0) {
+            getLogger().warning("fetchers-per-overflow-chest must be 0 (no limit) or more (it's " + fetchers + "); using 4.");
+            fetchers = 4;
+        }
+        fetchersPerOverflowChest = fetchers == 0 ? Integer.MAX_VALUE : fetchers; // 0 = no limit
         overflowFetchMin = rangeSetting(config, "overflow-fetch-min", 8, 1, 64);
         overflowFetchWaitSeconds = rangeSetting(config, "overflow-fetch-wait-seconds", 120, 0, 3600);
         carryAmount = config.getInt("carry-amount", GolemCarry.VANILLA);

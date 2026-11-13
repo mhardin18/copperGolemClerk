@@ -8,6 +8,9 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
 
 ## 3.3.0 (in progress)
 
+### Changed
+- `fetchers-per-overflow-chest` now defaults to 4 (was 2), and 0 means no limit. With a limit of 2, three golems and one overflow chest full of different items left one golem idle. Fetching is the last thing an idle golem does, so more fetchers only put idle golems to work. A negative value is reported in the console and 4 is used. Upgrading updates the setting's explanation but keeps your value: change 2 to 4 yourself to use the new default. The README's new "How many fetchers" section explains how many is too many.
+
 ## 3.2.0 (2026-11-10)
 
 ### New

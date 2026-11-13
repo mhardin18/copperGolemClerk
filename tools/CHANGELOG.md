@@ -8,6 +8,12 @@ Versions are the plugin release each change came out with.
 
 ## 3.3.0 (in progress)
 
+### New
+- `options`: `option-unlimited-fetchers` checks that `fetchers-per-overflow-chest: 0` (no limit) lets more than 4 golems fetch from one overflow chest at once.
+
+### Changed
+- `bad-numbers` sets `fetchers-per-overflow-chest` to -1 instead of 0, since 0 now means no limit, and checks for the console warning.
+
 ## 3.2.0 (2026-11-10)
 
 ### New

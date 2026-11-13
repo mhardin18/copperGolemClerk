@@ -488,8 +488,8 @@ chest in range. It takes up to `carry-amount` (16) of an item that now has a hom
 sorts it. So when you add a chest for something that was piling up in overflow, golems move
 it over on their own.
 
-- Up to `fetchers-per-overflow-chest` golems (default 2) fetch from one overflow chest at a
-  time, each a different item, so they don't crowd it.
+- Up to `fetchers-per-overflow-chest` golems (default 4, 0 = no limit) fetch from one
+  overflow chest at a time, each a different item. See [How many fetchers](#how-many-fetchers).
 - Items with no home are left in overflow.
 - Items in an overflow chest golems can't open (locked, blocked or waterlogged) are left too.
 - If an item loses its home while the golem is on its way (that chest fills up or is
@@ -507,6 +507,26 @@ don't walk over for every ingot. They fetch an item from such a chest once 8 of 
 up (`overflow-fetch-min`), or once it has waited 2 minutes (`overflow-fetch-wait-seconds`), so
 the last few still get sorted. Overflow chests that no hopper feeds are emptied right away.
 `/cgc overflow` mentions when a hopper fills the chest.
+
+#### How many fetchers
+
+`fetchers-per-overflow-chest` (default 4) limits how many golems fetch from one overflow
+chest at the same time. 0 means no limit.
+
+- **Each fetcher takes a different item.** A chest holding 2 kinds of items never draws more
+  than 2 golems, whatever the setting.
+- **More fetchers never take a golem off other work.** Fetching is the last thing an idle
+  golem does, after furnace jobs and copper chests. A higher limit only puts golems to work
+  that would otherwise stand around. For example, with a limit of 2, three golems and one
+  overflow chest full of 4 kinds, one golem stays idle.
+- **Too many crowd the chest.** Each golem walks to the open spot beside the chest nearest to
+  it, so golems coming from the same side queue for the same spot. A chest set into a wall has
+  1 open spot in front (2 for a double chest). More than about 2 golems per open spot mostly
+  wait their turn and get in the way of players using the chest. A pickup only takes a
+  moment, so a short queue is still faster than golems standing idle.
+
+4 suits a double chest open at the front. Use 2 for a single chest in a wall, and more for a
+chest open on several sides. 0 can put a dozen golems at one chest on a big farm.
 
 ### Bigger loads
 
@@ -1115,7 +1135,7 @@ line number, and the old settings are kept.
 | Setting | Default | What it does |
 |---|---|---|
 | `fetch-from-overflow` | `true` | A golem with nothing to do takes items that now have a home out of an `[Overflow]` chest and sorts them. |
-| `fetchers-per-overflow-chest` | `2` | How many golems may fetch from one overflow chest at a time (each a different item). |
+| `fetchers-per-overflow-chest` | `4` | How many golems may fetch from one overflow chest at a time (each a different item). 0 = no limit. More than about 2 per open spot beside the chest crowds it. See [How many fetchers](#how-many-fetchers). |
 | `overflow-fetch-min` | `8` | From an `[Overflow]` chest a hopper fills, golems fetch an item only once this many are there (1 to 64). 1 = a trip for every item. carry-amount = only full trips. Chests no hopper feeds are emptied right away. |
 | `overflow-fetch-wait-seconds` | `120` | From an `[Overflow]` chest a hopper fills, golems also fetch an item once it has waited this long (0 to 3600), even with fewer than `overflow-fetch-min`, so the last few still get sorted. 0 = no waiting. |
 | `carry-amount` | `16` | Items a golem carries per trip, 1 to 64 (vanilla: 16). Items that stack to less (ender pearls 16, tools 1) are carried that many at most. |
