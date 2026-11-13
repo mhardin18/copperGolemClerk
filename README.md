@@ -66,6 +66,8 @@ is optional.
 - **`/cgc overflow`** lists what's in overflow chests and what label would give each item a home.
 - **`/cgc stats`** shows how much the golems have sorted, server-wide.
 - **`/cgc golems`** finds every golem: where it is, what it's carrying and whether it's lost.
+- **`/cgc settings`** lists the settings that differ from the defaults, including old
+  defaults an upgrade kept and misspelt settings.
 - **Golem limits** (optional, off by default) cap how many golems in one claim use the
   plugin.
 - **Load tested** with up to 200 golems. A working golem costs about 0.1 ms per tick, the
@@ -971,6 +973,7 @@ Everything else, and the forms with a position or `all`, is for admins
 - `/cgc help`: list the commands. `/cgc help <command>` explains one.
 - `/cgc reload`: reload `config.yml`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
+- `/cgc settings`: the settings that differ from this version's defaults. See [`/cgc settings`](#cgc-settings).
 
 ### `/cgc check`
 
@@ -1061,6 +1064,24 @@ all time. Numbers are kept in `stats.yml`.
 - With `join-summary` (on by default), players are told when they join what golems sorted
   in their claims while they were away and how many of their chests filled up. Without
   claims, players with `coppergolemclerk.alerts` get the server's numbers instead.
+
+### `/cgc settings`
+
+For admins and the console. Compares `config.yml` with this version's defaults and lists only
+what differs, so you can spot settings worth a second look:
+
+- **Still at an old default.** Upgrading keeps your values, so when a default changes, your
+  server keeps the old one. For example, `fetchers-per-overflow-chest: 2 (the default until
+  3.3.0; now 4)`. Change it to use the new default.
+- **Not a setting.** A misspelt name does nothing. It's listed with the nearest real setting
+  (`carry-amont: 32 (did you mean carry-amount?)`).
+- **No longer used**, and **missing from the file** (the default is used).
+- **Problems the console reported** when `config.yml` was last loaded, such as a value out of
+  range.
+- **The settings you changed**, each with its default.
+
+`/cgc settings all` lists every setting. `/cgc settings <setting>` shows one, with its
+explanation from `config.yml`. Item groups and `group-aliases` aren't included.
 
 ### `/cgc find`
 

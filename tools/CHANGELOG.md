@@ -9,6 +9,7 @@ Versions are the plugin release each change came out with.
 ## 3.3.0 (in progress)
 
 ### New
+- `config`: `settings-report` checks that `/cgc settings` names an old default, a misspelt setting (with the real name), a retired setting and a load warning, leaves out item groups, and explains one setting.
 - `options`: `option-unlimited-fetchers` checks that `fetchers-per-overflow-chest: 0` (no limit) lets more than 4 golems fetch from one overflow chest at once.
 
 ### Changed

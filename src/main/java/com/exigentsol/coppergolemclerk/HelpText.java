@@ -94,6 +94,18 @@ final class HelpText {
                     "Reload config.yml.",
                     List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",
                             "If the file has a mistake, nothing changes and you're told which line to fix.")),
+            new Entry("settings", "/cgc settings [all | <setting>]", "/cgc settings [all | <setting>]",
+                    "Settings that differ from this version's defaults.",
+                    List.of("Lists the settings in config.yml that aren't at this version's default, and why that may matter:",
+                            "- still at an old default: upgrading keeps your values, so a default that changed"
+                                    + " stays the old one until you change it",
+                            "- not a setting (a typo?), with the nearest real name; no longer used; or missing"
+                                    + " from the file (the default is used)",
+                            "- problems the console reported when config.yml was last loaded",
+                            "- the settings you changed, each with its default",
+                            "/cgc settings all lists every setting. /cgc settings <setting> shows one, with its"
+                                    + " explanation from config.yml.",
+                            "Item groups and group-aliases aren't included.")),
             new Entry("version", "/cgc version", "/cgc version",
                     "The installed version, and whether a newer release is out.",
                     List.of("Shows the installed version and checks GitHub for a newer release for this server.",
