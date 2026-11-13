@@ -163,24 +163,67 @@ def _(c):
                                f"{len(hellos(c, 'has nothing to do; going to say hello'))} visits started")])
 
 
-@scenario("lids-greet-after-drop", "lids", 300, "greet-cooldown-minutes: 0.25: a golem keeps carrying one log to a [logs] chest with an iron golem beside it; just after each drop it has nothing to do, but it doesn't leave to greet while the lid is up: no lid stays open.", alone=True)
-def _(c):
-    set_options(c, greet_cooldown_minutes="0.25")
+def drop_loop(c, golems, soak, extra=lambda: [], refill=lambda: None):
+    """Golems keep carrying single logs from a copper chest to a [logs] chest (one log is put
+    back each time the chest and their hands are empty). Just after each drop a golem has
+    empty hands and nothing to sort while vanilla still holds the lid open: whatever sends it
+    off then must wait."""
     c.chest("copper", 2, 10, [("birch_log", 1)], block="waxed_copper_chest")
     c.chest("logs", 14, 10)
     c.sign(14, 10, "[logs]")
-    boxed(c, "iron_golem", 14, 14)
-    c.golem(4, 10)
-    w = LidWatch(c, 240)
+    for n in range(golems):
+        c.golem(4, 9 + n)
+    w = LidWatch(c, soak)
     x, y, z = c.chests["copper"][0]
 
     def check():
-        if c.count("copper") == 0 and c.holding() == 0:  # delivered: another log
+        if c.count("copper") == 0 and c.holding("birch_log") == 0:
             c.run(f"item replace block {x} {y} {z} container.0 with minecraft:birch_log 1")
+        refill()
         drops = c.count("logs", "birch_log")
-        return w.results([(drops >= 6, f"{drops} logs delivered (want 6+)"),
-                          (len(hellos(c)) >= 2, f"{len(hellos(c))} hellos (want 2+: it still greets)")])
+        return w.results([(drops >= 6, f"{drops} logs delivered (want 6+)")] + extra())
     return check
+
+
+@scenario("lids-greet-after-drop", "lids", 300, "greet-cooldown-minutes: 0.25: a golem keeps carrying one log to a [logs] chest with an iron golem beside it; just after each drop it has nothing to do, but it doesn't leave to greet while the lid is up: no lid stays open.", alone=True)
+def _(c):
+    set_options(c, greet_cooldown_minutes="0.25")
+    boxed(c, "iron_golem", 14, 14)
+    return drop_loop(c, 1, 240, lambda: [(len(hellos(c)) >= 2, f"{len(hellos(c))} hellos (want 2+: it still greets)")])
+
+
+@scenario("lids-greet-after-drop-crowd", "lids", 360, "greet-cooldown-minutes: 0.25: as lids-greet-after-drop with 4 golems and an iron and a snow golem beside the [logs] chest, for more drops: no lid stays open.", alone=True)
+def _(c):
+    set_options(c, greet_cooldown_minutes="0.25")
+    boxed(c, "iron_golem", 14, 14)
+    boxed(c, "snow_golem", 10, 14)
+    return drop_loop(c, 4, 300, lambda: [(len(hellos(c)) >= 2, f"{len(hellos(c))} hellos (want 2+)")])
+
+
+@scenario("lids-fetch-after-drop", "lids", 300, "A golem keeps carrying one log to a [logs] chest; an [Overflow] chest beside it keeps holding granite that belongs in [stone], so right after a drop the golem may be sent to fetch: no lid stays open.")
+def _(c):
+    c.chest("overflow", 14, 6)
+    c.sign(14, 6, "[Overflow]")
+    c.chest("stone", 8, 16)
+    c.sign(8, 16, "[stone]")
+    ox, oy, oz = c.chests["overflow"][0]
+
+    def refill():
+        if c.count("overflow", "granite") == 0 and c.holding("granite") == 0:
+            c.run(f"item replace block {ox} {oy} {oz} container.0 with minecraft:granite 1")
+    return drop_loop(c, 1, 240, lambda: [(c.count("stone", "granite") >= 3, f"{c.count('stone', 'granite')} granite fetched to [stone] (want 3+)")], refill)
+
+
+@scenario("lids-furnace-after-drop", "lids", 300, "A golem keeps carrying one log to a [logs] chest; a furnace beside it keeps running out of fuel with a [Fuel] chest nearby, so right after a drop the golem may be sent to refuel it: no lid stays open.")
+def _(c):
+    furnace(c, "f1", 14, 14, input=("raw_iron", 64))
+    c.chest("fuel", 10, 14, [("coal", 64)])
+    c.sign(10, 14, "[Fuel]")
+    fx, fy, fz = c.chests["f1"][0]
+
+    def refill():  # burn the fuel off again so another refuel is due
+        c.r.cmd(f"item replace block {fx} {fy} {fz} container.1 with minecraft:air")
+    return drop_loop(c, 1, 240, refill=refill)
 
 
 @scenario("lids-golem-killed-mid-open", "lids", 120, "A golem is killed while its chest lid is open: the lid closes.")
