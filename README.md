@@ -68,6 +68,8 @@ is optional.
 - **`/cgc golems`** finds every golem: where it is, what it's carrying and whether it's lost.
 - **`/cgc settings`** lists the settings that differ from the defaults, including old
   defaults an upgrade kept and misspelt settings.
+- **`/cgc groups`** compares your item groups with the built-in ones and lists their
+  problems, such as entries that match no item.
 - **Golem limits** (optional, off by default) cap how many golems in one claim use the
   plugin.
 - **Load tested** with up to 200 golems. A working golem costs about 0.1 ms per tick, the
@@ -242,6 +244,7 @@ Upgrading never changes the `groups:` in your `config.yml`, so a server that sta
 config's `saplings-and-leaves`, and `[crafting materials]` finds the new `materials`. To get
 the new groups themselves, copy them from the [default
 `config.yml`](https://github.com/mhardin18/copperGolemClerk/blob/main/src/main/resources/config.yml).
+[`/cgc groups`](#cgc-groups) shows how your groups differ from this version's.
 
 **Changed in 3.2.0.** The default groups were cleaned up:
 
@@ -975,6 +978,7 @@ Everything else, and the forms with a position or `all`, is for admins
 - `/cgc reload`: reload `config.yml`.
 - `/cgc version`: the installed version, and whether a newer release is out (checks now).
 - `/cgc settings`: the settings that differ from this version's defaults. See [`/cgc settings`](#cgc-settings).
+- `/cgc groups`: your item groups compared with the built-in ones. See [`/cgc groups`](#cgc-groups).
 
 ### `/cgc check`
 
@@ -1082,7 +1086,30 @@ what differs, so you can spot settings worth a second look:
 - **The settings you changed**, each with its default.
 
 `/cgc settings all` lists every setting. `/cgc settings <setting>` shows one, with its
-explanation from `config.yml`. Item groups and `group-aliases` aren't included.
+explanation from `config.yml`. Item groups and `group-aliases` aren't included: see
+[`/cgc groups`](#cgc-groups).
+
+### `/cgc groups`
+
+For admins and the console. Upgrading never changes the `groups:` in `config.yml`, so a server
+keeps the groups it started with, even when the built-in ones change (they did in 3.1.0 and
+3.2.0). `/cgc groups` compares yours with this version's and lists, problems first:
+
+- **Problems the console reported** when the groups were loaded: entries that match no item
+  (`Group 'ores': unknown item DIAMND`, or a pattern like `*ZZZ*`), `group-aliases` that point
+  to no group, and group names signs can't use.
+- **Items in more than one of your groups**, other than the built-in overlaps, and which group
+  golems prefer for them: the one with the fewest items. `ores + ingots-and-gems: 1 item
+  (diamond); ingots-and-gems is preferred`.
+- **Built-in groups you don't have**, with an older name you have instead
+  (`templates (19 items; your config.yml has smithing-templates instead)`) and how many of
+  their items are in none of your groups.
+- **Built-in groups with other items** (`ores: 1 added, 1 left out`), and **your own groups**.
+
+`/cgc groups <group>` shows one group: its entries in `config.yml`, its sign label and
+aliases, its items, how they differ from the built-in group, and the items it shares with
+other groups. `/cgc groups item <item>` shows which groups an item is in, which one golems
+prefer, and its built-in groups when they differ.
 
 ### `/cgc find`
 

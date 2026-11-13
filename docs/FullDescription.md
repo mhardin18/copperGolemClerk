@@ -217,6 +217,8 @@ Neither chest receives sorted items unless it also has an item label. Put both o
 - `/cgc stats` shows how much the golems have sorted, server-wide.
 - `/cgc settings` lists the settings that differ from the defaults, including old defaults
   an upgrade kept and misspelt settings.
+- `/cgc groups` compares your item groups with the built-in ones, lists entries that match
+  no item, and shows which groups an item is in.
 - Players only see what they could open themselves. Admins can see into every claim.
 - Optional golem limits cap how many golems in one claim use the plugin. Bigger claims can get
   more. Off by default.

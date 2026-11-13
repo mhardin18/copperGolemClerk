@@ -13,8 +13,8 @@ import org.bukkit.configuration.ConfigurationSection;
 /**
  * /cgc settings: how the server's config.yml compares with this version's defaults.
  * Upgrading never changes a value, so a server keeps old defaults, typos and leftovers
- * until someone notices; this lists them. Item groups and group aliases are left out
- * (too many lines to be useful here).
+ * until someone notices; this lists them. Item groups and group aliases are left out:
+ * /cgc groups covers them (GroupsReport).
  */
 final class SettingsReport {
 
@@ -128,12 +128,12 @@ final class SettingsReport {
         List<Row> notDefault = rows.stream().filter(r -> r.kind() != Kind.DEFAULT).toList();
         String version = plugin.getPluginMeta().getVersion();
         if (notDefault.isEmpty() && warnings.isEmpty()) {
-            sender.sendMessage(Component.text("Every setting is at its " + version + " default (item groups not checked).",
+            sender.sendMessage(Component.text("Every setting is at its " + version + " default (item groups: /cgc groups).",
                     NamedTextColor.GREEN));
             return;
         }
         sender.sendMessage(Component.text(notDefault.size() + " of " + rows.size() + " settings differ from the "
-                + version + " defaults (item groups not checked):", NamedTextColor.GOLD));
+                + version + " defaults (item groups: /cgc groups):", NamedTextColor.GOLD));
         if (!warnings.isEmpty()) {
             sender.sendMessage(Component.text("Problems when config.yml was last loaded:", NamedTextColor.RED));
             for (String w : warnings) {
@@ -172,7 +172,7 @@ final class SettingsReport {
     }
 
     private void all(CommandSender sender, List<Row> rows) {
-        sender.sendMessage(Component.text("All " + rows.size() + " settings (item groups not shown):", NamedTextColor.GOLD));
+        sender.sendMessage(Component.text("All " + rows.size() + " settings (item groups: /cgc groups):", NamedTextColor.GOLD));
         for (Row r : rows) {
             switch (r.kind()) {
                 case DEFAULT -> line(sender, r.key() + ": " + r.value(), NamedTextColor.GRAY);
@@ -194,7 +194,7 @@ final class SettingsReport {
             String near = closest(key, rows.stream().map(Row::key).toList());
             throw new IllegalArgumentException("No setting named '" + key + "'"
                     + (near == null ? "." : "; did you mean " + near + "?")
-                    + (SKIPPED.contains(key) ? " Item groups aren't covered by /cgc settings." : ""));
+                    + (SKIPPED.contains(key) ? " For item groups, use /cgc groups." : ""));
         }
         String state = switch (row.kind()) {
             case DEFAULT -> " (the default)";
