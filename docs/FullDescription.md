@@ -174,6 +174,8 @@ Neither chest receives sorted items unless it also has an item label. Put both o
 - A golem that falls down a shaft or wanders off **walks back home**, the last place it got
   work from. One that's stuck gets reported, with where it is.
 - Golems **keep off trapdoors** and **stay out of portals**.
+- A golem **finishes at a chest** before it goes to say hello or steps aside for another
+  golem, so lids close behind it.
 - Every copper golem death is written to the server log with its cause, so you can see what
   happened to a golem that went missing.
 

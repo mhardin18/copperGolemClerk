@@ -14,6 +14,9 @@ Changes to the developer tools in `tools/` (tests and scripts that aren't part o
 ### Changed
 - `fetchers-per-overflow-chest` now defaults to 4 (was 2), and 0 means no limit. With a limit of 2, three golems and one overflow chest full of different items left one golem idle. Fetching is the last thing an idle golem does, so more fetchers only put idle golems to work. A negative value is reported in the console and 4 is used. Upgrading updates the setting's explanation but keeps your value: change 2 to 4 yourself to use the new default. The README's new "How many fetchers" section explains how many is too many.
 
+### Fixed
+- A chest lid could stay open. A golem that had just put its item in (or looked in an empty copper chest) counted as having nothing to do while the lid was still up, so it could leave to greet an iron or snow golem. Vanilla then still counted it as holding that chest open, and the lid stayed up while it stood nearby. Golems now wait until the lid closes before going to say hello. Giving way already waited for it.
+
 ## 3.2.0 (2026-11-10)
 
 ### New

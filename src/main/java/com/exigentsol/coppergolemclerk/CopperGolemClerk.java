@@ -72,6 +72,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private GolemStats stats;
     private volatile boolean joinSummary = true;
     private GolemGreetings greetings;
+    private ChestVisits chestVisits;
     private GolemLabels labels;
     private volatile boolean statusLabels = true;
     private volatile boolean statusLabelsEverywhere;
@@ -146,7 +147,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         traffic = new GolemTraffic(this);
         getServer().getPluginManager().registerEvents(traffic, this);
         traffic.setEnabled(giveWay);
-        greetings = new GolemGreetings(this, listener.fetcher(), listener.returns(), traffic);
+        chestVisits = new ChestVisits();
+        getServer().getPluginManager().registerEvents(chestVisits, this);
+        greetings = new GolemGreetings(this, listener.fetcher(), listener.returns(), traffic, chestVisits);
         getServer().getScheduler().runTaskTimer(this, greetings::tick, 10, 10);
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);

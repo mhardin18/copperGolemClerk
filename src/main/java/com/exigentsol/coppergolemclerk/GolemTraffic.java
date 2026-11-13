@@ -302,6 +302,7 @@ final class GolemTraffic implements Listener {
         return null;
     }
 
+    /** IDLE also keeps a golem at a chest where it is: vanilla leaves IDLE when the lid opens. */
     private static boolean canStepAside(CopperGolem golem) {
         return golem.getGolemState() == CopperGolem.State.IDLE && golem.isOnGround() && !golem.isInsideVehicle()
                 && !golem.isLeashed() && golem.isAware();

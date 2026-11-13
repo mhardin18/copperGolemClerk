@@ -55,6 +55,7 @@ final class GolemGreetings {
     private final OverflowFetcher fetcher;
     private final Returns returns;
     private final GolemTraffic traffic;
+    private final ChestVisits chestVisits;
     private final Map<UUID, Visit> visits = new HashMap<>();
     private final Map<UUID, Long> nextCheck = new HashMap<>();
     private final Map<UUID, Long> cooldownUntil = new HashMap<>();
@@ -69,11 +70,13 @@ final class GolemGreetings {
     /** Close enough to its work: done walking back. */
     private static final double BACK_DISTANCE = 3;
 
-    GolemGreetings(CopperGolemClerk plugin, OverflowFetcher fetcher, Returns returns, GolemTraffic traffic) {
+    GolemGreetings(CopperGolemClerk plugin, OverflowFetcher fetcher, Returns returns, GolemTraffic traffic,
+                   ChestVisits chestVisits) {
         this.plugin = plugin;
         this.fetcher = fetcher;
         this.returns = returns;
         this.traffic = traffic;
+        this.chestVisits = chestVisits;
     }
 
     boolean isVisiting(UUID golem) {
@@ -127,6 +130,7 @@ final class GolemGreetings {
         if (!golem.isValid() || golem.isLeashed() || golem.isInsideVehicle()
                 || !golem.getEquipment().getItemInMainHand().isEmpty()
                 || fetcher.isFetching(golem.getUniqueId()) || traffic.isYielding(golem.getUniqueId())
+                || chestVisits.atChest(golem.getUniqueId()) // walked off now, it would leave the lid open
                 || plugin.rescue().isRescuing(golem.getUniqueId())
                 || (plugin.sortListener() != null && plugin.sortListener().furnaces().isBusy(golem.getUniqueId()))) {
             return false;

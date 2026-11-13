@@ -206,6 +206,7 @@ error or exception in the server log during a scenario fails it.
 | portals | `avoid-portals`: golems stay out of Nether portals unless the option is off or they're in vanilla mode |
 | rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their home (copper chest, furnace, `[Furnace Supply]`), alerts, teleport home, adopting a new home, golems with no home seeking work |
 | stats | `/cgc stats` counts deliveries and saves them to `stats.yml` |
+| lids | chest lids left open: busy rooms, fetching, reach, furnaces, give-way corridors and greetings soak for minutes while every lid on the platform is sampled; one open over 20 s fails, naming the golem still holding it (needs GolemTestHooks) |
 | traffic | `golems-give-way`: golems meeting in corridors and doorways step aside or back out, avoiding fire, cobwebs and holes |
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |
 
@@ -258,8 +259,13 @@ the effect out. The `sleepy-golem-*` scenarios test the far-from-players case.
 golems may put items, keyed on the block under a chest. It only acts inside the test arena
 (x < -400, y >= 140).
 
+It also adds `/golemlids x1 y1 z1 x2 y2 z2`, which lists the open chest, barrel and shulker
+lids in a box (vanilla's opener count and the `Lidded.open()` flag) and the copper golems
+there that vanilla still counts as holding a chest open. It reads server internals by
+reflection, so a new Paper version may break it.
+
 Build it with `./gradlew build` in `hooks/` and copy the jar to pluginDev's plugins
-folder. Without it the `conflicts` suite is skipped.
+folder. Without it the `conflicts` and `lids` suites are skipped.
 
 ## Unit tests
 
