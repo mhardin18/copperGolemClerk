@@ -105,7 +105,19 @@ final class HelpText {
                             "- the settings you changed, each with its default",
                             "/cgc settings all lists every setting. /cgc settings <setting> shows one, with its"
                                     + " explanation from config.yml.",
-                            "Item groups and group-aliases aren't included.")),
+                            "Item groups and group-aliases aren't included: see /cgc groups.")),
+            new Entry("groups", "/cgc groups [<group> | item <item>]", "/cgc groups [<group> | item <item>]",
+                    "Your item groups compared with this version's built-in ones.",
+                    List.of("Upgrading never changes the groups in config.yml, so a server keeps the groups it started"
+                                    + " with. This shows:",
+                            "- problems the console reported when the groups were loaded: entries that match no item,"
+                                    + " group-aliases that point to no group, names signs can't use",
+                            "- items you put in more than one group (other than the built-in ones), and which group"
+                                    + " golems prefer for them: the one with the fewest items",
+                            "- built-in groups you don't have (and older names you have instead), built-in groups"
+                                    + " with other items, and your own groups",
+                            "/cgc groups <group> lists one group's items, its entries, its sign label and what it"
+                                    + " shares with other groups. /cgc groups item <item> shows which groups an item is in.")),
             new Entry("version", "/cgc version", "/cgc version",
                     "The installed version, and whether a newer release is out.",
                     List.of("Shows the installed version and checks GitHub for a newer release for this server.",

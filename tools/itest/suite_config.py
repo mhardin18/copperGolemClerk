@@ -103,9 +103,35 @@ def _(c):
                     ("carry-amont: 32 (did you mean carry-amount?)" in report, "typo named, with the real setting"),
                     ("matching-chest-timeout-seconds (" in report, "retired setting named"),
                     ("search-distance must be" in report, "load warning shown"),
-                    ("groups" not in report.replace("item groups not checked", ""), "item groups left out"),
+                    ("groups" not in report.replace("item groups: /cgc groups", "").replace("/cgc groups", ""),
+                     "item groups left out"),
                     (one.startswith("fetchers-per-overflow-chest: 2") and "0 = no limit" in one,
                      f"one setting explained: {one[:120]}")]
+
+
+@scenario("groups-report", "config", 30, "/cgc groups names a bad entry, an item put in a second group (and which group wins), a missing built-in group with the older name kept instead, and changed groups; it shows one group and one item.", alone=True)
+def _(c):
+    text = original().replace('  ores:\n    - "*_ORE"\n', '  ores:\n    - "*_ORE"\n    - DIAMOND\n    - "*ZZZ*"\n', 1)
+    text = text.replace("  templates:\n", "  smithing-templates:\n", 1)
+    original()
+    try:
+        with open(CONFIG, "w") as f:
+            f.write(text)
+        c.r.cmd("coppergolemclerk reload")
+        report = re.sub(r"§.", "", c.r.cmd("coppergolemclerk groups"))
+        one = re.sub(r"§.", "", c.r.cmd("coppergolemclerk groups ores"))
+        item = re.sub(r"§.", "", c.r.cmd("coppergolemclerk groups item diamond"))
+    finally:
+        restore(c)
+    return lambda: [("Group 'ores': *ZZZ* matches no items." in report, "bad entry named"),
+                    ("ores + ingots-and-gems: 1 item (diamond); ingots-and-gems is preferred" in report,
+                     "overlap named, with the group golems prefer"),
+                    ("templates (19 items; your config.yml has smithing-templates instead" in report,
+                     "missing built-in group, with the older name kept"),
+                    ("ores: 1 added" in report, "changed group counted"),
+                    (one.startswith("Group ores: ") and "diamond" in one and "Not in the built-in group: diamond" in one,
+                     f"one group shown: {one[:160]}"),
+                    (item.startswith("diamond is in ") and "ingots-and-gems first" in item, f"item shown: {item[:160]}")]
 
 
 @scenario("missing-groups", "config", 30, "A config with no groups section is reported, and loads with 0 groups.", alone=True)

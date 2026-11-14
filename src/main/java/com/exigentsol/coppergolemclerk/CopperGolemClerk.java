@@ -81,6 +81,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private LabelAdvisor labelAdvisor;
     private StorageReport storageReport;
     private SettingsReport settingsReport;
+    private GroupsReport groupsReport;
     /** config.yml as last loaded (null if it couldn't be read at startup), and the warnings that load logged about settings. */
     private volatile YamlConfiguration loadedConfig;
     private volatile List<String> settingWarnings = List.of();
@@ -172,6 +173,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         labelAdvisor = new LabelAdvisor(this);
         storageReport = new StorageReport(this);
         settingsReport = new SettingsReport(this);
+        groupsReport = new GroupsReport(this);
         limits = new GolemLimits(this);
         getServer().getScheduler().runTaskTimer(this, limits::tick, 100, 100);
         getServer().getPluginManager().registerEvents(itemFinder, this);
@@ -1092,6 +1094,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 }
                 case "version" -> updates.report(sender);
                 case "settings" -> settingsReport.report(sender, args.length > 1 ? args[1] : null);
+                case "groups" -> groupsReport.report(sender, args);
                 case "stats" -> stats.report(sender);
                 case "golems" -> {
                     RadiusArgs.Golems parsed = RadiusArgs.parseGolems(List.of(args).subList(1, args.length));
@@ -1235,6 +1238,30 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 }
                 for (String key : shippedConfig().getKeys(false)) {
                     if (key.startsWith(prefix) && !key.equals("groups") && !key.equals("group-aliases")) {
+                        out.add(key);
+                    }
+                }
+                return out;
+            }
+            if (args.length == 2 && args[0].equalsIgnoreCase("groups") && admin) {
+                String prefix = args[1].toLowerCase(Locale.ROOT);
+                List<String> out = new ArrayList<>();
+                if ("item".startsWith(prefix)) {
+                    out.add("item");
+                }
+                for (String group : groups.groupNames()) {
+                    if (group.startsWith(prefix)) {
+                        out.add(group);
+                    }
+                }
+                return out;
+            }
+            if (args.length == 3 && args[0].equalsIgnoreCase("groups") && args[1].equalsIgnoreCase("item") && admin) {
+                String prefix = args[2].toLowerCase(Locale.ROOT);
+                List<String> out = new ArrayList<>();
+                for (Material m : Material.values()) {
+                    String key = m.getKey().getKey();
+                    if (!m.isLegacy() && m.isItem() && key.startsWith(prefix) && out.size() < 100) {
                         out.add(key);
                     }
                 }

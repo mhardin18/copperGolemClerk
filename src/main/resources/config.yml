@@ -548,7 +548,8 @@ group-aliases: {}
 # A group's name is its sign label ([light sources] for light-sources), so keep names
 # short. A sign line holds about 15 letters. A longer label can continue on the next
 # line, but one line is easier.
-# Upgrading never changes this list.
+# Upgrading never changes this list. /cgc groups shows how yours differ from this
+# version's.
 # Entry formats:
 #   DIAMOND            one item (minecraft:diamond also works)
 #   *_ORE              name pattern; * matches any letters (or none), whole ID must fit

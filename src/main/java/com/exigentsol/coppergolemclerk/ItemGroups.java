@@ -87,14 +87,19 @@ public final class ItemGroups {
                 if (matcher == null) {
                     continue;
                 }
+                boolean any = false;
                 for (Material m : items) {
                     if (matcher.test(m)) {
+                        any = true;
                         BitSet bits = membership.computeIfAbsent(m, k -> new BitSet());
                         if (!bits.get(index)) {
                             bits.set(index);
                             matched++;
                         }
                     }
+                }
+                if (!any) {
+                    log.warning("Group '" + groupName + "': " + entry.trim() + " matches no items.");
                 }
             }
             if (matched == 0) {
@@ -380,8 +385,30 @@ public final class ItemGroups {
         return result;
     }
 
+    /**
+     * The group a player means by this name, or -1: its exact name (dashes, spaces and
+     * underscores alike), then singular or plural, then an alias for that one group.
+     */
+    int findGroup(String name) {
+        int exact = namedGroup(name);
+        if (exact >= 0) {
+            return exact;
+        }
+        String[] words = words(name);
+        int fuzzy = groupMatching(words);
+        if (fuzzy >= 0) {
+            return fuzzy;
+        }
+        for (Alias alias : aliases) {
+            if (alias.targets().size() == 1 && sameWordsIgnoringPlural(words, alias.words())) {
+                return alias.targets().get(0);
+            }
+        }
+        return -1;
+    }
+
     /** The index of the group with exactly this name (dashes, spaces and underscores alike), or -1. */
-    private int namedGroup(String name) {
+    int namedGroup(String name) {
         String key = String.join("-", words(name));
         for (int i = 0; i < groupNames.size(); i++) {
             if (String.join("-", words(groupNames.get(i))).equals(key)) {
@@ -458,6 +485,11 @@ public final class ItemGroups {
             }
         }
         return result;
+    }
+
+    /** Every item in a group (by config index), in registry order. */
+    List<Material> itemsIn(int index) {
+        return itemsMatching(inGroup(index));
     }
 
     /** Index of a group name, or -1. */
