@@ -207,6 +207,7 @@ error or exception in the server log during a scenario fails it.
 | rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their home (copper chest, furnace, `[Furnace Supply]`), alerts, teleport home, adopting a new home, golems with no home seeking work |
 | stats | `/cgc stats` counts deliveries and saves them to `stats.yml` |
 | lids | chest lids left open: busy rooms, fetching, reach, furnaces, give-way corridors and greetings soak for minutes while every lid on the platform is sampled; one open over 20 s fails, naming the golem still holding it (needs GolemTestHooks) |
+| gestures | the chest animation for moves the plugin makes itself: reach deliveries, [Overflow] fetches, furnace takes and puts, with a vanilla delivery as the control (needs GolemTestHooks) |
 | traffic | `golems-give-way`: golems meeting in corridors and doorways step aside or back out, avoiding fire, cobwebs and holes |
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |
 
@@ -264,8 +265,13 @@ lids in a box (vanilla's opener count and the `Lidded.open()` flag) and the copp
 there that vanilla still counts as holding a chest open. It reads server internals by
 reflection, so a new Paper version may break it.
 
+`/golemstates x1 y1 z1 x2 y2 z2` records the state of every copper golem in a box each tick
+(`IDLE`, or the chest animation: `GETTING_ITEM`, `DROPPING_ITEM` and their `_NO_ITEM`
+forms). The first call starts watching; each call lists the stretches that ended since the
+last one as `STATE ticks`, then `NOW STATE ticks` for any still going.
+
 Build it with `./gradlew build` in `hooks/` and copy the jar to pluginDev's plugins
-folder. Without it the `conflicts` and `lids` suites are skipped.
+folder. Without it the `conflicts`, `lids` and `gestures` suites are skipped.
 
 ## Unit tests
 

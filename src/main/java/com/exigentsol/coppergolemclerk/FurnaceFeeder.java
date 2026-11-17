@@ -1157,6 +1157,9 @@ final class FurnaceFeeder {
         in.setAmount(already + moved);
         inventory.setSmelting(in);
         takeFromHand(golem, held, moved);
+        if (moved > 0) {
+            plugin.gestures().put(golem, block);
+        }
         debugPut(golem, moved, held.getType(), "input", block);
         return moved;
     }
@@ -1169,6 +1172,7 @@ final class FurnaceFeeder {
         takeFromHand(golem, held, moved);
         if (moved > 0) {
             ReachDelivery.flashLid(plugin, block);
+            plugin.gestures().put(golem, block);
         }
         debugPut(golem, moved, held.getType(), "inventory", block);
         return moved;
@@ -1210,6 +1214,7 @@ final class FurnaceFeeder {
                 in.setAmount(already + moved);
                 inventory.setFuel(in);
                 takeFromHand(golem, held, moved);
+                plugin.gestures().put(golem, block);
                 playPut(block);
                 debugPut(golem, moved, held.getType(), "fuel slot", block);
             }
@@ -1238,6 +1243,7 @@ final class FurnaceFeeder {
         ItemStack left = result.clone();
         left.setAmount(result.getAmount() - take);
         inventory.setResult(left.getAmount() > 0 ? left : null);
+        plugin.gestures().take(golem, furnace.getBlock());
         hand(golem, taken);
         fromFurnace.add(golem.getUniqueId());
         homes.startSearch(golem, taken.getType(), furnace.getBlock());
@@ -1272,6 +1278,7 @@ final class FurnaceFeeder {
         }
         plugin.rescue().noteHome(golem, container.getBlock()); // its [Fuel] or [Furnace Supply] container is its home now
         ReachDelivery.flashLid(plugin, sourceBlock);
+        plugin.gestures().take(golem, sourceBlock);
         hand(golem, taken);
         // If it can't be delivered after all, it's sorted like any pickup and returns here.
         homes.startSearch(golem, taken.getType(), sourceBlock);
@@ -1306,6 +1313,7 @@ final class FurnaceFeeder {
         }
         plugin.rescue().noteHome(golem, container.getBlock()); // its [Fuel] or [Furnace Supply] container is its home now
         ReachDelivery.flashLid(plugin, sourceBlock);
+        plugin.gestures().take(golem, sourceBlock);
         hand(golem, taken);
         fromSupply.add(golem.getUniqueId());
         homes.startSearch(golem, taken.getType(), sourceBlock); // anything left over goes back here
@@ -1326,6 +1334,7 @@ final class FurnaceFeeder {
             return false;
         }
         furnace.getInventory().setFuel(null);
+        plugin.gestures().take(golem, block);
         plugin.rescue().noteHome(golem, block);
         hand(golem, fuel.clone());
         homes.startSearch(golem, Material.BUCKET, block); // if it isn't refilled or stored, it's sorted like anything else
@@ -1347,6 +1356,7 @@ final class FurnaceFeeder {
         }
         plugin.rescue().noteHome(golem, container.getBlock());
         ReachDelivery.flashLid(plugin, source);
+        plugin.gestures().take(golem, source);
         hand(golem, bucket);
         homes.startSearch(golem, Material.BUCKET, source);
         return start(golem, Kind.BUCKET_FILL, cauldron, null, Material.BUCKET, null, now) || refillOrStore(golem, bucket, now);
@@ -1378,6 +1388,7 @@ final class FurnaceFeeder {
             return refillOrStore(golem, held, now); // emptied meanwhile: another one, or back in [Fuel] to wait
         }
         cauldron.setType(Material.CAULDRON);
+        plugin.gestures().take(golem, cauldron);
         cauldron.getWorld().playSound(cauldron.getLocation().add(0.5, 0.5, 0.5), Sound.ITEM_BUCKET_FILL_LAVA, 0.8f, 1f);
         ItemStack lava = new ItemStack(Material.LAVA_BUCKET);
         hand(golem, lava);

@@ -36,7 +36,7 @@ is optional.
 - **Golems run your furnaces:** label a furnace `[raw iron]`. Golems feed it from your
   `[Furnace Supply]` chest, fuel it from your `[Fuel]` chest and sort what comes out.
 - **Golems give way** to each other in narrow aisles instead of getting stuck.
-- **Lids open** when golems move items for you, so you can see which chest they used.
+- **Lids open and golems reach in** when they move items for you, so you can see which chest they used.
 
 **Golems that look after themselves**
 - **Lost golems walk home**, and you're told where one is if it's stuck.
@@ -505,6 +505,13 @@ When a golem takes from or puts into a chest, barrel or shulker box, its lid ope
 moment, as with vanilla golems. This also happens when it fetches from `[Overflow]`, uses a
 `[Fuel]` or `[Furnace Supply]` container, puts an item back in its copper chest, or takes
 more from it for `carry-amount`.
+
+The golem also turns to the chest and reaches in, with vanilla's animation, including when
+the plugin moves the items itself: chests above vanilla's reach or past its range,
+`[Overflow]` fetches, returns and furnaces. It stands still for the 2 seconds the lid is
+open, as vanilla golems stand at a chest. A chest with another chest on top can't visibly
+open, for vanilla golems too, so in a tall stack the golem reaching in is what shows which
+stack it used.
 
 **Overflow chests that a hopper fills.** A hopper above the chest facing down, or beside it
 facing in, fills it a few items at a time. The output chest of a smelter is an example. Golems

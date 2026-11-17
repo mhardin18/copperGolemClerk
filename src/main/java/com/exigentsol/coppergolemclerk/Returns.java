@@ -137,6 +137,7 @@ final class Returns {
 
             markHomeless(inventory, type);
             ReachDelivery.flashLid(plugin, block);
+            plugin.gestures().put(golem, block);
             Location at = block.getLocation().clone().add(0.5, 0.5, 0.5);
             block.getWorld().playSound(at, Sound.ENTITY_ITEM_PICKUP, 0.6f, 0.8f);
             if (plugin.debug()) {

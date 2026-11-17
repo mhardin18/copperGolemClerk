@@ -7,6 +7,9 @@ commands:
   golemlids:
     description: Test-only. Lists open lids, and golems still holding a chest open, in a box.
     permission: golemtesthooks.lids
+  golemstates:
+    description: Test-only. Copper golem states (the chest-interaction animation) seen in a box since the last call.
+    permission: golemtesthooks.lids
 permissions:
   golemtesthooks.lids:
     default: op

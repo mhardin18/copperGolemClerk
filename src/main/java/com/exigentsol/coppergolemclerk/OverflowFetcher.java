@@ -434,6 +434,7 @@ final class OverflowFetcher {
             equipment.setItemInMainHandDropChance(GUARANTEED_DROP);
             homes.startSearch(golem, type, block);
             ReachDelivery.flashLid(plugin, block);
+            plugin.gestures().take(golem, block);
             block.getWorld().playSound(block.getLocation().clone().add(0.5, 0.5, 0.5), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
             if (plugin.debug()) {
                 plugin.getLogger().info(String.format("%s took %d %s from %s at %d,%d,%d",

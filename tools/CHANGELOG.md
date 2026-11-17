@@ -13,11 +13,14 @@ Versions are the plugin release each change came out with.
 - `lids`: a new suite for chest lids left open. Seven scenarios keep golems busy for 4 to 6 minutes (a sorting room, crowded chests, `[Overflow]` fetching, reach, furnaces, give-way in a corridor lined with chests, greetings) and fail if any lid stays open over 20 seconds, or if a golem is more than 3 blocks from a chest vanilla says it still has open (it was sent off mid-visit). `lids-greet-between-jobs` (and `-crowd`, with 4 golems) checks that a golem idle between jobs, looking into its empty copper chest, doesn't leave to greet while the lid is up; `lids-fetch-between-jobs` and `lids-furnace-between-jobs` check the same for being sent to fetch from `[Overflow]` or to refuel a furnace. Two probes: a golem killed with its lid open (the lid closes) and one frozen with NoAI (the lid stays open: how an interrupted visit leaves a lid up).
 - GolemTestHooks: `/golemlids x1 y1 z1 x2 y2 z2` lists open lids in a box and the golems vanilla still counts as holding a chest open.
 - `config`: `groups-report` checks that `/cgc groups` names a group entry that matches no item, an item put in a second group (and which group golems prefer), a built-in group the config has under its older name, and a changed group, and that it shows one group and one item.
+- `gestures`: a new suite for the chest animation when the plugin moves the items itself. A reach delivery to row 4, an `[Overflow]` fetch, and a furnace job (take from `[Furnace Supply]`, put into the furnace) each pass when the move happened and the golem held the matching state (`DROPPING_ITEM` or `GETTING_ITEM`) for at least 35 of the 40 ticks it's held still. `gesture-vanilla-baseline` checks the recorder against a plain vanilla delivery.
+- GolemTestHooks: `/golemstates x1 y1 z1 x2 y2 z2` records every copper golem's state in a box each tick and lists the stretches since the last call.
 - `options`: `option-unlimited-fetchers` checks that `fetchers-per-overflow-chest: 0` (no limit) lets more than 4 golems fetch from one overflow chest at once.
 
 ### Changed
 - `settings-report` expects the summary's new pointer to `/cgc groups` for item groups.
-- `impact.py` maps `SettingsReport` and `GroupsReport` to the `config` suite.
+- `impact.py` maps `SettingsReport` and `GroupsReport` to the `config` suite, `GolemGestures` to `gestures`, `reach` and `lids`, adds `gestures` for `FurnaceFeeder`, `OverflowFetcher` and `ReachDelivery`, and runs `lids` and `gestures` for changes to GolemTestHooks.
+- `SortingPaperTest`'s return tests use a golem that keeps its state (MockBukkit's doesn't), and check that a return shows the golem putting the item in.
 - `bad-numbers` sets `fetchers-per-overflow-chest` to -1 instead of 0, since 0 now means no limit, and checks for the console warning.
 
 ## 3.2.0 (2026-11-10)

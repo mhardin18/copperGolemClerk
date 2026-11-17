@@ -40,7 +40,7 @@ final class ReachDelivery {
     }
 
     private static final long SKIP_AFTER_GIVING_UP_MILLIS = 60_000;
-    private static final long LID_OPEN_TICKS = 40;
+    static final long LID_OPEN_TICKS = 40;
 
     private final CopperGolemClerk plugin;
     private final ChestMatcher matcher;
@@ -166,6 +166,7 @@ final class ReachDelivery {
             return; // changed while the golem walked over; its search goes on
         }
         flashLid(plugin, block);
+        plugin.gestures().put(golem, block);
         int before = held.getAmount();
         Map<Integer, ItemStack> leftover = inventory.addItem(held.clone());
         ItemStack rest = leftover.isEmpty() ? ItemStack.empty() : leftover.values().iterator().next();
