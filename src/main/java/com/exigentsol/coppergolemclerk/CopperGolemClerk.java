@@ -63,6 +63,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private GolemPaths paths;
     private volatile boolean avoidTrapdoors;
     private volatile boolean avoidPortals = true;
+    private volatile boolean avoidCauldrons = true;
+    private GolemCauldrons cauldrons;
     private UpdateChecker updates;
     private volatile boolean logGolemDeaths;
     private volatile int deliverReach = Reach.VANILLA;
@@ -161,6 +163,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         paths.setAvoidTrapdoors(avoidTrapdoors);
         getServer().getPluginManager().registerEvents(new GolemDeaths(this), this);
         getServer().getPluginManager().registerEvents(new GolemPortals(this), this);
+        cauldrons = new GolemCauldrons(this);
+        getServer().getPluginManager().registerEvents(cauldrons, this);
+        cauldrons.setEnabled(avoidCauldrons);
+        getServer().getScheduler().runTaskTimer(this, cauldrons::tick, 1, 1);
         modes = new GolemModes(this);
         getServer().getPluginManager().registerEvents(modes, this);
         getServer().getScheduler().runTaskTimer(this, modes::syncAll, 40, 40);
@@ -453,6 +459,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         tidyChests = config.getBoolean("tidy-chests", true);
         avoidTrapdoors = config.getBoolean("avoid-trapdoors", true);
         avoidPortals = config.getBoolean("avoid-portals", true);
+        avoidCauldrons = config.getBoolean("avoid-cauldrons", true);
+        if (cauldrons != null) {
+            cauldrons.setEnabled(avoidCauldrons);
+        }
         logGolemDeaths = config.getBoolean("log-golem-deaths", true);
         deliverReach = reachSetting(config, "deliver-reach");
         HomeFinder.setDestinations(destinationSetting(config));
@@ -934,6 +944,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     boolean avoidPortals() {
         return avoidPortals;
+    }
+
+    boolean avoidCauldrons() {
+        return avoidCauldrons;
     }
 
     boolean logGolemDeaths() {

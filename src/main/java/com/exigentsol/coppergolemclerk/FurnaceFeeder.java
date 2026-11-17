@@ -391,12 +391,22 @@ final class FurnaceFeeder {
         if (!plugin.furnaceFeeding() || held.isEmpty() || jobs.containsKey(id) || fromFurnace.contains(id)) {
             return jobs.containsKey(id);
         }
+        long now = System.currentTimeMillis();
+        Map.Entry<Material, Long> no = declined.get(id);
+        boolean recentlyDeclined = no != null && no.getKey() == held.getType() && now - no.getValue() < OFFER_COOLDOWN_MILLIS;
+        if (held.getType() == Material.BUCKET) {
+            if (!recentlyDeclined && offerBucket(golem, held, now)) {
+                return true;
+            }
+            if (!recentlyDeclined) {
+                declined.put(id, Map.entry(held.getType(), now));
+            }
+            return false;
+        }
         if (!fromSupply.contains(id) && !cameFromSupplyCopperChest(golem)) {
             return false; // only items from a [Furnace Supply] container go to furnaces
         }
-        long now = System.currentTimeMillis();
-        Map.Entry<Material, Long> no = declined.get(id);
-        if (no != null && no.getKey() == held.getType() && now - no.getValue() < OFFER_COOLDOWN_MILLIS) {
+        if (recentlyDeclined) {
             return false;
         }
         List<HomeFinder.Pos> stops = feedStops(golem, held, now);
@@ -409,6 +419,46 @@ final class FurnaceFeeder {
         }
         declined.put(id, Map.entry(held.getType(), now));
         return false;
+    }
+
+    /** What happens to empty buckets a golem picks up for sorting (from [Overflow] or a copper chest). See refillPlan. */
+    enum Refill { FILL, WAIT_IN_FUEL, WAIT_IN_OVERFLOW, SORT }
+
+    /**
+     * Empty buckets picked up for sorting are refilled when a lava cauldron is near and a [Fuel]
+     * container has room for the lava bucket:
+     * - FILL: a single bucket and a full cauldron: straight to the cauldron, then into [Fuel].
+     * - WAIT_IN_FUEL: more than one, or no cauldron full yet (dripping lava refills one): into a
+     *   [Fuel] container to wait; golems take them out one at a time as cauldrons fill (upkeep 2b).
+     *   Never into a [Fuel] container that feeds a furnace through a hopper: the hopper would push
+     *   the empty bucket into the furnace's fuel slot, and a hopper under the furnace back out.
+     * - WAIT_IN_OVERFLOW: the only [Fuel] containers feed furnaces: buckets stay in [Overflow]
+     *   until a cauldron is full, and are fetched one at a time then.
+     * - SORT: no lava cauldron near, no [Fuel] room, or furnace-feeding off: sorted like anything else.
+     */
+    Refill refillPlan(CopperGolem golem, int amount) {
+        if (!plugin.furnaceFeeding() || fuelStore(golem, new ItemStack(Material.LAVA_BUCKET)) == null) {
+            return Refill.SORT;
+        }
+        Block full = lavaCauldron(golem);
+        boolean fullUsable = full != null && claimAllows(golem, full)
+                && !takenByOther(golem.getUniqueId(), HomeFinder.Pos.of(full), Kind.BUCKET_FETCH, Kind.BUCKET_FILL);
+        if (fullUsable && amount == 1) {
+            return Refill.FILL;
+        }
+        Block drip = fullUsable ? full : dripCauldron(golem);
+        if (drip == null || !claimAllows(golem, drip)) {
+            return Refill.SORT;
+        }
+        return fuelStore(golem, new ItemStack(Material.BUCKET, amount)) != null ? Refill.WAIT_IN_FUEL : Refill.WAIT_IN_OVERFLOW;
+    }
+
+    private boolean offerBucket(CopperGolem golem, ItemStack held, long now) {
+        return switch (refillPlan(golem, held.getAmount())) {
+            case FILL -> start(golem, Kind.BUCKET_FILL, lavaCauldron(golem), null, Material.BUCKET, null, now);
+            case WAIT_IN_FUEL -> start(golem, Kind.FUEL_STORE, fuelStore(golem, held), null, Material.BUCKET, null, now);
+            default -> false; // sorted like anything else
+        };
     }
 
     /**
@@ -850,13 +900,18 @@ final class FurnaceFeeder {
         return null;
     }
 
-    /** The nearest [Fuel] container with room for this item, or null. */
+    /**
+     * The nearest [Fuel] container with room for this item, or null. Never one that feeds a
+     * furnace through a hopper for an empty bucket: the hopper would put it in the fuel slot.
+     */
     private Block fuelStore(CopperGolem golem, ItemStack item) {
         for (BlockState state : HomeFinder.containersInRange(golem, t -> !isFurnace(t) && !HopperLines.isHopper(t))) {
             if (state instanceof Container container && !HomeFinder.isLocked(state)) {
                 ChestLabels.Labels labels = ChestLabels.of(container.getInventory(), plugin.groups(), false, plugin.signLabels());
                 if (labels.fuel() && !labels.noGolems() && ChestMatcher.hasRoom(item, container.getInventory())
-                        && claimAllows(golem, state.getBlock())) {
+                        && claimAllows(golem, state.getBlock())
+                        && (item.getType() != Material.BUCKET || !HopperLines.feedsFurnace(state.getWorld(),
+                            HomeFinder.halvesOf(container.getInventory(), state.getBlock())))) {
                     return state.getBlock();
                 }
             }

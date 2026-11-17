@@ -207,6 +207,7 @@ error or exception in the server log during a scenario fails it.
 | rescue | lost or stuck golems (`rescue-lost-golems`): walking back to their home (copper chest, furnace, `[Furnace Supply]`), alerts, teleport home, adopting a new home, golems with no home seeking work |
 | stats | `/cgc stats` counts deliveries and saves them to `stats.yml` |
 | lids | chest lids left open: busy rooms, fetching, reach, furnaces, give-way corridors and greetings soak for minutes while every lid on the platform is sampled; one open over 20 s fails, naming the golem still holding it (needs GolemTestHooks) |
+| cauldrons | `avoid-cauldrons`: golems never step into a cauldron of lava, water or powder snow set into the floor (walking past, pushed, dropped in, giving way, with the setting off and in vanilla mode as controls); empty buckets from `[Overflow]` or a copper chest refilled at a lava cauldron for `[Fuel]`, and when they're sorted instead; the survival hopper-fed smelter |
 | gestures | the chest animation for moves the plugin makes itself: reach deliveries, [Overflow] fetches, furnace takes and puts, with a vanilla delivery as the control (needs GolemTestHooks) |
 | traffic | `golems-give-way`: golems meeting in corridors and doorways step aside or back out, avoiding fire, cobwebs and holes |
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |

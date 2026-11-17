@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -40,6 +41,8 @@ abstract class PaperTest {
     CopperGolemClerk plugin;
     WorldMock world;
 
+    private static final java.util.function.ToDoubleFunction<Block> TRAFFIC_TOP = GolemTraffic.collisionTop;
+
     @BeforeEach
     void startServer() {
         server = MockBukkit.mock();
@@ -49,6 +52,8 @@ abstract class PaperTest {
         ChestLabels.holderOf = inv -> inv.getHolder();
         ChestLabels.locationOf = inv -> inv.getHolder() instanceof BlockState s ? s.getLocation() : inv.getLocation();
         GolemTraffic.passable = b -> !b.getType().isSolid();
+        GolemTraffic.collisionTop = b -> b.getType().isSolid() ? 1.0 : -1;
+        GolemCauldrons.boxOf = g -> BoundingBox.of(g.getLocation().clone().add(0, 0.5, 0), 0.25, 0.5, 0.25);
         FurnaceFeeder.dripsThrough = b -> !b.getType().isSolid();
         CauldronIndex.clear();
         CauldronIndex.mayHaveCauldron = chunk -> true; // MockBukkit lacks Chunk.contains and snapshots
@@ -87,6 +92,8 @@ abstract class PaperTest {
         ChestLabels.holderOf = inv -> inv.getHolder(false);
         ChestLabels.locationOf = org.bukkit.inventory.Inventory::getLocation;
         GolemTraffic.passable = org.bukkit.block.Block::isPassable;
+        GolemTraffic.collisionTop = TRAFFIC_TOP;
+        GolemCauldrons.boxOf = org.bukkit.entity.CopperGolem::getBoundingBox;
         CauldronIndex.clear();
         ItemFinder.hideFromOthers = d -> d.setVisibleByDefault(false);
         MockBukkit.unmock();

@@ -68,7 +68,8 @@ We checked.)
 - **Fuel with common sense:** charcoal first, then coal. Lava buckets are used only when there's
   a big pile to cook, so a bucket that lasts 100 items isn't burnt on eight ingots.
 - **Lava on tap:** put a cauldron under pointed dripstone with lava above it, and golems refill
-  your empty buckets as it fills.
+  your empty buckets as it fills. Empty buckets that land in `[Overflow]` or a copper chest come
+  back full too, as long as a `[Fuel]` chest has room for them.
 - **Emptied for you:** finished items go into your storage. A hopper under the furnace works too.
 - **Only what you label:** unlabelled furnaces are left alone, and nothing from the rest of your
   storage wanders into a fire.
@@ -173,7 +174,9 @@ Neither chest receives sorted items unless it also has an item label. Put both o
 ### 🦺 Look after themselves
 - A golem that falls down a shaft or wanders off **walks back home**, the last place it got
   work from. One that's stuck gets reported, with where it is.
-- Golems **keep off trapdoors** and **stay out of portals**.
+- Golems **keep off trapdoors**, **stay out of portals** and **keep out of cauldrons** of
+  lava, water or powder snow, walking around them (vanilla golems can slip into a lava
+  cauldron and burn).
 - A golem **finishes at a chest** before it goes to say hello or steps aside for another
   golem, so lids close behind it.
 - Every copper golem death is written to the server log with its cause, so you can see what

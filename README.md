@@ -644,6 +644,23 @@ dripstone hangs from. Until it's full, golems put the empty buckets in a `[Fuel]
 An idle golem takes one to the cauldron as soon as it fills and brings the lava bucket back.
 With no such cauldron in range and none full, the empty bucket is sorted like anything else.
 
+Empty buckets that turn up elsewhere get the same treatment, as long as a lava cauldron is in
+range and a `[Fuel]` container has room for the lava bucket:
+
+- Idle golems fetch empty buckets out of `[Overflow]` one at a time while a cauldron is full,
+  fill each one and put the lava bucket in `[Fuel]`. They do this even when no chest would take
+  an empty bucket.
+- Buckets a golem picks up from a copper chest go the same way: one bucket straight to a full
+  cauldron, more than one into `[Fuel]` to wait.
+- Empty buckets never go into a `[Fuel]` container that feeds a furnace through a hopper, since
+  the hopper would push them into the furnace. If that's the only `[Fuel]` container, the buckets
+  wait in `[Overflow]` until a cauldron is full.
+- Without a lava cauldron in range, or with no room in `[Fuel]`, buckets are sorted like anything
+  else.
+
+So a hopper-fed furnace works too. Put a `[Fuel]` sign on the chest that feeds its fuel hopper,
+and the empty buckets its bottom hopper drops into `[Overflow]` come back full.
+
 **Hand-built smelters.** A chest sitting on a hopper that leads into a furnace (directly or
 through more hoppers) is never used for sorting. Golems don't fill your smelter's input or
 fuel chest with random items. Golems don't feed hoppers, so label the furnaces themselves if
@@ -688,6 +705,20 @@ and unable to get back. With `avoid-portals` (on by default), golems never go th
 Nether portal, End portal or End gateway. One that steps into a portal just stays in its own
 world. A golem on a lead or riding a boat or minecart goes through as usual, so you can
 still take golems to another dimension.
+
+### Golems keep out of cauldrons
+
+A golem that ends up in a lava cauldron burns to death. Vanilla golems plan their paths
+around lava cauldrons, but nothing stops one that slips at the edge of its path or is
+pushed. Water and powder snow cauldrons count as floor to vanilla, so a golem walks across
+one set into the floor and drops in. With `avoid-cauldrons` (on by default), golems never
+step into or onto a cauldron holding lava, water or powder snow. The step is undone, and the
+golem is walked around the cauldron to where it was going, if there's a way within 24 blocks.
+One falling into a cauldron from above is set down beside it. A golem that touches a lava
+cauldron anyway (thrown in, say) isn't hurt or set alight. Golems filling buckets at a lava
+cauldron stand beside it, as before. A golem whose only way to a chest is across a filled
+cauldron won't reach it, and its item goes elsewhere as usual. A golem on a lead or riding
+something is left alone.
 
 ### Bigger storage areas
 
@@ -1216,6 +1247,7 @@ line number, and the old settings are kept.
 | `golems-give-way` | `true` | A golem stuck nose to nose with another steps aside (backing up in a one-wide corridor). Empty hands give way to full ones. |
 | `avoid-trapdoors` | `true` | Golems never walk onto or through trapdoors (vanilla golems fall through open ones). |
 | `avoid-portals` | `true` | Golems never go through Nether portals, End portals or End gateways, unless on a lead or riding something. |
+| `avoid-cauldrons` | `true` | Golems never step into or onto a cauldron holding lava, water or powder snow (vanilla golems can slip into a lava cauldron and burn) and are walked around one; touching a lava cauldron doesn't hurt them. Not for golems on a lead or riding something. |
 | `rescue-lost-golems` | `true` | A golem walks home when it has no work place in range and its home (the last place it got work from) is more than 40 blocks away, or 12 up or down. If it can't get there, or is stuck where it can't reach a copper chest, its owner gets an alert. A golem with no home goes to the nearest work place within 64 blocks. |
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its home, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem says hello to an iron or snow golem within 16 blocks of its home (see [Golems say hello](#golems-say-hello)). |
