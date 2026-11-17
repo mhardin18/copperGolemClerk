@@ -73,6 +73,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile boolean joinSummary = true;
     private GolemGreetings greetings;
     private ChestVisits chestVisits;
+    private GolemGestures gestures;
     private GolemLabels labels;
     private volatile boolean statusLabels = true;
     private volatile boolean statusLabelsEverywhere;
@@ -150,6 +151,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         traffic.setEnabled(giveWay);
         chestVisits = new ChestVisits();
         getServer().getPluginManager().registerEvents(chestVisits, this);
+        gestures = new GolemGestures(this);
+        getServer().getPluginManager().registerEvents(gestures, this);
         greetings = new GolemGreetings(this, listener.fetcher(), listener.returns(), traffic, chestVisits);
         getServer().getScheduler().runTaskTimer(this, greetings::tick, 10, 10);
         paths = new GolemPaths(this);
@@ -279,6 +282,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         if (traffic != null) {
             traffic.setEnabled(false);
+        }
+        if (gestures != null) {
+            gestures.releaseAll();
         }
         if (paths != null) {
             paths.setSearchDistance(HomeFinder.VANILLA_DISTANCE); // and vanilla path lengths
@@ -872,6 +878,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     GolemTraffic traffic() {
         return traffic;
+    }
+
+    GolemGestures gestures() {
+        return gestures;
     }
 
     GolemModes modes() {

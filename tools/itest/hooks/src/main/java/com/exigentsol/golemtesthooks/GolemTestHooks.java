@@ -13,7 +13,11 @@ import org.bukkit.entity.Entity;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -33,12 +37,66 @@ import org.bukkit.plugin.java.JavaPlugin;
  * plugin's Lidded.open() sets), and "GOLEM x,y,z -> x,y,z" for each copper golem in the box
  * that still counts as having a chest open (vanilla's openedChestPos). Reads server
  * internals by reflection (Paper runs Mojang-mapped), so it may break with a new version.
+ *
+ * And /golemstates x1 y1 z1 x2 y2 z2: the first call starts watching the box; every tick
+ * after that, each copper golem in it has its state (CopperGolem.getGolemState) noted.
+ * Each call answers with the non-IDLE stretches that ended since the previous call, as
+ * "STATE ticks", then "NOW STATE ticks" for any still going ("none" if there were none).
  */
 public final class GolemTestHooks extends JavaPlugin implements Listener {
+
+    /** One golem's current state and the tick it began. */
+    private record Stretch(CopperGolem.State state, long since) {
+    }
+
+    private final Map<String, BoundingBox> stateBoxes = new HashMap<>();
+    private final Map<String, List<String>> ended = new HashMap<>();
+    private final Map<UUID, Stretch> states = new HashMap<>();
+    private long tick;
 
     @Override
     public void onEnable() {
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getScheduler().runTaskTimer(this, this::noteStates, 1, 1);
+    }
+
+    private void noteStates() {
+        tick++;
+        if (stateBoxes.isEmpty()) {
+            return;
+        }
+        for (CopperGolem golem : getServer().getWorlds().getFirst().getEntitiesByClass(CopperGolem.class)) {
+            CopperGolem.State now = golem.getGolemState();
+            Stretch was = states.get(golem.getUniqueId());
+            if (was != null && was.state() == now) {
+                continue;
+            }
+            states.put(golem.getUniqueId(), new Stretch(now, tick));
+            if (was == null || was.state() == CopperGolem.State.IDLE) {
+                continue;
+            }
+            for (Map.Entry<String, BoundingBox> box : stateBoxes.entrySet()) {
+                if (box.getValue().contains(golem.getLocation().toVector())) {
+                    ended.computeIfAbsent(box.getKey(), k -> new ArrayList<>()).add(was.state() + " " + (tick - was.since()));
+                }
+            }
+        }
+    }
+
+    private String golemStates(int[] n) {
+        String key = java.util.Arrays.toString(n);
+        BoundingBox box = new BoundingBox(Math.min(n[0], n[3]), Math.min(n[1], n[4]), Math.min(n[2], n[5]),
+                Math.max(n[0], n[3]) + 1, Math.max(n[1], n[4]) + 1, Math.max(n[2], n[5]) + 1);
+        stateBoxes.put(key, box);
+        List<String> out = new ArrayList<>(ended.getOrDefault(key, List.of()));
+        ended.remove(key);
+        for (CopperGolem golem : getServer().getWorlds().getFirst().getEntitiesByClass(CopperGolem.class)) {
+            Stretch s = states.get(golem.getUniqueId());
+            if (s != null && s.state() != CopperGolem.State.IDLE && box.contains(golem.getLocation().toVector())) {
+                out.add("NOW " + s.state() + " " + (tick - s.since()));
+            }
+        }
+        return out.isEmpty() ? "none" : String.join(" | ", out);
     }
 
     private static Material marker(Location chest) {
@@ -82,12 +140,16 @@ public final class GolemTestHooks extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length != 6) {
-            sender.sendMessage("Usage: /golemlids x1 y1 z1 x2 y2 z2");
+            sender.sendMessage("Usage: /" + command.getName() + " x1 y1 z1 x2 y2 z2");
             return true;
         }
         int[] n = new int[6];
         for (int i = 0; i < 6; i++) {
             n[i] = Integer.parseInt(args[i]);
+        }
+        if (command.getName().equals("golemstates")) {
+            sender.sendMessage(golemStates(n));
+            return true;
         }
         World world = getServer().getWorlds().getFirst();
         List<String> out = new ArrayList<>();

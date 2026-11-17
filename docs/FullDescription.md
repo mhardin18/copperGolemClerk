@@ -130,7 +130,7 @@ over for every ingot.
 - They **step aside** for each other in one-wide aisles instead of getting stuck.
 
 Each of these is an optional setting:
-- Reach chests stacked up to **6 high** (vanilla: 2).
+- Reach chests stacked up to **6 high** (vanilla: 2). Golems reach in with vanilla's animation, so you can see them use the high ones.
 - Look up to **128 blocks** away for chests (vanilla: 32).
 - Carry up to **64 items** a trip (vanilla: 16).
 - Use **barrels and shulker boxes** as well as chests.

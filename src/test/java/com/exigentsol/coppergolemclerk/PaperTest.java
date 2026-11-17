@@ -161,6 +161,33 @@ abstract class PaperTest {
         return world.spawn(new Location(world, x + 0.5, FLOOR, z + 0.5), CopperGolem.class);
     }
 
+    /** MockBukkit's copper golem doesn't implement its state (the chest animation); this one keeps it. */
+    static final class StatefulGolem extends org.mockbukkit.mockbukkit.entity.CopperGolemMock {
+        private CopperGolem.State state = CopperGolem.State.IDLE;
+
+        StatefulGolem(ServerMock server) {
+            super(server, java.util.UUID.randomUUID());
+        }
+
+        @Override
+        public CopperGolem.State getGolemState() {
+            return state;
+        }
+
+        @Override
+        public void setGolemState(CopperGolem.State state) {
+            this.state = state;
+        }
+    }
+
+    /** A golem for code that plays the chest animation (GolemGestures): like golem(), with a state. */
+    CopperGolem statefulGolem(double x, double z) {
+        StatefulGolem golem = new StatefulGolem(server);
+        golem.setLocation(new Location(world, x + 0.5, FLOOR, z + 0.5));
+        server.registerEntity(golem);
+        return golem;
+    }
+
     /** Switch a golem to vanilla mode (or back), as right-clicking it with bamboo saves it. */
     void setVanilla(CopperGolem golem, boolean vanilla) {
         var key = new org.bukkit.NamespacedKey(plugin, "mode");

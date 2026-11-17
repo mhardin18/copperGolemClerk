@@ -49,10 +49,11 @@ SOURCE_SUITES = {
     "ConfigUpgrade": ["config"],
     # Settings live here too: options and config are added when the diff reads settings (see suites_for).
     "CopperGolemClerk": ["lifecycle", "commands"],
-    "FurnaceFeeder": FURNACE,
+    "FurnaceFeeder": FURNACE + ["gestures"],
     "GolemCarry": ["carry", "edge26"],
     "GolemDeaths": ["world", "modes"],
     "GolemFinder": ["finder"],
+    "GolemGestures": ["gestures", "reach", "lids"],
     "GolemGreetings": ["greet", "lids"],
     "ChestVisits": ["greet", "lids"],
     "GolemLabels": ["labels"],
@@ -70,10 +71,10 @@ SOURCE_SUITES = {
     "ItemFinder": ["find"],
     "ItemGroups": ["core", "edge", "filters", "find"],
     "LabelAdvisor": ["commands", "find"],
-    "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach"] + ["distance", "work-order"],
+    "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach", "gestures"] + ["distance", "work-order"],
     "PaperSupport": [],
     "Reach": ["reach", "destinations", "edge30"],
-    "ReachDelivery": ["reach", "destinations", "edge30"] + ["distance"],
+    "ReachDelivery": ["reach", "destinations", "edge30", "gestures"] + ["distance"],
     "Returns": ["core", "edge", "world", "edge26"],
     "SettingsReport": ["config"],
     "SortListener": SORTING + ["reach", "destinations", "conflicts"] + ["distance", "work-order"],
@@ -83,7 +84,7 @@ SOURCE_SUITES = {
     "Versions": ["commands"],
     "src/main/resources/config.yml": ["options", "config", "distance"],
     "src/main/resources/plugin.yml": ["commands"],
-    "tools/itest/hooks/": ["conflicts"],
+    "tools/itest/hooks/": ["conflicts", "lids", "gestures"],
 }
 # Changes that need no in-game tests of their own (the smoke set still runs).
 NO_SUITES = (".md", "LICENSE", ".github/", "docs/", "src/test/", "tools/board/", ".gitignore")

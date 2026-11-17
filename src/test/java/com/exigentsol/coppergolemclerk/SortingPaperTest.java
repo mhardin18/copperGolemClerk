@@ -266,11 +266,12 @@ class SortingPaperTest extends PaperTest {
     @Test
     void returnsToTheCopperChestAndMarksHomeless() {
         Block copper = copperChest(0, 0);
-        CopperGolem golem = golem(1, 0);
+        CopperGolem golem = statefulGolem(1, 0);
         golem.getEquipment().setItemInMainHand(item(Material.SCULK_SHRIEKER, 7));
         Returns returns = plugin.sortListener().returns();
         assertTrue(returns.returnItem(golem, world, HomeFinder.Pos.of(copper)));
         assertTrue(golem.getEquipment().getItemInMainHand().isEmpty());
+        assertEquals(CopperGolem.State.DROPPING_ITEM, golem.getGolemState(), "shows putting it in");
         assertTrue(inv(copper).contains(Material.SCULK_SHRIEKER, 7));
         assertTrue(returns.isHomeless(inv(copper), Material.SCULK_SHRIEKER));
         assertFalse(returns.hasPickable(inv(copper)), "only homeless items left: nothing to take");
@@ -292,7 +293,7 @@ class SortingPaperTest extends PaperTest {
         Block filtered = copperChest(2, 0);
         sign(filtered, "[Only Logs]");
         Block plain = copperChest(6, 0);
-        CopperGolem golem = golem(4, 2);
+        CopperGolem golem = statefulGolem(4, 2);
         golem.getEquipment().setItemInMainHand(item(Material.DIRT, 3));
         assertTrue(plugin.sortListener().returns().returnItem(golem, world, null));
         assertFalse(inv(filtered).contains(Material.DIRT));
