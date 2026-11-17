@@ -218,6 +218,12 @@ furnace-feeding: true
 # buckets go into a [Fuel] container, and an idle golem fills one as soon as it is full.
 # With no such cauldron nearby and none full, an empty bucket is sorted like anything
 # else.
+# Empty buckets golems pick up for sorting (from an [Overflow] chest or a copper chest)
+# are refilled the same way when a lava cauldron is nearby and a [Fuel] container has
+# room: one at a time straight to a full cauldron, or into [Fuel] to wait. Empty buckets
+# never go into a [Fuel] container that feeds a furnace through a hopper (the hopper
+# would push them into the furnace); with only those, they wait in [Overflow] until a
+# cauldron is full. Otherwise they are sorted like anything else.
 furnace-fuel: [charcoal, coal, lava_bucket]
 # The fuel golems bring also covers this many MORE items than are waiting (0 to 64).
 # The next load of items then doesn't need a fuel trip of its own. Golems only fetch
@@ -349,6 +355,16 @@ avoid-trapdoors: true
 # into a portal stays in its own world near its copper chest.
 # Golems on a lead or riding something go through as usual (a player is taking them).
 avoid-portals: true
+
+# Golems never step into or onto a cauldron holding lava, water or powder snow.
+# Vanilla golems keep their paths away from lava cauldrons but can still slip or be
+# pushed into one (and burn), and walk across a water or powder snow cauldron set into
+# the floor and drop in. A golem turned back from one is walked around it (up to 24
+# blocks out of its way). One that touches a lava cauldron anyway isn't hurt or set
+# alight. Golems filling buckets at a lava cauldron stand beside it as before.
+# Golems stepping aside for each other (golems-give-way) avoid these cauldrons too.
+# Golems on a lead or riding something are left alone (a player is taking them).
+avoid-cauldrons: true
 
 # Once a week (and a minute after the server starts), check GitHub for a newer release
 # of this plugin. If there is one, it is logged, and admins (op, or the

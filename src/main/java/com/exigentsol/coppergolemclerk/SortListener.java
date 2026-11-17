@@ -399,7 +399,8 @@ public final class SortListener implements Listener {
                         usable.add(p);
                     }
                 }
-                if (!usable.isEmpty() && found.high().containsAll(usable)) {
+                // A furnace or a lava cauldron comes first, as when vanilla asks (onValidateTarget).
+                if (!usable.isEmpty() && found.high().containsAll(usable) && !furnaces.offer(golem, held)) {
                     startHighDelivery(golem, held, usable);
                 }
             }

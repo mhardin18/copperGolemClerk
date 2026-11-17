@@ -316,6 +316,15 @@ final class OverflowFetcher {
         }
         Set<Material> withHome = homes.typesWithHome(golem, candidates);
         for (ItemStack stack : candidates) { // first in chest order
+            if (stack.getType() == Material.BUCKET && furnaces != null) {
+                FurnaceFeeder.Refill plan = bucketPlan(golem);
+                if (plan == FurnaceFeeder.Refill.WAIT_IN_OVERFLOW) {
+                    continue; // they wait here until a lava cauldron is full
+                }
+                if (plan != FurnaceFeeder.Refill.SORT) {
+                    return Material.BUCKET; // to be filled at a lava cauldron for a [Fuel] container
+                }
+            }
             if (withHome.contains(stack.getType())) {
                 return stack.getType();
             }
@@ -392,6 +401,12 @@ final class OverflowFetcher {
 
     /** True if a chest in the golem's range (from where it is now) would still take this item from the overflow chest. */
     private boolean stillHasHome(CopperGolem golem, Inventory overflow, Material type) {
+        if (type == Material.BUCKET && furnaces != null) {
+            FurnaceFeeder.Refill plan = bucketPlan(golem);
+            if (plan != FurnaceFeeder.Refill.SORT) {
+                return plan != FurnaceFeeder.Refill.WAIT_IN_OVERFLOW;
+            }
+        }
         for (ItemStack stack : overflow.getStorageContents()) {
             if (stack != null && stack.getType() == type) {
                 return !homes.typesWithHome(golem, List.of(stack)).isEmpty();
@@ -404,6 +419,9 @@ final class OverflowFetcher {
     private void takeItem(CopperGolem golem, Block block, Inventory inventory, Material type, String what) {
         ItemStack[] contents = inventory.getStorageContents();
         int want = GolemCarry.amountFor(type, plugin.carryAmount());
+        if (type == Material.BUCKET && furnaces != null && furnaces.refillPlan(golem, 1) == FurnaceFeeder.Refill.FILL) {
+            want = 1; // one at a time, straight to a full lava cauldron
+        }
         ItemStack taken = null;
         for (int slot = 0; slot < contents.length && (taken == null || taken.getAmount() < want); slot++) {
             ItemStack stack = contents[slot];
@@ -448,6 +466,16 @@ final class OverflowFetcher {
         fetching.remove(golem.getUniqueId());
         golem.getPathfinder().stopPathfinding();
         nextCheck.put(golem.getUniqueId(), now + (gaveUp ? WAIT_AFTER_GIVING_UP_MILLIS : CHECK_EVERY_MILLIS));
+    }
+
+    /**
+     * What a fetch of empty buckets from [Overflow] is for (FurnaceFeeder.refillPlan): FILL for
+     * one bucket when a lava cauldron is full (only one is taken), else as for a full load.
+     */
+    private FurnaceFeeder.Refill bucketPlan(CopperGolem golem) {
+        FurnaceFeeder.Refill one = furnaces.refillPlan(golem, 1);
+        return one == FurnaceFeeder.Refill.FILL ? one
+                : furnaces.refillPlan(golem, GolemCarry.amountFor(Material.BUCKET, plugin.carryAmount()));
     }
 
     private static boolean isIdle(CopperGolem golem) {

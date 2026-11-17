@@ -5,13 +5,15 @@ lost or duplicated.
 """
 import re
 
-from arena import LUCK, Trigger, conserved, expect, scenario
+from arena import KNOWN_HARMLESS, LUCK, Trigger, conserved, expect, scenario
 from suite_furnace import cooked, furnace, hopper, supply
 from suite_options import set_options
 
 
 def no_errors(c):
-    bad = [l for l in c.log_lines() if re.search(r"Exception|\bERROR\b|Could not pass event", l)]
+    # Not the lines run.py also lets through: another platform summoning an item frame logs one.
+    bad = [l for l in c.log_lines() if re.search(r"Exception|\bERROR\b|Could not pass event", l)
+           and not any(k in l for k in KNOWN_HARMLESS)]
     return not bad, f"no exceptions in the log; got: {bad[:1]}"
 
 
