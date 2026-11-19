@@ -12,6 +12,10 @@ This is a Paper plugin for **Paper 26.3**, build 190 or newer (Java 25). It work
 the box with about 50 item groups that cover nearly every survival item. Everything else
 is optional.
 
+Download it from [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
+[Modrinth](https://modrinth.com/plugin/copper-golem-clerk) or
+[GitHub](https://github.com/mhardin18/copperGolemClerk/releases/latest).
+
 ## Features
 
 **Sorting that understands your storage**
@@ -87,9 +91,11 @@ Spigot and Bukkit aren't supported. The plugin uses Paper-only golem events.
 
 ## Install
 
-1. Download `CopperGolemClerk-<version>.jar` from the
-   [latest release](https://github.com/mhardin18/copperGolemClerk/releases/latest).
-   Release tags name the Paper version they're for (for example `v1.0.0-paper26.3`).
+1. Download `CopperGolemClerk-<version>.jar` from
+   [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
+   [Modrinth](https://modrinth.com/plugin/copper-golem-clerk) or the
+   [latest GitHub release](https://github.com/mhardin18/copperGolemClerk/releases/latest).
+   GitHub release tags name the Paper version they're for (for example `v1.0.0-paper26.3`).
 2. Put the jar in your server's `plugins/` folder.
 3. Restart the server (don't use `/reload`).
 4. Check the console for `Enabling CopperGolemClerk`, or run `/plugins` in game.
