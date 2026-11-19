@@ -87,8 +87,7 @@ We checked.)
 - **Fuel with common sense:** charcoal first, then coal. Lava buckets are used only when there's
   a big pile to cook, so a bucket that lasts 100 items isn't burnt on eight ingots.
 - **Lava on tap:** put a cauldron under pointed dripstone with lava above it, and golems refill
-  your empty buckets as it fills. Empty buckets that land in `[Overflow]` or a copper chest come
-  back full too, as long as a `[Fuel]` chest has room for them.
+  your empty buckets as it fills.
 - **Emptied for you:** finished items go into your storage. A hopper under the furnace works too.
 - **Only what you label:** unlabelled furnaces are left alone, and nothing from the rest of your
   storage wanders into a fire.
@@ -187,7 +186,9 @@ Don't put these on a furnace. `[Furnace]` is the furnace item, which nothing coo
 Lava buckets go in only when a furnace has 100 or more items to cook. Empty buckets go back to
 a `[Fuel]` chest and wait for a lava cauldron that dripstone refills. A `[Fuel]` chest that
 feeds a furnace through a hopper doesn't take empty buckets (the hopper would push them into
-the furnace); buckets in `[Overflow]` wait there instead.
+the furnace); buckets in `[Overflow]` wait there instead. Empty buckets golems pick up for
+sorting, from `[Overflow]` or a copper chest, are refilled the same way when a lava cauldron is
+in range and a `[Fuel]` chest has room.
 
 Neither chest receives sorted items unless it also has an item label. Put both on one sign:
 `[Fuel] [charcoal]` or `[Furnace Supply] [raw iron]`.
@@ -285,10 +286,12 @@ All permissions are standard nodes, so they work with LuckPerms or any other per
 | `coppergolemclerk.toggle` | everyone | switching a golem to vanilla and back |
 | `coppergolemclerk.allclaims` | op | the commands above see into every claim |
 | `coppergolemclerk.alerts` | op | alerts about things outside any claim, where there's no owner to tell |
+| `coppergolemclerk.teleport` | nobody | lost golems in the player's claims may be teleported home, if the server sets `lost-golem-teleport-home` |
 | `coppergolemclerk.admin` | op | all `/cgc` commands |
 
 ## 🌐 Links
 
+- Download: [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk) and [Modrinth](https://modrinth.com/plugin/copper-golem-clerk)
 - Full documentation and every setting: [README on GitHub](https://github.com/mhardin18/copperGolemClerk#readme)
 - Changelog: [CHANGELOG.md](https://github.com/mhardin18/copperGolemClerk/blob/main/CHANGELOG.md)
 - Bugs and ideas: [GitHub issues](https://github.com/mhardin18/copperGolemClerk/issues)

@@ -96,7 +96,7 @@ Spigot and Bukkit aren't supported. The plugin uses Paper-only golem events.
    [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
    [Modrinth](https://modrinth.com/plugin/copper-golem-clerk) or the
    [latest GitHub release](https://github.com/mhardin18/copperGolemClerk/releases/latest).
-   GitHub release tags name the Paper version they're for (for example `v1.0.0-paper26.3`).
+   GitHub release tags name the Paper version they're for (for example `v3.2.0-paper26.3`).
 2. Put the jar in your server's `plugins/` folder.
 3. Restart the server (don't use `/reload`).
 4. Check the console for `Enabling CopperGolemClerk`, or run `/plugins` in game.
@@ -130,7 +130,8 @@ to date at startup:
 - Your values are never changed.
 - A note at the end of a setting's line (`carry-amount: 32  # our farm`) stays. A comment on
   its own line above a setting is replaced.
-- The old file is saved as `config-before-<version>.yml`.
+- Settings that are no longer used are removed, and the console says why.
+- The old file is saved as `config-before-<version>.yml` before anything is changed.
 - The console lists what was added and which explanations changed.
 
 If the plugin can't write `config.yml` (a permissions problem), the console says so and new
@@ -333,8 +334,8 @@ A rule too long for one line can carry on to the next
 | `[Overflow]`| anything with no other home      |
 | `[No Golems]`| nothing: golems leave it alone  |
 | `[Only Logs]`| on a copper chest: golems take only logs out |
-| `[Fuel]` or `[Fuels]` | golems take furnace fuel from it (furnace feeding) |
-| `[Furnace Supply]` | golems take items to cook from it (furnace feeding) |
+| `[Fuel]` or `[Fuels]` | golems take furnace fuel from it ([furnace feeding](#golems-run-your-furnaces)) |
+| `[Furnace Supply]` | golems take items to cook from it ([furnace feeding](#golems-run-your-furnaces)) |
 
 How a label is read:
 
@@ -437,11 +438,11 @@ signs) come before contents. The order is:
 So a stew goes to `[stews]` before `[food]`, and a `[logs]` chest wins over an unlabelled
 chest that happens to hold birch logs. Frame and sign labels on one chest combine.
 
-To see this at work, hold an item and run `/cgc check` on a chest, or run `/cgc label`. Say a
-broader chest matches, but golems would take the item to a more specific chest nearby. The
-command names that chest, says where it is and gives the label to add.
+To see this at work, hold an item and run `/cgc check` on a chest, or run `/cgc label`. If the
+chest matches but golems would take the item to a more specific chest nearby, the command
+names that chest, says where it is and gives the label to add.
 
-For example, `[*copper*]` covers 100 or more items and `[ingots and gems]` about 18. Copper
+For example, `[*copper*]` covers 100 or more items and `[ingots and gems]` 19. Copper
 ingots go to the `[ingots and gems]` chest. To keep them in the `[*copper*]` chest, add
 `[copper ingot]` to its sign. "Nearby" means within `search-distance` sideways and 8 blocks
 up or down. Locked, blocked, full and hopper-fed chests don't count.
@@ -464,7 +465,9 @@ Golems never use a chest that vanilla golems can't:
 - a waterlogged one (vanilla golems walk up to it and wait there for good)
 
 They also skip chests that drain through hoppers into a copper chest, so items don't go
-round in circles. `/cgc check` on a chest tells you if any of these applies.
+round in circles, and chests that feed a furnace through hoppers (see "Hand-built smelters"
+in [Golems run your furnaces](#golems-run-your-furnaces)). `/cgc check` on a chest tells you
+if any of these applies.
 
 ### Items with no home
 
@@ -496,7 +499,7 @@ still waiting a minute after the last step. That means it can't use that chest.
 
 With `fetch-from-overflow` (on by default), a golem with nothing to do walks to an
 `[Overflow]` chest. "Nothing to do" means an empty hand and nothing to take from any copper
-chest in range. It takes up to `carry-amount` (16) of an item that now has a home, then
+chest in range. It takes up to `carry-amount` (default 16) of an item that now has a home, then
 sorts it. So when you add a chest for something that was piling up in overflow, golems move
 it over on their own.
 
@@ -510,8 +513,8 @@ it over on their own.
   removed), the golem stops without taking it.
 - Golems never walk to an empty copper chest.
 
-When a golem takes from or puts into a chest, barrel or shulker box, its lid opens for a
-moment, as with vanilla golems. This also happens when it fetches from `[Overflow]`, uses a
+**Lids and reaching in.** When a golem takes from or puts into a chest, barrel or shulker
+box, its lid opens for a moment, as with vanilla golems. This also happens when it fetches from `[Overflow]`, uses a
 `[Fuel]` or `[Furnace Supply]` container, puts an item back in its copper chest, or takes
 more from it for `carry-amount`.
 
@@ -696,9 +699,9 @@ but barely moving for a second.
   so they never both dodge.
 - A golem busy at a chest never steps aside. Golems that are just passing each other are
   left alone.
-- A golem never steps aside into fire, lava, water, a bubble column, a cobweb, powder snow,
-  a berry bush, a wither rose, pointed dripstone, a cactus or a trapdoor. It never steps onto
-  a campfire, magma block or trapdoor. It backs up to a safe spot instead.
+- A golem never steps aside into or onto fire, lava, water, a bubble column, a cobweb, powder
+  snow, a berry bush, a wither rose, pointed dripstone, a cactus, a campfire, a magma block, a
+  trapdoor or a cauldron holding lava, water or powder snow. It backs up to a safe spot instead.
 
 ### Golems keep off trapdoors
 
@@ -818,7 +821,8 @@ Right-click a copper golem with bamboo (`golem-toggle-item`) to switch that gole
 vanilla behavior. Right-click again to switch it back. The mode is saved on the golem.
 
 A vanilla golem gets none of the plugin's features: no smart sorting or labels, no overflow,
-returns, fetching, trapdoor avoidance, taller reach, giving way or tidying.
+returns, fetching, furnace work, trapdoor, portal and cauldron avoidance, taller reach,
+giving way, greetings, lost-golem rescue or tidying.
 
 While you hold bamboo, golems using this plugin show a small green light on their antenna.
 Vanilla golems don't. Nobody else sees the lights.
@@ -884,7 +888,7 @@ home. Work places are:
 Its owner gets an alert saying where it is if either of these happens:
 
 - It gets no closer for 20 seconds.
-- It's stuck where it can't walk to a copper chest (in a pit, walled in).
+- It's been stuck for 2 minutes where it can't walk to a copper chest (in a pit, walled in).
 
 "Full-chest alerts" below explains who the owner is. An alert looks like this:
 
@@ -1235,7 +1239,7 @@ line number, and the old settings are kept.
 |---|---|---|
 | `fetch-from-overflow` | `true` | A golem with nothing to do takes items that now have a home out of an `[Overflow]` chest and sorts them. |
 | `fetchers-per-overflow-chest` | `4` | How many golems may fetch from one overflow chest at a time (each a different item). 0 = no limit. More than about 2 per open spot beside the chest crowds it. See [How many fetchers](#how-many-fetchers). |
-| `overflow-fetch-min` | `8` | From an `[Overflow]` chest a hopper fills, golems fetch an item only once this many are there (1 to 64). 1 = a trip for every item. carry-amount = only full trips. Chests no hopper feeds are emptied right away. |
+| `overflow-fetch-min` | `8` | From an `[Overflow]` chest a hopper fills, golems fetch an item only once this many are there (1 to 64). 1 = a trip for every item. `carry-amount` = only full trips. Chests no hopper feeds are emptied right away. |
 | `overflow-fetch-wait-seconds` | `120` | From an `[Overflow]` chest a hopper fills, golems also fetch an item once it has waited this long (0 to 3600), even with fewer than `overflow-fetch-min`, so the last few still get sorted. 0 = no waiting. |
 | `carry-amount` | `16` | Items a golem carries per trip, 1 to 64 (vanilla: 16). Items that stack to less (ender pearls 16, tools 1) are carried that many at most. |
 | `furnace-feeding` | `true` | Golems feed, empty and fuel furnaces, smokers and blast furnaces that have a label, with items from `[Furnace Supply]` containers. Unlabelled furnaces are never touched. `false` turns off everything furnace-related: furnaces are left alone, `[Fuel]` and `[Furnace Supply]` signs mean nothing, and chests on a smelter's hopper are ordinary chests again. |
