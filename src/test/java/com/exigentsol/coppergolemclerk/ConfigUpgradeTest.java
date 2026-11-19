@@ -138,4 +138,43 @@ class ConfigUpgradeTest {
         assertEquals(List.of("claim-blocks-per-extra-golem"), result.added());
         assertEquals(shipped, result.text());
     }
+
+    /** An owner's own groups, laid out as people write them: comments, blank lines, flow lists. */
+    private static final String OWN_GROUPS = """
+            groups:
+              # my building blocks
+              stone-stuff:
+                - STONE
+                - "*_BRICKS"
+
+            # left-margin note inside the groups
+              logs: [OAK_LOG, BIRCH_LOG]   # just these two
+            #  wool:
+            #    - "*_WOOL"
+              ores:
+                - "*_ORE"
+            """;
+
+    @Test
+    void upgradingNeverChangesTheOwnersGroupsOrAliases() throws Exception {
+        String head = without(shipped(), "carry-amount", "avoid-cauldrons");
+        int at = head.indexOf("\ngroups:\n") + 1;
+        String aliases = "group-aliases:\n  stones: stone-stuff\n  # rock: stone-stuff\n";
+        String old = head.substring(0, at).replace("group-aliases: {}\n", aliases) + OWN_GROUPS;
+        ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped());
+        assertEquals(List.of("carry-amount", "avoid-cauldrons"), result.added());
+        String text = result.text();
+        assertTrue(text.endsWith(OWN_GROUPS), "every line of the owner's groups is kept, comments and blank lines too");
+        assertTrue(text.contains(aliases), "the owner's aliases are kept");
+        YamlConfiguration config = yaml(text);
+        assertEquals(List.of("stone-stuff", "logs", "ores"), List.copyOf(config.getConfigurationSection("groups").getKeys(false)));
+    }
+
+    @Test
+    void theCommentAboveGroupsIsThisVersionsExplanation() throws Exception {
+        String old = shipped().replace("# Upgrading never changes this list.", "# my note above my groups");
+        ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped());
+        assertEquals(List.of("groups"), result.explained());
+        assertEquals(shipped(), result.text(), "the comment right above groups: is replaced, nothing else");
+    }
 }
