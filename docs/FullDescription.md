@@ -10,6 +10,25 @@ claim owners get full-chest alerts, golem limits per claim are optional, and nea
 feature can be tuned in one config file. They never ask for a raise and never complain about the
 cobblestone.
 
+## New in 3.3.0
+
+- **Golems keep out of cauldrons.** With `avoid-cauldrons` (on by default), a golem never
+  steps into or onto a cauldron of lava, water or powder snow. It walks around one instead,
+  and one that touches lava anyway isn't hurt. Vanilla golems could slip into a lava cauldron and
+  burn.
+- **Empty buckets come back full.** Empty buckets golems pick up for sorting, from an
+  `[Overflow]` chest or a copper chest, are refilled at a lava cauldron and put in a `[Fuel]`
+  chest, like the empty buckets from furnaces. Empty buckets never go into a `[Fuel]` chest that
+  feeds a furnace through a hopper, since the hopper would push them into the furnace.
+- **Golems look like they use the chest.** When the plugin moves an item for a golem (chests
+  past vanilla's reach, fetching from `[Overflow]`, furnace jobs), the golem now turns to the
+  chest and reaches in.
+- **No more open lids.** A golem waits until the chest lid closes before it goes to say hello.
+- **More fetchers.** `fetchers-per-overflow-chest` now defaults to 4 (was 2), and 0 means no
+  limit. Upgrading keeps your value.
+- **`/cgc settings`** lists the settings that differ from this version's defaults, and
+  **`/cgc groups`** compares your item groups with the built-in ones (admins and the console).
+
 ## New in 3.2.0
 
 - **Other names for groups.** Add `group-aliases` to `config.yml`, for example
@@ -166,7 +185,9 @@ Don't put these on a furnace. `[Furnace]` is the furnace item, which nothing coo
 | `[Fuel]` | golems take fuel from it: charcoal, then coal, then lava buckets | `[Fuel]`, `[Fuels]` |
 
 Lava buckets go in only when a furnace has 100 or more items to cook. Empty buckets go back to
-the `[Fuel]` chest and wait for a lava cauldron that dripstone refills.
+a `[Fuel]` chest and wait for a lava cauldron that dripstone refills. A `[Fuel]` chest that
+feeds a furnace through a hopper doesn't take empty buckets (the hopper would push them into
+the furnace); buckets in `[Overflow]` wait there instead.
 
 Neither chest receives sorted items unless it also has an item label. Put both on one sign:
 `[Fuel] [charcoal]` or `[Furnace Supply] [raw iron]`.

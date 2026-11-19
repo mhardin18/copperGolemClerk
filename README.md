@@ -44,7 +44,8 @@ Download it from [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
 
 **Golems that look after themselves**
 - **Lost golems walk home**, and you're told where one is if it's stuck.
-- Golems **keep off trapdoors** and **stay out of portals**.
+- Golems **keep off trapdoors**, **stay out of portals** and **keep out of cauldrons** that
+  hold lava, water or powder snow.
 - Every golem death is logged with its cause.
 
 **For players**
@@ -502,6 +503,8 @@ it over on their own.
 - Up to `fetchers-per-overflow-chest` golems (default 4, 0 = no limit) fetch from one
   overflow chest at a time, each a different item. See [How many fetchers](#how-many-fetchers).
 - Items with no home are left in overflow.
+- Empty buckets are fetched one at a time while a lava cauldron is full, to be refilled. See
+  [Golems run your furnaces](#golems-run-your-furnaces).
 - Items in an overflow chest golems can't open (locked, blocked or waterlogged) are left too.
 - If an item loses its home while the golem is on its way (that chest fills up or is
   removed), the golem stops without taking it.
@@ -659,8 +662,9 @@ range and a `[Fuel]` container has room for the lava bucket:
 - Buckets a golem picks up from a copper chest go the same way: one bucket straight to a full
   cauldron, more than one into `[Fuel]` to wait.
 - Empty buckets never go into a `[Fuel]` container that feeds a furnace through a hopper, since
-  the hopper would push them into the furnace. If that's the only `[Fuel]` container, the buckets
-  wait in `[Overflow]` until a cauldron is full.
+  the hopper would push them into the furnace. If that's the only `[Fuel]` container, buckets in
+  `[Overflow]` wait there until a cauldron is full, and buckets from a copper chest are sorted
+  like anything else.
 - Without a lava cauldron in range, or with no room in `[Fuel]`, buckets are sorted like anything
   else.
 
@@ -819,7 +823,8 @@ returns, fetching, trapdoor avoidance, taller reach, giving way or tidying.
 While you hold bamboo, golems using this plugin show a small green light on their antenna.
 Vanilla golems don't. Nobody else sees the lights.
 
-Every copper golem within 48 blocks also shows a small label saying what it's doing:
+Every copper golem within 48 blocks also shows a small label saying what it's doing, for
+example:
 `carrying 12 birch log`, `fetching granite`, `no chest for 3 kelp`, `taking 5 kelp back`,
 `giving way`, `saying hello`, `lost, walking home`, `vanilla mode`,
 `over the golem limit: vanilla` or `idle`. Once its copper starts to weather, a second line
@@ -1098,7 +1103,7 @@ to teleport there), distance and direction, what it carries, its copper and its 
 - `/cgc golems <radius>` lists only the golems within that many blocks of you, counted along
   each axis as `/cgc find` does. The header says "within N blocks". `find-max-radius`
   doesn't apply.
-- `/cgc golems all` lists every golem in every world.
+- `/cgc golems all` lists the golems in every world, the first 100 if there are more.
 - Golems in unloaded chunks are listed where they were last seen. The plugin keeps every
   golem's last spot in `golems.yml` and forgets golems not seen for 30 days.
 
@@ -1196,7 +1201,8 @@ Give a position:
 - `/cgc check <x> <y> <z> [world]`
 - `/cgc overflow <x> <y> <z> [world]`
 - `/cgc golems <x> <y> <z> [world] [radius]` lists the 10 golems nearest that spot, within
-  the radius if one is given. Without a position, the console lists every golem.
+  the radius if one is given. Without a position, the console lists the golems in every world
+  (the first 100).
 - `/cgc find <item> <x> <y> <z> [world] [radius]`
 
 ## Settings reference

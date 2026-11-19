@@ -180,7 +180,7 @@ error or exception in the server log during a scenario fails it.
 | scenes | whole sorting rooms end to end; a manual 15-minute soak |
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
 | commands | `/cgc check` on chests (including when a more specific chest wins), `/cgc overflow`, `disabled-worlds` |
-| config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands |
+| config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands, the `/cgc settings` and `/cgc groups` reports |
 | tidy | golems tidy chests they deliver to (while the lid is open): stacks merged, like items together, option off |
 | options | each config switch changes what golems do |
 | lifecycle | reloads mid-task, reload spam; manual server restart |
@@ -210,6 +210,7 @@ error or exception in the server log during a scenario fails it.
 | cauldrons | `avoid-cauldrons`: golems never step into a cauldron of lava, water or powder snow set into the floor (walking past, pushed, dropped in, giving way, with the setting off and in vanilla mode as controls); empty buckets from `[Overflow]` or a copper chest refilled at a lava cauldron for `[Fuel]`, and when they're sorted instead; the survival hopper-fed smelter |
 | gestures | the chest animation for moves the plugin makes itself: reach deliveries, [Overflow] fetches, furnace takes and puts, with a vanilla delivery as the control (needs GolemTestHooks) |
 | traffic | `golems-give-way`: golems meeting in corridors and doorways step aside or back out, avoiding fire, cobwebs and holes |
+| tuning | manual (never in a full run): furnace-feeding layouts that measure items cooked, trips and idle time; run by `tune.py` |
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |
 
 Scenarios that change something server-wide (config, reloads, tick timing) run one at a
