@@ -293,6 +293,7 @@ All permissions are standard nodes, so they work with LuckPerms or any other per
 
 - Download: [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk) and [Modrinth](https://modrinth.com/plugin/copper-golem-clerk)
 - Full documentation and every setting: [README on GitHub](https://github.com/mhardin18/copperGolemClerk#readme)
+- Every built-in item group, its items, and what upgrading does to your groups: [GROUPS.md](https://github.com/mhardin18/copperGolemClerk/blob/main/GROUPS.md)
 - Changelog: [CHANGELOG.md](https://github.com/mhardin18/copperGolemClerk/blob/main/CHANGELOG.md)
 - Bugs and ideas: [GitHub issues](https://github.com/mhardin18/copperGolemClerk/issues)
 - Licence: GPL-3.0, source on [GitHub](https://github.com/mhardin18/copperGolemClerk)
