@@ -178,93 +178,14 @@ The same forms work on signs. See [`*` patterns, `#` tags and `@` properties](#-
 
 ### The default groups
 
-A fresh `config.yml` has these 56 groups. Every name fits on one sign line. The
-item counts are for Paper 26.3. An item can be in more than one group.
+A fresh `config.yml` has 56 groups. They cover nearly every item you can get in survival on
+Paper 26.3, and every name fits on one sign line. An item can be in more than one group.
 
-| Sign label | What's in it | Items |
-|---|---|---|
-| `[music discs]` | Music discs | 23 |
-| `[templates]` | Smithing templates | 19 |
-| `[rare items]` | Rare & trophies, incl. mob heads and skulls | 25 |
-| `[buckets]` | Buckets | 12 |
-| `[brewing]` | Potions & brewing | 9 |
-| `[books]` | Books & enchanting | 5 |
-| `[maps]` | Maps & navigation | 23 |
-| `[fireworks]` | Fireworks | 2 |
-| `[food]` | Food | 38 |
-| `[seeds]` | Seeds | 7 |
-| `[farming]` | Crops & farming | 14 |
-| `[mob drops]` | Mob drops | 27 |
-| `[ores]` | Ores | 22 |
-| `[mineral blocks]` | Mineral blocks | 8 |
-| `[ingots and gems]` | Ingots & gems | 19 |
-| `[materials]` | Crafting materials | 9 |
-| `[amethyst]` | Amethyst | 6 |
-| `[animal gear]` | Saddles & animal armor, lead, name tag | 31 |
-| `[armor]` | Armor | 31 |
-| `[weapons]` | Weapons & ammo | 23 |
-| `[tools]` | Tools | 34 |
-| `[boats]` | Boats | 22 |
-| `[rails]` | Rails & minecarts | 9 |
-| `[redstone]` | Redstone | 72 |
-| `[light sources]` | Light sources | 40 |
-| `[storage]` | Storage | 45 |
-| `[workstations]` | Workstations: villager job blocks, crafting table, furnace, anvils, enchanting table, jukebox, bell, respawn anchor | 22 |
-| `[signs]` | Signs and hanging signs | 26 |
-| `[banners]` | Banners & banner patterns | 26 |
-| `[pottery]` | Pottery sherds & decorated pot | 24 |
-| `[beds]` | Beds | 17 |
-| `[decorations]` | Shelves, cushions, copper golem statues, item frames, painting, armor stand, bookshelves, flower pot | 44 |
-| `[wool]` | Wool & carpet | 64 |
-| `[concrete]` | Concrete: blocks, powder, slabs & stairs | 64 |
-| `[terracotta]` | Terracotta: plain, dyed & glazed | 33 |
-| `[glass]` | Glass | 35 |
-| `[dyes]` | Dyes | 16 |
-| `[mushrooms]` | Mushrooms | 6 |
-| `[flowers]` | Flowers | 27 |
-| `[foliage]` | Saplings & leaves, cherry and flowering azalea leaves, mangrove propagule | 26 |
-| `[sculk]` | Sculk | 4 |
-| `[sulfur]` | Sulfur & cinnabar | 28 |
-| `[ocean]` | Ocean | 45 |
-| `[nether]` | Nether | 44 |
-| `[end]` | The End, incl. chorus flower | 11 |
-| `[copper]` | Copper blocks | 80 |
-| `[logs]` | Logs & planks | 64 |
-| `[wooden building]` | Wooden building | 80 |
-| `[dirt and sand]` | Dirt, sand & gravel | 12 |
-| `[ice and snow]` | Ice & snow | 6 |
-| `[plants]` | Plants | 26 |
-| `[stone]` | Stone | 47 |
-| `[deepslate]` | Deepslate | 20 |
-| `[tuff]` | Tuff | 14 |
-| `[sandstone]` | Sandstone | 20 |
-| `[building]` | Bricks, quartz & other building | 29 |
-
-**Renamed in 3.1.0.** Four groups were renamed so their sign labels fit on one line:
-
-- `smithing-templates` became `templates`.
-- `crafting-materials` became `materials`.
-- `saplings-and-leaves` became `foliage`.
-- `concrete-and-terracotta` became two groups, `concrete` and `terracotta`.
-
-Upgrading never changes the `groups:` in your `config.yml`, so a server that started before
-3.1.0 keeps the old names. Both names work on signs either way: `[foliage]` finds an older
-config's `saplings-and-leaves`, and `[crafting materials]` finds the new `materials`. To get
-the new groups themselves, copy them from the [default
-`config.yml`](https://github.com/mhardin18/copperGolemClerk/blob/main/src/main/resources/config.yml).
+**[GROUPS.md](GROUPS.md)** lists every built-in group: its sign label, its entries and every
+item in it. It also covers what changed in the built-in groups in each release, and what an
+upgrade does to your groups. In short, an upgrade never changes your `groups:` or
+`group-aliases:`. Groups renamed in a newer version still work on signs under either name.
 [`/cgc groups`](#cgc-groups) shows how your groups differ from this version's.
-
-**Changed in 3.2.0.** The default groups were cleaned up:
-
-- `utility-blocks` was merged into `workstations`.
-- `decorations` was split into `signs`, `banners`, `pottery` and `beds`.
-- `stone` was split into `stone`, `deepslate` and `tuff`, so each fits in a double chest.
-  `[deepslate]` now means the deepslate group, not every item with deepslate in its name.
-- Mob heads moved to `rare-items`. Some flowers, the name tag and creative-only items also
-  moved or left their groups. See the [changelog](CHANGELOG.md).
-
-A `[utility blocks]` sign finds the new `workstations` on a fresh config. An older config
-keeps its own groups, so `[workstations]` works there too.
 
 ### Other names for groups
 
@@ -1154,7 +1075,8 @@ explanation from `config.yml`. Item groups and `group-aliases` aren't included: 
 
 For admins and the console. Upgrading never changes the `groups:` in `config.yml`, so a server
 keeps the groups it started with, even when the built-in ones change (they did in 3.1.0 and
-3.2.0). `/cgc groups` compares yours with this version's and lists, problems first:
+3.2.0; see [GROUPS.md](GROUPS.md)). `/cgc groups` compares yours with this version's and
+lists, problems first:
 
 - **Problems the console reported** when the groups were loaded: entries that match no item
   (`Group 'ores': unknown item DIAMND`, or a pattern like `*ZZZ*`), `group-aliases` that point

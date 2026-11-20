@@ -568,7 +568,8 @@ group-aliases: {}
 # short. A sign line holds about 15 letters. A longer label can continue on the next
 # line, but one line is easier.
 # Upgrading never changes this list. /cgc groups shows how yours differ from this
-# version's.
+# version's. GROUPS.md (next to the README on GitHub) lists every built-in group, its
+# items and what each release changed.
 # Entry formats:
 #   DIAMOND            one item (minecraft:diamond also works)
 #   *_ORE              name pattern; * matches any letters (or none), whole ID must fit
