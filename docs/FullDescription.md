@@ -10,6 +10,25 @@ claim owners get full-chest alerts, golem limits per claim are optional, and nea
 feature can be tuned in one config file. They never ask for a raise and never complain about the
 cobblestone.
 
+## New in 3.3.0
+
+- **Golems keep out of cauldrons.** With `avoid-cauldrons` (on by default), a golem never
+  steps into or onto a cauldron of lava, water or powder snow. It walks around one instead,
+  and one that touches lava anyway isn't hurt. Vanilla golems could slip into a lava cauldron and
+  burn.
+- **Empty buckets come back full.** Empty buckets golems pick up for sorting, from an
+  `[Overflow]` chest or a copper chest, are refilled at a lava cauldron and put in a `[Fuel]`
+  chest, like the empty buckets from furnaces. Empty buckets never go into a `[Fuel]` chest that
+  feeds a furnace through a hopper, since the hopper would push them into the furnace.
+- **Golems look like they use the chest.** When the plugin moves an item for a golem (chests
+  past vanilla's reach, fetching from `[Overflow]`, furnace jobs), the golem now turns to the
+  chest and reaches in.
+- **No more open lids.** A golem waits until the chest lid closes before it goes to say hello.
+- **More fetchers.** `fetchers-per-overflow-chest` now defaults to 4 (was 2), and 0 means no
+  limit. Upgrading keeps your value.
+- **`/cgc settings`** lists the settings that differ from this version's defaults, and
+  **`/cgc groups`** compares your item groups with the built-in ones (admins and the console).
+
 ## New in 3.2.0
 
 - **Other names for groups.** Add `group-aliases` to `config.yml`, for example
@@ -68,8 +87,7 @@ We checked.)
 - **Fuel with common sense:** charcoal first, then coal. Lava buckets are used only when there's
   a big pile to cook, so a bucket that lasts 100 items isn't burnt on eight ingots.
 - **Lava on tap:** put a cauldron under pointed dripstone with lava above it, and golems refill
-  your empty buckets as it fills. Empty buckets that land in `[Overflow]` or a copper chest come
-  back full too, as long as a `[Fuel]` chest has room for them.
+  your empty buckets as it fills.
 - **Emptied for you:** finished items go into your storage. A hopper under the furnace works too.
 - **Only what you label:** unlabelled furnaces are left alone, and nothing from the rest of your
   storage wanders into a fire.
@@ -166,7 +184,11 @@ Don't put these on a furnace. `[Furnace]` is the furnace item, which nothing coo
 | `[Fuel]` | golems take fuel from it: charcoal, then coal, then lava buckets | `[Fuel]`, `[Fuels]` |
 
 Lava buckets go in only when a furnace has 100 or more items to cook. Empty buckets go back to
-the `[Fuel]` chest and wait for a lava cauldron that dripstone refills.
+a `[Fuel]` chest and wait for a lava cauldron that dripstone refills. A `[Fuel]` chest that
+feeds a furnace through a hopper doesn't take empty buckets (the hopper would push them into
+the furnace); buckets in `[Overflow]` wait there instead. Empty buckets golems pick up for
+sorting, from `[Overflow]` or a copper chest, are refilled the same way when a lava cauldron is
+in range and a `[Fuel]` chest has room.
 
 Neither chest receives sorted items unless it also has an item label. Put both on one sign:
 `[Fuel] [charcoal]` or `[Furnace Supply] [raw iron]`.
@@ -264,10 +286,12 @@ All permissions are standard nodes, so they work with LuckPerms or any other per
 | `coppergolemclerk.toggle` | everyone | switching a golem to vanilla and back |
 | `coppergolemclerk.allclaims` | op | the commands above see into every claim |
 | `coppergolemclerk.alerts` | op | alerts about things outside any claim, where there's no owner to tell |
+| `coppergolemclerk.teleport` | nobody | lost golems in the player's claims may be teleported home, if the server sets `lost-golem-teleport-home` |
 | `coppergolemclerk.admin` | op | all `/cgc` commands |
 
 ## 🌐 Links
 
+- Download: [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk) and [Modrinth](https://modrinth.com/plugin/copper-golem-clerk)
 - Full documentation and every setting: [README on GitHub](https://github.com/mhardin18/copperGolemClerk#readme)
 - Changelog: [CHANGELOG.md](https://github.com/mhardin18/copperGolemClerk/blob/main/CHANGELOG.md)
 - Bugs and ideas: [GitHub issues](https://github.com/mhardin18/copperGolemClerk/issues)

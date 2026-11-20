@@ -198,7 +198,8 @@ carry-amount: 16
 #
 # An idle golem picks its furnace job in this order:
 #   1. Empty a furnace whose output slot is full (it has stopped).
-#   2. Take out an empty lava bucket.
+#   2. Take out an empty lava bucket (or fetch one waiting in [Fuel] once a lava cauldron
+#      is full).
 #   3. Bring fuel.
 #   4. Bring items to cook to a furnace running low.
 #   5. Take out finished items (see furnace-take-out-at).
@@ -222,8 +223,8 @@ furnace-feeding: true
 # are refilled the same way when a lava cauldron is nearby and a [Fuel] container has
 # room: one at a time straight to a full cauldron, or into [Fuel] to wait. Empty buckets
 # never go into a [Fuel] container that feeds a furnace through a hopper (the hopper
-# would push them into the furnace); with only those, they wait in [Overflow] until a
-# cauldron is full. Otherwise they are sorted like anything else.
+# would push them into the furnace); with only those, buckets in [Overflow] wait there
+# until a cauldron is full. Otherwise they are sorted like anything else.
 furnace-fuel: [charcoal, coal, lava_bucket]
 # The fuel golems bring also covers this many MORE items than are waiting (0 to 64).
 # The next load of items then doesn't need a fuel trip of its own. Golems only fetch
