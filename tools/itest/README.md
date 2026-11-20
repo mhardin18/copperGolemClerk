@@ -187,7 +187,7 @@ error or exception in the server log during a scenario fails it.
 | perf | hundreds of chests in range, many golems: tick time stays healthy |
 | dimensions | sorting, overflow, fetching, returns, giving way and `/cgc check` in the Nether and the End |
 | reach | chests stacked above vanilla's reach: delivering and taking with `deliver-reach` / `take-reach` raised, and at the default |
-| greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, crowds, work interrupting a visit, a golem that dies on the way, no visits far from the copper chest |
+| greet | idle copper golems greeting iron and snow golems: cooldown, not while sorting, off, vanilla mode, unreachable, another floor, no way back, crowds, work interrupting a visit, a golem that dies on the way, no visits far from the copper chest |
 | limits | `max-golems-per-claim` / `claim-blocks-per-extra-golem`: the newest golem over a limit sorts like vanilla and the owner is told; each claim on its own, admin claims, bigger claims get more, under the limit, unclaimed land not limited, vanilla-mode golems not counted, the removed `max-golems-outside-claims` warned about, bad values |
 | work-order | what an idle golem does first: furnace upkeep (including taking out finished items) before sorting, `furnace-jobs-before-sorting` (1, and 0 for the old order); manual `work-order-balance-<n>` benchmarks for choosing its default |
 | distance | `search-distance` above 32: golems finding, walking to and moving items for chests, copper chests, `[Overflow]` chests and furnaces past vanilla's range |

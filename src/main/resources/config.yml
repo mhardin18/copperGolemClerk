@@ -430,9 +430,11 @@ mode-markers: true
 status-labels: true
 
 # A copper golem with nothing to do walks over to say hello to an iron or snow golem
-# within 16 blocks of its home (see rescue-lost-golems). With no home in range, it uses
-# its nearest copper chest or furnace, or else where it stands. It turns back if it gets
-# more than 20 blocks from there. After a visit it goes back to its routine, and walks
+# it can walk up to, within 2 blocks up or down and within 16 blocks of its home (see
+# rescue-lost-golems). Greetings never get in the way of work, and never take a golem
+# anywhere it couldn't walk back to work from. With no home in range,
+# it uses its nearest copper chest or furnace, or else where it stands. It turns back if
+# it gets more than 20 blocks from there. After a visit it goes back to its routine, and walks
 # back to its chest or furnace if the visit ended without a hello. It doesn't follow
 # them, and waits greet-cooldown-minutes before greeting again.
 # true (default): greetings on.

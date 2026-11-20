@@ -4,7 +4,7 @@ Reads the plugin's debug lines ("going to say hello", "said hello"), so pluginDe
 run with debug: true.
 """
 from arena import Trigger, _count, expect, scenario
-from suite_modes import golem
+from suite_modes import LUCK, golem
 from suite_options import set_options
 
 
@@ -133,6 +133,50 @@ def _(c):
         return [(c.elapsed() > 45, "waited 45 seconds"), (not hellos(c), "no hello through the glass"),
                 (not visits or gave_up, "any visit was given up")]
     return check
+
+
+@scenario("greet-not-another-floor", "greet", 60, "An iron golem on a terrace 3 blocks up, with steps the copper golem could climb: more than 2 blocks up, so no visit.")
+def _(c):
+    x, y, z = c.abs(14, 10)
+    c.run(f"fill {x - 3} {y} {z - 3} {x + 3} {y + 2} {z + 3} minecraft:stone")
+    c.run(f"fill {x - 4} {y} {z - 1} {x - 4} {y + 1} {z + 1} minecraft:stone")
+    c.run(f"fill {x - 5} {y} {z - 1} {x - 5} {y} {z + 1} minecraft:stone")
+    c.run(f"fill {x - 1} {y + 3} {z - 1} {x + 1} {y + 3} {z + 1} minecraft:oak_fence hollow")
+    c.run(f"summon minecraft:iron_golem {x + 0.5} {y + 3} {z + 0.5} {{Tags:[\"itest_other\"]}}")
+    golem(c, 4, 10)
+    return lambda: [(c.elapsed() > 40, "waited 40 seconds"), (not hellos(c, "going to say hello"), "no visit")]
+
+
+def ledge(c):
+    """A copper golem on a 2-high ledge, fenced in but for one gap facing an iron golem on the ground."""
+    x, y, z = c.abs(4, 10)
+    c.run(f"fill {x - 3} {y} {z - 3} {x + 3} {y + 1} {z + 3} minecraft:stone")
+    c.run(f"fill {x - 3} {y + 2} {z - 3} {x + 3} {y + 2} {z + 3} minecraft:oak_fence")
+    c.run(f"fill {x - 2} {y + 2} {z - 2} {x + 2} {y + 2} {z + 2} minecraft:air")  # hollow would fill a 1-high layer
+    c.run(f"setblock {x + 3} {y + 2} {z} minecraft:air")
+    c.run(f"summon minecraft:copper_golem {x + 0.5} {y + 2} {z + 0.5} {{active_effects:[{LUCK}]}}")
+    boxed(c, "iron_golem", 12, 10)
+    return x, y, z
+
+
+@scenario("greet-no-way-back", "greet", 60, "The only way down from the copper golem's ledge is a 2-block drop it couldn't climb back up: it doesn't set off for the iron golem below.")
+def _(c):
+    x, y, z = ledge(c)
+    seen = []
+    def check():
+        if _count(c.r.cmd(f"execute if entity @e[type=minecraft:copper_golem,x={x - 3},y={y + 2},z={z - 3},dx=6,dy=1,dz=6]")) > 0:
+            seen.append(c.elapsed())
+        from_ledge = [l for l in hellos(c, "going to say hello") if f",{y + 2}," in l]
+        return [(c.elapsed() > 40, "waited 40 seconds"), (not from_ledge, "no visit from the ledge"),
+                (len(seen) >= 2 and seen[-1] - seen[0] >= 10, "on the ledge for at least 10 seconds")]
+    return check
+
+
+@scenario("greet-way-back-by-steps", "greet", 90, "The same ledge with 1-block steps down from the gap: the golem can walk back, so it goes and says hello.")
+def _(c):
+    x, y, z = ledge(c)
+    c.run(f"setblock {x + 4} {y} {z} minecraft:stone")
+    return lambda: [(len(hellos(c)) >= 1, "said hello to the iron golem")]
 
 
 @scenario("greet-crowd", "greet", 90, "Three idle copper golems and one iron golem: each says hello once, then waits out its cooldown.")

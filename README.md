@@ -850,15 +850,23 @@ A golem at a chest finishes there first (until the lid closes), so it never leav
 They face each other, it waves, and hearts float up. Then it goes back to work. It doesn't
 greet again for `greet-cooldown-minutes` (default 5).
 
-It only visits a golem within 16 blocks of its home (if that is within `search-distance`).
-Without one, it uses its nearest copper chest or furnace, or where it stands if it has
-neither. It turns back if it gets more than 20 blocks from there. It never follows.
+Greetings are a nicety: they never get in the way of the golem's work. It only visits a golem
+within 16 blocks of its home (if that is within `search-distance`). Without one, it uses its
+nearest copper chest or furnace, or where it stands if it has neither. It turns back if it
+gets more than 20 blocks from there. It never follows.
+
+The other golem must also be within 2 blocks up or down, and the copper golem must be able to
+walk close enough to say hello (from outside a fence pen is fine). It doesn't set off for a
+golem on another floor or behind a wall. It never goes anywhere it couldn't walk back to work
+from: it won't take a path that drops down a ledge it can't climb back up, and it stops as
+soon as it has no way back to its copper chest or furnace.
 
 It gives up when:
 
 - it can't get within reach in 20 seconds
 - it gets no closer for 8 seconds
-- the other golem can no longer be reached
+- the other golem can no longer be reached, or is more than 2 blocks up or down
+- it would have no way back to its work
 - the other golem dies or disappears
 
 Work turning up ends the visit at once. That means items in a copper chest, a fetch or
@@ -1266,7 +1274,7 @@ line number, and the old settings are kept.
 | `avoid-cauldrons` | `true` | Golems never step into or onto a cauldron holding lava, water or powder snow (vanilla golems can slip into a lava cauldron and burn) and are walked around one; touching a lava cauldron doesn't hurt them. Not for golems on a lead or riding something. |
 | `rescue-lost-golems` | `true` | A golem walks home when it has no work place in range and its home (the last place it got work from) is more than 40 blocks away, or 12 up or down. If it can't get there, or is stuck where it can't reach a copper chest, its owner gets an alert. A golem with no home goes to the nearest work place within 64 blocks. |
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its home, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
-| `greet-other-golems` | `true` | An idle copper golem says hello to an iron or snow golem within 16 blocks of its home (see [Golems say hello](#golems-say-hello)). |
+| `greet-other-golems` | `true` | An idle copper golem says hello to an iron or snow golem within 16 blocks of its home and 2 blocks up or down, if it can walk up to it (see [Golems say hello](#golems-say-hello)). |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
 | `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit, unless `claim-blocks-per-extra-golem` is set). Golems on unclaimed land aren't limited. Each claim (admin claims too) has its own limit. The oldest keep it, the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
 | `claim-blocks-per-extra-golem` | `0` | Each claim gets one more golem than `max-golems-per-claim` for every this many claim blocks of its area (0: off). |

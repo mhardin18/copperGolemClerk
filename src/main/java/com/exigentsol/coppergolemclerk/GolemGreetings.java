@@ -1,5 +1,6 @@
 package com.exigentsol.coppergolemclerk;
 
+import com.destroystokyo.paper.entity.Pathfinder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -23,10 +24,16 @@ import org.bukkit.entity.Snowman;
  * "Nothing to do": empty hands, not fetching from an overflow chest, not giving way, not on a
  * furnace job, and no copper chest in range with something it would take.
  *
- * It stays near its work: it only visits a golem within 16 blocks of its home (the last place it
- * got work from, see GolemRescue), or with no home nearby its nearest copper chest or furnace,
- * or else where it stands; and it turns back if it gets more than 20 blocks from there. It gives up if it can't get within reach in 20 seconds, or gets no
- * closer for 8 (it still waits out the cooldown). Any work turning up (items in a copper
+ * Greetings are a nicety and must never get in the way of the work. It stays near its work: it
+ * only visits a golem within 16 blocks of its home (the last place it got work from, see
+ * GolemRescue), or with no home nearby its nearest copper chest or furnace, or else where it
+ * stands; and it turns back if it gets more than 20 blocks from there. The other golem must be
+ * within 2 blocks up or down, and a path must end within greeting distance of it, not just lead
+ * towards it (a golem in a fence pen can be greeted from outside the fence); a visit ends
+ * when either stops being true. It never goes anywhere it couldn't walk back to work from: a
+ * path with a drop it couldn't climb back up is never taken, and a visit ends as soon as there's
+ * no way back to its work. It gives up if it can't get within reach in 20 seconds, or gets
+ * no closer for 8 (it still waits out the cooldown). Any work turning up (items in a copper
  * chest, a fetch or furnace job, an item in hand) ends the visit at once. With debug on,
  * every visit's end is logged with the reason.
  */
@@ -48,7 +55,8 @@ final class GolemGreetings {
     /** How far from there the visiting golem may get before it turns back. */
     private static final int LEASH_TURN_BACK = 20;
     private static final int RANGE = 16;
-    private static final int RANGE_UP_DOWN = 4;
+    /** How far above or below the copper golem the other golem may be. */
+    private static final int RANGE_UP_DOWN = 2;
     private static final double GREET_DISTANCE = 2.5;
 
     private final CopperGolemClerk plugin;
@@ -154,7 +162,7 @@ final class GolemGreetings {
         double best = Double.MAX_VALUE;
         for (Entity e : golem.getNearbyEntities(RANGE, RANGE_UP_DOWN, RANGE)) {
             if ((e instanceof IronGolem || e instanceof Snowman) && e.isValid() && !((Mob) e).isDead()
-                    && flat(e.getLocation(), anchor) <= LEASH) {
+                    && upDown(e.getLocation(), at) <= RANGE_UP_DOWN && flat(e.getLocation(), anchor) <= LEASH) {
                 double d = e.getLocation().distanceSquared(at);
                 if (d < best) {
                     best = d;
@@ -166,11 +174,14 @@ final class GolemGreetings {
             return;
         }
         var path = golem.getPathfinder().findPath(nearest);
-        if (path == null) {
+        if (!reaches(path, nearest)) {
             return; // can't get there (another floor, behind a wall): don't try
         }
+        if (!twoWay(golem, path)) {
+            return; // it would drop down somewhere it can't climb back from
+        }
         visits.put(golem.getUniqueId(), new Visit(nearest.getUniqueId(), now, anchor,
-                golem.getLocation().distance(nearest.getLocation()), now));
+                flat(golem.getLocation(), nearest.getLocation()), now));
         golem.getPathfinder().moveTo(path, 1.0);
         if (plugin.debug()) {
             plugin.getLogger().info(String.format("%s at %d,%d,%d has nothing to do; going to say hello to the %s nearby",
@@ -190,14 +201,23 @@ final class GolemGreetings {
             stop(golem, now, false, "there's work to do");
             return;
         }
-        double distance = golem.getLocation().distance(other.getLocation());
+        double distance = flat(golem.getLocation(), other.getLocation());
         if (distance <= GREET_DISTANCE) {
             greet(golem, mob);
             end(golem, now, true);
             return;
         }
-        if (golem.getPathfinder().findPath(mob) == null) {
+        if (upDown(golem.getLocation(), other.getLocation()) > RANGE_UP_DOWN) {
+            stop(golem, now, true, "the " + name(mob) + " is more than " + RANGE_UP_DOWN + " blocks up or down");
+            return;
+        }
+        var path = golem.getPathfinder().findPath(mob);
+        if (!reaches(path, mob)) {
             stop(golem, now, true, "it can't get to the " + name(mob) + " any more");
+            return;
+        }
+        if (!twoWay(golem, path) || !canGetBack(golem, visit.anchor())) {
+            stop(golem, now, true, "it couldn't get back to its work from there");
             return;
         }
         if (flat(golem.getLocation(), visit.anchor()) > LEASH_TURN_BACK) {
@@ -214,7 +234,7 @@ final class GolemGreetings {
             stop(golem, now, true, "isn't getting any closer to the " + name(mob) + "; giving up");
             return;
         }
-        golem.getPathfinder().moveTo(other.getLocation(), 1.0);
+        golem.getPathfinder().moveTo(path, 1.0);
     }
 
     /**
@@ -287,6 +307,45 @@ final class GolemGreetings {
         HomeFinder.Pos pos = new HomeFinder.Pos(anchor.getBlockX(), anchor.getBlockY(), anchor.getBlockZ());
         Reach.Spot spot = Reach.spotFor(anchor.getWorld(), java.util.Set.of(pos));
         return spot != null ? spot.target() : anchor.clone().add(0, 1, 0);
+    }
+
+    /**
+     * True if the path ends close enough to say hello to the other golem: within greeting
+     * distance sideways (a golem in a fence pen stands a little higher) and 2 blocks up or down.
+     */
+    private static boolean reaches(Pathfinder.PathResult path, Mob other) {
+        Location end = path == null ? null : path.getFinalPoint();
+        return end != null && flat(end.clone().add(0.5, 0, 0.5), other.getLocation()) <= GREET_DISTANCE
+                && upDown(end, other.getLocation()) <= RANGE_UP_DOWN;
+    }
+
+    /**
+     * True if the golem could walk the path back the other way: no step down of more than a
+     * block, which it couldn't jump back up.
+     */
+    private static boolean twoWay(CopperGolem golem, Pathfinder.PathResult path) {
+        int y = golem.getLocation().getBlockY();
+        for (Location point : path.getPoints()) {
+            if (y - point.getBlockY() > 1) {
+                return false;
+            }
+            y = point.getBlockY();
+        }
+        return true;
+    }
+
+    /** True if a path from where the golem is gets back to the spot beside its chest or furnace. */
+    private static boolean canGetBack(CopperGolem golem, Location anchor) {
+        Location to = standBeside(anchor);
+        var back = golem.getPathfinder().findPath(to);
+        Location end = back == null ? null : back.getFinalPoint();
+        return end != null && flat(end.clone().add(0.5, 0, 0.5), to) <= BACK_DISTANCE
+                && Math.abs(end.getY() - to.getY()) <= 1;
+    }
+
+    /** Height difference. */
+    private static double upDown(Location a, Location b) {
+        return Math.abs(a.getY() - b.getY());
     }
 
     /** Distance sideways (x and z), ignoring height. */
