@@ -211,15 +211,21 @@ final class GolemGreetings {
             stop(golem, now, true, "the " + name(mob) + " is more than " + RANGE_UP_DOWN + " blocks up or down");
             return;
         }
+        if (!golem.isOnGround()) {
+            return; // vanilla plans no path for a mob in the air (stepping down a block, say): check next time
+        }
         var path = golem.getPathfinder().findPath(mob);
         if (!reaches(path, mob)) {
-            stop(golem, now, true, "it can't get to the " + name(mob) + " any more");
+            stop(golem, now, true, "it can't get to the " + name(mob) + " any more" + ending(path, mob));
             return;
         }
-        if (!twoWay(golem, path) || !canGetBack(golem, visit.anchor())) {
+        if (!canGetBack(golem, visit.anchor())) {
             stop(golem, now, true, "it couldn't get back to its work from there");
             return;
         }
+        // A new path from here (the edge of a ledge, say) may drop more than a block where the one
+        // it's on takes the steps: keep the one it's on then, rather than giving up the visit.
+        boolean takeNewPath = twoWay(golem, path);
         if (flat(golem.getLocation(), visit.anchor()) > LEASH_TURN_BACK) {
             stop(golem, now, true, "it's getting too far from its chests and furnaces");
             return;
@@ -234,7 +240,9 @@ final class GolemGreetings {
             stop(golem, now, true, "isn't getting any closer to the " + name(mob) + "; giving up");
             return;
         }
-        golem.getPathfinder().moveTo(path, 1.0);
+        if (takeNewPath) {
+            golem.getPathfinder().moveTo(path, 1.0);
+        }
     }
 
     /**
@@ -313,6 +321,17 @@ final class GolemGreetings {
      * True if the path ends close enough to say hello to the other golem: within greeting
      * distance sideways (a golem in a fence pen stands a little higher) and 2 blocks up or down.
      */
+    /** Where a path that falls short ends, for the debug line. */
+    private static String ending(Pathfinder.PathResult path, Mob other) {
+        Location end = path == null ? null : path.getFinalPoint();
+        if (end == null) {
+            return " (no path)";
+        }
+        return String.format(" (its path ends at %d,%d,%d, %.1f blocks away sideways, %.1f up or down)", end.getBlockX(),
+                end.getBlockY(), end.getBlockZ(), flat(end.clone().add(0.5, 0, 0.5), other.getLocation()),
+                upDown(end, other.getLocation()));
+    }
+
     private static boolean reaches(Pathfinder.PathResult path, Mob other) {
         Location end = path == null ? null : path.getFinalPoint();
         return end != null && flat(end.clone().add(0.5, 0, 0.5), other.getLocation()) <= GREET_DISTANCE
