@@ -59,7 +59,7 @@ groups at the next reload or restart. An empty `groups.yml` counts as a missing 
 is written whole (to a temporary file that's then renamed), so a crash mid-move never leaves
 it cut short; `config.yml` is rewritten only after that, with its old copy saved first. A config with `group-aliases:` but no `groups:` (only vanilla sorting)
 gets a `groups.yml` with no groups either. `config.yml` keeps its owner and file permissions (an admin's account that
-could edit it still can).
+could edit it still can), and a new `groups.yml` gets the same permissions and group, so that account can edit it too.
 
 **Going back to a version before 3.3.0.** An older version doesn't read `groups.yml`. It finds
 no `groups:` in `config.yml` and puts the built-in groups back there, so until you upgrade

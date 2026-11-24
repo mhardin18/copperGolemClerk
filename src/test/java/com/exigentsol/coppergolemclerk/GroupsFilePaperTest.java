@@ -147,6 +147,16 @@ class GroupsFilePaperTest extends PaperTest {
     }
 
     @Test
+    void aDeletedGroupsYmlComesBackWithConfigYmlsPermissions() throws Exception {
+        java.nio.file.Path config = file("config.yml").toPath();
+        var shared = java.nio.file.attribute.PosixFilePermissions.fromString("rw-rw-r--");
+        Files.setPosixFilePermissions(config, shared);
+        Files.delete(file("groups.yml").toPath());
+        assertNull(plugin.loadSettings());
+        assertEquals(shared, Files.getPosixFilePermissions(file("groups.yml").toPath()));
+    }
+
+    @Test
     void groupsYmlWithoutAGroupsSectionIsReported() throws Exception {
         Files.writeString(file("groups.yml").toPath(), "group-aliases: {}\n");
         assertNull(plugin.loadSettings());
@@ -201,17 +211,14 @@ class GroupsFilePaperTest extends PaperTest {
     }
 
     @Test
-    void theMoveKeepsConfigYmlsPermissionsAndMakesGroupsYmlAnOrdinaryFile() throws Exception {
+    void theMoveKeepsConfigYmlsPermissionsAndGivesThemToGroupsYml() throws Exception {
         oldServer(plugin.shippedConfigText() + OWN);
         java.nio.file.Path config = file("config.yml").toPath();
         var shared = java.nio.file.attribute.PosixFilePermissions.fromString("rw-rw-r--");
         Files.setPosixFilePermissions(config, shared); // an admin's account edits it (survival: 664)
         assertNull(plugin.loadSettings());
         assertEquals(shared, Files.getPosixFilePermissions(config), "config.yml keeps rw-rw-r--, not the temp file's rw-------");
-        var groups = Files.getPosixFilePermissions(file("groups.yml").toPath());
-        assertTrue(groups.contains(java.nio.file.attribute.PosixFilePermission.OWNER_READ)
-                && groups.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_READ)
-                || groups.contains(java.nio.file.attribute.PosixFilePermission.GROUP_READ),
-                "groups.yml is made like any other file (umask), not owner-only: " + groups);
+        assertEquals(shared, Files.getPosixFilePermissions(file("groups.yml").toPath()),
+                "groups.yml gets config.yml's permissions, so whoever edits config.yml can edit it too");
     }
 }
