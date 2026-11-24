@@ -212,6 +212,25 @@ def run_batch(r, log, batch, keep, results=None):
     return cells, done
 
 
+
+def read_or_none(path):
+    try:
+        with open(path) as f:
+            return f.read()
+    except FileNotFoundError:
+        return None
+
+
+def put_back(config_before, groups_before):
+    """Write back config.yml and groups.yml if a scenario changed them. True if either was."""
+    changed = False
+    for path, before in ((arena.CONFIG, config_before), (arena.GROUPS, groups_before)):
+        if before is not None and read_or_none(path) != before:
+            with open(path, "w") as f:
+                f.write(before)
+            changed = True
+    return changed
+
 def main(argv):
     problem = check_args(argv)
     if problem:
@@ -236,6 +255,7 @@ def main(argv):
     r = from_properties(os.path.join(arena.SERVER, "server.properties"))
     log = arena.Log(os.path.join(arena.SERVER, "logs/latest.log"))
     config_before = open(arena.CONFIG).read()
+    groups_before = read_or_none(arena.GROUPS)
     r.cmd("coppergolemclerk reload")  # start clean: clears "no home" marks from earlier runs
     r.cmd("weather clear 1000000")  # rain hurts snow golems (greet tests) and changes nothing else we test
 
@@ -256,15 +276,11 @@ def main(argv):
                     cells, done = run_batch(r, log, [(i, s)], keep, results)
                     results.update({i: (cells[i], d) for i, d in done.items()})
                 finally:
-                    if open(arena.CONFIG).read() != config_before:  # options/config tests change settings
-                        with open(arena.CONFIG, "w") as f:
-                            f.write(config_before)
+                    if put_back(config_before, groups_before):  # options/config tests change settings and groups
                         r.cmd("coppergolemclerk reload")
         finally:
-            if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
-                with open(arena.CONFIG, "w") as f:
-                    f.write(config_before)
-                print("Restored config.yml.")
+            if put_back(config_before, groups_before):  # a config test was interrupted
+                print("Restored config.yml and groups.yml.")
             r.cmd("coppergolemclerk reload")
     except KeyboardInterrupt:
         interrupted = True

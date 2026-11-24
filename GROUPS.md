@@ -1,7 +1,8 @@
 # Item groups
 
 Item groups are how golems know that birch logs belong with oak logs. Each group is a list in
-the `groups:` section of `config.yml`. A golem puts an item in a chest whose sign names one of
+the `groups:` section of `plugins/CopperGolemClerk/groups.yml` (before 3.3.0, `config.yml`;
+see [Groups have their own file](#groups-have-their-own-file-330)). A golem puts an item in a chest whose sign names one of
 the item's groups, or a chest holding items from the same group. The README explains
 [how golems use them](README.md#how-it-works) and
 [what you can write in a group](README.md#-patterns--tags-and--properties).
@@ -21,21 +22,40 @@ release's tag (for example `v3.2.0-paper26.3`).
 ## What upgrading does to your groups
 
 **Installing a new version never changes your groups.** This is checked by the plugin's tests
-on every build. A fresh `config.yml` is written only when there is none. After that, the file
-is yours. When a new version starts on an existing `config.yml`, it:
+on every build. A fresh `groups.yml` is written only when there is none. After that, the file
+is yours. When a new version starts on an existing `groups.yml`, it:
 
 - **keeps every line of `groups:` and `group-aliases:` as you wrote it**: your own groups,
   groups you edited or deleted, entries, comments, blank lines and commented-out lines;
-- **doesn't add the new built-in groups**, or new items in a built-in group, to your file;
-- **replaces the explanation right above `groups:`** (and above `group-aliases:` and every
-  other setting) with this version's. That is the block of `#` lines at the left margin
-  directly above the `groups:` line. Comments you put inside the section (indented, or at the
-  left margin between groups) are kept. Put your own notes inside the section, not right above
-  `groups:`;
-- **adds `group-aliases: {}`** if your file doesn't have it (it's new in 3.2.0), and the whole
-  built-in `groups:` list only if your file has no `groups:` at all;
-- **saves the old file first**, as `plugins/CopperGolemClerk/config-before-<version>.yml`,
+- **doesn't add the new built-in groups**, or new items in a built-in group, to your file,
+  and doesn't put back a `groups:` or `group-aliases:` section you deleted;
+- **replaces the explanation right above `groups:`** and `group-aliases:` with this
+  version's. That is the block of `#` lines at the left margin directly above the line.
+  Comments you put inside the section (indented, or at the left margin between groups), and
+  comments at the top of the file, are kept. Put your own notes inside the section, not right
+  above `groups:`;
+- **saves the old file first**, as `plugins/CopperGolemClerk/groups-before-<version>.yml`,
   and says in the console what it changed.
+
+### Groups have their own file (3.3.0)
+
+Before 3.3.0 the groups and aliases were at the end of `config.yml`. The first start of 3.3.0
+(or later) moves them into `groups.yml`:
+
+- `groups:` and `group-aliases:` arrive **line for line**, with everything inside them, under
+  this version's explanations. No built-in groups are mixed in.
+- They're taken out of `config.yml`, with the old explanation above each. Everything else in
+  `config.yml` stays as it was. The old file is saved as `config-before-<version>.yml`.
+- The console says what moved.
+
+If `config.yml` has a YAML mistake, nothing is moved. As before 3.3.0, the server starts with
+the default settings and the built-in groups until you fix it (a reload keeps what's in use).
+The groups move at the next `/cgc reload` or restart after the fix. If the folder can't be
+written, the console says so and the groups stay in use from `config.yml`.
+
+Groups put back into `config.yml` later are ignored, and the console says so: only
+`groups.yml` counts once it exists. A deleted `groups.yml` comes back with the built-in
+groups at the next reload or restart.
 
 **Renamed groups keep working.** When a built-in group is renamed, signs work with either
 name, whichever your file has. For example, `[foliage]` finds an older file's
@@ -65,19 +85,21 @@ Then:
 - `/cgc groups item <item>` shows which groups an item is in.
 
 To take a built-in group, copy it from [the list below](#the-built-in-groups-in-this-release),
-or from this version's `config.yml`, into your `groups:` section. Then run `/cgc reload`.
+or from this version's `groups.yml`, into your `groups:` section. Then run `/cgc reload`.
 
-To start over with every built-in group, delete the `groups:` section, or the whole
-`config.yml`, and restart the server. Deleting the whole file resets every setting, not only
-the groups.
+To start over with every built-in group, delete `groups.yml` and run `/cgc reload` (or
+restart). A new one with the built-in groups and no aliases is written. Your settings in
+`config.yml` aren't affected.
 
 ## Changes to the built-in groups
 
-Only a fresh `config.yml` gets these. See
+Only a fresh `groups.yml` gets these. See
 [What upgrading does to your groups](#what-upgrading-does-to-your-groups).
 
 ### 3.3.0
 
+- The groups and aliases moved from `config.yml` to their own file, `groups.yml`
+  ([details](#groups-have-their-own-file-330)). The groups themselves are the same.
 - The nether brick item moved from `materials` to `nether`, next to the nether brick
   blocks. Before, golems took it to a `[materials]` chest and never to a `[nether]` one.
 
@@ -117,14 +139,14 @@ The first built-in groups, unchanged through 3.0.0.
 
 ## The built-in groups in this release
 
-These are the groups in a fresh 3.3.0 `config.yml`, with every item each one has on
+These are the groups in a fresh 3.3.0 `groups.yml`, with every item each one has on
 Paper 26.3. An item can be in more than one group; golems prefer the group with the fewest
-items. "Entries" are the lines in `config.yml`: item names, `*` patterns, `#` tags and `@`
+items. "Entries" are the lines in `groups.yml`: item names, `*` patterns, `#` tags and `@`
 properties.
 
 <!-- built-in groups: made by GroupsDocPaperTest, don't edit by hand -->
 
-| Sign label | Group in `config.yml` | What's in it | Items |
+| Sign label | Group in `groups.yml` | What's in it | Items |
 |---|---|---|---|
 | [`[music discs]`](#music-discs) | `music-discs` | Music discs | 23 |
 | [`[templates]`](#templates) | `templates` | Smithing templates | 19 |

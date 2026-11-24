@@ -72,7 +72,7 @@ public final class ItemGroups {
         List<String> names = new ArrayList<>();
         Map<Material, BitSet> membership = new EnumMap<>(Material.class);
         if (section == null) {
-            log.warning("No 'groups' section in config.yml; only vanilla sorting will apply.");
+            log.warning("No 'groups' section in groups.yml; only vanilla sorting will apply.");
             return new ItemGroups(names, membership, allItems());
         }
 
@@ -301,7 +301,7 @@ public final class ItemGroups {
 
     /**
      * Default groups renamed in 3.1.0 to fit on a sign line, both ways round, so a sign
-     * keeps working whichever names the server's config.yml has: [smithing templates]
+     * keeps working whichever names the server's groups.yml has: [smithing templates]
      * finds the new templates group, and [templates] finds an older config's
      * smithing-templates. The old concrete-and-terracotta became two groups; [concrete]
      * and [terracotta] on an older config already mean those items by name.
