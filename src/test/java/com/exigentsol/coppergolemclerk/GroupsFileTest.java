@@ -110,4 +110,42 @@ class GroupsFileTest {
         assertEquals(List.of("group-aliases", "groups"), List.copyOf(groups.getKeys(false)), "groups.yml has only the groups");
         assertTrue(groups.getConfigurationSection("groups").getKeys(false).size() > 50);
     }
+
+    @Test
+    void oddLayoutsMoveToo() throws Exception {
+        String shipped = resource("groups.yml");
+        // A flow map on one line, and a note at the end of the key's line.
+        GroupsFile.Move flow = GroupsFile.move("a: 1\ngroups: {gems: [DIAMOND, EMERALD]}\nb: 2\n", shipped);
+        assertEquals("a: 1\nb: 2\n", flow.config());
+        assertEquals(List.of("DIAMOND", "EMERALD"), yaml(flow.groups()).getStringList("groups.gems"));
+        GroupsFile.Move noted = GroupsFile.move("groups:   # mine\n  x: [DIRT]\n", shipped);
+        assertTrue(noted.groups().contains("groups:   # mine\n  x: [DIRT]\n"), noted.groups());
+        // Empty groups, and aliases after the groups.
+        GroupsFile.Move empty = GroupsFile.move("groups: {}\ngroup-aliases:\n  rock: stone\n", shipped);
+        assertEquals(List.of("group-aliases", "groups"), empty.moved());
+        YamlConfiguration emptyYaml = yaml(empty.groups());
+        assertTrue(emptyYaml.getConfigurationSection("groups").getKeys(false).isEmpty());
+        assertEquals("stone", emptyYaml.getString("group-aliases.rock"));
+        assertEquals("", empty.config().strip());
+    }
+
+    @Test
+    void noNewlineAtTheEndOfTheFile() throws Exception {
+        GroupsFile.Move move = GroupsFile.move("match-mode: all\ngroups:\n  x:\n    - DIRT", resource("groups.yml"));
+        assertEquals("match-mode: all", move.config(), "config.yml keeps its style: no newline at the end");
+        assertTrue(move.groups().endsWith("groups:\n  x:\n    - DIRT\n"), move.groups());
+    }
+
+    @Test
+    void aKeyThatOnlyStartsWithGroupsIsNotTheGroups() throws Exception {
+        String config = "groups-extra: 1\ngroupsies:\n  a: b\n";
+        assertFalse(GroupsFile.hasGroups(config));
+        assertNull(GroupsFile.move(config, resource("groups.yml")));
+    }
+
+    @Test
+    void indentedGroupsKeysInsideAnotherSettingAreNotMoved() throws Exception {
+        String config = "something:\n  groups:\n    - x\n";
+        assertFalse(GroupsFile.hasGroups(config), "only a top-level groups: counts");
+    }
 }
