@@ -276,15 +276,19 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
      * Write a file through a temporary one renamed over it, so a crash never leaves it cut short.
      * The temporary file is made the ordinary way (the server's umask, not createTempFile's
      * owner-only 600), and an existing file's permissions and group are copied onto it first, so
-     * a config.yml an admin's account can edit (664, say) stays that way.
+     * a config.yml an admin's account can edit (664, say) stays that way. A new file (groups.yml
+     * on its first start) gets config.yml's permissions and group, so the same account can edit it.
      */
     private void writeAtomically(File target, String text) throws IOException {
         java.nio.file.Path dest = target.toPath();
         java.nio.file.Path tmp = dest.resolveSibling("." + target.getName() + "-" + System.nanoTime() + ".tmp");
         try {
             java.nio.file.Files.writeString(tmp, text, java.nio.file.StandardOpenOption.CREATE_NEW);
+            java.nio.file.Path config = dest.resolveSibling("config.yml");
             if (java.nio.file.Files.exists(dest)) {
                 keepAttributes(dest, tmp);
+            } else if (java.nio.file.Files.isRegularFile(config)) {
+                keepAttributes(config, tmp); // a new groups.yml can be edited by whoever edits config.yml
             }
             try {
                 java.nio.file.Files.move(tmp, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
