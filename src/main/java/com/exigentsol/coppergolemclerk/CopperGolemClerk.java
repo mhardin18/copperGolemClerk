@@ -254,7 +254,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             writeAtomically(file, crlf ? move.groups().replace("\n", "\r\n") : move.groups());
             File written = backup;
             backup = null; // groups.yml has them now: keep the backup
-            writeAtomically(config, crlf ? move.config().replace("\n", "\r\n") : move.config());
+            // config.yml in place, as the settings upgrade does: that keeps its owner (the rename above
+            // would make it the server's), and a crash now loses nothing (groups.yml has them, and the backup).
+            java.nio.file.Files.writeString(config.toPath(), crlf ? move.config().replace("\n", "\r\n") : move.config());
             getLogger().info("Moved " + String.join(" and ", move.moved()) + " from config.yml to " + GROUPS_FILE
                     + ", unchanged: item groups have their own file now. Edit them there. The old config.yml is "
                     + written.getName() + ".");
