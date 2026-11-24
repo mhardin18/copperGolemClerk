@@ -72,7 +72,7 @@ tasks.jacocoTestReport {
 }
 
 // Coverage of the in-game tests: run pluginDev with the JaCoCo agent (see tools/itest/README.md,
-// "Code coverage"), then ./gradlew jacocoItestReport -PitestExec=<path to the .exec file>.
+// "Code coverage"), then ./gradlew jacocoItestReport -PitestExec=<.exec file> -PitestClasses=<dumped classes>.
 // It merges in the unit tests' data when there is some (./gradlew test first).
 // The classes must be the ones that ran on the server: build the same commit.
 val jacocoItestReport by tasks.registering(JacocoReport::class) {
@@ -81,6 +81,11 @@ val jacocoItestReport by tasks.registering(JacocoReport::class) {
     val itestExec = providers.gradleProperty("itestExec").orElse("/opt/minecraft/pluginDev/coverage/itest.exec")
     executionData(files(itestExec, layout.buildDirectory.file("jacoco/test.exec")).filter { it.isFile })
     sourceSets(sourceSets.main.get())
+    // Paper changes plugin classes as it loads them, so the report needs the classes as the agent
+    // saw them: give the agent classdumpdir=<dir> and pass -PitestClasses=<dir>.
+    providers.gradleProperty("itestClasses").orNull?.let { dir ->
+        classDirectories.setFrom(fileTree(dir).matching { include("com/exigentsol/**") })
+    }
     reports {
         xml.required.set(true)
         csv.required.set(true)

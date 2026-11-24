@@ -290,8 +290,13 @@ Environment="JVM_MISC=<the unit's JVM_MISC> -javaagent:/opt/minecraft/pluginDev/
 
 (`jacocoagent.jar` is inside `org.jacoco.agent-<version>.jar` in Gradle's cache.) Run
 `systemctl daemon-reload`, run the tests (the data is written when the server stops), then
-`./gradlew test jacocoItestReport` from the same commit for a report of both, in
-`build/reports/jacoco/itest/html/index.html`. Remove the drop-in and reload afterwards.
+`./gradlew jacocoItestReport -PitestExec=<the .exec file> -PitestClasses=<dir>` for the
+report, in `build/reports/jacoco/itest/html/index.html`. Paper changes plugin classes as it
+loads them, so the report needs the classes exactly as the agent saw them: add
+`classdumpdir=<dir>` to the agent's options and pass that folder as `-PitestClasses`
+(classes built from the same commit don't match). A JaCoCo `.exec` written that way can't be
+merged with the unit tests' data for the same reason; report them separately. Remove the
+drop-in and reload afterwards.
 
 ## Unit tests
 
