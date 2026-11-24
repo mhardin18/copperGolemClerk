@@ -284,10 +284,44 @@ Build it with `./gradlew build` in `hooks/` and copy the jar to pluginDev's plug
 folder. Without it the `conflicts`, `lids` and `gestures` suites, and the cauldron
 keep-away scenarios, are skipped.
 
+## Code coverage
+
+Unit tests: `./gradlew test jacocoTestReport`, then open
+`build/reports/jacoco/test/html/index.html`.
+
+In-game tests: give pluginDev the JaCoCo agent for the run with a systemd drop-in, for example
+`/etc/systemd/system/mcd.service.d/coverage.conf`:
+
+```
+[Service]
+Environment="JVM_MISC=<the unit's JVM_MISC> -javaagent:/opt/minecraft/pluginDev/coverage/jacocoagent.jar=destfile=/opt/minecraft/pluginDev/coverage/itest.exec,append=true,includes=com.exigentsol.coppergolemclerk.*"
+```
+
+(`jacocoagent.jar` is inside `org.jacoco.agent-<version>.jar` in Gradle's cache.) Run
+`systemctl daemon-reload`, run the tests (the data is written when the server stops), then
+`./gradlew jacocoItestReport -PitestExec=<the .exec file> -PitestClasses=<dir>` for the
+report, in `build/reports/jacoco/itest/html/index.html`. Paper changes plugin classes as it
+loads them, so the report needs the classes exactly as the agent saw them: add
+`classdumpdir=<dir>` to the agent's options and pass that folder as `-PitestClasses`
+(classes built from the same commit don't match). A JaCoCo `.exec` written that way can't be
+merged with the unit tests' data for the same reason; report them separately. Remove the
+drop-in and reload afterwards.
+
 ## Unit tests
 
-`./gradlew test` in the project root runs the JUnit tests (sign word matching, YAML error
-summaries). They need no server.
+`./gradlew test` in the project root runs the JUnit tests (over 1,100). They need no server:
+most run the plugin on MockBukkit, a fake Paper server, and cover about 94% of the plugin's
+lines (`./gradlew test jacocoTestReport` for the report). MockBukkit has no pathfinder, so
+the tests that walk golems use small fake golems with scripted pathfinders (`DisplayGolem`,
+`PathGolem`, `ScriptGolem`, `WalkGolem` in `src/test`), and fake GriefPrevention and
+LuckPerms classes (`src/test/java/me/ryanhamshire`, `src/test/java/net/luckperms`) stand in
+for those plugins. What only a real server shows (real paths, timing, chunk loading) is what
+these in-game tests are for.
+
+MockBukkit quirks the tests work around: `Block.getLocation()` hands out one shared Location
+(real Paper returns a new one), entities aren't on the ground until `setOnGround(true)`,
+`getTargetBlockExact`, `Mob.getPathfinder` and a golem's height aren't implemented, and an
+unimplemented call shows up as a skipped test, which the build turns into a failure.
 
 ## RCON access
 

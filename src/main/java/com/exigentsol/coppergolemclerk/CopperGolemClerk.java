@@ -925,10 +925,6 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return claims;
     }
 
-    boolean findEnabled() {
-        return findEnabled;
-    }
-
     /** find-radius: how far /cgc find looks (1-64). */
     int findRadius() {
         return findRadius;
@@ -1240,10 +1236,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 throw new IllegalArgumentException("Only admins can give a position or 'all'.");
             }
             switch (sub) {
-                case "find" -> {
-                    if (!findEnabled) {
-                        throw new IllegalArgumentException("/cgc find is turned off on this server (find-enabled: false).");
-                    }
+                case "find" -> { // find-enabled: false is turned away by mayUse above
                     if (args.length < 2) {
                         throw new IllegalArgumentException(sender instanceof Player
                                 ? "Usage: /cgc find <item, group, pattern or #tag> [radius]"
@@ -1458,8 +1451,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     }
                 }
                 for (Material m : Material.values()) {
+                    if (m.isLegacy() || !m.isItem()) {
+                        continue; // a legacy material has no key: getKey() throws
+                    }
                     String key = m.getKey().getKey();
-                    if (!m.isLegacy() && m.isItem() && key.startsWith(prefix) && out.size() < 100) {
+                    if (key.startsWith(prefix) && out.size() < 100) {
                         out.add(key);
                     }
                 }
@@ -1505,8 +1501,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 String prefix = args[2].toLowerCase(Locale.ROOT);
                 List<String> out = new ArrayList<>();
                 for (Material m : Material.values()) {
+                    if (m.isLegacy() || !m.isItem()) {
+                        continue; // a legacy material has no key: getKey() throws
+                    }
                     String key = m.getKey().getKey();
-                    if (!m.isLegacy() && m.isItem() && key.startsWith(prefix) && out.size() < 100) {
+                    if (key.startsWith(prefix) && out.size() < 100) {
                         out.add(key);
                     }
                 }

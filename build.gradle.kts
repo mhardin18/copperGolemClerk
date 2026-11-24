@@ -5,6 +5,7 @@ import java.nio.file.attribute.PosixFilePermissions
 
 plugins {
     java
+    jacoco
 }
 
 group = "com.exigentsol"
@@ -53,6 +54,46 @@ tasks.test {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+}
+
+// Code coverage of the unit tests: ./gradlew test jacocoTestReport, then open
+// build/reports/jacoco/test/html/index.html (CSV and XML next to it for scripts).
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        csv.required.set(true)
+        html.required.set(true)
+    }
+}
+
+// Coverage of the in-game tests: run pluginDev with the JaCoCo agent (see tools/itest/README.md,
+// "Code coverage"), then ./gradlew jacocoItestReport -PitestExec=<.exec file> -PitestClasses=<dumped classes>.
+// It merges in the unit tests' data when there is some (./gradlew test first).
+// The classes must be the ones that ran on the server: build the same commit.
+val jacocoItestReport by tasks.registering(JacocoReport::class) {
+    description = "Coverage report for the in-game tests (and the unit tests, if they ran)."
+    group = "verification"
+    val itestExec = providers.gradleProperty("itestExec").orElse("/opt/minecraft/pluginDev/coverage/itest.exec")
+    executionData(files(itestExec, layout.buildDirectory.file("jacoco/test.exec")).filter { it.isFile })
+    sourceSets(sourceSets.main.get())
+    // Paper changes plugin classes as it loads them, so the report needs the classes as the agent
+    // saw them: give the agent classdumpdir=<dir> and pass -PitestClasses=<dir>.
+    providers.gradleProperty("itestClasses").orNull?.let { dir ->
+        classDirectories.setFrom(fileTree(dir).matching { include("com/exigentsol/**") })
+    }
+    reports {
+        xml.required.set(true)
+        csv.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/itest/html"))
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/itest/itest.xml"))
+        csv.outputLocation.set(layout.buildDirectory.file("reports/jacoco/itest/itest.csv"))
+    }
 }
 
 tasks.processResources {
