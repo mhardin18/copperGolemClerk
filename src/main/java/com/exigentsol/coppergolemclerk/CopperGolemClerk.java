@@ -270,19 +270,48 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
     }
 
-    /** Write a file through a temporary one renamed over it, so a crash never leaves it cut short. */
+    /**
+     * Write a file through a temporary one renamed over it, so a crash never leaves it cut short.
+     * The temporary file is made the ordinary way (the server's umask, not createTempFile's
+     * owner-only 600), and an existing file's permissions and group are copied onto it first, so
+     * a config.yml an admin's account can edit (664, say) stays that way.
+     */
     private void writeAtomically(File target, String text) throws IOException {
-        java.nio.file.Path tmp = java.nio.file.Files.createTempFile(getDataFolder().toPath(), "." + target.getName() + "-", ".tmp");
+        java.nio.file.Path dest = target.toPath();
+        java.nio.file.Path tmp = dest.resolveSibling("." + target.getName() + "-" + System.nanoTime() + ".tmp");
         try {
-            java.nio.file.Files.writeString(tmp, text);
+            java.nio.file.Files.writeString(tmp, text, java.nio.file.StandardOpenOption.CREATE_NEW);
+            if (java.nio.file.Files.exists(dest)) {
+                keepAttributes(dest, tmp);
+            }
             try {
-                java.nio.file.Files.move(tmp, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                java.nio.file.Files.move(tmp, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
                         java.nio.file.StandardCopyOption.ATOMIC_MOVE);
             } catch (java.nio.file.AtomicMoveNotSupportedException e) {
-                java.nio.file.Files.move(tmp, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                java.nio.file.Files.move(tmp, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             }
         } finally {
             java.nio.file.Files.deleteIfExists(tmp);
+        }
+    }
+
+    /** Copy a file's POSIX permissions and group (where the system has them and allows it). */
+    static void keepAttributes(java.nio.file.Path from, java.nio.file.Path to) {
+        try {
+            var view = java.nio.file.Files.getFileAttributeView(from, java.nio.file.attribute.PosixFileAttributeView.class);
+            if (view == null) {
+                return; // not a POSIX file system (Windows): nothing to keep
+            }
+            var attrs = view.readAttributes();
+            java.nio.file.Files.setPosixFilePermissions(to, attrs.permissions());
+            try {
+                java.nio.file.Files.getFileAttributeView(to, java.nio.file.attribute.PosixFileAttributeView.class)
+                        .setGroup(attrs.group());
+            } catch (IOException | SecurityException e) {
+                // only a member of the group may give a file to it: the permissions still hold
+            }
+        } catch (IOException | UnsupportedOperationException | SecurityException e) {
+            // keep going with the defaults rather than not saving at all
         }
     }
 
