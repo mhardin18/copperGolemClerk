@@ -91,9 +91,9 @@ final class HelpText {
                                     + " items and the busiest claims.",
                             "Players are also told what golems sorted while they were away when they join (join-summary).")),
             new Entry("reload", "/cgc reload", "/cgc reload",
-                    "Reload config.yml.",
-                    List.of("Reads plugins/CopperGolemClerk/config.yml again: item groups and settings.",
-                            "If the file has a mistake, nothing changes and you're told which line to fix.")),
+                    "Reload config.yml and groups.yml.",
+                    List.of("Reads plugins/CopperGolemClerk/config.yml (settings) and groups.yml (item groups) again.",
+                            "If either file has a mistake, nothing changes and you're told which line to fix.")),
             new Entry("settings", "/cgc settings [all | <setting>]", "/cgc settings [all | <setting>]",
                     "Settings that differ from this version's defaults.",
                     List.of("Lists the settings in config.yml that aren't at this version's default, and why that may matter:",
@@ -108,7 +108,7 @@ final class HelpText {
                             "Item groups and group-aliases aren't included: see /cgc groups.")),
             new Entry("groups", "/cgc groups [<group> | item <item>]", "/cgc groups [<group> | item <item>]",
                     "Your item groups compared with this version's built-in ones.",
-                    List.of("Upgrading never changes the groups in config.yml, so a server keeps the groups it started"
+                    List.of("Upgrading never changes the groups in groups.yml, so a server keeps the groups it started"
                                     + " with. This shows:",
                             "- problems the console reported when the groups were loaded: entries that match no item,"
                                     + " group-aliases that point to no group, names signs can't use",

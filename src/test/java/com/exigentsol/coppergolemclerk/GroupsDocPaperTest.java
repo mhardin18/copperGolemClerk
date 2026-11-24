@@ -42,13 +42,13 @@ class GroupsDocPaperTest extends PaperTest {
     /** The table of groups, then each group's entries and items. */
     private String builtInGroups() throws IOException {
         String shipped;
-        try (InputStream in = GroupsDocPaperTest.class.getResourceAsStream("/config.yml")) {
+        try (InputStream in = GroupsDocPaperTest.class.getResourceAsStream("/groups.yml")) {
             shipped = new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
         List<Group> groups = parse(shipped.substring(shipped.indexOf("\ngroups:\n") + 1));
         ItemGroups loaded = plugin.groups();
         StringBuilder out = new StringBuilder();
-        out.append("| Sign label | Group in `config.yml` | What's in it | Items |\n|---|---|---|---|\n");
+        out.append("| Sign label | Group in `groups.yml` | What's in it | Items |\n|---|---|---|---|\n");
         for (Group g : groups) {
             int i = loaded.groupIndex(g.name());
             out.append("| [`").append(loaded.signLabel(i)).append("`](#").append(g.name()).append(") | `")
