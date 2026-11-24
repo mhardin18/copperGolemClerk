@@ -199,4 +199,19 @@ class GroupsFilePaperTest extends PaperTest {
             assertTrue(logged("can't be written"), log.toString());
         }
     }
+
+    @Test
+    void theMoveKeepsConfigYmlsPermissionsAndMakesGroupsYmlAnOrdinaryFile() throws Exception {
+        oldServer(plugin.shippedConfigText() + OWN);
+        java.nio.file.Path config = file("config.yml").toPath();
+        var shared = java.nio.file.attribute.PosixFilePermissions.fromString("rw-rw-r--");
+        Files.setPosixFilePermissions(config, shared); // an admin's account edits it (survival: 664)
+        assertNull(plugin.loadSettings());
+        assertEquals(shared, Files.getPosixFilePermissions(config), "config.yml keeps rw-rw-r--, not the temp file's rw-------");
+        var groups = Files.getPosixFilePermissions(file("groups.yml").toPath());
+        assertTrue(groups.contains(java.nio.file.attribute.PosixFilePermission.OWNER_READ)
+                && groups.contains(java.nio.file.attribute.PosixFilePermission.OTHERS_READ)
+                || groups.contains(java.nio.file.attribute.PosixFilePermission.GROUP_READ),
+                "groups.yml is made like any other file (umask), not owner-only: " + groups);
+    }
 }

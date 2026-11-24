@@ -58,7 +58,15 @@ Groups put back into `config.yml` later are ignored, and the console says so: on
 groups at the next reload or restart. An empty `groups.yml` counts as a missing one. The
 files are written whole (to a temporary file that's then renamed), so a crash mid-move never
 leaves one cut short. A config with `group-aliases:` but no `groups:` (only vanilla sorting)
-gets a `groups.yml` with no groups either.
+gets a `groups.yml` with no groups either. The move keeps `config.yml`'s file permissions and group (an admin's
+account that could edit it still can).
+
+**Going back to a version before 3.3.0.** An older version doesn't read `groups.yml`. It finds
+no `groups:` in `config.yml` and puts the built-in groups back there, so until you upgrade
+again golems sort by the built-in groups, not yours. When 3.3.0 or later starts again it uses
+`groups.yml` and ignores that copy in `config.yml`, with a warning in the console: delete it
+then. To keep your own groups on the older version, copy them from `groups.yml` back into
+`config.yml` before you go back.
 
 **Renamed groups keep working.** When a built-in group is renamed, signs work with either
 name, whichever your file has. For example, `[foliage]` finds an older file's
