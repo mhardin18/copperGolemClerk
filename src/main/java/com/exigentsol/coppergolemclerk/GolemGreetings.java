@@ -219,10 +219,13 @@ final class GolemGreetings {
             stop(golem, now, true, "it can't get to the " + name(mob) + " any more" + ending(path, mob));
             return;
         }
-        if (!twoWay(golem, path) || !canGetBack(golem, visit.anchor())) {
+        if (!canGetBack(golem, visit.anchor())) {
             stop(golem, now, true, "it couldn't get back to its work from there");
             return;
         }
+        // A new path from here (the edge of a ledge, say) may drop more than a block where the one
+        // it's on takes the steps: keep the one it's on then, rather than giving up the visit.
+        boolean takeNewPath = twoWay(golem, path);
         if (flat(golem.getLocation(), visit.anchor()) > LEASH_TURN_BACK) {
             stop(golem, now, true, "it's getting too far from its chests and furnaces");
             return;
@@ -237,7 +240,9 @@ final class GolemGreetings {
             stop(golem, now, true, "isn't getting any closer to the " + name(mob) + "; giving up");
             return;
         }
-        golem.getPathfinder().moveTo(path, 1.0);
+        if (takeNewPath) {
+            golem.getPathfinder().moveTo(path, 1.0);
+        }
     }
 
     /**
