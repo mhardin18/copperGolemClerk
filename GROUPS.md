@@ -55,11 +55,11 @@ written, the console says so and the groups stay in use from `config.yml`.
 
 Groups put back into `config.yml` later are ignored, and the console says so: only
 `groups.yml` counts once it exists. A deleted `groups.yml` comes back with the built-in
-groups at the next reload or restart. An empty `groups.yml` counts as a missing one. The
-files are written whole (to a temporary file that's then renamed), so a crash mid-move never
-leaves one cut short. A config with `group-aliases:` but no `groups:` (only vanilla sorting)
-gets a `groups.yml` with no groups either. The move keeps `config.yml`'s file permissions and group (an admin's
-account that could edit it still can).
+groups at the next reload or restart. An empty `groups.yml` counts as a missing one. `groups.yml`
+is written whole (to a temporary file that's then renamed), so a crash mid-move never leaves
+it cut short; `config.yml` is rewritten only after that, with its old copy saved first. A config with `group-aliases:` but no `groups:` (only vanilla sorting)
+gets a `groups.yml` with no groups either. `config.yml` keeps its owner and file permissions (an admin's account that
+could edit it still can).
 
 **Going back to a version before 3.3.0.** An older version doesn't read `groups.yml`. It finds
 no `groups:` in `config.yml` and puts the built-in groups back there, so until you upgrade
