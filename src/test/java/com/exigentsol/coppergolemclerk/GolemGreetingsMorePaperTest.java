@@ -365,10 +365,17 @@ class GolemGreetingsMorePaperTest extends PaperTest {
         tick();
         assertTrue(logged("it can't get to the iron golem any more"), log.toString());
 
+        // A new path that drops 3 blocks, while there's still a way back: the golem keeps the path it's
+        // on (from the edge of a ledge, vanilla's new path may skip the steps it came down).
+        log.clear();
         visit(g, other, 3000, 10, 3000, 0, 0);
-        g.pathTo = target -> ScriptGolem.path(target, true, new Location(world, 4.5, FLOOR - 3, 0.5), target);
+        Location home = g.getLocation().clone();
+        g.pathTo = target -> target.distance(home) < 1
+                ? ScriptGolem.path(target, true, target)
+                : ScriptGolem.path(target, true, new Location(world, 4.5, FLOOR - 3, 0.5), target);
         tick();
-        assertTrue(logged("it couldn't get back to its work from there"), log.toString());
+        assertFalse(logged("it couldn't get back to its work from there"), log.toString());
+        assertTrue(visiting(g), "still visiting, on the path it had");
 
         log.clear();
         visit(g, other, 3000, 10, 3000, 30, 0);
