@@ -22,6 +22,7 @@ Versions are the plugin release each change came out with.
 - `options`: `option-unlimited-fetchers` checks that `fetchers-per-overflow-chest: 0` (no limit) lets more than 4 golems fetch from one overflow chest at once.
 
 ### Changed
+- `edge`: `fetcher-limit` expects at most 4 golems fetching from one overflow chest (the new default of `fetchers-per-overflow-chest`), not 2. It passed before only because pluginDev's old config still had 2.
 - The `no_errors` check (`furnace-edge`, `lava`, `cauldrons` and others) skips the log lines `run.py` already treats as harmless. In a full run another platform summoning an item frame logged "Block-attached entity at invalid position", which failed every scenario running at the time.
 - `settings-report` expects the summary's new pointer to `/cgc groups` for item groups.
 - `impact.py` maps `SettingsReport` and `GroupsReport` to the `config` suite, `GolemGestures` to `gestures`, `reach` and `lids`, adds `gestures` for `FurnaceFeeder`, `OverflowFetcher` and `ReachDelivery`, and runs `lids` and `gestures` for changes to GolemTestHooks.
