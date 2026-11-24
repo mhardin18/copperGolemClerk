@@ -64,8 +64,10 @@ they can't run alongside these.
 - **One run at a time.** Two runs on the same server spoil each other's results.
 - **Three starts per ten minutes.** pluginDev's service refuses a fourth start within ten
   minutes. If the script says it couldn't start or restart `mcd`, wait and run it again.
-- The survival server isn't touched, but it shares the machine. A run stops itself if
-  survival's tick time or the host's load gets too high.
+- The survival server isn't touched, but it shares the machine, and a run doesn't watch the
+  host's load. Heavy work alongside one (a big build, a BlueMap render) can slow golems enough
+  to fail timed scenarios. (Only `tune.py`, the tuning tool, records the host's load and the
+  server's tick time while it runs.)
 
 ### Long runs
 
