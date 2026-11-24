@@ -5,6 +5,7 @@ import java.nio.file.attribute.PosixFilePermissions
 
 plugins {
     java
+    jacoco
 }
 
 group = "com.exigentsol"
@@ -53,6 +54,21 @@ tasks.test {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+}
+
+// Code coverage of the unit tests: ./gradlew test jacocoTestReport, then open
+// build/reports/jacoco/test/html/index.html (CSV and XML next to it for scripts).
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        csv.required.set(true)
+        html.required.set(true)
+    }
 }
 
 tasks.processResources {
