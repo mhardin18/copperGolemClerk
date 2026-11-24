@@ -754,14 +754,13 @@ groups:
     - RAW_COPPER
     - RAW_GOLD
     - RAW_IRON
-  # Crafting materials (9 items)
+  # Crafting materials (8 items)
   materials:
     - BOWL
     - BRICK
     - CLAY_BALL
     - FLINT
     - GLOWSTONE_DUST
-    - NETHER_BRICK
     - PAPER
     - RESIN_BRICK
     - STICK
@@ -1022,7 +1021,7 @@ groups:
     - SEA_PICKLE
     - SPONGE
     - WET_SPONGE
-  # Nether (44 items)
+  # Nether (45 items)
   nether:
     - "*BASALT*"
     - "*_BLACKSTONE"
@@ -1039,6 +1038,7 @@ groups:
     - CRIMSON_ROOTS
     - MAGMA_BLOCK
     - NETHERRACK
+    - NETHER_BRICK
     - NETHER_BRICKS
     - NETHER_SPROUTS
     - NETHER_WART_BLOCK
