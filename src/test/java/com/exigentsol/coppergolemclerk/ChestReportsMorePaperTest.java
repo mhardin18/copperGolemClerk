@@ -546,7 +546,7 @@ class ChestReportsMorePaperTest extends PaperTest {
 
     @Test
     void overflowItemsWhoseGroupLabelIsTooWideGetAFootnote() throws Exception {
-        File file = new File(plugin.getDataFolder(), "config.yml");
+        File file = new File(plugin.getDataFolder(), "groups.yml");
         Files.writeString(file.toPath(), Files.readString(file.toPath()).replace("\ngroups:\n",
                 "\ngroups:\n  the-very-long-group-name-nobody-fits:\n    - COMMAND_BLOCK\n"));
         plugin.loadSettings();

@@ -157,10 +157,10 @@ class ConfigUpgradeTest {
 
     @Test
     void upgradingNeverChangesTheOwnersGroupsOrAliases() throws Exception {
-        String head = without(shipped(), "carry-amount", "avoid-cauldrons");
-        int at = head.indexOf("\ngroups:\n") + 1;
+        // A config.yml from before 3.3.0, when the groups were in it (the upgrade runs on one
+        // that couldn't be moved to groups.yml too).
         String aliases = "group-aliases:\n  stones: stone-stuff\n  # rock: stone-stuff\n";
-        String old = head.substring(0, at).replace("group-aliases: {}\n", aliases) + OWN_GROUPS;
+        String old = without(shipped(), "carry-amount", "avoid-cauldrons") + "\n" + aliases + "\n" + OWN_GROUPS;
         ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped());
         assertEquals(List.of("carry-amount", "avoid-cauldrons"), result.added());
         String text = result.text();
@@ -170,11 +170,41 @@ class ConfigUpgradeTest {
         assertEquals(List.of("stone-stuff", "logs", "ores"), List.copyOf(config.getConfigurationSection("groups").getKeys(false)));
     }
 
+    private static String shippedGroups() throws IOException {
+        try (InputStream in = ConfigUpgradeTest.class.getResourceAsStream("/groups.yml")) {
+            return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+    }
+
     @Test
     void theCommentAboveGroupsIsThisVersionsExplanation() throws Exception {
-        String old = shipped().replace("# Upgrading never changes this list.", "# my note above my groups");
-        ConfigUpgrade.Result result = ConfigUpgrade.addMissing(old, shipped());
+        String old = shippedGroups().replace("# Upgrading never changes this list.", "# my note above my groups");
+        ConfigUpgrade.Result result = ConfigUpgrade.explainOnly(old, shippedGroups());
         assertEquals(List.of("groups"), result.explained());
-        assertEquals(shipped(), result.text(), "the comment right above groups: is replaced, nothing else");
+        assertEquals(shippedGroups(), result.text(), "the comment right above groups: is replaced, nothing else");
+    }
+
+    @Test
+    void upgradingGroupsYmlOnlyTouchesTheExplanations() throws Exception {
+        String aliases = "group-aliases:\n  stones: stone-stuff\n";
+        String old = "# my own heading\n\n# old words about aliases\n" + aliases + "\n# old words about groups\n" + OWN_GROUPS;
+        ConfigUpgrade.Result result = ConfigUpgrade.explainOnly(old, shippedGroups());
+        assertEquals(List.of("group-aliases", "groups"), result.explained());
+        String text = result.text();
+        assertTrue(text.startsWith("# my own heading\n"), "a comment at the top that isn't above a key stays");
+        assertTrue(!text.contains("old words"), "the old explanations are replaced");
+        assertTrue(text.contains("# Other names for groups.") && text.contains("# Each group is a list of entries."));
+        assertTrue(text.contains(aliases) && text.endsWith(OWN_GROUPS), "the owner's aliases and groups stay line for line");
+        assertTrue(result.added().isEmpty() && result.removed().isEmpty(), "no built-in groups are added");
+        YamlConfiguration yaml = yaml(text);
+        assertEquals(List.of("stone-stuff", "logs", "ores"), List.copyOf(yaml.getConfigurationSection("groups").getKeys(false)));
+        assertTrue(ConfigUpgrade.explainOnly(text, shippedGroups()).explained().isEmpty(), "a second run changes nothing");
+    }
+
+    @Test
+    void groupsYmlWithoutAGroupsSectionGetsNoneAdded() throws Exception {
+        String old = "group-aliases: {}\n";
+        ConfigUpgrade.Result result = ConfigUpgrade.explainOnly(old, shippedGroups());
+        assertTrue(!yaml(result.text()).contains("groups"), "an owner who removed the groups doesn't get them back");
     }
 }

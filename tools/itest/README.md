@@ -85,7 +85,7 @@ To stop the run early:
 pkill -TERM -f 'tools/itest/run.py'
 ```
 
-The run then restores pluginDev's `config.yml` and saves the results of every scenario that
+The run then restores pluginDev's `config.yml` and `groups.yml` and saves the results of every scenario that
 finished. The rest are `NOT RUN`. The script stops pluginDev if it had started it.
 Don't use `kill -9`, which skips all of this.
 
@@ -106,7 +106,7 @@ newest. Older runs are kept.
     plugin's log lines for the scenario's platform.
 
 Scenario status is `PASS`, `FAIL`, `SKIP`, or `NOT RUN` when the run was stopped first.
-A stopped run (Ctrl-C or SIGTERM) still restores `config.yml` and saves what finished.
+A stopped run (Ctrl-C or SIGTERM) still restores `config.yml` and `groups.yml` and saves what finished.
 
 A quick look from the shell:
 
@@ -214,7 +214,7 @@ error or exception in the server log during a scenario fails it.
 | edge26, edge30 | extra edge cases for `carry-amount` and `/cgc find` (edge26), and for furnaces, lava and hopper-fed [Overflow] chests (edge30) |
 
 Scenarios that change something server-wide (config, reloads, tick timing) run one at a
-time after the others. The runner restores `config.yml` after each.
+time after the others. The runner restores `config.yml` and `groups.yml` after each.
 
 ## Reading containers in a check
 

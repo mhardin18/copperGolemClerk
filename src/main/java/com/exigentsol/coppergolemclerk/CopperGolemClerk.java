@@ -23,6 +23,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -88,6 +89,14 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     /** config.yml as last loaded (null if it couldn't be read at startup), and the warnings that load logged about settings. */
     private volatile YamlConfiguration loadedConfig;
     private volatile List<String> settingWarnings = List.of();
+    /**
+     * Where the item groups in use came from (groups.yml as last loaded; config.yml while it
+     * still has them and they couldn't be moved), or null if neither could be read at startup
+     * and the built-in groups are in use. groupsFileName says which file it is.
+     */
+    private volatile YamlConfiguration loadedGroups;
+    private volatile String groupsFileName = GROUPS_FILE;
+    static final String GROUPS_FILE = "groups.yml";
     private GolemLimits limits;
     private volatile int maxGolemsPerClaim;
     private volatile int claimBlocksPerExtraGolem;
@@ -133,7 +142,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     + " and restart, or golems are handled twice.");
         }
         saveDefaultConfig();
+        setUpGroupsFile();
         addMissingSettings();
+        explainGroups();
         loadSettings();
         stats = new GolemStats(this);
         getServer().getPluginManager().registerEvents(stats, this);
@@ -203,6 +214,121 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return Versions.configUrl(getPluginMeta().getVersion(), getPluginMeta().getAPIVersion());
     }
 
+    /**
+     * Makes sure groups.yml exists. Before 3.3.0 the groups were in config.yml: the first start
+     * moves group-aliases: and groups: from there, line for line, keeping the old config.yml
+     * as config-before-<version>.yml. A fresh install gets the built-in groups. A config.yml
+     * with a YAML error, or one that can't be written, is left alone, and its groups stay in
+     * use from there until the move can be made.
+     */
+    void setUpGroupsFile() { // package-private: unit tests
+        File file = new File(getDataFolder(), GROUPS_FILE);
+        if (file.exists() && !(file.isFile() && file.length() == 0)) {
+            return; // an empty groups.yml (a write cut short, say) counts as none
+        }
+        File config = new File(getDataFolder(), "config.yml");
+        File backup = null;
+        try {
+            String raw = config.isFile() ? java.nio.file.Files.readString(config.toPath()) : "";
+            boolean crlf = raw.contains("\r\n");
+            String current = crlf ? raw.replace("\r\n", "\n") : raw;
+            if (!GroupsFile.hasGroups(current)) {
+                java.nio.file.Files.createDirectories(getDataFolder().toPath());
+                writeAtomically(file, shippedGroupsText());
+                return;
+            }
+            try {
+                new YamlConfiguration().loadFromString(current);
+            } catch (InvalidConfigurationException e) {
+                return; // loadSettings reports the error; move the groups once the file is fixed
+            }
+            GroupsFile.Move move = GroupsFile.move(current, shippedGroupsText().replace("\r\n", "\n"));
+            if (!java.nio.file.Files.isWritable(config.toPath()) || !java.nio.file.Files.isWritable(getDataFolder().toPath())) {
+                getLogger().warning("Item groups now belong in " + GROUPS_FILE + ", but config.yml or its folder can't be"
+                        + " written (check the permissions), so they weren't moved. The groups in config.yml are used.");
+                return;
+            }
+            backup = backupFile("config");
+            java.nio.file.Files.copy(config.toPath(), backup.toPath());
+            // groups.yml first: if config.yml can't be written after it, the groups are in both, never in neither.
+            writeAtomically(file, crlf ? move.groups().replace("\n", "\r\n") : move.groups());
+            File written = backup;
+            backup = null; // groups.yml has them now: keep the backup
+            writeAtomically(config, crlf ? move.config().replace("\n", "\r\n") : move.config());
+            getLogger().info("Moved " + String.join(" and ", move.moved()) + " from config.yml to " + GROUPS_FILE
+                    + ", unchanged: item groups have their own file now. Edit them there. The old config.yml is "
+                    + written.getName() + ".");
+        } catch (IOException e) {
+            if (backup != null) {
+                backup.delete(); // nothing was moved: don't leave a new backup behind on every reload
+            }
+            boolean moved = file.isFile() && file.length() > 0;
+            getLogger().warning("Couldn't " + (moved ? "finish moving the item groups to " : "set up ") + GROUPS_FILE
+                    + " (" + e.getClass().getSimpleName() + ": " + e.getMessage() + "); "
+                    + (moved ? GROUPS_FILE + " has them, and the copy left in config.yml is ignored."
+                       : "the groups in config.yml, or the built-in ones, are used."));
+        }
+    }
+
+    /** Write a file through a temporary one renamed over it, so a crash never leaves it cut short. */
+    private void writeAtomically(File target, String text) throws IOException {
+        java.nio.file.Path tmp = java.nio.file.Files.createTempFile(getDataFolder().toPath(), "." + target.getName() + "-", ".tmp");
+        try {
+            java.nio.file.Files.writeString(tmp, text);
+            try {
+                java.nio.file.Files.move(tmp, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                java.nio.file.Files.move(tmp, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            java.nio.file.Files.deleteIfExists(tmp);
+        }
+    }
+
+    /** config-before-<version>.yml (or groups-before-...), with a timestamp if that name is taken. */
+    private File backupFile(String base) {
+        String version = getPluginMeta().getVersion();
+        File backup = new File(getDataFolder(), base + "-before-" + version + ".yml");
+        if (backup.exists()) {
+            backup = new File(getDataFolder(), base + "-before-" + version + "-" + System.currentTimeMillis() + ".yml");
+        }
+        return backup;
+    }
+
+    /**
+     * After an upgrade: the explanation above group-aliases: and groups: in groups.yml becomes
+     * this version's. Nothing else in the file changes. The old file is kept as
+     * groups-before-<version>.yml. A groups.yml with a YAML error is left alone.
+     */
+    private void explainGroups() {
+        File file = new File(getDataFolder(), GROUPS_FILE);
+        if (!file.isFile()) {
+            return;
+        }
+        try {
+            String raw = java.nio.file.Files.readString(file.toPath());
+            boolean crlf = raw.contains("\r\n");
+            String current = crlf ? raw.replace("\r\n", "\n") : raw;
+            try {
+                new YamlConfiguration().loadFromString(current);
+            } catch (InvalidConfigurationException e) {
+                return;
+            }
+            ConfigUpgrade.Result result = ConfigUpgrade.explainOnly(current, shippedGroupsText().replace("\r\n", "\n"));
+            if (!result.changed() || !java.nio.file.Files.isWritable(file.toPath())) {
+                return;
+            }
+            File backup = backupFile("groups");
+            java.nio.file.Files.copy(file.toPath(), backup.toPath());
+            java.nio.file.Files.writeString(file.toPath(), crlf ? result.text().replace("\n", "\r\n") : result.text());
+            getLogger().info("Updated the explanation above " + String.join(" and ", result.explained()) + " in "
+                    + GROUPS_FILE + " to this version's. Your groups are unchanged; the old file is " + backup.getName() + ".");
+        } catch (IOException e) {
+            getLogger().warning("Couldn't bring " + GROUPS_FILE + "'s explanations up to date (" + e.getMessage() + ").");
+        }
+    }
+
     private void addMissingSettings() {
         File config = new File(getDataFolder(), "config.yml");
         try (java.io.InputStream in = getResource("config.yml")) {
@@ -229,11 +355,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         + " are no longer used; ") + "see " + configUrl() + " for what each setting does.");
                 return;
             }
-            String version = getPluginMeta().getVersion();
-            File backup = new File(getDataFolder(), "config-before-" + version + ".yml");
-            if (backup.exists()) {
-                backup = new File(getDataFolder(), "config-before-" + version + "-" + System.currentTimeMillis() + ".yml");
-            }
+            File backup = backupFile("config");
             java.nio.file.Files.copy(config.toPath(), backup.toPath());
             String text = crlf ? result.text().replace("\n", "\r\n") : result.text();
             java.nio.file.Files.writeString(config.toPath(), text);
@@ -393,11 +515,42 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return defaultConfig();
     }
 
+    /** The groups in use as last loaded (see loadedGroups), or null if the built-in ones are in use. */
+    YamlConfiguration loadedGroups() {
+        return loadedGroups;
+    }
+
+    /** The file the groups in use are read from: groups.yml, or config.yml before they could be moved. */
+    String groupsFileName() {
+        return groupsFileName;
+    }
+
+    /** This version's groups.yml, as shipped in the jar. */
+    String shippedGroupsText() {
+        try (var in = getResource(GROUPS_FILE)) {
+            return in == null ? "" : new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    YamlConfiguration shippedGroups() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        try {
+            yaml.loadFromString(shippedGroupsText());
+        } catch (InvalidConfigurationException e) {
+            throw new IllegalStateException("the shipped groups.yml is broken", e);
+        }
+        return yaml;
+    }
+
     private String readSettings() {
+        setUpGroupsFile(); // groups.yml deleted, or groups put back into config.yml: sort it out first
         YamlConfiguration config = new YamlConfiguration();
+        boolean configRead = false;
         try {
             config.load(new File(getDataFolder(), "config.yml"));
-            loadedConfig = config;
+            configRead = true;
         } catch (IOException | InvalidConfigurationException e) {
             String problem = "config.yml could not be read: " + firstLine(e.getMessage());
             if (groups != null) {
@@ -406,6 +559,40 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             }
             getLogger().severe(problem + " Using the default settings until it is fixed.");
             config = defaultConfig();
+        }
+        // The groups are read before any setting changes, so a mistake in either file changes nothing.
+        YamlConfiguration groupsRoot = null;
+        String groupsFrom = GROUPS_FILE;
+        File groupsFile = new File(getDataFolder(), GROUPS_FILE);
+        boolean oldGroups = configRead && (config.contains("groups") || config.contains("group-aliases"));
+        if (groupsFile.isFile()) {
+            YamlConfiguration read = new YamlConfiguration();
+            try {
+                read.load(groupsFile);
+                groupsRoot = read;
+            } catch (IOException | InvalidConfigurationException e) {
+                String problem = GROUPS_FILE + " could not be read: " + firstLine(e.getMessage());
+                if (groups != null) {
+                    getLogger().severe(problem + " Keeping the previous settings and groups.");
+                    return problem;
+                }
+                getLogger().severe(problem + " Using the built-in groups until it is fixed.");
+            }
+            if (oldGroups) {
+                getLogger().warning("config.yml has groups or group-aliases, which are ignored: item groups are in "
+                        + GROUPS_FILE + " now. Move any you want there, then delete them from config.yml.");
+            }
+        } else if (oldGroups) {
+            groupsRoot = config; // they couldn't be moved (setUpGroupsFile said why): use them where they are
+            groupsFrom = "config.yml";
+        } else if (!configRead) {
+            groupsFrom = "config.yml"; // unreadable before its groups could be moved: the built-in groups are in use
+        } else if (groupsFile.exists()) {
+            getLogger().warning(GROUPS_FILE + " isn't a file (a folder?), so the built-in groups are used. Remove it"
+                    + " and run /cgc reload to get a new one.");
+        }
+        if (configRead) {
+            loadedConfig = config;
         }
         String mode = config.getString("match-mode", "all").toLowerCase(Locale.ROOT);
         if (!mode.equals("all") && !mode.equals("any")) {
@@ -525,8 +712,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
             getLogger().warning("matching-chest-timeout-seconds is no longer used: golems now get as long as the walk"
                     + " to each chest takes (see search-distance). Delete it from config.yml.");
         }
-        groups = ItemGroups.load(config.getConfigurationSection("groups"),
-                config.getConfigurationSection("group-aliases"), getLogger());
+        ConfigurationSection groupsSection = groupsRoot != null ? groupsRoot : shippedGroups();
+        groups = ItemGroups.load(groupsSection.getConfigurationSection("groups"),
+                groupsSection.getConfigurationSection("group-aliases"), getLogger(), groupsFrom);
+        loadedGroups = groupsRoot;
+        groupsFileName = groupsFrom;
         getLogger().info("Loaded " + groups.groupCount() + " item groups (match-mode: " + mode + ").");
         return null;
     }

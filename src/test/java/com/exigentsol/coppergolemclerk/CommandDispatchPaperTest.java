@@ -113,7 +113,7 @@ class CommandDispatchPaperTest extends PaperTest {
 
     @Test
     void helpIsCaseInsensitiveAboutTopic() {
-        assertTrue(run(console(), "cgc help RELOAD").contains("/cgc reload: Reload config.yml."));
+        assertTrue(run(console(), "cgc help RELOAD").contains("/cgc reload: Reload config.yml and groups.yml."));
     }
 
     @Test

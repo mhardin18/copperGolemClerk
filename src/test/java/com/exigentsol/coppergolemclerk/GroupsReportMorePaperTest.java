@@ -31,28 +31,28 @@ class GroupsReportMorePaperTest extends PaperTest {
     }
 
     private void useConfig(String text) throws Exception {
-        Files.writeString(new File(plugin.getDataFolder(), "config.yml").toPath(), text);
+        Files.writeString(new File(plugin.getDataFolder(), "groups.yml").toPath(), text);
         assertNull(plugin.loadSettings());
     }
 
     private String edited(String... pairs) {
-        String text = plugin.shippedConfigText();
+        String text = plugin.shippedGroupsText();
         for (int i = 0; i < pairs.length; i += 2) {
-            assertTrue(text.contains(pairs[i]), "config.yml has " + pairs[i]);
+            assertTrue(text.contains(pairs[i]), "groups.yml has " + pairs[i]);
             text = text.replace(pairs[i], pairs[i + 1]);
         }
         return text;
     }
 
-    // ---- a config.yml that couldn't be read
+    // ---- a groups.yml that couldn't be read
 
     @Test
     void whenTheConfigCouldntBeReadTheBuiltInGroupsAreInUseAndSaid() throws Exception {
-        Field f = CopperGolemClerk.class.getDeclaredField("loadedConfig");
+        Field f = CopperGolemClerk.class.getDeclaredField("loadedGroups");
         f.setAccessible(true);
         f.set(plugin, null);
         List<String> told = run();
-        assertEquals("config.yml couldn't be read when the plugin started, so the built-in groups are in use."
+        assertEquals("groups.yml couldn't be read when the plugin started, so the built-in groups are in use."
                 + " Fix the file and run /cgc reload.", told.getFirst());
         assertTrue(told.get(1).matches("\\d+ item groups; (\\d+) of the \\1 built-in .* groups are unchanged\\."), told.get(1));
         assertEquals("Group food: ", run("food").getFirst().substring(0, 12), "a group can still be looked at");
@@ -71,7 +71,7 @@ class GroupsReportMorePaperTest extends PaperTest {
         List<String> told = run();
         assertTrue(told.getFirst().matches("12 item groups; 0 of the \\d+ built-in .* groups are unchanged\\."), told.getFirst());
         int built = Integer.parseInt(told.getFirst().replaceAll(".*of the (\\d+) built-in.*", "$1"));
-        assertTrue(told.contains("Built-in groups your config.yml doesn't have:"), told.toString());
+        assertTrue(told.contains("Built-in groups your groups.yml doesn't have:"), told.toString());
         assertTrue(told.contains("  ... and " + (built - 8) + " more"), "missing groups are capped at 8: " + told);
         assertTrue(told.contains("Your own groups:"));
         assertTrue(told.contains("  ... and 4 more"), "own groups are capped at 8 of 12: " + told);
@@ -95,7 +95,7 @@ class GroupsReportMorePaperTest extends PaperTest {
     void ownGroupsThatAreOlderNamesOfBuiltInOnesSaySo() throws Exception {
         useConfig(edited("  templates:\n", "  smithing-templates:\n"));
         List<String> told = run();
-        assertTrue(told.stream().anyMatch(l -> l.startsWith("  templates (") && l.contains("your config.yml has smithing-templates instead")),
+        assertTrue(told.stream().anyMatch(l -> l.startsWith("  templates (") && l.contains("your groups.yml has smithing-templates instead")),
                 told.toString());
         assertTrue(told.stream().anyMatch(l -> l.startsWith("  smithing-templates (")
                 && l.endsWith("; an older default; built in now as templates)")), told.toString());
@@ -119,7 +119,7 @@ class GroupsReportMorePaperTest extends PaperTest {
                 told.getFirst());
         assertTrue(told.contains("  Not in the built-in group: diamond"), told.toString());
         assertTrue(told.contains("  In the built-in group but not yours: ancient_debris"), told.toString());
-        assertTrue(told.stream().anyMatch(l -> l.startsWith("  In config.yml: *_ORE, DIAMOND, ")), told.toString());
+        assertTrue(told.stream().anyMatch(l -> l.startsWith("  In groups.yml: *_ORE, DIAMOND, ")), told.toString());
         assertTrue(told.stream().anyMatch(l -> l.startsWith("  Sign label: ")), told.toString());
     }
 
@@ -168,7 +168,7 @@ class GroupsReportMorePaperTest extends PaperTest {
                 assertThrows(IllegalArgumentException.class, () -> run("gemz")).getMessage());
         assertEquals("No group named 'qqqqqqqqqqqqqqqq'.",
                 assertThrows(IllegalArgumentException.class, () -> run("qqqqqqqqqqqqqqqq")).getMessage());
-        assertEquals("No group named 'food'. It's a built-in group your config.yml doesn't have.",
+        assertEquals("No group named 'food'. It's a built-in group your groups.yml doesn't have.",
                 assertThrows(IllegalArgumentException.class, () -> run("food")).getMessage());
     }
 
