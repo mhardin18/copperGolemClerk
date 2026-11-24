@@ -56,6 +56,7 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     private ScriptGolem golemAt(double x, double z) {
         ScriptGolem g = new ScriptGolem(server);
+        g.setOnGround(true); // standing, as a golem walking over is; one in the air isn't checked (vanilla plans no path)
         g.setLocation(new Location(world, x + 0.5, FLOOR, z + 0.5));
         server.registerEntity(g);
         return g;
