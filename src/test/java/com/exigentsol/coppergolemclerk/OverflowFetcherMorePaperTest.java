@@ -1,6 +1,7 @@
 package com.exigentsol.coppergolemclerk;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -330,10 +331,11 @@ class OverflowFetcherMorePaperTest extends PaperTest {
         fetcher().tick();
         long fetching = java.util.stream.Stream.of(a, b, c).filter(x -> fetcher().isFetching(x.getUniqueId())).count();
         assertEquals(2, fetching);
-        assertNotSame(fetcher().fetchingType(a.getUniqueId()), null);
+        // Which two of the three get the job depends on the order the server lists them: don't assume a.
         java.util.Set<Material> types = new java.util.HashSet<>();
         for (PathGolem x : java.util.List.of(a, b, c)) {
             if (fetcher().isFetching(x.getUniqueId())) {
+                assertNotNull(fetcher().fetchingType(x.getUniqueId()), "a fetching golem knows what it fetches");
                 types.add(fetcher().fetchingType(x.getUniqueId()));
             }
         }
