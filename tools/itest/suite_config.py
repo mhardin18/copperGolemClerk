@@ -1,13 +1,13 @@
 """config: bad config files. The plugin must warn, never crash, and never silently stop sorting.
 
-Each scenario writes a variant of the real config.yml, reloads, checks the reply and
-the log, then restores the original and reloads again. (The runner also restores the
-original if anything goes wrong.)
+Each scenario writes a variant of the real config.yml or groups.yml, reloads, checks the
+reply and the log, then restores the originals and reloads again. (The runner also
+restores them if anything goes wrong.)
 """
 import re
 import time
 
-from arena import CONFIG, scenario
+from arena import CONFIG, GROUPS, scenario
 
 ORIGINAL = {}
 
@@ -18,19 +18,32 @@ def original():
     return ORIGINAL["text"]
 
 
+def original_groups():
+    if "groups" not in ORIGINAL:
+        ORIGINAL["groups"] = open(GROUPS).read()
+    return ORIGINAL["groups"]
+
+
 def restore(c):
     with open(CONFIG, "w") as f:
         f.write(original())
+    with open(GROUPS, "w") as f:
+        f.write(original_groups())
     return c.r.cmd("coppergolemclerk reload")
 
 
-def try_config(c, text):
-    """Write a config, reload, restore. Returns (reply to the bad config, plugin log lines)."""
+def try_config(c, text=None, groups=None):
+    """Write config.yml and/or groups.yml, reload, restore. Returns (reply, plugin log lines, reply after restoring)."""
     original()
+    original_groups()
     start = c.log.size()
     try:
-        with open(CONFIG, "w") as f:
-            f.write(text)
+        if text is not None:
+            with open(CONFIG, "w") as f:
+                f.write(text)
+        if groups is not None:
+            with open(GROUPS, "w") as f:
+                f.write(groups)
         reply = re.sub(r"§.", "", c.r.cmd("coppergolemclerk reload"))
         time.sleep(1.5)  # the server writes its log file asynchronously
         lines = [l for l in c.log.since(start) if "CopperGolemClerk" in l or "Exception" in l]
@@ -52,8 +65,8 @@ def logged(lines, text):
 def _(c):
     bad = ('  broken:\n    - "#minecraft:not_a_tag"\n    - NOT_AN_ITEM\n    - "@nonsense"\n'
            '  nothing:\n    - "*ZZZ_NO_SUCH*"\n')
-    text = original().replace("\ngroups:\n", "\ngroups:\n" + bad, 1)
-    reply, lines, restored = try_config(c, text)
+    groups = original_groups().replace("\ngroups:\n", "\ngroups:\n" + bad, 1)
+    reply, lines, restored = try_config(c, groups=groups)
     want = groups_count(restored)
     return lambda: [
         (groups_count(reply) == (want or 0) + 2, f"reply: {reply.strip()} (want {(want or 0) + 2} groups)"),
@@ -111,11 +124,11 @@ def _(c):
 
 @scenario("groups-report", "config", 30, "/cgc groups names a bad entry, an item put in a second group (and which group wins), a missing built-in group with the older name kept instead, and changed groups; it shows one group and one item.", alone=True)
 def _(c):
-    text = original().replace('  ores:\n    - "*_ORE"\n', '  ores:\n    - "*_ORE"\n    - DIAMOND\n    - "*ZZZ*"\n', 1)
+    text = original_groups().replace('  ores:\n    - "*_ORE"\n', '  ores:\n    - "*_ORE"\n    - DIAMOND\n    - "*ZZZ*"\n', 1)
     text = text.replace("  templates:\n", "  smithing-templates:\n", 1)
     original()
     try:
-        with open(CONFIG, "w") as f:
+        with open(GROUPS, "w") as f:
             f.write(text)
         c.r.cmd("coppergolemclerk reload")
         report = re.sub(r"§.", "", c.r.cmd("coppergolemclerk groups"))
@@ -126,7 +139,7 @@ def _(c):
     return lambda: [("Group 'ores': *ZZZ* matches no items." in report, "bad entry named"),
                     ("ores + ingots-and-gems: 1 item (diamond); ingots-and-gems is preferred" in report,
                      "overlap named, with the group golems prefer"),
-                    ("templates (19 items; your config.yml has smithing-templates instead" in report,
+                    ("templates (19 items; your groups.yml has smithing-templates instead" in report,
                      "missing built-in group, with the older name kept"),
                     ("ores: 1 added" in report, "changed group counted"),
                     (one.startswith("Group ores: ") and "diamond" in one and "Not in the built-in group: diamond" in one,
@@ -134,11 +147,11 @@ def _(c):
                     (item.startswith("diamond is in ") and "ingots-and-gems first" in item, f"item shown: {item[:160]}")]
 
 
-@scenario("missing-groups", "config", 30, "A config with no groups section is reported, and loads with 0 groups.", alone=True)
+@scenario("missing-groups", "config", 30, "A groups.yml with no groups section is reported, and loads with 0 groups.", alone=True)
 def _(c):
-    text = original()[:original().index("\ngroups:\n")] + "\n"
-    reply, lines, restored = try_config(c, text)
-    return lambda: [(logged(lines, "No 'groups' section"), "warned about the missing groups section"),
+    groups = original_groups()[:original_groups().index("\ngroups:\n")] + "\n"
+    reply, lines, restored = try_config(c, groups=groups)
+    return lambda: [(logged(lines, "No 'groups' section in groups.yml"), "warned about the missing groups section"),
                     (groups_count(reply) == 0, f"reply: {reply.strip()}")]
 
 
@@ -154,10 +167,30 @@ def _(c):
                     (groups_count(restored) and groups_count(restored) > 0, f"restored: {restored.strip()}")]
 
 
-@scenario("minimal-config", "config", 30, "A config with only a groups section (no other settings) loads with every setting at its default.", alone=True)
+@scenario("groups-yaml-syntax-error", "config", 30, "A YAML typo in groups.yml keeps the previous settings and groups and names the line; a settings change made alongside it doesn't apply either.",
+          alone=True, allow_errors=("groups.yml could not be read",))
 def _(c):
-    text = original()[original().index("\ngroups:\n") + 1:]
+    text = re.sub(r"(?m)^match-mode: .*$", "match-mode: any", original())
+    groups = original_groups().rstrip("\n") + "\n  broken: [unclosed\n"
+    reply, lines, restored = try_config(c, text, groups)
+    return lambda: [("groups.yml could not be read" in reply, f"reply: {reply.strip()}"),
+                    ("line " in reply, "reply names the line with the problem"),
+                    (logged(lines, "Keeping the previous settings and groups"), "log says nothing changed"),
+                    (not logged(lines, "match-mode: any"), "match-mode wasn't applied"),
+                    (groups_count(restored) and groups_count(restored) > 0, f"restored: {restored.strip()}")]
+
+
+@scenario("groups-left-in-config", "config", 30, "Groups put back into config.yml are ignored with a warning; groups.yml's groups stay in use.", alone=True)
+def _(c):
+    text = original().rstrip("\n") + "\n\ngroups:\n  stuff:\n    - DIRT\n"
     reply, lines, restored = try_config(c, text)
+    return lambda: [(logged(lines, "config.yml has groups or group-aliases, which are ignored"), "warned the groups are ignored"),
+                    (groups_count(reply) == groups_count(restored), f"reply: {reply.strip()} (groups.yml's count)")]
+
+
+@scenario("minimal-config", "config", 30, "An empty config.yml (no settings at all) loads with every setting at its default, and the groups from groups.yml.", alone=True)
+def _(c):
+    reply, lines, restored = try_config(c, "")
     return lambda: [(groups_count(reply) == groups_count(restored), f"reply: {reply.strip()}"),
                     (not logged(lines, "Exception"), "no exception in the log")]
 
@@ -174,9 +207,9 @@ def _(c):
 
 @scenario("config-name-warnings", "config", 30, "A group named 'overflow' and a misspelled disabled world are warned about.", alone=True)
 def _(c):
-    text = original().replace("\ngroups:\n", "\ngroups:\n  overflow:\n    - DIRT\n", 1)
-    text = re.sub(r"(?m)^disabled-worlds: .*$", "disabled-worlds: [no_such_world_xyz]", text)
-    reply, lines, restored = try_config(c, text)
+    groups = original_groups().replace("\ngroups:\n", "\ngroups:\n  overflow:\n    - DIRT\n", 1)
+    text = re.sub(r"(?m)^disabled-worlds: .*$", "disabled-worlds: [no_such_world_xyz]", original())
+    reply, lines, restored = try_config(c, text, groups)
     return lambda: [(logged(lines, "Group 'overflow' can't be used on signs"), "warned about the 'overflow' group"),
                     (logged(lines, "no world named 'no_such_world_xyz'"), "warned about the unknown world"),
                     ("reloaded" in restored, f"restored: {restored.strip()}")]

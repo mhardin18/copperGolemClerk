@@ -97,6 +97,28 @@ final class ConfigUpgrade {
         return new Result(text, added, explained, removed);
     }
 
+    /**
+     * groups.yml on upgrade: only the explanation right above group-aliases: and groups: is
+     * brought up to date. Nothing is added or removed, so the owner's groups stay exactly theirs.
+     */
+    static Result explainOnly(String current, String shipped) {
+        List<String> lines = new ArrayList<>(List.of(current.split("\n", -1)));
+        boolean endsWithNewline = current.endsWith("\n");
+        if (endsWithNewline) {
+            lines.remove(lines.size() - 1);
+        }
+        List<String> explained = new ArrayList<>();
+        for (Setting setting : parse(shipped)) {
+            if (!setting.comment().isEmpty() && explain(lines, setting)) {
+                explained.add(setting.key());
+            }
+        }
+        if (explained.isEmpty()) {
+            return new Result(current, List.of(), explained, List.of());
+        }
+        return new Result(String.join("\n", lines) + (endsWithNewline ? "\n" : ""), List.of(), explained, List.of());
+    }
+
     /** Take out a setting (its line, anything nested under it, the comment above it and one blank line). */
     private static boolean remove(List<String> lines, String key) {
         int line = lineOf(lines, key);
