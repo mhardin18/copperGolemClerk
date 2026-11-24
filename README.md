@@ -654,6 +654,15 @@ cauldron stand beside it, as before. A golem whose only way to a chest is across
 cauldron won't reach it, and its item goes elsewhere as usual. A golem on a lead or riding
 something is left alone.
 
+An idle golem turned back from a cauldron keeps away from it for 30 seconds: vanilla's
+wandering doesn't send it within about 2 blocks of that cauldron, nor to a spot it was just
+found to have no way to. Without that, a cauldron in a nook (a dripstone lava farm with the
+cauldrons sunk into the floor, say) drew an idle golem back again and again, and it hovered
+at the mouth, turned back every few seconds. A golem carrying something, or sent somewhere
+by the plugin (fetching from `[Overflow]`, a furnace job, greeting, walking home), goes
+where it needs to as before. To keep golems out of such a nook altogether, put a fence gate
+across it: mobs can't open one, and you can.
+
 ### Bigger storage areas
 
 Vanilla golems look for chests up to 32 blocks away in each direction sideways, and 8 up or
@@ -1193,7 +1202,7 @@ line number, and the old settings are kept.
 | `golems-give-way` | `true` | A golem stuck nose to nose with another steps aside (backing up in a one-wide corridor). Empty hands give way to full ones. |
 | `avoid-trapdoors` | `true` | Golems never walk onto or through trapdoors (vanilla golems fall through open ones). |
 | `avoid-portals` | `true` | Golems never go through Nether portals, End portals or End gateways, unless on a lead or riding something. |
-| `avoid-cauldrons` | `true` | Golems never step into or onto a cauldron holding lava, water or powder snow (vanilla golems can slip into a lava cauldron and burn) and are walked around one; touching a lava cauldron doesn't hurt them. Not for golems on a lead or riding something. |
+| `avoid-cauldrons` | `true` | Golems never step into or onto a cauldron holding lava, water or powder snow (vanilla golems can slip into a lava cauldron and burn) and are walked around one; an idle golem turned back doesn't wander back to it for 30 seconds; touching a lava cauldron doesn't hurt them. Not for golems on a lead or riding something. |
 | `rescue-lost-golems` | `true` | A golem walks home when it has no work place in range and its home (the last place it got work from) is more than 40 blocks away, or 12 up or down. If it can't get there, or is stuck where it can't reach a copper chest, its owner gets an alert. A golem with no home goes to the nearest work place within 64 blocks. |
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its home, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem says hello to an iron or snow golem within 16 blocks of its home and 2 blocks up or down, if it can walk up to it (see [Golems say hello](#golems-say-hello)). |

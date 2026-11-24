@@ -363,6 +363,8 @@ avoid-portals: true
 # the floor and drop in. A golem turned back from one is walked around it (up to 24
 # blocks out of its way). One that touches a lava cauldron anyway isn't hurt or set
 # alight. Golems filling buckets at a lava cauldron stand beside it as before.
+# An idle golem turned back from one doesn't wander within about 2 blocks of it for
+# 30 seconds, so a cauldron in a nook doesn't draw it back again and again.
 # Golems stepping aside for each other (golems-give-way) avoid these cauldrons too.
 # Golems on a lead or riding something are left alone (a player is taking them).
 avoid-cauldrons: true

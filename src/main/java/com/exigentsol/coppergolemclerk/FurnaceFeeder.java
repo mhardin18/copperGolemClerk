@@ -1001,7 +1001,7 @@ final class FurnaceFeeder {
                 jobs.put(golem.getUniqueId(), new Job(Kind.FEED, golem.getWorld().getUID(), stops.get(i), null,
                         type, spot.target(), now, new ArrayList<>(stops.subList(i, stops.size())),
                         new WalkClock(spot.target(), now)));
-                golem.getPathfinder().moveTo(spot.target(), 1.0);
+                PluginPaths.moveTo(golem, spot.target());
                 debugStart(golem, block);
                 return true;
             }
@@ -1022,7 +1022,7 @@ final class FurnaceFeeder {
         }
         jobs.put(golem.getUniqueId(), new Job(kind, golem.getWorld().getUID(), HomeFinder.Pos.of(walkTo), furnace, type,
                 spot.target(), now, stops, new WalkClock(spot.target(), now)));
-        golem.getPathfinder().moveTo(spot.target(), 1.0);
+        PluginPaths.moveTo(golem, spot.target());
         debugStart(golem, walkTo);
         return true;
     }
@@ -1093,7 +1093,7 @@ final class FurnaceFeeder {
             if (now - job.startedMillis() > plugin.furnaceWaitSeconds() * 1000L + GIVE_UP_AFTER_MILLIS) {
                 return afterFeeding(golem, job, now); // pushed away and never got back: move on
             }
-            golem.getPathfinder().moveTo(job.walk(), 1.0);
+            PluginPaths.moveTo(golem, job.walk());
             return true;
         }
         if (job.clock().expired(golem, now)) {
@@ -1108,7 +1108,7 @@ final class FurnaceFeeder {
             }
             return false;
         }
-        golem.getPathfinder().moveTo(job.walk(), 1.0); // vanilla AI may have redirected it
+        PluginPaths.moveTo(golem, job.walk()); // vanilla AI may have redirected it
         return true;
     }
 

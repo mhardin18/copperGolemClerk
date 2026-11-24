@@ -10,6 +10,9 @@ commands:
   golemstates:
     description: Test-only. Copper golem states (the chest-interaction animation) seen in a box since the last call.
     permission: golemtesthooks.lids
+  golemwalk:
+    description: Test-only. Sends the copper golems in a box to a spot through Paper's pathfinder, as vanilla's wandering does.
+    permission: golemtesthooks.lids
 permissions:
   golemtesthooks.lids:
     default: op
