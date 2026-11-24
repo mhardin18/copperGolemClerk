@@ -295,8 +295,19 @@ Environment="JVM_MISC=<the unit's JVM_MISC> -javaagent:/opt/minecraft/pluginDev/
 
 ## Unit tests
 
-`./gradlew test` in the project root runs the JUnit tests (sign word matching, YAML error
-summaries). They need no server.
+`./gradlew test` in the project root runs the JUnit tests (over 1,100). They need no server:
+most run the plugin on MockBukkit, a fake Paper server, and cover about 94% of the plugin's
+lines (`./gradlew test jacocoTestReport` for the report). MockBukkit has no pathfinder, so
+the tests that walk golems use small fake golems with scripted pathfinders (`DisplayGolem`,
+`PathGolem`, `ScriptGolem`, `WalkGolem` in `src/test`), and fake GriefPrevention and
+LuckPerms classes (`src/test/java/me/ryanhamshire`, `src/test/java/net/luckperms`) stand in
+for those plugins. What only a real server shows (real paths, timing, chunk loading) is what
+these in-game tests are for.
+
+MockBukkit quirks the tests work around: `Block.getLocation()` hands out one shared Location
+(real Paper returns a new one), entities aren't on the ground until `setOnGround(true)`,
+`getTargetBlockExact`, `Mob.getPathfinder` and a golem's height aren't implemented, and an
+unimplemented call shows up as a skipped test, which the build turns into a failure.
 
 ## RCON access
 
