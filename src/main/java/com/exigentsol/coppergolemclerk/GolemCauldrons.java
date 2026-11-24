@@ -39,6 +39,13 @@ import org.bukkit.util.Vector;
  *   (vanilla's, the plugin's) are held back; at the end of the way its own paths take over.
  * - One falling into a cauldron (from a ledge, say) would hang above it, so after a second it
  *   is set down on the nearest open spot around the cauldron (up to SET_DOWN_RANGE blocks).
+ * - An idle golem turned back stays away: for KEEP_AWAY_MILLIS, a new path of its own (vanilla's
+ *   wandering) that ends within KEEP_AWAY_RADIUS of that cauldron is refused, and so is one to
+ *   a spot it was just found to have no way to. Without this, vanilla kept picking wander spots
+ *   in a nook over a lava cauldron (a dripstone farm, say), and the golem hovered at its mouth,
+ *   turned back over and over. A golem carrying something is never held back: its trips (a
+ *   bucket to be filled at a lava cauldron, say) go where they need to; nor is a path to a
+ *   container (a copper chest beside the cauldron still gets its golem).
  * - The damage and fire of a lava cauldron come in the same tick a golem touches it, before
  *   the move can be undone, so a golem the plugin manages takes no harm from touching one and
  *   is put out.
@@ -64,6 +71,12 @@ final class GolemCauldrons implements Listener {
     private static final long REPLAN_MILLIS = 2_000;
     /** How far from the cauldron a golem falling into it may be set down. */
     private static final int SET_DOWN_RANGE = 4;
+    /** How long an idle golem turned back at a cauldron keeps its own paths away from it. */
+    static final long KEEP_AWAY_MILLIS = 30_000;
+    /** How near the cauldron (sideways, from its middle) a path's end counts as going back to it. */
+    static final double KEEP_AWAY_RADIUS = 2.5;
+    /** The clock for keeping away, a seam: tests move it on. */
+    static java.util.function.LongSupplier clock = System::currentTimeMillis;
 
     /** The pathfinder calls, a seam: MockBukkit lacks Mob.getPathfinder. */
     interface Paths {
@@ -98,13 +111,13 @@ final class GolemCauldrons implements Listener {
 
         @Override
         public List<Location> find(CopperGolem golem, Location to) {
-            last = golem.getPathfinder().findPath(to);
+            last = PluginPaths.findPath(golem, to);
             return last == null || !last.canReachFinalPoint() ? null : last.getPoints();
         }
 
         @Override
         public boolean move(CopperGolem golem) {
-            return last != null && golem.getPathfinder().moveTo(last, 1.0);
+            return last != null && PluginPaths.moveTo(golem, last);
         }
 
         @Override
@@ -136,6 +149,11 @@ final class GolemCauldrons implements Listener {
     private final Map<UUID, Detour> detours = new HashMap<>();
     private final Map<UUID, Long> lastPlan = new HashMap<>();
     private final Map<UUID, Map.Entry<Block, Long>> noWay = new HashMap<>();
+    /** The cauldron each idle golem was last turned back at, and until when it keeps away. */
+    private final Map<UUID, Map.Entry<Block, Long>> keepAway = new HashMap<>();
+    /** When each golem's refused path was last logged: vanilla retries every few ticks. */
+    private final Map<UUID, Long> keepAwayLogged = new HashMap<>();
+    private static final long KEEP_AWAY_LOG_MILLIS = 2_000;
     private boolean planning;
 
     /**
@@ -162,6 +180,8 @@ final class GolemCauldrons implements Listener {
             org.bukkit.event.HandlerList.unregisterAll(mover);
             detours.clear();
             held.clear();
+            keepAway.clear();
+            keepAwayLogged.clear();
         }
         listening = on;
     }
@@ -208,6 +228,7 @@ final class GolemCauldrons implements Listener {
             return; // already in or on one: let it get off
         }
         event.setCancelled(true);
+        keepAway.put(id, Map.entry(cauldron, clock.getAsLong() + KEEP_AWAY_MILLIS));
         if (detour != null) {
             if (++detour.stuck >= STUCK_TICKS) {
                 detour.stuck = 0;
@@ -235,12 +256,77 @@ final class GolemCauldrons implements Listener {
         debug(golem, cauldron, beside);
     }
 
-    /** Hold back other paths for a golem walking around a cauldron (vanilla's AI would send it straight back). */
+    /**
+     * Hold back other paths for a golem walking around a cauldron (vanilla's AI would send it
+     * straight back), and an idle golem's paths back to a cauldron it was just turned back at,
+     * or to a spot it has no way to.
+     */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPathfind(EntityPathfindEvent event) {
-        if (!planning && event.getEntity() instanceof CopperGolem golem && detours.containsKey(golem.getUniqueId())) {
-            event.setCancelled(true);
+        if (planning || !(event.getEntity() instanceof CopperGolem golem)) {
+            return;
         }
+        UUID id = golem.getUniqueId();
+        if (detours.containsKey(id)) {
+            event.setCancelled(true);
+            return;
+        }
+        Location to = event.getLoc();
+        if (to == null || PluginPaths.mine() || !guarding(golem) || !emptyHanded(golem)) {
+            return;
+        }
+        long now = clock.getAsLong();
+        Map.Entry<Block, Long> away = keepAway.get(id);
+        if (away != null) {
+            if (now > away.getValue()) {
+                keepAway.remove(id);
+                keepAwayLogged.remove(id);
+            } else if (nearCauldron(to, away.getKey()) && !atContainer(to)) {
+                event.setCancelled(true);
+                Long logged = keepAwayLogged.get(id);
+                if (plugin.debug() && (logged == null || now - logged >= KEEP_AWAY_LOG_MILLIS)) {
+                    keepAwayLogged.put(id, now);
+                    plugin.getLogger().info(String.format("Kept an idle copper golem from going back to the %s at %d,%d,%d"
+                            + " (its path ended at %d,%d,%d)", pretty(away.getKey().getType()), away.getKey().getX(),
+                            away.getKey().getY(), away.getKey().getZ(), to.getBlockX(), to.getBlockY(), to.getBlockZ()));
+                }
+                return;
+            }
+        }
+        Map.Entry<Block, Long> none = noWay.get(id);
+        if (none != null && System.currentTimeMillis() < none.getValue() && none.getKey().equals(to.getBlock())) {
+            event.setCancelled(true); // just found to have no way there that keeps clear of the cauldron
+        }
+    }
+
+    /** A path's end near a cauldron: within KEEP_AWAY_RADIUS sideways of its middle, and 2 blocks up or down. */
+    static boolean nearCauldron(Location to, Block cauldron) {
+        if (!cauldron.getWorld().equals(to.getWorld())) {
+            return false;
+        }
+        double dx = to.getX() - (cauldron.getX() + 0.5);
+        double dz = to.getZ() - (cauldron.getZ() + 0.5);
+        return dx * dx + dz * dz <= KEEP_AWAY_RADIUS * KEEP_AWAY_RADIUS && Math.abs(to.getY() - cauldron.getY()) <= 2.5;
+    }
+
+    /**
+     * A path to a container (vanilla sends a golem to its copper chest, or a chest, by the
+     * container's own block): never held back, so a copper chest beside a cauldron still gets
+     * its golem.
+     */
+    static boolean atContainer(Location to) {
+        Block block = to.getBlock();
+        return block.getState(false) instanceof org.bukkit.block.Container
+                || block.getRelative(BlockFace.DOWN).getState(false) instanceof org.bukkit.block.Container;
+    }
+
+    private static boolean emptyHanded(CopperGolem golem) {
+        var equipment = golem.getEquipment();
+        return equipment == null || equipment.getItemInMainHand().isEmpty();
+    }
+
+    private static String pretty(Material type) {
+        return type.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
     }
 
     /** Touching a lava cauldron hurts and sets alight in the same tick, before onMove can undo the step. */
@@ -321,6 +407,8 @@ final class GolemCauldrons implements Listener {
             detours.keySet().removeIf(g -> plugin.getServer().getEntity(g) == null);
             held.keySet().removeIf(g -> plugin.getServer().getEntity(g) == null);
             noWay.keySet().removeIf(g -> plugin.getServer().getEntity(g) == null);
+            keepAway.keySet().removeIf(g -> plugin.getServer().getEntity(g) == null);
+            keepAwayLogged.keySet().removeIf(g -> !keepAway.containsKey(g));
         }
         Map.Entry<Block, Long> none = noWay.get(id);
         if (none != null && now < none.getValue() && none.getKey().equals(goal.getBlock())) {

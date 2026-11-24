@@ -209,4 +209,76 @@ class CauldronGuardPaperTest extends PaperTest {
         CauldronIndex.clear();
         assertEquals(FurnaceFeeder.Refill.SORT, feeder.refillPlan(golem, 1), "furnace-feeding off");
     }
+
+    // ---- keeping an idle golem away from a cauldron it was turned back at
+
+    private com.destroystokyo.paper.event.entity.EntityPathfindEvent pathTo(CopperGolem golem, double x, double y, double z) {
+        var event = new com.destroystokyo.paper.event.entity.EntityPathfindEvent(golem, new Location(world, x, y, z), null);
+        server.getPluginManager().callEvent(event);
+        return event;
+    }
+
+    @Test
+    void anIdleGolemTurnedBackKeepsItsWanderingAwayFromThatCauldron() {
+        long[] now = {1_000_000};
+        GolemCauldrons.clock = () -> now[0];
+        try {
+            Block cauldron = sunken(0, Material.LAVA_CAULDRON);
+            CopperGolem golem = golem(1, 0);
+            assertTrue(stepInto(golem, cauldron).isCancelled());
+            assertTrue(pathTo(golem, 0.5, FLOOR + 1, 0.5).isCancelled(), "right over the cauldron (a nook under dripstone)");
+            assertTrue(pathTo(golem, 2.5, FLOOR, 1.5).isCancelled(), "a spot beside it");
+            assertFalse(pathTo(golem, 6.5, FLOOR, 0.5).isCancelled(), "anywhere further away is fine");
+            assertFalse(pathTo(golem, 0.5, FLOOR + 6, 0.5).isCancelled(), "or well above it");
+            CopperGolem other = golem(-4, 0);
+            assertFalse(pathTo(other, 0.5, FLOOR, 1.5).isCancelled(), "another golem wasn't turned back");
+            now[0] += GolemCauldrons.KEEP_AWAY_MILLIS + 1;
+            assertFalse(pathTo(golem, 0.5, FLOOR, 1.5).isCancelled(), "after a while it may go there again");
+        } finally {
+            GolemCauldrons.clock = System::currentTimeMillis;
+        }
+    }
+
+    @Test
+    void aGolemCarryingSomethingOrOnAPluginJobIsNeverHeldBack() {
+        Block cauldron = sunken(0, Material.LAVA_CAULDRON);
+        CopperGolem golem = golem(1, 0);
+        assertTrue(stepInto(golem, cauldron).isCancelled());
+        assertTrue(PluginPaths.mine(() -> !pathTo(golem, 0.5, FLOOR, 1.5).isCancelled()),
+                "the plugin's own trips (a fetch, a greeting, walking home) go where they need to");
+        assertFalse(PluginPaths.mine(), "only while the call runs");
+        golem.getEquipment().setItemInMainHand(new org.bukkit.inventory.ItemStack(Material.BUCKET));
+        assertFalse(pathTo(golem, 0.5, FLOOR, 1.5).isCancelled(), "a golem carrying a bucket to be filled there goes");
+    }
+
+    @Test
+    void aPathToAContainerBesideTheCauldronIsNeverHeldBack() {
+        Block cauldron = sunken(0, Material.LAVA_CAULDRON);
+        Block copper = world.getBlockAt(1, FLOOR, 2);
+        copper.setType(Material.WAXED_COPPER_CHEST);
+        CopperGolem golem = golem(1, 0);
+        assertTrue(stepInto(golem, cauldron).isCancelled());
+        assertFalse(pathTo(golem, 1.5, FLOOR, 2.5).isCancelled(), "vanilla sending it to its copper chest for work");
+        assertTrue(pathTo(golem, 1.5, FLOOR, 1.5).isCancelled(), "the floor beside the chest is still near the cauldron");
+    }
+
+    @Test
+    void keepingAwayIsOffWithTheSettingOrForAVanillaGolem() {
+        Block cauldron = sunken(0, Material.LAVA_CAULDRON);
+        CopperGolem golem = golem(1, 0);
+        assertTrue(stepInto(golem, cauldron).isCancelled());
+        setting("avoid-cauldrons", "false");
+        assertFalse(pathTo(golem, 0.5, FLOOR, 1.5).isCancelled());
+    }
+
+    @Test
+    void nearCauldronIsSidewaysAndAFewBlocksUpOrDown() {
+        Block cauldron = sunken(0, Material.LAVA_CAULDRON);
+        assertTrue(GolemCauldrons.nearCauldron(new Location(world, 2.9, FLOOR, 0.5), cauldron));
+        assertFalse(GolemCauldrons.nearCauldron(new Location(world, 3.1, FLOOR, 0.5), cauldron));
+        assertTrue(GolemCauldrons.nearCauldron(new Location(world, 0.5, FLOOR + 1.4, 0.5), cauldron));
+        assertFalse(GolemCauldrons.nearCauldron(new Location(world, 0.5, FLOOR + 2, 0.5), cauldron));
+        org.bukkit.World other = server.addSimpleWorld("other");
+        assertFalse(GolemCauldrons.nearCauldron(new Location(other, 0.5, FLOOR, 0.5), cauldron), "another world");
+    }
 }

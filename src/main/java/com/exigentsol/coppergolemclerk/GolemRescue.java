@@ -290,7 +290,7 @@ final class GolemRescue {
         }
         double d = distance(at, home);
         walks.put(id, new Walk(home, now, d, now));
-        golem.getPathfinder().moveTo(target(homeWorld, home), 1.0);
+        PluginPaths.moveTo(golem, target(homeWorld, home));
         plugin.getLogger().info(String.format("A copper golem at %s is lost (%d blocks from its %s at %d, %d, %d);"
                 + " walking it back", Alerts.at(at), Math.round(d), kindOf(home), home.x(), home.y(), home.z()));
     }
@@ -317,7 +317,7 @@ final class GolemRescue {
         }
         double d = distance(at, home);
         walks.put(golem.getUniqueId(), new Walk(home, now, d, now));
-        golem.getPathfinder().moveTo(target(at.getWorld(), home), 1.0);
+        PluginPaths.moveTo(golem, target(at.getWorld(), home));
         plugin.getLogger().info(String.format("A copper golem at %s has no work nearby; walking it to the %s %d blocks"
                 + " away at %d, %d, %d", Alerts.at(at), kindOf(home), Math.round(d), home.x(), home.y(), home.z()));
     }
@@ -359,7 +359,7 @@ final class GolemRescue {
                     + walk.home().z() + ", and can't find a way back", now);
             return true;
         }
-        golem.getPathfinder().moveTo(target(world, walk.home()), 1.0);
+        PluginPaths.moveTo(golem, target(world, walk.home()));
         return false;
     }
 

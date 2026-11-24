@@ -75,6 +75,7 @@ SOURCE_SUITES = {
     "LabelAdvisor": ["commands", "find"],
     "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach", "gestures", "cauldrons"] + ["distance", "work-order"],
     "PaperSupport": [],
+    "PluginPaths": SORTING + FURNACE + ["cauldrons", "greet", "rescue", "reach", "lids"],
     "Reach": ["reach", "destinations", "edge30"],
     "ReachDelivery": ["reach", "destinations", "edge30", "gestures"] + ["distance"],
     "Returns": ["core", "edge", "world", "edge26"],

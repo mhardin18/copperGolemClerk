@@ -272,8 +272,13 @@ reflection, so a new Paper version may break it.
 forms). The first call starts watching; each call lists the stretches that ended since the
 last one as `STATE ticks`, then `NOW STATE ticks` for any still going.
 
+`/golemwalk x1 y1 z1 x2 y2 z2 tx ty tz` sends every copper golem in a box to a spot through
+Paper's pathfinder, as vanilla's wandering does. Coming from another plugin, the walk counts
+as the golem's own (not a CopperGolemClerk job), which the cauldron keep-away scenarios rely on.
+
 Build it with `./gradlew build` in `hooks/` and copy the jar to pluginDev's plugins
-folder. Without it the `conflicts`, `lids` and `gestures` suites are skipped.
+folder. Without it the `conflicts`, `lids` and `gestures` suites, and the cauldron
+keep-away scenarios, are skipped.
 
 ## Code coverage
 
