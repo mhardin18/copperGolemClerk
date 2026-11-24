@@ -173,7 +173,7 @@ final class GolemGreetings {
         if (nearest == null) {
             return;
         }
-        var path = golem.getPathfinder().findPath(nearest);
+        var path = PluginPaths.findPath(golem, nearest);
         if (!reaches(path, nearest)) {
             return; // can't get there (another floor, behind a wall): don't try
         }
@@ -182,7 +182,7 @@ final class GolemGreetings {
         }
         visits.put(golem.getUniqueId(), new Visit(nearest.getUniqueId(), now, anchor,
                 flat(golem.getLocation(), nearest.getLocation()), now));
-        golem.getPathfinder().moveTo(path, 1.0);
+        PluginPaths.moveTo(golem, path);
         if (plugin.debug()) {
             plugin.getLogger().info(String.format("%s at %d,%d,%d has nothing to do; going to say hello to the %s nearby",
                     golem.getType(), at.getBlockX(), at.getBlockY(), at.getBlockZ(), name(nearest)));
@@ -214,7 +214,7 @@ final class GolemGreetings {
         if (!golem.isOnGround()) {
             return; // vanilla plans no path for a mob in the air (stepping down a block, say): check next time
         }
-        var path = golem.getPathfinder().findPath(mob);
+        var path = PluginPaths.findPath(golem, mob);
         if (!reaches(path, mob)) {
             stop(golem, now, true, "it can't get to the " + name(mob) + " any more" + ending(path, mob));
             return;
@@ -241,7 +241,7 @@ final class GolemGreetings {
             return;
         }
         if (takeNewPath) {
-            golem.getPathfinder().moveTo(path, 1.0);
+            PluginPaths.moveTo(golem, path);
         }
     }
 
@@ -260,7 +260,7 @@ final class GolemGreetings {
         if (visit != null && idle(golem) && flat(golem.getLocation(), visit.anchor()) > BACK_DISTANCE) {
             Location to = standBeside(visit.anchor());
             returning.put(golem.getUniqueId(), new Return(to, now));
-            golem.getPathfinder().moveTo(to, 1.0);
+            PluginPaths.moveTo(golem, to);
         }
     }
 
@@ -275,7 +275,7 @@ final class GolemGreetings {
             }
             return;
         }
-        golem.getPathfinder().moveTo(back.to(), 1.0);
+        PluginPaths.moveTo(golem, back.to());
     }
 
 
@@ -356,7 +356,7 @@ final class GolemGreetings {
     /** True if a path from where the golem is gets back to the spot beside its chest or furnace. */
     private static boolean canGetBack(CopperGolem golem, Location anchor) {
         Location to = standBeside(anchor);
-        var back = golem.getPathfinder().findPath(to);
+        var back = PluginPaths.findPath(golem, to);
         Location end = back == null ? null : back.getFinalPoint();
         return end != null && flat(end.clone().add(0.5, 0, 0.5), to) <= BACK_DISTANCE
                 && Math.abs(end.getY() - to.getY()) <= 1;

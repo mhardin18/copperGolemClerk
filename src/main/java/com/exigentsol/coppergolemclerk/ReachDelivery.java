@@ -83,7 +83,7 @@ final class ReachDelivery {
         long now = System.currentTimeMillis();
         jobs.put(golem.getUniqueId(), new Job(golem.getWorld().getUID(), halves, type, spot.target(),
                 now, HomeFinder.isVanillaTarget(container), far, new WalkClock(spot.target(), now)));
-        copper.getPathfinder().moveTo(spot.target(), 1.0);
+        PluginPaths.moveTo(copper, spot.target());
         if (plugin.debug()) {
             HomeFinder.Pos p = halves.iterator().next();
             Material what = golem.getWorld().getBlockAt(p.x(), p.y(), p.z()).getType();
@@ -145,7 +145,7 @@ final class ReachDelivery {
                 }
                 continue;
             }
-            golem.getPathfinder().moveTo(job.target(), 1.0); // vanilla AI may have redirected it
+            PluginPaths.moveTo(golem, job.target()); // vanilla AI may have redirected it
         }
     }
 
