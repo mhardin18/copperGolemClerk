@@ -20,6 +20,7 @@ exception in the server log while a scenario runs fails it.
 Suites: core, world, setup, edge, scenes, conflicts, config, options, lifecycle, perf.
 """
 import os
+import re
 import signal
 import sys
 import time
@@ -212,6 +213,12 @@ def run_batch(r, log, batch, keep, results=None):
     return cells, done
 
 
+
+def with_debug(text):
+    """config.yml's text with debug: true (set, or added at the end)."""
+    out, n = re.subn(r"(?m)^debug:.*$", "debug: true", text, count=1)
+    return out if n else text.rstrip("\n") + "\ndebug: true\n"
+
 def main(argv):
     problem = check_args(argv)
     if problem:
@@ -235,7 +242,14 @@ def main(argv):
 
     r = from_properties(os.path.join(arena.SERVER, "server.properties"))
     log = arena.Log(os.path.join(arena.SERVER, "logs/latest.log"))
-    config_before = open(arena.CONFIG).read()
+    config_as_found = open(arena.CONFIG).read()
+    # The checks read the plugin's debug lines: the run turns debug on, so pluginDev's config can
+    # stay at the defaults. This is the run's baseline; the file as found is put back at the end.
+    config_before = with_debug(config_as_found)
+    if config_before != config_as_found:
+        with open(arena.CONFIG, "w") as f:
+            f.write(config_before)
+        print("Turned on debug in config.yml for the run.")
     r.cmd("coppergolemclerk reload")  # start clean: clears "no home" marks from earlier runs
     r.cmd("weather clear 1000000")  # rain hurts snow golems (greet tests) and changes nothing else we test
 
@@ -261,9 +275,9 @@ def main(argv):
                             f.write(config_before)
                         r.cmd("coppergolemclerk reload")
         finally:
-            if open(arena.CONFIG).read() != config_before:  # a config test was interrupted
+            if open(arena.CONFIG).read() != config_as_found:  # the run's debug, or an interrupted config test
                 with open(arena.CONFIG, "w") as f:
-                    f.write(config_before)
+                    f.write(config_as_found)
                 print("Restored config.yml.")
             r.cmd("coppergolemclerk reload")
     except KeyboardInterrupt:

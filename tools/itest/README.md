@@ -166,7 +166,9 @@ edits. Those scenarios change server-wide settings, so they can't share the serv
 Add `--list` to any of these to see what would run without running it.
 
 Exit code 0 means all passed. On failure, the run prints each check and the plugin's debug
-log lines for that scenario's area (pluginDev runs with `debug: true`). Any unexpected
+log lines for that scenario's area. The runner turns on `debug: true` in pluginDev's
+`config.yml` for the run and puts the file back as it found it afterwards, so pluginDev's
+config can stay at the defaults. Any unexpected
 error or exception in the server log during a scenario fails it.
 
 ## Suites
