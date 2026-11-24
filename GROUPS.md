@@ -78,7 +78,8 @@ Only a fresh `config.yml` gets these. See
 
 ### 3.3.0
 
-No changes. The built-in groups are the same as in 3.2.0.
+- The nether brick item moved from `materials` to `nether`, next to the nether brick
+  blocks. Before, golems took it to a `[materials]` chest and never to a `[nether]` one.
 
 ### 3.2.0: 56 groups
 
@@ -140,7 +141,7 @@ properties.
 | [`[ores]`](#ores) | `ores` | Ores | 22 |
 | [`[mineral blocks]`](#mineral-blocks) | `mineral-blocks` | Mineral blocks | 8 |
 | [`[ingots and gems]`](#ingots-and-gems) | `ingots-and-gems` | Ingots & gems | 19 |
-| [`[materials]`](#materials) | `materials` | Crafting materials | 9 |
+| [`[materials]`](#materials) | `materials` | Crafting materials | 8 |
 | [`[amethyst]`](#amethyst) | `amethyst` | Amethyst | 6 |
 | [`[animal gear]`](#animal-gear) | `animal-gear` | Saddles & animal armor | 31 |
 | [`[armor]`](#armor) | `armor` | Armor | 31 |
@@ -168,7 +169,7 @@ properties.
 | [`[sculk]`](#sculk) | `sculk` | Sculk | 4 |
 | [`[sulfur]`](#sulfur) | `sulfur` | Sulfur & cinnabar | 28 |
 | [`[ocean]`](#ocean) | `ocean` | Ocean | 45 |
-| [`[nether]`](#nether) | `nether` | Nether | 44 |
+| [`[nether]`](#nether) | `nether` | Nether | 45 |
 | [`[end]`](#end) | `end` | The End | 11 |
 | [`[copper]`](#copper) | `copper` | Copper blocks | 80 |
 | [`[logs]`](#logs) | `logs` | Logs & planks | 64 |
@@ -364,13 +365,13 @@ charcoal, coal, copper ingot, copper nugget, diamond, emerald, gold ingot, gold 
 
 ### materials
 
-`[materials]`: Crafting materials, 9 items.
+`[materials]`: Crafting materials, 8 items.
 
-Entries: `BOWL`, `BRICK`, `CLAY_BALL`, `FLINT`, `GLOWSTONE_DUST`, `NETHER_BRICK`, `PAPER`, `RESIN_BRICK`, `STICK`
+Entries: `BOWL`, `BRICK`, `CLAY_BALL`, `FLINT`, `GLOWSTONE_DUST`, `PAPER`, `RESIN_BRICK`, `STICK`
 
 <details><summary>Items</summary>
 
-bowl, brick, clay ball, flint, glowstone dust, nether brick, paper, resin brick, stick
+bowl, brick, clay ball, flint, glowstone dust, paper, resin brick, stick
 
 </details>
 
@@ -700,13 +701,13 @@ brain coral, brain coral block, brain coral fan, bubble coral, bubble coral bloc
 
 ### nether
 
-`[nether]`: Nether, 44 items.
+`[nether]`: Nether, 45 items.
 
-Entries: `*BASALT*`, `*_BLACKSTONE`, `BLACKSTONE_*`, `RED_NETHER_*`, `NETHER_BRICK_*`, `POLISHED_BLACKSTONE_BRICK_*`, `BLACKSTONE`, `CHISELED_NETHER_BRICKS`, `CRACKED_NETHER_BRICKS`, `CRACKED_POLISHED_BLACKSTONE_BRICKS`, `CRIMSON_FUNGUS`, `CRIMSON_NYLIUM`, `CRIMSON_ROOTS`, `MAGMA_BLOCK`, `NETHERRACK`, `NETHER_BRICKS`, `NETHER_SPROUTS`, `NETHER_WART_BLOCK`, `POLISHED_BLACKSTONE_BRICKS`, `POLISHED_BLACKSTONE_SLAB`, `POLISHED_BLACKSTONE_STAIRS`, `POLISHED_BLACKSTONE_WALL`, `SOUL_SAND`, `SOUL_SOIL`, `TWISTING_VINES`, `WARPED_FUNGUS`, `WARPED_NYLIUM`, `WARPED_ROOTS`, `WARPED_WART_BLOCK`, `WEEPING_VINES`
+Entries: `*BASALT*`, `*_BLACKSTONE`, `BLACKSTONE_*`, `RED_NETHER_*`, `NETHER_BRICK_*`, `POLISHED_BLACKSTONE_BRICK_*`, `BLACKSTONE`, `CHISELED_NETHER_BRICKS`, `CRACKED_NETHER_BRICKS`, `CRACKED_POLISHED_BLACKSTONE_BRICKS`, `CRIMSON_FUNGUS`, `CRIMSON_NYLIUM`, `CRIMSON_ROOTS`, `MAGMA_BLOCK`, `NETHERRACK`, `NETHER_BRICK`, `NETHER_BRICKS`, `NETHER_SPROUTS`, `NETHER_WART_BLOCK`, `POLISHED_BLACKSTONE_BRICKS`, `POLISHED_BLACKSTONE_SLAB`, `POLISHED_BLACKSTONE_STAIRS`, `POLISHED_BLACKSTONE_WALL`, `SOUL_SAND`, `SOUL_SOIL`, `TWISTING_VINES`, `WARPED_FUNGUS`, `WARPED_NYLIUM`, `WARPED_ROOTS`, `WARPED_WART_BLOCK`, `WEEPING_VINES`
 
 <details><summary>Items</summary>
 
-basalt, blackstone, blackstone slab, blackstone stairs, blackstone wall, chiseled nether bricks, chiseled polished blackstone, cracked nether bricks, cracked polished blackstone bricks, crimson fungus, crimson nylium, crimson roots, gilded blackstone, magma block, nether brick fence, nether brick slab, nether brick stairs, nether brick wall, nether bricks, nether sprouts, nether wart block, netherrack, polished basalt, polished blackstone, polished blackstone brick slab, polished blackstone brick stairs, polished blackstone brick wall, polished blackstone bricks, polished blackstone slab, polished blackstone stairs, polished blackstone wall, red nether brick slab, red nether brick stairs, red nether brick wall, red nether bricks, smooth basalt, soul sand, soul soil, twisting vines, warped fungus, warped nylium, warped roots, warped wart block, weeping vines
+nether brick, basalt, blackstone, blackstone slab, blackstone stairs, blackstone wall, chiseled nether bricks, chiseled polished blackstone, cracked nether bricks, cracked polished blackstone bricks, crimson fungus, crimson nylium, crimson roots, gilded blackstone, magma block, nether brick fence, nether brick slab, nether brick stairs, nether brick wall, nether bricks, nether sprouts, nether wart block, netherrack, polished basalt, polished blackstone, polished blackstone brick slab, polished blackstone brick stairs, polished blackstone brick wall, polished blackstone bricks, polished blackstone slab, polished blackstone stairs, polished blackstone wall, red nether brick slab, red nether brick stairs, red nether brick wall, red nether bricks, smooth basalt, soul sand, soul soil, twisting vines, warped fungus, warped nylium, warped roots, warped wart block, weeping vines
 
 </details>
 
