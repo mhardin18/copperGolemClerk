@@ -18,7 +18,7 @@ import org.mockbukkit.mockbukkit.entity.CopperGolemMock;
  * greetings). MockBukkit's golem has none. Every moveTo and stop is recorded; findPath asks
  * {@link #pathTo}, which by default finds a path that ends at the target.
  */
-final class PathGolem extends CopperGolemMock {
+final class ScriptGolem extends CopperGolemMock {
 
     /** Where moveTo(Location) and moveTo(path) sent the golem, in order. */
     final List<Location> moves = new ArrayList<>();
@@ -27,7 +27,7 @@ final class PathGolem extends CopperGolemMock {
     /** The path findPath returns for a target (null: no path). */
     Function<Location, Pathfinder.PathResult> pathTo = target -> path(target, true, target);
 
-    PathGolem(ServerMock server) {
+    ScriptGolem(ServerMock server) {
         super(server, UUID.randomUUID());
     }
 
@@ -138,7 +138,7 @@ final class PathGolem extends CopperGolemMock {
     /** A path result that ends at `end` and passes through these points. */
     static Pathfinder.PathResult path(Location end, boolean reaches, Location... points) {
         List<Location> list = List.of(points);
-        return (Pathfinder.PathResult) Proxy.newProxyInstance(PathGolem.class.getClassLoader(),
+        return (Pathfinder.PathResult) Proxy.newProxyInstance(ScriptGolem.class.getClassLoader(),
                 new Class<?>[] {Pathfinder.PathResult.class}, (proxy, method, args) -> switch (method.getName()) {
                     case "getFinalPoint" -> end;
                     case "getPoints" -> list;

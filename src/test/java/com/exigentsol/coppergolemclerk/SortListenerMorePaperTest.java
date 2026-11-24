@@ -66,8 +66,8 @@ class SortListenerMorePaperTest extends PaperTest {
         HomeFinder.setDestinations(Set.of(Material.CHEST, Material.TRAPPED_CHEST));
     }
 
-    private PathGolem golemAt(double x, double z, ItemStack held) {
-        PathGolem g = new PathGolem(server);
+    private ScriptGolem golemAt(double x, double z, ItemStack held) {
+        ScriptGolem g = new ScriptGolem(server);
         g.setLocation(new Location(world, x + 0.5, FLOOR, z + 0.5));
         server.registerEntity(g);
         if (held != null) {
@@ -80,14 +80,14 @@ class SortListenerMorePaperTest extends PaperTest {
         return log.stream().anyMatch(l -> l.contains(part));
     }
 
-    private boolean validate(PathGolem golem, Block block) {
+    private boolean validate(ScriptGolem golem, Block block) {
         ItemTransportingEntityValidateTargetEvent event = new ItemTransportingEntityValidateTargetEvent(golem, block);
         event.setAllowed(true);
         server.getPluginManager().callEvent(event);
         return event.isAllowed();
     }
 
-    private Event.Result sort(PathGolem golem, ItemStack held, Block chest) {
+    private Event.Result sort(ScriptGolem golem, ItemStack held, Block chest) {
         ItemTransportingEntitySortEvent event = new ItemTransportingEntitySortEvent(golem, held, inv(chest));
         server.getPluginManager().callEvent(event);
         return event.getResult();
@@ -100,7 +100,7 @@ class SortListenerMorePaperTest extends PaperTest {
     }
 
     private Map<UUID, Long> activeMillis() {
-        return PathGolem.field(listener.homes(), "activeMillis");
+        return ScriptGolem.field(listener.homes(), "activeMillis");
     }
 
     private void callPrivate(String name) throws Exception {
@@ -117,7 +117,7 @@ class SortListenerMorePaperTest extends PaperTest {
 
     @Test
     void switchingAGolemsModeStopsItAndForgetsItsSearch() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         listener.homes().track(g, LOG);
         assertNotNull(listener.homes().searchOf(g.getUniqueId()));
         listener.golemModeChanged(g);
@@ -198,7 +198,7 @@ class SortListenerMorePaperTest extends PaperTest {
     @Test
     void anEmptyHandedGolemMayWalkToACopperChestWithItemsAndForgetsItsLastSearch() {
         Block copper = copperChest(4, 0, item(LOG, 3));
-        PathGolem g = golemAt(0, 0, null);
+        ScriptGolem g = golemAt(0, 0, null);
         listener.homes().track(g, LOG);
         assertTrue(validate(g, copper));
         assertNull(listener.homes().searchOf(g.getUniqueId()), "its next item starts a fresh search");
@@ -206,7 +206,7 @@ class SortListenerMorePaperTest extends PaperTest {
 
     @Test
     void anEmptyHandedGolemIsKeptAwayFromNoGolemsEmptyAndHomelessChests() {
-        PathGolem g = golemAt(0, 0, null);
+        ScriptGolem g = golemAt(0, 0, null);
         Block none = copperChest(4, 0, item(LOG, 3));
         sign(none, "[No Golems]");
         assertFalse(validate(g, none));
@@ -223,15 +223,15 @@ class SortListenerMorePaperTest extends PaperTest {
     @Test
     void anEmptyHandedGolemIsKeptAwayWhileFetchingOrOnAFurnaceJob() {
         Block copper = copperChest(4, 0, item(LOG, 3));
-        PathGolem fetching = golemAt(0, 0, null);
-        Map<UUID, Object> fetches = PathGolem.field(listener.fetcher(), "fetching");
-        fetches.put(fetching.getUniqueId(), PathGolem.make(OverflowFetcher.class, "Fetch", world.getUID(), null, null,
+        ScriptGolem fetching = golemAt(0, 0, null);
+        Map<UUID, Object> fetches = ScriptGolem.field(listener.fetcher(), "fetching");
+        fetches.put(fetching.getUniqueId(), ScriptGolem.make(OverflowFetcher.class, "Fetch", world.getUID(), null, null,
                 Material.DIRT, null, false, 0L, null));
         assertFalse(validate(fetching, copper));
 
-        PathGolem busy = golemAt(0, 4, null);
-        Map<UUID, Object> jobs = PathGolem.field(listener.furnaces(), "jobs");
-        jobs.put(busy.getUniqueId(), PathGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
+        ScriptGolem busy = golemAt(0, 4, null);
+        Map<UUID, Object> jobs = ScriptGolem.field(listener.furnaces(), "jobs");
+        jobs.put(busy.getUniqueId(), ScriptGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
                 Material.RAW_IRON, null, 0L, null, null));
         assertFalse(validate(busy, copper));
     }
@@ -239,7 +239,7 @@ class SortListenerMorePaperTest extends PaperTest {
     @Test
     void aHighCopperChestIsLeftToIdleGolemsWhenTakeReachIsRaised() {
         Block high = container(4, FLOOR + 3, 0, Material.WAXED_COPPER_CHEST, item(LOG, 3));
-        PathGolem g = golemAt(0, 0, null);
+        ScriptGolem g = golemAt(0, 0, null);
         assertTrue(validate(g, high), "vanilla reach: take-reach 2 does not raise anything");
         setting("take-reach", "4");
         assertFalse(validate(g, high), "now the plugin fetches from it itself");
@@ -253,7 +253,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void whatIsAlreadyRefusedStaysRefusedAndVanillaGolemsAreLeftAlone() {
         Block c = chest(4, 0);
         sign(c, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         ItemTransportingEntityValidateTargetEvent event = new ItemTransportingEntityValidateTargetEvent(g, c);
         event.setAllowed(false);
         server.getPluginManager().callEvent(event);
@@ -266,24 +266,24 @@ class SortListenerMorePaperTest extends PaperTest {
 
     @Test
     void aGolemNeverPutsItemsInANoGolemsChestOrOneItIsDeliveringElsewhere() {
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         Block none = chest(4, 0);
         sign(none, "[No Golems]", "[logs]");
         assertFalse(validate(g, none));
         assertNotNull(listener.homes().searchOf(g.getUniqueId()), "the clock starts even when refusing");
 
-        PathGolem delivering = golemAt(0, 6, item(LOG, 2));
-        Map<UUID, Object> reachJobs = PathGolem.field(listener.reach(), "jobs");
-        reachJobs.put(delivering.getUniqueId(), PathGolem.make(ReachDelivery.class, "Job", world.getUID(), Set.of(), LOG,
+        ScriptGolem delivering = golemAt(0, 6, item(LOG, 2));
+        Map<UUID, Object> reachJobs = ScriptGolem.field(listener.reach(), "jobs");
+        reachJobs.put(delivering.getUniqueId(), ScriptGolem.make(ReachDelivery.class, "Job", world.getUID(), Set.of(), LOG,
                 null, 0L, false, false, null));
         assertFalse(validate(delivering, chest(8, 0)));
     }
 
     @Test
     void aGolemOnAFurnaceJobIsKeptFromChests() {
-        PathGolem busy = golemAt(0, 0, item(LOG, 2));
-        Map<UUID, Object> jobs = PathGolem.field(listener.furnaces(), "jobs");
-        jobs.put(busy.getUniqueId(), PathGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
+        ScriptGolem busy = golemAt(0, 0, item(LOG, 2));
+        Map<UUID, Object> jobs = ScriptGolem.field(listener.furnaces(), "jobs");
+        jobs.put(busy.getUniqueId(), ScriptGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
                 LOG, null, 0L, null, null));
         Block c = chest(4, 0);
         sign(c, "[logs]");
@@ -298,7 +298,7 @@ class SortListenerMorePaperTest extends PaperTest {
         sign(furnace, "[raw iron]");
         Block supply = copperChest(0, 4, item(Material.RAW_IRON, 8));
         sign(supply, "[Furnace Supply]");
-        PathGolem g = golemAt(0, 2, item(Material.RAW_IRON, 8));
+        ScriptGolem g = golemAt(0, 2, item(Material.RAW_IRON, 8));
         listener.homes().startSearch(g, Material.RAW_IRON, supply);
         Block chest = chest(8, 0);
         sign(chest, "[raw iron]");
@@ -317,7 +317,7 @@ class SortListenerMorePaperTest extends PaperTest {
         data.setFacing(BlockFace.DOWN);
         h.setBlockData(data);
         world.getBlockAt(4, FLOOR - 2, 0).setType(Material.FURNACE);
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertFalse(validate(g, c));
         setting("furnace-feeding", "false");
         assertTrue(validate(g, c));
@@ -327,12 +327,12 @@ class SortListenerMorePaperTest extends PaperTest {
     void containersLeftOutOfDestinationsAreRefusedButOtherBlocksAreNot() {
         Block barrel = container(4, FLOOR, 0, Material.BARREL);
         Block c = chest(8, 0);
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertTrue(validate(g, barrel), "vanilla never uses barrels anyway");
         assertTrue(validate(g, c));
         setting("destination-containers", "[barrel]");
         assertFalse(validate(g, c), "a chest left out of destination-containers");
-        PathGolem fresh = golemAt(0, 10, item(LOG, 2)); // g's answers are cached for a second
+        ScriptGolem fresh = golemAt(0, 10, item(LOG, 2)); // g's answers are cached for a second
         assertFalse(validate(fresh, barrel), "now a barrel is a destination: the plugin walks the golem to it");
         assertTrue(listener.reach().isDelivering(fresh.getUniqueId()));
         assertTrue(validate(golemAt(0, 20, item(LOG, 2)), world.getBlockAt(12, FLOOR, 20)), "not a container at all");
@@ -344,7 +344,7 @@ class SortListenerMorePaperTest extends PaperTest {
         Block labelled = chest(8, 0);
         sign(labelled, "[logs]");
         setting("prefer-matching-chests", "false");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertTrue(validate(g, empty));
         assertTrue(validate(g, labelled));
     }
@@ -353,7 +353,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void anItemWithNoHomeInRangeIsLeftToVanilla() {
         Block other = chest(4, 0);
         sign(other, "[dirt]");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertTrue(validate(g, other), "nothing qualifies: vanilla decides");
     }
 
@@ -363,7 +363,7 @@ class SortListenerMorePaperTest extends PaperTest {
         Block empty = chest(4, 0);
         Block labelled = chest(8, 0);
         sign(labelled, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertFalse(validate(g, empty));
         assertTrue(logged("COPPER_GOLEM carrying BIRCH_LOG may target CHEST at 4," + FLOOR + ",0: false (a matching chest is in range)"), log.toString());
         assertTrue(validate(g, labelled));
@@ -376,7 +376,7 @@ class SortListenerMorePaperTest extends PaperTest {
         Block empty = chest(4, 0);
         Block overflow = chest(8, 0);
         sign(overflow, "[Overflow]");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertTrue(validate(g, overflow));
         assertTrue(logged("true (no matching chest; overflow chest)"), log.toString());
         assertFalse(validate(g, empty));
@@ -384,7 +384,7 @@ class SortListenerMorePaperTest extends PaperTest {
 
         setting("overflow-before-empty", "false");
         server.getScheduler().performTicks(0);
-        PathGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
+        ScriptGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
         assertTrue(validate(g, empty));
         assertTrue(logged("true (no matching chest; empty chest)"), log.toString());
         assertFalse(validate(g, overflow));
@@ -395,11 +395,11 @@ class SortListenerMorePaperTest extends PaperTest {
     void withEmptyChestsNotAllowedOnlyOverflowIsUsed() {
         setting("allow-empty-chests", "false");
         Block empty = chest(4, 0);
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertTrue(validate(g, empty), "no overflow and no empty chests allowed: vanilla decides");
         Block overflow = chest(8, 0);
         sign(overflow, "[Overflow]");
-        PathGolem g2 = golemAt(0, 4, item(LOG, 2));
+        ScriptGolem g2 = golemAt(0, 4, item(LOG, 2));
         assertFalse(validate(g2, empty));
         assertTrue(validate(g2, overflow));
     }
@@ -412,7 +412,7 @@ class SortListenerMorePaperTest extends PaperTest {
         setting("debug", "true");
         Block up = container(4, FLOOR + 3, 0, Material.CHEST);
         sign(up, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertFalse(validate(g, up), "vanilla can't open it: the plugin walks the golem there");
         assertTrue(listener.reach().isDelivering(g.getUniqueId()));
         assertFalse(g.moves.isEmpty());
@@ -426,7 +426,7 @@ class SortListenerMorePaperTest extends PaperTest {
         sign(up, "[logs]");
         Block low = chest(8, 0);
         sign(low, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
         assertTrue(validate(g, low));
         assertFalse(validate(g, up), "refused: a chest within vanilla's reach takes it");
         assertFalse(listener.reach().isDelivering(g.getUniqueId()));
@@ -437,8 +437,8 @@ class SortListenerMorePaperTest extends PaperTest {
         setting("deliver-reach", "4");
         Block up = container(4, FLOOR + 3, 0, Material.CHEST);
         sign(up, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 2));
-        Map<UUID, Map<HomeFinder.Pos, Long>> failed = PathGolem.field(listener.reach(), "failed");
+        ScriptGolem g = golemAt(0, 0, item(LOG, 2));
+        Map<UUID, Map<HomeFinder.Pos, Long>> failed = ScriptGolem.field(listener.reach(), "failed");
         failed.put(g.getUniqueId(), Map.of(pos(up), System.currentTimeMillis() + 60_000));
         assertTrue(listener.reach().recentlyFailed(g.getUniqueId(), pos(up)));
         assertFalse(validate(g, up), "vanilla can't open a high chest either");
@@ -451,7 +451,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void aResultAnotherPluginAlreadyDecidedIsKept() {
         Block c = chest(4, 0);
         sign(c, "[logs]");
-        PathGolem g = golemAt(0, 2, null);
+        ScriptGolem g = golemAt(0, 2, null);
         ItemTransportingEntitySortEvent event = new ItemTransportingEntitySortEvent(g, item(LOG, 1), inv(c));
         event.setResult(Event.Result.DENY);
         server.getPluginManager().callEvent(event);
@@ -462,7 +462,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void nothingHeldMeansNothingToDecide() {
         Block c = chest(4, 0);
         sign(c, "[logs]");
-        PathGolem g = golemAt(0, 2, null);
+        ScriptGolem g = golemAt(0, 2, null);
         assertEquals(Event.Result.DEFAULT, sort(g, ItemStack.empty(), c));
     }
 
@@ -470,9 +470,9 @@ class SortListenerMorePaperTest extends PaperTest {
     void anExactMatchIsVanillasAnswerButCountsAsAcceptedAndIsLogged() {
         setting("debug", "true");
         Block c = chest(4, 0, item(LOG, 1));
-        PathGolem g = golemAt(0, 2, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 2, item(LOG, 2));
         assertEquals(Event.Result.DEFAULT, sort(g, item(LOG, 2), c));
-        Map<UUID, Long> accepted = PathGolem.field(listener.homes(), "lastAccepted");
+        Map<UUID, Long> accepted = ScriptGolem.field(listener.homes(), "lastAccepted");
         assertTrue(accepted.containsKey(g.getUniqueId()));
         assertTrue(logged("COPPER_GOLEM carrying BIRCH_LOG -> CHEST at 4," + FLOOR + ",0: DEFAULT (exact match)"), log.toString());
     }
@@ -481,15 +481,15 @@ class SortListenerMorePaperTest extends PaperTest {
     void aLabelMatchIsAllowedAndAcceptedAndNoGolemsDenied() {
         Block c = chest(4, 0);
         sign(c, "[logs]");
-        PathGolem g = golemAt(0, 2, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 2, item(LOG, 2));
         assertEquals(Event.Result.ALLOW, sort(g, item(LOG, 2), c));
-        assertTrue(PathGolem.<Map<UUID, Long>>field(listener.homes(), "lastAccepted").containsKey(g.getUniqueId()));
+        assertTrue(ScriptGolem.<Map<UUID, Long>>field(listener.homes(), "lastAccepted").containsKey(g.getUniqueId()));
 
         Block none = chest(8, 0);
         sign(none, "[No Golems]");
-        PathGolem g2 = golemAt(0, 4, item(LOG, 2));
+        ScriptGolem g2 = golemAt(0, 4, item(LOG, 2));
         assertEquals(Event.Result.DENY, sort(g2, item(LOG, 2), none));
-        assertFalse(PathGolem.<Map<UUID, Long>>field(listener.homes(), "lastAccepted").containsKey(g2.getUniqueId()));
+        assertFalse(ScriptGolem.<Map<UUID, Long>>field(listener.homes(), "lastAccepted").containsKey(g2.getUniqueId()));
         Block other = chest(12, 0);
         sign(other, "[dirt]");
         assertEquals(Event.Result.DENY, sort(g2, item(LOG, 2), other));
@@ -500,11 +500,11 @@ class SortListenerMorePaperTest extends PaperTest {
         setting("debug", "true");
         Block overflow = chest(4, 0);
         sign(overflow, "[Overflow]");
-        PathGolem g = golemAt(0, 2, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 2, item(LOG, 2));
         assertEquals(Event.Result.ALLOW, sort(g, item(LOG, 2), overflow));
         Block labelled = chest(8, 0);
         sign(labelled, "[logs]");
-        PathGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
+        ScriptGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
         assertEquals(Event.Result.DENY, sort(g, item(LOG, 2), overflow));
         assertTrue(logged("overflow chest, but a matching chest is in range"), log.toString());
     }
@@ -513,7 +513,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void anOverflowChestItemFetchedFromHereIsMarkedAsUndeliverable() {
         Block overflow = chest(4, 0, item(LOG, 2));
         sign(overflow, "[Overflow]");
-        PathGolem g = golemAt(0, 2, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 2, item(LOG, 2));
         listener.homes().startSearch(g, LOG, overflow);
         setting("debug", "true");
         assertEquals(Event.Result.ALLOW, sort(g, item(LOG, 2), overflow));
@@ -522,7 +522,7 @@ class SortListenerMorePaperTest extends PaperTest {
 
         Block other = chest(8, 0);
         sign(other, "[Overflow]");
-        PathGolem g2 = golemAt(0, 4, item(LOG, 2));
+        ScriptGolem g2 = golemAt(0, 4, item(LOG, 2));
         listener.homes().startSearch(g2, Material.DIRT, overflow); // a different item: not fetched from here
         assertEquals(Event.Result.ALLOW, sort(g2, item(LOG, 2), other));
         assertFalse(listener.returns().isHomeless(inv(other), LOG));
@@ -532,22 +532,22 @@ class SortListenerMorePaperTest extends PaperTest {
     void anEmptyChestIsDeniedWhenAMatchingOrOverflowChestIsAround() {
         setting("debug", "true");
         Block empty = chest(4, 0);
-        PathGolem g = golemAt(0, 2, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 2, item(LOG, 2));
         assertEquals(Event.Result.DEFAULT, sort(g, item(LOG, 2), empty), "vanilla: yes");
-        assertTrue(PathGolem.<Map<UUID, Long>>field(listener.homes(), "lastAccepted").containsKey(g.getUniqueId()));
+        assertTrue(ScriptGolem.<Map<UUID, Long>>field(listener.homes(), "lastAccepted").containsKey(g.getUniqueId()));
 
         Block overflow = chest(8, 0);
         sign(overflow, "[Overflow]");
-        PathGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
+        ScriptGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
         assertEquals(Event.Result.DENY, sort(g, item(LOG, 2), empty));
         assertTrue(logged("empty chest, but an overflow chest has room"), log.toString());
         setting("overflow-before-empty", "false");
-        PathGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
+        ScriptGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
         assertEquals(Event.Result.DEFAULT, sort(g, item(LOG, 2), empty));
 
         Block labelled = chest(12, 0);
         sign(labelled, "[logs]");
-        PathGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
+        ScriptGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
         assertEquals(Event.Result.DENY, sort(g, item(LOG, 2), empty));
         assertTrue(logged("empty chest, but a matching chest is in range"), log.toString());
         setting("prefer-matching-chests", "false");
@@ -563,7 +563,7 @@ class SortListenerMorePaperTest extends PaperTest {
         Block empty = chest(4, 0);
         Block labelled = chest(8, 0);
         sign(labelled, "[logs]");
-        PathGolem g = golemAt(0, 2, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 2, item(LOG, 2));
         listener.homes().track(g, LOG);
         activeMillis().put(g.getUniqueId(), 30_000L); // vanilla step: no steering
         assertEquals(Event.Result.DEFAULT, sort(g, item(LOG, 2), empty));
@@ -572,8 +572,8 @@ class SortListenerMorePaperTest extends PaperTest {
 
     // ---- the timer that returns items nobody wants
 
-    private PathGolem searching(double x, double z, ItemStack held, Block source) throws IOException {
-        PathGolem g = golemAt(x, z, held);
+    private ScriptGolem searching(double x, double z, ItemStack held, Block source) throws IOException {
+        ScriptGolem g = golemAt(x, z, held);
         if (source == null) {
             listener.homes().track(g, held.getType());
         } else {
@@ -587,7 +587,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void anItemNobodyWantsGoesBackToTheCopperChest() throws Exception {
         fixedSteps(10);
         Block copper = copperChest(4, 0);
-        PathGolem g = searching(0, 0, item(LOG, 3), copper);
+        ScriptGolem g = searching(0, 0, item(LOG, 3), copper);
         callPrivate("returnHomelessItems");
         assertTrue(g.getEquipment().getItemInMainHand().isEmpty());
         assertTrue(inv(copper).contains(LOG, 3));
@@ -600,17 +600,17 @@ class SortListenerMorePaperTest extends PaperTest {
         Block copper = copperChest(4, 0);
         // the golem is gone
         UUID gone = UUID.randomUUID();
-        Map<UUID, HomeFinder.Search> searches = PathGolem.field(listener.homes(), "searches");
+        Map<UUID, HomeFinder.Search> searches = ScriptGolem.field(listener.homes(), "searches");
         searches.put(gone, new HomeFinder.Search(LOG, System.currentTimeMillis(), world.getUID(), null));
         activeMillis().put(gone, 50_000L);
         // hands empty
-        PathGolem empty = searching(0, 0, item(LOG, 1), copper);
+        ScriptGolem empty = searching(0, 0, item(LOG, 1), copper);
         empty.getEquipment().setItemInMainHand(ItemStack.empty());
         // holding something else now
-        PathGolem other = searching(0, 2, item(LOG, 1), copper);
+        ScriptGolem other = searching(0, 2, item(LOG, 1), copper);
         other.getEquipment().setItemInMainHand(item(Material.DIRT, 1));
         // switched to vanilla mode
-        PathGolem vanilla = searching(0, 4, item(LOG, 1), copper);
+        ScriptGolem vanilla = searching(0, 4, item(LOG, 1), copper);
         setVanilla(vanilla, true);
         callPrivate("returnHomelessItems");
         assertNull(listener.homes().searchOf(gone));
@@ -625,13 +625,13 @@ class SortListenerMorePaperTest extends PaperTest {
     void aGolemOnAJobKeepsItsItemWhileTheJobRuns() throws Exception {
         fixedSteps(10);
         Block copper = copperChest(4, 0);
-        PathGolem delivering = searching(0, 0, item(LOG, 3), copper);
-        Map<UUID, Object> reachJobs = PathGolem.field(listener.reach(), "jobs");
-        reachJobs.put(delivering.getUniqueId(), PathGolem.make(ReachDelivery.class, "Job", world.getUID(), Set.of(), LOG,
+        ScriptGolem delivering = searching(0, 0, item(LOG, 3), copper);
+        Map<UUID, Object> reachJobs = ScriptGolem.field(listener.reach(), "jobs");
+        reachJobs.put(delivering.getUniqueId(), ScriptGolem.make(ReachDelivery.class, "Job", world.getUID(), Set.of(), LOG,
                 null, 0L, false, false, null));
-        PathGolem busy = searching(0, 2, item(LOG, 3), copper);
-        Map<UUID, Object> jobs = PathGolem.field(listener.furnaces(), "jobs");
-        jobs.put(busy.getUniqueId(), PathGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
+        ScriptGolem busy = searching(0, 2, item(LOG, 3), copper);
+        Map<UUID, Object> jobs = ScriptGolem.field(listener.furnaces(), "jobs");
+        jobs.put(busy.getUniqueId(), ScriptGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
                 LOG, null, 0L, null, null));
         callPrivate("returnHomelessItems");
         assertEquals(3, delivering.getEquipment().getItemInMainHand().getAmount());
@@ -646,7 +646,7 @@ class SortListenerMorePaperTest extends PaperTest {
         Block copper = copperChest(8, 0);
         Block labelled = chest(3, 0);
         sign(labelled, "[logs]");
-        PathGolem g = searching(0, 0, item(LOG, 3), copper);
+        ScriptGolem g = searching(0, 0, item(LOG, 3), copper);
         callPrivate("returnHomelessItems");
         assertEquals(3, g.getEquipment().getItemInMainHand().getAmount(), "waiting its turn");
         activeMillis().put(g.getUniqueId(), 40_000L + 60_000L);
@@ -659,7 +659,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void withNoCopperChestToReturnToTheSearchStartsOver() throws Exception {
         fixedSteps(10);
         setting("debug", "true");
-        PathGolem g = searching(0, 0, item(LOG, 3), null);
+        ScriptGolem g = searching(0, 0, item(LOG, 3), null);
         callPrivate("returnHomelessItems");
         assertEquals(3, g.getEquipment().getItemInMainHand().getAmount());
         assertEquals(0L, (long) activeMillis().get(g.getUniqueId()), "searching again");
@@ -672,7 +672,7 @@ class SortListenerMorePaperTest extends PaperTest {
         setting("debug", "true");
         setting("return-unsortable-items", "false");
         Block copper = copperChest(4, 0);
-        PathGolem g = searching(0, 0, item(LOG, 3), copper);
+        ScriptGolem g = searching(0, 0, item(LOG, 3), copper);
         callPrivate("returnHomelessItems");
         assertEquals(3, g.getEquipment().getItemInMainHand().getAmount());
         assertTrue(inv(copper).isEmpty());
@@ -691,7 +691,7 @@ class SortListenerMorePaperTest extends PaperTest {
         setting("debug", "true");
         Block barrel = container(6, FLOOR, 0, Material.BARREL);
         sign(barrel, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 3));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 3));
         callPrivate("startPluginDeliveries");
         assertTrue(listener.reach().isDelivering(g.getUniqueId()));
         assertFalse(g.moves.isEmpty());
@@ -708,20 +708,20 @@ class SortListenerMorePaperTest extends PaperTest {
         barrelsAllowed();
         Block barrel = container(6, FLOOR, 0, Material.BARREL);
         sign(barrel, "[logs]");
-        PathGolem empty = golemAt(0, 0, null);
-        PathGolem vanilla = golemAt(0, 4, item(LOG, 3));
+        ScriptGolem empty = golemAt(0, 0, null);
+        ScriptGolem vanilla = golemAt(0, 4, item(LOG, 3));
         setVanilla(vanilla, true);
-        PathGolem busy = golemAt(0, 8, item(LOG, 3));
-        Map<UUID, Object> jobs = PathGolem.field(listener.furnaces(), "jobs");
-        jobs.put(busy.getUniqueId(), PathGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
+        ScriptGolem busy = golemAt(0, 8, item(LOG, 3));
+        Map<UUID, Object> jobs = ScriptGolem.field(listener.furnaces(), "jobs");
+        jobs.put(busy.getUniqueId(), ScriptGolem.make(FurnaceFeeder.class, "Job", FurnaceFeeder.Kind.FEED, world.getUID(), null, null,
                 LOG, null, 0L, null, null));
         callPrivate("startPluginDeliveries");
-        for (PathGolem g : List.of(empty, vanilla, busy)) {
+        for (ScriptGolem g : List.of(empty, vanilla, busy)) {
             assertFalse(listener.reach().isDelivering(g.getUniqueId()));
             assertTrue(g.moves.isEmpty());
         }
         setting("prefer-matching-chests", "false");
-        PathGolem g = golemAt(0, 12, item(LOG, 3));
+        ScriptGolem g = golemAt(0, 12, item(LOG, 3));
         callPrivate("startPluginDeliveries");
         assertFalse(listener.reach().isDelivering(g.getUniqueId()));
     }
@@ -733,7 +733,7 @@ class SortListenerMorePaperTest extends PaperTest {
         sign(barrel, "[logs]");
         Block chest = chest(10, 0);
         sign(chest, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 3));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 3));
         callPrivate("startPluginDeliveries");
         assertFalse(listener.reach().isDelivering(g.getUniqueId()), "vanilla takes it to the chest");
     }
@@ -741,7 +741,7 @@ class SortListenerMorePaperTest extends PaperTest {
     @Test
     void aGolemWithNoHomeAtAllIsLeftToVanilla() throws Exception {
         barrelsAllowed();
-        PathGolem g = golemAt(0, 0, item(LOG, 3));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 3));
         callPrivate("startPluginDeliveries");
         assertFalse(listener.reach().isDelivering(g.getUniqueId()));
     }
@@ -751,8 +751,8 @@ class SortListenerMorePaperTest extends PaperTest {
         barrelsAllowed();
         Block barrel = container(6, FLOOR, 0, Material.BARREL);
         sign(barrel, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 3));
-        Map<UUID, Map<HomeFinder.Pos, Long>> failed = PathGolem.field(listener.reach(), "failed");
+        ScriptGolem g = golemAt(0, 0, item(LOG, 3));
+        Map<UUID, Map<HomeFinder.Pos, Long>> failed = ScriptGolem.field(listener.reach(), "failed");
         failed.put(g.getUniqueId(), Map.of(pos(barrel), System.currentTimeMillis() + 60_000));
         callPrivate("startPluginDeliveries");
         assertFalse(listener.reach().isDelivering(g.getUniqueId()));
@@ -763,7 +763,7 @@ class SortListenerMorePaperTest extends PaperTest {
         barrelsAllowed();
         Block barrel = container(6, FLOOR, 0, Material.BARREL);
         sign(barrel, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 3));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 3));
         // the golem finds no spot beside it: the barrel is walled in, so it is not a home at all
         for (BlockFace face : new BlockFace[] {BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH, BlockFace.NORTH}) {
             for (int dy = 0; dy <= 6; dy++) {
@@ -779,19 +779,19 @@ class SortListenerMorePaperTest extends PaperTest {
     void anUnlabelledBarrelOrAnOverflowBarrelIsAFallbackForTheTimer() throws Exception {
         barrelsAllowed();
         Block empty = container(6, FLOOR, 0, Material.BARREL);
-        PathGolem g = golemAt(0, 0, item(LOG, 3));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 3));
         callPrivate("startPluginDeliveries");
         assertTrue(listener.reach().isDelivering(g.getUniqueId()), "no matching chest: an empty barrel will do");
         assertNotNull(empty);
 
         setting("allow-empty-chests", "false");
-        PathGolem g2 = golemAt(0, 6, item(LOG, 3));
-        PathGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
+        ScriptGolem g2 = golemAt(0, 6, item(LOG, 3));
+        ScriptGolem.<Map<UUID, Object>>field(listener.homes(), "cache").clear();
         callPrivate("startPluginDeliveries");
         assertFalse(listener.reach().isDelivering(g2.getUniqueId()), "empty chests are not allowed");
         Block overflow = container(6, FLOOR, 6, Material.BARREL);
         sign(overflow, "[Overflow]");
-        PathGolem g3 = golemAt(0, 12, item(LOG, 3)); // g2's search already ran out of ideas: it is on the vanilla step
+        ScriptGolem g3 = golemAt(0, 12, item(LOG, 3)); // g2's search already ran out of ideas: it is on the vanilla step
         callPrivate("startPluginDeliveries");
         assertTrue(listener.reach().isDelivering(g3.getUniqueId()));
     }
@@ -800,7 +800,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void anOverflowChestItemWithNoKnownSourceIsNotMarked() {
         Block overflow = chest(4, 0, item(LOG, 2));
         sign(overflow, "[Overflow]");
-        PathGolem g = golemAt(0, 2, item(LOG, 2));
+        ScriptGolem g = golemAt(0, 2, item(LOG, 2));
         listener.homes().track(g, LOG); // no copper chest next to it: no source
         assertEquals(Event.Result.ALLOW, sort(g, item(LOG, 2), overflow));
         assertFalse(listener.returns().isHomeless(inv(overflow), LOG));
@@ -816,7 +816,7 @@ class SortListenerMorePaperTest extends PaperTest {
         Block fuel = chest(0, 4, item(Material.COAL, 10));
         sign(fuel, "[Fuel]");
         Block copper = copperChest(8, 0, item(LOG, 3));
-        PathGolem g = golemAt(0, 0, null);
+        ScriptGolem g = golemAt(0, 0, null);
         boolean allowed = validate(g, copper);
         assertEquals(!listener.furnaces().isBusy(g.getUniqueId()), allowed);
         assertTrue(listener.furnaces().isBusy(g.getUniqueId()), "it was sent to fetch fuel");
@@ -827,7 +827,7 @@ class SortListenerMorePaperTest extends PaperTest {
     void theTimersRunTheirChoresEverySecondAndEveryMinute() {
         // a search of a golem that no longer exists; chests marked as homeless long ago
         UUID gone = UUID.randomUUID();
-        Map<UUID, HomeFinder.Search> searches = PathGolem.field(listener.homes(), "searches");
+        Map<UUID, HomeFinder.Search> searches = ScriptGolem.field(listener.homes(), "searches");
         searches.put(gone, new HomeFinder.Search(LOG, System.currentTimeMillis() - 20 * 60_000L, world.getUID(), null));
         Block copper = copperChest(4, 4, item(Material.DIRT, 2));
         markHomeless(copper);

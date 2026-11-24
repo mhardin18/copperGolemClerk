@@ -38,8 +38,8 @@ class HomeFinderMorePaperTest extends PaperTest {
         return plugin.sortListener().homes();
     }
 
-    private PathGolem golemAt(double x, double z, ItemStack held) {
-        PathGolem g = new PathGolem(server);
+    private ScriptGolem golemAt(double x, double z, ItemStack held) {
+        ScriptGolem g = new ScriptGolem(server);
         g.setLocation(new Location(world, x + 0.5, FLOOR, z + 0.5));
         server.registerEntity(g);
         if (held != null) {
@@ -60,11 +60,11 @@ class HomeFinderMorePaperTest extends PaperTest {
     }
 
     private void expireCache() {
-        PathGolem.<Map<UUID, Object>>field(homes(), "cache").clear();
+        ScriptGolem.<Map<UUID, Object>>field(homes(), "cache").clear();
     }
 
     private Map<UUID, Long> activeMillis() {
-        return PathGolem.field(homes(), "activeMillis");
+        return ScriptGolem.field(homes(), "activeMillis");
     }
 
     private PlayerMock admin() {
@@ -102,7 +102,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         Block empty = chest(12, 0);
         Block exact = chest(16, 0, item(LOG, 1));
         Block other = chest(20, 0, item(Material.DIRT, 1));
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         HomeFinder.Homes found = homes().homesFor(g, item(LOG, 4));
         assertEquals(Set.of(pos(labelled)), found.matching(), "the label is more specific than what the chest holds");
         assertEquals(Set.of(pos(labelled), pos(exact)), found.allMatching());
@@ -115,7 +115,7 @@ class HomeFinderMorePaperTest extends PaperTest {
     @Test
     void theSameSearchWithinAMomentIsAnsweredFromTheCache() {
         chest(4, 0, item(LOG, 1));
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         HomeFinder.Homes first = homes().homesFor(g, item(LOG, 4));
         assertSame(first, homes().homesFor(g, item(LOG, 4)));
         chest(8, 0, item(LOG, 1));
@@ -132,7 +132,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         for (int i = 0; i < 27; i++) {
             inv(full).setItem(i, item(Material.DIRT, 64));
         }
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         HomeFinder.Homes found = homes().homesFor(g, item(LOG, 4));
         assertTrue(found.matching().isEmpty() && found.overflow().isEmpty() && found.empty().isEmpty());
     }
@@ -157,7 +157,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         world.getBlockAt(16, FLOOR - 2, 0).setType(Material.FURNACE);
         Block good = chest(20, 0);
         sign(good, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         assertEquals(Set.of(pos(good)), homes().homesFor(g, item(LOG, 4)).matching());
         // with furnace feeding off, a hopper into a furnace does not matter
         setting("furnace-feeding", "false");
@@ -174,7 +174,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         org.bukkit.block.BlockState state = locked.getState();
         ((org.bukkit.block.Lockable) state).setLock("key");
         state.update(true);
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         assertTrue(HomeFinder.isLocked(locked.getState(false)));
         assertTrue(homes().homesFor(g, item(LOG, 4)).matching().isEmpty());
         assertTrue(homes().typesWithHome(g, List.of(item(LOG, 1))).isEmpty());
@@ -187,7 +187,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         sign(barrel, "[logs]");
         Block shulker = container(8, FLOOR, 0, Material.WHITE_SHULKER_BOX);
         sign(shulker, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         HomeFinder.Homes found = homes().homesFor(g, item(LOG, 4));
         assertEquals(Set.of(pos(barrel), pos(shulker)), found.matching());
         assertEquals(Set.of(pos(barrel), pos(shulker)), found.high(), "vanilla golems don't use them");
@@ -199,7 +199,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         setting("destination-containers", "[chest, shulker_box]");
         Block shulker = container(4, FLOOR, 0, Material.WHITE_SHULKER_BOX);
         sign(shulker, "[shulker boxes]");
-        PathGolem g = golemAt(0, 0, item(Material.BLUE_SHULKER_BOX, 1));
+        ScriptGolem g = golemAt(0, 0, item(Material.BLUE_SHULKER_BOX, 1));
         assertTrue(homes().homesFor(g, item(Material.BLUE_SHULKER_BOX, 1)).matching().isEmpty());
         assertTrue(homes().typesWithHome(g, List.of(item(Material.BLUE_SHULKER_BOX, 1))).isEmpty());
     }
@@ -219,7 +219,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         for (int dy = 1; dy <= 6; dy++) {
             barrel.getRelative(BlockFace.NORTH).getRelative(0, dy, 0).setType(Material.STONE);
         }
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         assertTrue(homes().homesFor(g, item(LOG, 4)).matching().isEmpty());
         assertTrue(homes().typesWithHome(g, List.of(item(LOG, 1))).isEmpty());
     }
@@ -231,7 +231,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         sign(far, "[logs]");
         Block highAndFar = container(44, FLOOR + 5, 0, Material.CHEST);
         sign(highAndFar, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         HomeFinder.Homes found = homes().homesFor(g, item(LOG, 4));
         assertEquals(Set.of(pos(far)), found.matching());
         assertEquals(Set.of(pos(far)), found.high(), "the plugin walks the golem there");
@@ -244,7 +244,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         sign(up, "[logs]");
         Block low = chest(8, 0);
         sign(low, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         HomeFinder.Homes found = homes().homesFor(g, item(LOG, 4));
         assertEquals(Set.of(pos(up), pos(low)), found.matching());
         assertEquals(Set.of(pos(up)), found.high());
@@ -261,7 +261,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         Block overflow = chest(8, 0);
         sign(overflow, "[Overflow]");
         Block empty = chest(12, 0);
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         UUID id = g.getUniqueId();
         HomeFinder h = homes();
 
@@ -300,7 +300,7 @@ class HomeFinderMorePaperTest extends PaperTest {
     void stepLengthsFollowTheWalkWhenNotFixed() {
         Block labelled = chest(4, 0);
         sign(labelled, "[logs]");
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         UUID id = g.getUniqueId();
         HomeFinder h = homes();
         assertNotNull(h.homesFor(g, item(LOG, 4)));
@@ -321,7 +321,7 @@ class HomeFinderMorePaperTest extends PaperTest {
 
     @Test
     void anItemWithNoHomeGoesStraightToVanillaThenReturn() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         UUID id = g.getUniqueId();
         assertNull(homes().homesFor(g, item(LOG, 4)));
         assertEquals(HomeFinder.Step.VANILLA, homes().stepOf(id));
@@ -343,7 +343,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         sign(labelled, "[logs]");
         chest(40, 0, item(LOG, 1)); // far: its walk is longer, 15 s + 40 * 0.8 s = 47 s
         setting("search-distance", "64");
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         UUID id = g.getUniqueId();
         assertNotNull(homes().homesFor(g, item(LOG, 4)));
         activeMillis().put(id, 31_000L);
@@ -358,7 +358,7 @@ class HomeFinderMorePaperTest extends PaperTest {
 
     @Test
     void searchClocksOnlyRunWhileTheGolemIsLikelyBeingTicked() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         UUID id = g.getUniqueId();
         HomeFinder h = homes();
         h.startSearch(g, LOG, copperChest(3, 3));
@@ -395,7 +395,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         assertEquals(3000L, (long) activeMillis().get(id), "burning mobs are ticked");
         g.setFireTicks(0);
 
-        Map<UUID, Integer> range = PathGolem.field(h, "activationRange");
+        Map<UUID, Integer> range = ScriptGolem.field(h, "activationRange");
         range.put(world.getUID(), 0);
         h.tickClocks();
         assertEquals(4000L, (long) activeMillis().get(id), "activation range 0 means always");
@@ -405,11 +405,11 @@ class HomeFinderMorePaperTest extends PaperTest {
     void aGoneGolemsClockStandsStillAndPruneDropsOldSearches() {
         HomeFinder h = homes();
         UUID gone = UUID.randomUUID();
-        Map<UUID, HomeFinder.Search> searches = PathGolem.field(h, "searches");
+        Map<UUID, HomeFinder.Search> searches = ScriptGolem.field(h, "searches");
         searches.put(gone, new HomeFinder.Search(LOG, System.currentTimeMillis() - 11 * 60_000L, world.getUID(), null));
         UUID recentGone = UUID.randomUUID();
         searches.put(recentGone, new HomeFinder.Search(LOG, System.currentTimeMillis(), world.getUID(), null));
-        PathGolem alive = golemAt(0, 0, item(LOG, 1));
+        ScriptGolem alive = golemAt(0, 0, item(LOG, 1));
         searches.put(alive.getUniqueId(), new HomeFinder.Search(LOG, System.currentTimeMillis() - 20 * 60_000L, world.getUID(), null));
         activeMillis().put(gone, 5L);
         h.tickClocks();
@@ -425,11 +425,11 @@ class HomeFinderMorePaperTest extends PaperTest {
     @Test
     void pruneDropsOldCacheEntries() {
         chest(4, 0, item(LOG, 1));
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         homes().homesFor(g, item(LOG, 4));
-        Map<UUID, Object> cache = PathGolem.field(homes(), "cache");
+        Map<UUID, Object> cache = ScriptGolem.field(homes(), "cache");
         assertEquals(1, cache.size());
-        Object old = PathGolem.make(HomeFinder.class, "CacheEntry", LOG, world.getUID(), -5000, new HomeFinder.Homes(Set.of(), Set.of(), Set.of(), Set.of(), Set.of()));
+        Object old = ScriptGolem.make(HomeFinder.class, "CacheEntry", LOG, world.getUID(), -5000, new HomeFinder.Homes(Set.of(), Set.of(), Set.of(), Set.of(), Set.of()));
         cache.put(g.getUniqueId(), old);
         homes().prune();
         assertTrue(cache.isEmpty());
@@ -437,7 +437,7 @@ class HomeFinderMorePaperTest extends PaperTest {
 
     @Test
     void startSearchRemembersTheChestAndTheHomeAndRestartAndForgetClearIt() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         Block copper = copperChest(2, 2);
         homes().startSearch(g, LOG, copper);
         HomeFinder.Search search = homes().searchOf(g.getUniqueId());
@@ -455,7 +455,7 @@ class HomeFinderMorePaperTest extends PaperTest {
 
     @Test
     void trackingNotesTheCopperChestTheGolemStandsAt() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         Block copper = copperChest(1, 0);
         homes().track(g, LOG);
         assertEquals(pos(copper), homes().searchOf(g.getUniqueId()).source());
@@ -468,18 +468,18 @@ class HomeFinderMorePaperTest extends PaperTest {
 
     @Test
     void waitingNearAChestThatTakesTheItem() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         Block labelled = chest(3, 0);
         sign(labelled, "[logs]");
         assertTrue(homes().waitingNearHome(g, item(LOG, 4)));
         assertFalse(homes().waitingNearHome(g, item(Material.DIRT, 4)) && false);
-        PathGolem far = golemAt(0, 20, item(LOG, 4));
+        ScriptGolem far = golemAt(0, 20, item(LOG, 4));
         assertFalse(homes().waitingNearHome(far, item(LOG, 4)), "its chest is too far to be queuing for");
     }
 
     @Test
     void waitingNearAnOverflowOrEmptyChest() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         Block overflow = chest(3, 0);
         sign(overflow, "[Overflow]");
         assertTrue(homes().waitingNearHome(g, item(LOG, 4)));
@@ -493,7 +493,7 @@ class HomeFinderMorePaperTest extends PaperTest {
 
     @Test
     void anyHomeForCountsMatchingOverflowAndEmptyChests() {
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         assertFalse(homes().anyHomeFor(g, item(LOG, 1)));
         Block overflow = chest(4, 0);
         sign(overflow, "[Overflow]");
@@ -527,7 +527,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         sign(overflowOnly, "[Overflow]");
         Block good = chest(24, 0);
         sign(good, "[dirt]");
-        PathGolem g = golemAt(0, 0, null);
+        ScriptGolem g = golemAt(0, 0, null);
         Set<Material> found = homes().typesWithHome(g, List.of(item(LOG, 1), item(Material.DIRT, 1)));
         assertEquals(Set.of(Material.DIRT), found);
         assertTrue(homes().typesWithHome(g, List.of()).isEmpty());
@@ -543,7 +543,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         for (int i = 0; i < 27; i++) {
             inv(full).setItem(i, item(Material.DIRT, 64));
         }
-        PathGolem g = golemAt(0, 0, null);
+        ScriptGolem g = golemAt(0, 0, null);
         assertTrue(homes().typesWithHome(g, List.of(item(LOG, 1))).isEmpty());
     }
 
@@ -562,7 +562,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         for (int i = 0; i < 27; i++) {
             inv(overflow).setItem(i, item(Material.STONE, 64));
         }
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         homes().homesFor(g, item(LOG, 4));
         String told = heard(admin);
         assertTrue(told.contains("The [logs] chest at 4, " + FLOOR + ", 0 is full: golems can't put birch log in it."), told);
@@ -577,7 +577,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         for (int i = 0; i < 25; i++) {
             inv(overflow).setItem(i, item(Material.STONE, 64));
         }
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         homes().homesFor(g, item(LOG, 4));
         assertTrue(heard(admin).contains("The [Overflow] chest at 8, " + FLOOR + ", 0 is 92% full (25 of 27 slots)."));
     }
@@ -591,7 +591,7 @@ class HomeFinderMorePaperTest extends PaperTest {
             inv(overflow).setItem(i, item(Material.STONE, 64));
         }
         setting("overflow-alert-percent", "0");
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         homes().homesFor(g, item(LOG, 4));
         assertEquals("", heard(admin));
         setting("overflow-alert-percent", "100");
@@ -611,7 +611,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         Block overflow = chest(8, 0);
         sign(overflow, "[Overflow]");
         inv(overflow).setItem(0, item(Material.STONE, 64));
-        PathGolem g = golemAt(0, 0, item(LOG, 4));
+        ScriptGolem g = golemAt(0, 0, item(LOG, 4));
         homes().homesFor(g, item(LOG, 4));
         assertEquals("", heard(admin));
     }
@@ -630,7 +630,7 @@ class HomeFinderMorePaperTest extends PaperTest {
 
     @Test
     void beyondVanillaLooksAtEveryHalf() {
-        PathGolem g = golemAt(0, 0, null);
+        ScriptGolem g = golemAt(0, 0, null);
         assertFalse(HomeFinder.beyondVanilla(g, Set.of(new HomeFinder.Pos(30, FLOOR, 0))));
         assertTrue(HomeFinder.beyondVanilla(g, Set.of(new HomeFinder.Pos(40, FLOOR, 0))));
         assertFalse(HomeFinder.beyondVanilla(g, Set.of(new HomeFinder.Pos(40, FLOOR, 0), new HomeFinder.Pos(31, FLOOR, 0))));

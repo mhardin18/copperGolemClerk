@@ -755,10 +755,10 @@ class ChestReportsMorePaperTest extends PaperTest {
     @Test
     void hillsideChestWhereTheNearestGolemCannotReachTheHighSpot() {
         Block c = hillsideChest(0, 0);
-        PathGolem g = new PathGolem(server);
+        ScriptGolem g = new ScriptGolem(server);
         g.setLocation(new Location(world, 5.5, FLOOR, -4.5));
         server.registerEntity(g);
-        g.pathTo = target -> target.getY() > FLOOR + 1 ? null : PathGolem.path(target, true, target);
+        g.pathTo = target -> target.getY() > FLOOR + 1 ? null : ScriptGolem.path(target, true, target);
         String out = check(c);
         assertTrue(out.contains("Golems can't walk to the spot level with it (0," + (FLOOR + 4) + ",1), so they use the floor in front. It's 4 chest rows up"), out);
         assertTrue(out.contains("out of reach"), out);
@@ -767,7 +767,7 @@ class ChestReportsMorePaperTest extends PaperTest {
     @Test
     void hillsideChestWhereTheNearestGolemCanWalkToTheLowSpotHasNoNote() {
         Block c = hillsideChest(0, 0);
-        PathGolem g = new PathGolem(server);
+        ScriptGolem g = new ScriptGolem(server);
         g.setLocation(new Location(world, 5.5, FLOOR, -4.5));
         server.registerEntity(g);
         String out = check(c);
@@ -780,10 +780,10 @@ class ChestReportsMorePaperTest extends PaperTest {
     void hillsideChestWithTheHighSpotWithinReachIsWhite() {
         Block c = hillsideChest(0, 0);
         setting("deliver-reach", "4");
-        PathGolem g = new PathGolem(server);
+        ScriptGolem g = new ScriptGolem(server);
         g.setLocation(new Location(world, 5.5, FLOOR, -4.5));
         server.registerEntity(g);
-        g.pathTo = target -> target.getY() > FLOOR + 1 ? null : PathGolem.path(target, true, target);
+        g.pathTo = target -> target.getY() > FLOOR + 1 ? null : ScriptGolem.path(target, true, target);
         String out = check(c);
         assertTrue(out.contains("within deliver-reach (4)"), out);
     }

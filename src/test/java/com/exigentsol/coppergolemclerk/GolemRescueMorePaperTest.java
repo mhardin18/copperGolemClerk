@@ -56,12 +56,12 @@ class GolemRescueMorePaperTest extends PaperTest {
         plugin.getLogger().removeHandler(handler);
     }
 
-    private PathGolem golemAt(double x, double z) {
+    private ScriptGolem golemAt(double x, double z) {
         return golemAt(world, x, z);
     }
 
-    private PathGolem golemAt(WorldMock w, double x, double z) {
-        PathGolem g = new PathGolem(server);
+    private ScriptGolem golemAt(WorldMock w, double x, double z) {
+        ScriptGolem g = new ScriptGolem(server);
         g.setLocation(new Location(w, x + 0.5, FLOOR, z + 0.5));
         server.registerEntity(g);
         return g;
@@ -83,23 +83,23 @@ class GolemRescueMorePaperTest extends PaperTest {
         return out.toString();
     }
 
-    private void setHome(PathGolem g, String world, int x, int y, int z) {
+    private void setHome(ScriptGolem g, String world, int x, int y, int z) {
         g.getPersistentDataContainer().set(new NamespacedKey(plugin, "home"), PersistentDataType.STRING,
                 world + ";" + x + ";" + y + ";" + z);
     }
 
     private Map<UUID, Object> map(String name) {
-        return PathGolem.field(rescue, name);
+        return ScriptGolem.field(rescue, name);
     }
 
     /** Run one tick that does the five-second check. */
     private void tick() {
-        PathGolem.setField(rescue, "nextCheck", 0L);
+        ScriptGolem.setField(rescue, "nextCheck", 0L);
         rescue.tick();
     }
 
     private Object walk(GolemRescue.Home home, long started, double best, long bestAt) {
-        return PathGolem.make(GolemRescue.class, "Walk", home, started, best, bestAt);
+        return ScriptGolem.make(GolemRescue.class, "Walk", home, started, best, bestAt);
     }
 
     private boolean logged(String part) {
@@ -110,7 +110,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void homeIsTheLastWorkPlaceItGotWorkFrom() {
-        PathGolem g = golemAt(0, 5);
+        ScriptGolem g = golemAt(0, 5);
         Block copper = copperChest(3, 3);
         rescue.noteHome(g, copper);
         assertEquals(new GolemRescue.Home("world", 3, FLOOR, 3), rescue.homeOf(g));
@@ -123,7 +123,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void notAWorkPlaceNorAGolemLeavesTheHomeAlone() {
-        PathGolem g = golemAt(0, 5);
+        ScriptGolem g = golemAt(0, 5);
         rescue.noteHome(g, chest(3, 3));
         rescue.noteHome(g, null);
         rescue.noteHome(g, world.getBlockAt(5, FLOOR, 5));
@@ -134,7 +134,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aBrokenHomeValueReadsAsNoHome() {
-        PathGolem g = golemAt(0, 5);
+        ScriptGolem g = golemAt(0, 5);
         g.getPersistentDataContainer().set(new NamespacedKey(plugin, "home"), PersistentDataType.STRING, "world;x;1");
         assertNull(rescue.homeOf(g));
         g.getPersistentDataContainer().set(new NamespacedKey(plugin, "home"), PersistentDataType.STRING, "world;1;two;3");
@@ -167,7 +167,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void noteSaysWhatTheGolemIsWalkingBackTo() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         assertNull(rescue.note(g));
         long now = System.currentTimeMillis();
         record Case(Block block, int x, String expect) {
@@ -202,7 +202,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void switchingRescueOffStopsEveryWalkAndForgetsTheState() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         long now = System.currentTimeMillis();
         map("walks").put(g.getUniqueId(), walk(new GolemRescue.Home("world", 30, FLOOR, 0), now, 50, now));
         map("lostSince").put(g.getUniqueId(), now);
@@ -221,7 +221,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aGolemWithNoHomeAdoptsTheNearestWorkPlaceInRange() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         copperChest(20, 0);
         copperChest(6, 0);
         tick();
@@ -232,7 +232,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aGolemWithNoHomeWalksToAWorkPlaceFarAway() {
-        PathGolem g = golemAt(-10, 0);
+        ScriptGolem g = golemAt(-10, 0);
         chest(20, 0); // a plain chest is no work place
         copperChest(50, 0);
         tick();
@@ -245,7 +245,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aGolemWithNoWorkWithin64BlocksIsLeftAlone() {
-        PathGolem g = golemAt(-30, 0);
+        ScriptGolem g = golemAt(-30, 0);
         copperChest(50, 0); // 80 away
         container(0, FLOOR + 20, 0, Material.WAXED_COPPER_CHEST); // too far up
         tick();
@@ -259,7 +259,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aHomeThatIsNotAWorkPlaceAnyMoreIsForgotten() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         Block c = copperChest(40, 0);
         rescue.noteHome(g, c);
         c.setType(Material.AIR);
@@ -271,7 +271,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aHomeInAnUnloadedChunkIsKept() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         setHome(g, "world", 16 * 50, FLOOR, 0);
         tick();
         assertEquals(16 * 50, rescue.homeOf(g).x());
@@ -281,7 +281,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void movedToAnotherCopperChestAdoptsItAsHome() {
-        PathGolem g = golemAt(-10, 0);
+        ScriptGolem g = golemAt(-10, 0);
         rescue.noteHome(g, copperChest(70, 0));
         copperChest(-12, 0);
         map("lostSince").put(g.getUniqueId(), 1L);
@@ -293,7 +293,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aGolemNearItsHomeChestKeepsItsHome() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         rescue.noteHome(g, copperChest(10, 0));
         copperChest(-5, 0);
         tick();
@@ -305,7 +305,7 @@ class GolemRescueMorePaperTest extends PaperTest {
         WorldMock other = server.addSimpleWorld("other");
         other.loadChunk(0, 0);
         other.getBlockAt(2, FLOOR, 2).setType(Material.WAXED_COPPER_CHEST);
-        PathGolem g = golemAt(other, 0, 0);
+        ScriptGolem g = golemAt(other, 0, 0);
         setHome(g, "world", 0, FLOOR, 0);
         // the home in "world" is no work place, so it would be forgotten first: give it one
         copperChest(0, 0);
@@ -313,15 +313,15 @@ class GolemRescueMorePaperTest extends PaperTest {
         assertEquals("other", rescue.homeOf(g).world());
     }
 
-    private void stuckSetup(PathGolem g, long ago) {
-        map("anchors").put(g.getUniqueId(), PathGolem.make(GolemRescue.class, "Anchor", g.getLocation(),
+    private void stuckSetup(ScriptGolem g, long ago) {
+        map("anchors").put(g.getUniqueId(), ScriptGolem.make(GolemRescue.class, "Anchor", g.getLocation(),
                 System.currentTimeMillis() - ago));
     }
 
     @Test
     void aGolemStuckForTwoMinutesWithNoPathToItsChestIsReported() {
         PlayerMock admin = admin();
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         rescue.noteHome(g, copperChest(10, 0));
         g.pathTo = target -> null;
         stuckSetup(g, 3 * 60_000);
@@ -340,7 +340,7 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void aStuckGolemThatCanReachItsChestIsLeftAlone() {
         PlayerMock admin = admin();
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         rescue.noteHome(g, copperChest(10, 0));
         stuckSetup(g, 3 * 60_000);
         tick();
@@ -351,7 +351,7 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void aGolemStandingStillNextToItsChestIsNotStuck() {
         PlayerMock admin = admin();
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         rescue.noteHome(g, copperChest(3, 0));
         g.pathTo = target -> null;
         stuckSetup(g, 3 * 60_000);
@@ -362,7 +362,7 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void aGolemThatStoodStillForLessThanTwoMinutesIsNotStuck() {
         PlayerMock admin = admin();
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         rescue.noteHome(g, copperChest(10, 0));
         g.pathTo = target -> null;
         stuckSetup(g, 60_000);
@@ -372,7 +372,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void movingAgainClearsTheTroubleNote() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         copperChest(10, 0);
         tick(); // anchor made here
         map("trouble").put(g.getUniqueId(), "stuck somewhere");
@@ -385,7 +385,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aGolemNotFarFromHomeIsNotLost() {
-        PathGolem g = golemAt(-20, 0);
+        ScriptGolem g = golemAt(-20, 0);
         rescue.noteHome(g, container(20, FLOOR, 0, Material.WAXED_COPPER_CHEST)); // 40 away: in the copper chest's blind spot
         copperChest(60, 0).setType(Material.AIR);
         map("lostSince").put(g.getUniqueId(), 1L);
@@ -396,7 +396,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aFurnaceOrOverflowChestInRangeMeansItHasWorkToDo() {
-        PathGolem g = golemAt(-10, 0);
+        ScriptGolem g = golemAt(-10, 0);
         rescue.noteHome(g, copperChest(70, 0));
         Block furnace = container(-8, FLOOR, 0, Material.FURNACE);
         map("lostSince").put(g.getUniqueId(), 1L);
@@ -414,7 +414,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aPlainChestInRangeDoesNotCount() {
-        PathGolem g = golemAt(-10, 0);
+        ScriptGolem g = golemAt(-10, 0);
         rescue.noteHome(g, copperChest(70, 0));
         chest(-8, 4);
         long long11 = System.currentTimeMillis() - 11_000;
@@ -427,7 +427,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void aLostGolemWaitsTenSecondsThenWalksHome() {
-        PathGolem g = golemAt(-10, 0);
+        ScriptGolem g = golemAt(-10, 0);
         rescue.noteHome(g, copperChest(70, 0));
         tick();
         assertTrue(map("lostSince").containsKey(g.getUniqueId()), "lost clock started");
@@ -449,7 +449,7 @@ class GolemRescueMorePaperTest extends PaperTest {
         PlayerMock admin = admin();
         WorldMock nether = server.addSimpleWorld("nether");
         nether.loadChunk(0, 0);
-        PathGolem g = golemAt(nether, 0, 0);
+        ScriptGolem g = golemAt(nether, 0, 0);
         setHome(g, "world", 0, FLOOR, 0);
         copperChest(0, 0);
         map("lostSince").put(g.getUniqueId(), 1L);
@@ -463,7 +463,7 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void aNamedGolemWhoseHomeWorldIsGoneIsReportedByName() {
         PlayerMock admin = admin();
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         g.customName(net.kyori.adventure.text.Component.text("Rusty"));
         setHome(g, "vanished", 5, FLOOR, 5);
         map("lostSince").put(g.getUniqueId(), 1L);
@@ -475,7 +475,7 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void alertsAreNotRepeatedWithinTheCooldownButTheGolemIsRetriedLater() {
         PlayerMock admin = admin();
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         setHome(g, "vanished", 5, FLOOR, 5);
         map("lostSince").put(g.getUniqueId(), 1L);
         tick();
@@ -507,9 +507,9 @@ class GolemRescueMorePaperTest extends PaperTest {
     private void claimOwnedBy(UUID owner) throws Exception {
         FakeClaim.owner = owner;
         Claims claims = plugin.claims();
-        PathGolem.setField(claims, "looked", true);
-        PathGolem.setField(claims, "dataStore", new FakeStore());
-        PathGolem.setField(claims, "getClaimAt", FakeStore.class.getMethod("getClaimAt", Location.class, boolean.class, Object.class));
+        ScriptGolem.setField(claims, "looked", true);
+        ScriptGolem.setField(claims, "dataStore", new FakeStore());
+        ScriptGolem.setField(claims, "getClaimAt", FakeStore.class.getMethod("getClaimAt", Location.class, boolean.class, Object.class));
     }
 
     @Test
@@ -519,10 +519,10 @@ class GolemRescueMorePaperTest extends PaperTest {
         PlayerMock admin = admin();
         claimOwnedBy(owner.getUniqueId());
         setting("lost-golem-teleport-home", "true");
-        PathGolem g = golemAt(-10, 0);
+        ScriptGolem g = golemAt(-10, 0);
         rescue.noteHome(g, copperChest(70, 0));
         map("lostSince").put(g.getUniqueId(), 1L);
-        PathGolem.setField(rescue, "nextCheck", 0L);
+        ScriptGolem.setField(rescue, "nextCheck", 0L);
         // far, and no work place near: lost for ten seconds; into a different world gives up at once
         WorldMock other = server.addSimpleWorld("other");
         other.loadChunk(0, 0);
@@ -544,7 +544,7 @@ class GolemRescueMorePaperTest extends PaperTest {
         setting("lost-golem-teleport-home", "true");
         WorldMock other = server.addSimpleWorld("other");
         other.loadChunk(0, 0);
-        PathGolem g = golemAt(other, 0, 0);
+        ScriptGolem g = golemAt(other, 0, 0);
         rescue.noteHome(g, copperChest(70, 0));
         map("lostSince").put(g.getUniqueId(), 1L);
         tick();
@@ -561,7 +561,7 @@ class GolemRescueMorePaperTest extends PaperTest {
         setting("lost-golem-teleport-home", "true");
         WorldMock other = server.addSimpleWorld("other");
         other.loadChunk(0, 0);
-        PathGolem g = golemAt(other, 0, 0);
+        ScriptGolem g = golemAt(other, 0, 0);
         rescue.noteHome(g, copperChest(70, 0));
         map("lostSince").put(g.getUniqueId(), 1L);
         tick();
@@ -571,8 +571,8 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     // ---- walking home
 
-    private PathGolem walker(double x, GolemRescue.Home home, long started, double best, long bestAt) {
-        PathGolem g = golemAt(x, 0);
+    private ScriptGolem walker(double x, GolemRescue.Home home, long started, double best, long bestAt) {
+        ScriptGolem g = golemAt(x, 0);
         map("walks").put(g.getUniqueId(), walk(home, started, best, bestAt));
         return g;
     }
@@ -581,7 +581,7 @@ class GolemRescueMorePaperTest extends PaperTest {
     void aGolemThatIsBackNearItsChestStopsAndIsLogged() {
         copperChest(10, 0);
         long now = System.currentTimeMillis();
-        PathGolem g = walker(0, new GolemRescue.Home("world", 10, FLOOR, 0), now, 50, now);
+        ScriptGolem g = walker(0, new GolemRescue.Home("world", 10, FLOOR, 0), now, 50, now);
         map("trouble").put(g.getUniqueId(), "was stuck");
         rescue.tick();
         assertFalse(rescue.isRescuing(g.getUniqueId()));
@@ -593,13 +593,13 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void aGolemGettingCloserKeepsWalkingAndIsAimedAgain() {
         long now = System.currentTimeMillis();
-        PathGolem g = walker(-30, new GolemRescue.Home("world", 70, FLOOR, 0), now - 30_000, 120, now - 25_000);
+        ScriptGolem g = walker(-30, new GolemRescue.Home("world", 70, FLOOR, 0), now - 30_000, 120, now - 25_000);
         rescue.tick();
         assertTrue(rescue.isRescuing(g.getUniqueId()));
         assertEquals(1, g.moves.size());
         assertEquals(0, g.stops);
         // progress was noted (the best distance was updated), so it did not give up although 25 s had passed
-        long bestAt = (Long) PathGolem.field(map("walks").get(g.getUniqueId()), "bestAt");
+        long bestAt = (Long) ScriptGolem.field(map("walks").get(g.getUniqueId()), "bestAt");
         assertTrue(bestAt >= now);
     }
 
@@ -608,7 +608,7 @@ class GolemRescueMorePaperTest extends PaperTest {
         PlayerMock admin = admin();
         copperChest(70, 0);
         long now = System.currentTimeMillis();
-        PathGolem g = walker(-30, new GolemRescue.Home("world", 70, FLOOR, 0), now - 40_000, 100, now - 21_000);
+        ScriptGolem g = walker(-30, new GolemRescue.Home("world", 70, FLOOR, 0), now - 40_000, 100, now - 21_000);
         rescue.tick();
         assertFalse(rescue.isRescuing(g.getUniqueId()));
         assertEquals(1, g.stops);
@@ -623,7 +623,7 @@ class GolemRescueMorePaperTest extends PaperTest {
         PlayerMock admin = admin();
         copperChest(70, 0);
         long now = System.currentTimeMillis();
-        PathGolem g = walker(-30, new GolemRescue.Home("world", 70, FLOOR, 0), now - 6 * 60_000, 500, now);
+        ScriptGolem g = walker(-30, new GolemRescue.Home("world", 70, FLOOR, 0), now - 6 * 60_000, 500, now);
         rescue.tick();
         assertFalse(rescue.isRescuing(g.getUniqueId()));
         assertTrue(heard(admin).contains("and can't find a way back"));
@@ -632,14 +632,14 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void aWalkWhoseHomeWorldIsGoneOrWhoseGolemChangedWorldEnds() {
         long now = System.currentTimeMillis();
-        PathGolem gone = walker(0, new GolemRescue.Home("vanished", 10, FLOOR, 0), now, 50, now);
+        ScriptGolem gone = walker(0, new GolemRescue.Home("vanished", 10, FLOOR, 0), now, 50, now);
         rescue.tick();
         assertFalse(rescue.isRescuing(gone.getUniqueId()));
         assertEquals(1, gone.stops);
 
         WorldMock other = server.addSimpleWorld("other");
         other.loadChunk(0, 0);
-        PathGolem moved = golemAt(other, 0, 0);
+        ScriptGolem moved = golemAt(other, 0, 0);
         map("walks").put(moved.getUniqueId(), walk(new GolemRescue.Home("world", 10, FLOOR, 0), now, 50, now));
         rescue.tick();
         assertFalse(rescue.isRescuing(moved.getUniqueId()));
@@ -649,9 +649,9 @@ class GolemRescueMorePaperTest extends PaperTest {
     @Test
     void aWalkEndsWhenTheGolemGoesVanillaOrDies() {
         long now = System.currentTimeMillis();
-        PathGolem vanilla = walker(0, new GolemRescue.Home("world", 70, FLOOR, 0), now, 80, now);
+        ScriptGolem vanilla = walker(0, new GolemRescue.Home("world", 70, FLOOR, 0), now, 80, now);
         setVanilla(vanilla, true);
-        PathGolem dead = walker(2, new GolemRescue.Home("world", 70, FLOOR, 0), now, 80, now);
+        ScriptGolem dead = walker(2, new GolemRescue.Home("world", 70, FLOOR, 0), now, 80, now);
         UUID deadId = dead.getUniqueId();
         dead.remove();
         rescue.tick();
@@ -666,9 +666,9 @@ class GolemRescueMorePaperTest extends PaperTest {
         UUID gone = UUID.randomUUID();
         map("lostSince").put(gone, 1L);
         map("retryAfter").put(gone, 1L);
-        map("anchors").put(gone, PathGolem.make(GolemRescue.class, "Anchor", new Location(world, 0, FLOOR, 0), 1L));
+        map("anchors").put(gone, ScriptGolem.make(GolemRescue.class, "Anchor", new Location(world, 0, FLOOR, 0), 1L));
         map("trouble").put(gone, "lost");
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         copperChest(5, 0);
         rescue.tick();
         assertTrue(map("lostSince").isEmpty() && map("retryAfter").isEmpty() && map("trouble").isEmpty());
@@ -682,7 +682,7 @@ class GolemRescueMorePaperTest extends PaperTest {
 
     @Test
     void golemsOnAVanillaModeOrRetryHoldAreNotChecked() {
-        PathGolem g = golemAt(-10, 0);
+        ScriptGolem g = golemAt(-10, 0);
         rescue.noteHome(g, copperChest(70, 0));
         setVanilla(g, true);
         map("lostSince").put(g.getUniqueId(), 1L);

@@ -54,29 +54,29 @@ class GolemGreetingsMorePaperTest extends PaperTest {
         plugin.getLogger().removeHandler(handler);
     }
 
-    private PathGolem golemAt(double x, double z) {
-        PathGolem g = new PathGolem(server);
+    private ScriptGolem golemAt(double x, double z) {
+        ScriptGolem g = new ScriptGolem(server);
         g.setLocation(new Location(world, x + 0.5, FLOOR, z + 0.5));
         server.registerEntity(g);
         return g;
     }
 
-    private PathGolem.Iron iron(double x, double z) {
-        PathGolem.Iron g = new PathGolem.Iron(server);
+    private ScriptGolem.Iron iron(double x, double z) {
+        ScriptGolem.Iron g = new ScriptGolem.Iron(server);
         g.setLocation(new Location(world, x + 0.5, FLOOR, z + 0.5));
         server.registerEntity(g);
         return g;
     }
 
-    private PathGolem.Snow snow(double x, double z) {
-        PathGolem.Snow g = new PathGolem.Snow(server);
+    private ScriptGolem.Snow snow(double x, double z) {
+        ScriptGolem.Snow g = new ScriptGolem.Snow(server);
         g.setLocation(new Location(world, x + 0.5, FLOOR, z + 0.5));
         server.registerEntity(g);
         return g;
     }
 
     private Map<UUID, Object> map(String name) {
-        return PathGolem.field(greetings, name);
+        return ScriptGolem.field(greetings, name);
     }
 
     private boolean logged(String part) {
@@ -84,9 +84,9 @@ class GolemGreetingsMorePaperTest extends PaperTest {
     }
 
     /** A visit that began `ago` ms back, with the golem's best distance so far, anchored at x,z. */
-    private void visit(PathGolem g, Mob other, long ago, double best, long bestAgo, double anchorX, double anchorZ) {
+    private void visit(ScriptGolem g, Mob other, long ago, double best, long bestAgo, double anchorX, double anchorZ) {
         long now = System.currentTimeMillis();
-        map("visits").put(g.getUniqueId(), PathGolem.make(GolemGreetings.class, "Visit", other.getUniqueId(), now - ago,
+        map("visits").put(g.getUniqueId(), ScriptGolem.make(GolemGreetings.class, "Visit", other.getUniqueId(), now - ago,
                 new Location(world, anchorX + 0.5, FLOOR, anchorZ + 0.5), best, now - bestAgo));
     }
 
@@ -95,7 +95,7 @@ class GolemGreetingsMorePaperTest extends PaperTest {
         greetings.tick();
     }
 
-    private boolean visiting(PathGolem g) {
+    private boolean visiting(ScriptGolem g) {
         return greetings.isVisiting(g.getUniqueId());
     }
 
@@ -103,8 +103,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void anIdleGolemWalksToANearbyIronGolem() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(8, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(8, 0);
         tick();
         assertTrue(visiting(g));
         assertEquals(1, g.moves.size());
@@ -114,7 +114,7 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aSnowGolemIsGreetedToo() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         snow(5, 3);
         tick();
         assertTrue(visiting(g));
@@ -123,19 +123,19 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void theNearestOfSeveralIsChosen() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         iron(10, 0);
-        PathGolem.Iron near = iron(0, 4);
+        ScriptGolem.Iron near = iron(0, 4);
         tick();
-        assertEquals(near.getUniqueId(), PathGolem.field(map("visits").get(g.getUniqueId()), "other"));
+        assertEquals(near.getUniqueId(), ScriptGolem.field(map("visits").get(g.getUniqueId()), "other"));
     }
 
     @Test
     void nothingStartsWithSettingOffAndStopsWhatWasGoingOn() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(8, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(8, 0);
         visit(g, other, 1000, 8, 1000, 0, 0);
-        map("returning").put(g.getUniqueId(), PathGolem.make(GolemGreetings.class, "Return",
+        map("returning").put(g.getUniqueId(), ScriptGolem.make(GolemGreetings.class, "Return",
                 new Location(world, 0.5, FLOOR, 0.5), 1L));
         setting("greet-other-golems", "false");
         tick();
@@ -147,19 +147,19 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void notStartedWhenTheOtherGolemIsTooFarTooHighOrAwayFromWork() {
-        PathGolem far = golemAt(0, 0);
+        ScriptGolem far = golemAt(0, 0);
         iron(20, 0); // beyond 16
         tick();
         assertFalse(visiting(far));
 
-        PathGolem g = golemAt(0, 30);
-        PathGolem.Iron high = iron(5, 30);
+        ScriptGolem g = golemAt(0, 30);
+        ScriptGolem.Iron high = iron(5, 30);
         high.teleport(new Location(world, 5.5, FLOOR + 3, 30.5));
         tick();
         assertFalse(visiting(g));
 
         // its work is on the far side: the iron golem is more than 16 from the chest it works at
-        PathGolem worker = golemAt(0, -30);
+        ScriptGolem worker = golemAt(0, -30);
         plugin.rescue().noteHome(worker, copperChest(-25, -30));
         iron(8, -30);
         tick();
@@ -168,24 +168,24 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void notStartedWhenThereIsNoWayThereOrItDropsAway() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         iron(8, 0);
         g.pathTo = target -> null;
         tick();
         assertFalse(visiting(g));
 
-        g.pathTo = target -> PathGolem.path(new Location(world, 30.5, FLOOR, 0.5), true);
+        g.pathTo = target -> ScriptGolem.path(new Location(world, 30.5, FLOOR, 0.5), true);
         map("nextCheck").clear();
         tick();
         assertFalse(visiting(g), "the path ends too far from the iron golem");
 
-        g.pathTo = target -> PathGolem.path(target, true, new Location(world, 2.5, FLOOR, 0.5),
+        g.pathTo = target -> ScriptGolem.path(target, true, new Location(world, 2.5, FLOOR, 0.5),
                 new Location(world, 4.5, FLOOR - 3, 0.5), target); // a drop it couldn't climb back
         map("nextCheck").clear();
         tick();
         assertFalse(visiting(g), "a drop of more than a block");
 
-        g.pathTo = target -> PathGolem.path(target, true, new Location(world, 2.5, FLOOR - 1, 0.5), target);
+        g.pathTo = target -> ScriptGolem.path(target, true, new Location(world, 2.5, FLOOR - 1, 0.5), target);
         map("nextCheck").clear();
         tick();
         assertTrue(visiting(g), "a one block step down is fine");
@@ -193,7 +193,7 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void checksAreFiveSecondsApartAndNeedANonVanillaGolem() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         tick();
         assertTrue(map("nextCheck").containsKey(g.getUniqueId()));
         iron(8, 0);
@@ -209,7 +209,7 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aGolemWithAnItemOrWorkInAChestOrOnTheWayHomeIsNotIdle() {
-        PathGolem holding = golemAt(0, 0);
+        ScriptGolem holding = golemAt(0, 0);
         iron(8, 0);
         holding.getEquipment().setItemInMainHand(item(Material.DIRT, 1));
         tick();
@@ -228,7 +228,7 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aCopperChestWithNothingToTakeOrNoGolemsDoesNotKeepItBusy() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         iron(8, 0);
         org.bukkit.block.Block none = copperChest(2, 4, item(Material.DIRT, 3));
         sign(none, "[No Golems]");
@@ -239,10 +239,10 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aGolemBeingRescuedIsNotIdle() {
-        PathGolem g = golemAt(0, 0);
+        ScriptGolem g = golemAt(0, 0);
         iron(8, 0);
         long now = System.currentTimeMillis();
-        PathGolem.<Map<UUID, Object>>field(plugin.rescue(), "walks").put(g.getUniqueId(), PathGolem.make(GolemRescue.class, "Walk",
+        ScriptGolem.<Map<UUID, Object>>field(plugin.rescue(), "walks").put(g.getUniqueId(), ScriptGolem.make(GolemRescue.class, "Walk",
                 new GolemRescue.Home("world", 30, FLOOR, 0), now, 50.0, now));
         tick();
         assertFalse(visiting(g));
@@ -252,30 +252,30 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void theAnchorIsTheHomeOrTheNearestChestOrWhereItStands() {
-        PathGolem withHome = golemAt(0, 0);
+        ScriptGolem withHome = golemAt(0, 0);
         plugin.rescue().noteHome(withHome, copperChest(-6, 0));
         iron(8, 0);
         tick();
-        assertEquals(-5.5, ((Location) PathGolem.field(map("visits").get(withHome.getUniqueId()), "anchor")).getX());
+        assertEquals(-5.5, ((Location) ScriptGolem.field(map("visits").get(withHome.getUniqueId()), "anchor")).getX());
         map("visits").clear();
 
         // a home in another world doesn't count: the nearest chest or furnace does
-        PathGolem other = golemAt(0, 20);
+        ScriptGolem other = golemAt(0, 20);
         other.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin, "home"),
                 org.bukkit.persistence.PersistentDataType.STRING, "elsewhere;5;" + FLOOR + ";5");
         container(-3, FLOOR, 20, Material.FURNACE);
         copperChest(9, 20);
         iron(6, 20);
         tick();
-        assertEquals(-2.5, ((Location) PathGolem.field(map("visits").get(other.getUniqueId()), "anchor")).getX());
+        assertEquals(-2.5, ((Location) ScriptGolem.field(map("visits").get(other.getUniqueId()), "anchor")).getX());
     }
 
     @Test
     void withNoHomeAndNoChestTheAnchorIsWhereTheGolemStands() {
-        PathGolem bare = golemAt(0, 0);
+        ScriptGolem bare = golemAt(0, 0);
         iron(6, 0);
         tick();
-        Location anchor = PathGolem.field(map("visits").get(bare.getUniqueId()), "anchor");
+        Location anchor = ScriptGolem.field(map("visits").get(bare.getUniqueId()), "anchor");
         assertEquals(0.5, anchor.getX());
         assertEquals(0.5, anchor.getZ());
     }
@@ -284,8 +284,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void closeEnoughSaysHelloAndStartsTheCooldown() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(2, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(2, 0);
         visit(g, other, 3000, 8, 3000, 0, 0);
         tick();
         assertFalse(visiting(g));
@@ -307,8 +307,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void helloToASnowGolemAlsoPlaysItsSound() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Snow other = snow(1, 1);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Snow other = snow(1, 1);
         visit(g, other, 3000, 8, 3000, 0, 0);
         tick();
         assertTrue(logged("said hello to the snow golem"), log.toString());
@@ -317,9 +317,9 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitEndsWhenTheOtherGolemIsGoneAndTheGolemWalksBackToWork() {
-        PathGolem g = golemAt(10, 0);
+        ScriptGolem g = golemAt(10, 0);
         plugin.rescue().noteHome(g, copperChest(0, 0));
-        PathGolem.Iron other = iron(14, 0);
+        ScriptGolem.Iron other = iron(14, 0);
         visit(g, other, 3000, 4, 3000, 0, 0);
         other.remove();
         tick();
@@ -333,8 +333,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitEndsAtOnceWhenWorkTurnsUp() {
-        PathGolem g = golemAt(10, 0);
-        PathGolem.Iron other = iron(20, 0);
+        ScriptGolem g = golemAt(10, 0);
+        ScriptGolem.Iron other = iron(20, 0);
         visit(g, other, 3000, 10, 3000, 8, 0);
         g.getEquipment().setItemInMainHand(item(Material.DIRT, 1));
         tick();
@@ -345,8 +345,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitEndsWhenTheOtherMovedUpOrDownOutOfReach() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(10, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(10, 0);
         visit(g, other, 3000, 10, 3000, 0, 0);
         other.teleport(new Location(world, 10.5, FLOOR + 5, 0.5));
         tick();
@@ -357,30 +357,30 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitEndsWhenThePathIsGoneOrDropsOrCannotGoBack() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(10, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(10, 0);
         visit(g, other, 3000, 10, 3000, 0, 0);
         g.pathTo = target -> null;
         tick();
         assertTrue(logged("it can't get to the iron golem any more"), log.toString());
 
         visit(g, other, 3000, 10, 3000, 0, 0);
-        g.pathTo = target -> PathGolem.path(target, true, new Location(world, 4.5, FLOOR - 3, 0.5), target);
+        g.pathTo = target -> ScriptGolem.path(target, true, new Location(world, 4.5, FLOOR - 3, 0.5), target);
         tick();
         assertTrue(logged("it couldn't get back to its work from there"), log.toString());
 
         log.clear();
         visit(g, other, 3000, 10, 3000, 30, 0);
         Location otherAt = other.getLocation();
-        g.pathTo = target -> target.distance(otherAt) < 3 ? PathGolem.path(target, true, target) : null; // no way back
+        g.pathTo = target -> target.distance(otherAt) < 3 ? ScriptGolem.path(target, true, target) : null; // no way back
         tick();
         assertTrue(logged("it couldn't get back to its work from there"), log.toString());
     }
 
     @Test
     void aVisitEndsWhenTheGolemGetsTooFarFromItsWork() {
-        PathGolem g = golemAt(30, 0);
-        PathGolem.Iron other = iron(40, 0);
+        ScriptGolem g = golemAt(30, 0);
+        ScriptGolem.Iron other = iron(40, 0);
         visit(g, other, 3000, 10, 3000, 0, 0); // anchor 30 away: more than 20
         tick();
         assertTrue(logged("it's getting too far from its chests and furnaces"), log.toString());
@@ -389,8 +389,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitGivesUpAfterTwentySeconds() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(10, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(10, 0);
         visit(g, other, 21_000, 0, 1000, 0, 0);
         tick();
         assertTrue(logged("couldn't reach the iron golem in time; giving up"), log.toString());
@@ -399,8 +399,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitGivesUpWhenItGetsNoCloser() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(10, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(10, 0);
         visit(g, other, 12_000, 10, 9_000, 0, 0);
         tick();
         assertTrue(logged("isn't getting any closer to the iron golem; giving up"), log.toString());
@@ -408,13 +408,13 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitKeepsGoingWhileItGetsCloser() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(10, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(10, 0);
         visit(g, other, 12_000, 14, 9_000, 0, 0); // 10 away now: a gain over 14
         tick();
         assertTrue(visiting(g));
         assertEquals(1, g.moves.size());
-        double best = PathGolem.field(map("visits").get(g.getUniqueId()), "best");
+        double best = ScriptGolem.field(map("visits").get(g.getUniqueId()), "best");
         assertEquals(10.0, best, 0.5);
 
         // standing still within the grace period just walks on
@@ -427,8 +427,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aVisitWithAVanillaGolemOrItsOtherInAnotherWorldEnds() {
-        PathGolem g = golemAt(0, 0);
-        PathGolem.Iron other = iron(10, 0);
+        ScriptGolem g = golemAt(0, 0);
+        ScriptGolem.Iron other = iron(10, 0);
         visit(g, other, 3000, 10, 3000, 0, 0);
         setVanilla(g, true);
         tick();
@@ -446,14 +446,14 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     // ---- walking back after a visit
 
-    private void returning(PathGolem g, double x, long ago) {
-        map("returning").put(g.getUniqueId(), PathGolem.make(GolemGreetings.class, "Return",
+    private void returning(ScriptGolem g, double x, long ago) {
+        map("returning").put(g.getUniqueId(), ScriptGolem.make(GolemGreetings.class, "Return",
                 new Location(world, x + 0.5, FLOOR, 0.5), System.currentTimeMillis() - ago));
     }
 
     @Test
     void aGolemWalkingBackKeepsWalkingUntilItIsThere() {
-        PathGolem g = golemAt(20, 0);
+        ScriptGolem g = golemAt(20, 0);
         returning(g, 0, 1000);
         tick();
         assertTrue(map("returning").containsKey(g.getUniqueId()));
@@ -466,13 +466,13 @@ class GolemGreetingsMorePaperTest extends PaperTest {
 
     @Test
     void aGolemWalkingBackGivesUpAfterFifteenSecondsOrWhenWorkTurnsUp() {
-        PathGolem late = golemAt(20, 0);
+        ScriptGolem late = golemAt(20, 0);
         returning(late, 0, 16_000);
         tick();
         assertFalse(map("returning").containsKey(late.getUniqueId()));
         assertEquals(1, late.stops);
 
-        PathGolem busy = golemAt(20, 10);
+        ScriptGolem busy = golemAt(20, 10);
         returning(busy, 0, 1000);
         busy.getEquipment().setItemInMainHand(item(Material.DIRT, 1));
         tick();
@@ -483,8 +483,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
     @Test
     void aReturnToAnotherWorldIsDropped() {
         WorldMock elsewhere = server.addSimpleWorld("elsewhere");
-        PathGolem g = golemAt(20, 0);
-        map("returning").put(g.getUniqueId(), PathGolem.make(GolemGreetings.class, "Return",
+        ScriptGolem g = golemAt(20, 0);
+        map("returning").put(g.getUniqueId(), ScriptGolem.make(GolemGreetings.class, "Return",
                 new Location(elsewhere, 0.5, FLOOR, 0.5), System.currentTimeMillis()));
         tick();
         assertFalse(map("returning").containsKey(g.getUniqueId()));
@@ -495,8 +495,8 @@ class GolemGreetingsMorePaperTest extends PaperTest {
         UUID gone = UUID.randomUUID();
         map("nextCheck").put(gone, 1L);
         map("cooldownUntil").put(gone, 1L);
-        map("returning").put(gone, PathGolem.make(GolemGreetings.class, "Return", new Location(world, 0, FLOOR, 0), 1L));
-        map("visits").put(gone, PathGolem.make(GolemGreetings.class, "Visit", gone, 1L, new Location(world, 0, FLOOR, 0), 1.0, 1L));
+        map("returning").put(gone, ScriptGolem.make(GolemGreetings.class, "Return", new Location(world, 0, FLOOR, 0), 1L));
+        map("visits").put(gone, ScriptGolem.make(GolemGreetings.class, "Visit", gone, 1L, new Location(world, 0, FLOOR, 0), 1.0, 1L));
         tick();
         assertTrue(map("nextCheck").isEmpty());
         assertTrue(map("cooldownUntil").isEmpty());
