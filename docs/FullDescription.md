@@ -28,10 +28,12 @@ cobblestone.
   limit. Upgrading keeps your value.
 - **`/cgc settings`** lists the settings that differ from this version's defaults, and
   **`/cgc groups`** compares your item groups with the built-in ones (admins and the console).
+- **Groups have their own file.** Item groups and their aliases are in `groups.yml` now, and
+  `config.yml` has only the settings. Upgrading moves yours there unchanged.
 
 ## New in 3.2.0
 
-- **Other names for groups.** Add `group-aliases` to `config.yml`, for example
+- **Other names for groups.** Add `group-aliases` to `config.yml` (`groups.yml` from 3.3.0), for example
   `mechanisms: redstone`, and `[mechanisms]` on a sign means that group. Aliases work in
   `[Only ...]` filters and `/cgc find` too. It's empty by default.
 - **Finished items come out first.** Golems take what a furnace made out before they go back

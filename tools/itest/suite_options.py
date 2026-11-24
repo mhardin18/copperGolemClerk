@@ -5,14 +5,27 @@ original config back after every scenario that runs on its own.
 """
 import re
 
-from arena import CONFIG, expect, scenario
+from arena import CONFIG, GROUPS, expect, scenario
 
 
 # Settings the plugin reads that aren't in config.yml (ConfigDocsTest.HIDDEN): set_options adds them.
 HIDDEN = {"fixed-step-seconds", "status-labels-everywhere", "update-check-url", "mode-marker-height"}
 
 
+# Keys that live in groups.yml since 3.3.0, not config.yml.
+GROUP_KEYS = {"group-aliases"}
+
+
 def set_options(c, **options):
+    for key in [k for k in options if k.replace("_", "-") in GROUP_KEYS]:
+        with open(GROUPS) as f:
+            groups = f.read()
+        name = key.replace("_", "-")
+        groups, n = re.subn(rf"(?m)^{name}: .*$", f"{name}: {options.pop(key)}", groups)
+        if n != 1:
+            raise RuntimeError(f"groups.yml has no single '{name}:' line")
+        with open(GROUPS, "w") as f:
+            f.write(groups)
     text = open(CONFIG).read()
     for key, value in options.items():
         key = key.replace("_", "-")

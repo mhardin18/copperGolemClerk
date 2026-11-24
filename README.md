@@ -101,9 +101,10 @@ Spigot and Bukkit aren't supported. The plugin uses Paper-only golem events.
 3. Restart the server (don't use `/reload`).
 4. Check the console for `Enabling CopperGolemClerk`, or run `/plugins` in game.
 
-On first start the plugin creates `plugins/CopperGolemClerk/config.yml`. The defaults work
-as they are: about 50 groups that cover nearly every survival item. After editing the file,
-run `/cgc reload` to apply it without a restart.
+On first start the plugin creates two files in `plugins/CopperGolemClerk/`: `config.yml`
+(the settings) and `groups.yml` (the item groups: 57 that cover nearly every survival item).
+The defaults work as they are. After editing either file, run `/cgc reload` to apply it
+without a restart.
 
 ### Quick start
 
@@ -165,7 +166,7 @@ On its own it only uses a chest that already holds that exact item, or an empty 
 With this plugin it also uses a chest whose items share a **group** with what it
 carries, or a chest labelled for it. It picks the best of those in range.
 
-Groups are defined in `config.yml`, and you can edit them. An entry can be:
+Groups are defined in `groups.yml` (next to `config.yml`), and you can edit them. An entry can be:
 
 | Entry           | Meaning                                    |
 |-----------------|--------------------------------------------|
@@ -178,18 +179,20 @@ The same forms work on signs. See [`*` patterns, `#` tags and `@` properties](#-
 
 ### The default groups
 
-A fresh `config.yml` has 57 groups. They cover nearly every item you can get in survival on
+A fresh `groups.yml` has 57 groups. They cover nearly every item you can get in survival on
 Paper 26.3, and every name fits on one sign line. An item can be in more than one group.
 
 **[GROUPS.md](GROUPS.md)** lists every built-in group: its sign label, its entries and every
 item in it. It also covers what changed in the built-in groups in each release, and what an
 upgrade does to your groups. In short, an upgrade never changes your `groups:` or
-`group-aliases:`. Groups renamed in a newer version still work on signs under either name.
+`group-aliases:`. Before 3.3.0 they were in `config.yml`; the first start of 3.3.0 moves them
+to `groups.yml` line for line
+([details](GROUPS.md#groups-have-their-own-file-330)). Groups renamed in a newer version still work on signs under either name.
 [`/cgc groups`](#cgc-groups) shows how your groups differ from this version's.
 
 ### Other names for groups
 
-Give a group more names with `group-aliases` in `config.yml`. A sign with an alias works
+Give a group more names with `group-aliases` in `groups.yml`. A sign with an alias works
 the same as one with the group's own name:
 
 ```yaml
@@ -329,7 +332,7 @@ burns in a furnace, and `[@record]` is music discs.
 A pattern, tag or property counts as specific as the number of items it matches. `[*_ore]`
 (18 items) beats `[@fuel]` (every log, plank and wooden item, and more). If a line matches
 no item at all, golems ignore it, and `/cgc check` on the chest says it "matches no group or
-item, so it's ignored". The same three forms work in the `groups:` lists in `config.yml`
+item, so it's ignored". The same three forms work in the `groups:` lists in `groups.yml`
 and after `[Only ...]`.
 
 #### `[No Golems]` and `[Only ...]`
@@ -1083,7 +1086,7 @@ explanation from `config.yml`. Item groups and `group-aliases` aren't included: 
 
 ### `/cgc groups`
 
-For admins and the console. Upgrading never changes the `groups:` in `config.yml`, so a server
+For admins and the console. Upgrading never changes the `groups:` in `groups.yml`, so a server
 keeps the groups it started with, even when the built-in ones change (they did in 3.1.0 and
 3.2.0; see [GROUPS.md](GROUPS.md)). `/cgc groups` compares yours with this version's and
 lists, problems first:
@@ -1095,11 +1098,11 @@ lists, problems first:
   golems prefer for them: the one with the fewest items. `ores + ingots-and-gems: 1 item
   (diamond); ingots-and-gems is preferred`.
 - **Built-in groups you don't have**, with an older name you have instead
-  (`templates (19 items; your config.yml has smithing-templates instead)`) and how many of
+  (`templates (19 items; your groups.yml has smithing-templates instead)`) and how many of
   their items are in none of your groups.
 - **Built-in groups with other items** (`ores: 1 added, 1 left out`), and **your own groups**.
 
-`/cgc groups <group>` shows one group: its entries in `config.yml`, its sign label and
+`/cgc groups <group>` shows one group: its entries in `groups.yml`, its sign label and
 aliases, its items, how they differ from the built-in group, and the items it shares with
 other groups. `/cgc groups item <item>` shows which groups an item is in, which one golems
 prefer, and its built-in groups when they differ.
@@ -1151,7 +1154,8 @@ Give a position:
 
 ## Settings reference
 
-All settings live in `plugins/CopperGolemClerk/config.yml`. After editing it, run
+All settings live in `plugins/CopperGolemClerk/config.yml` (the item groups are in
+`groups.yml`, next to it: see [How it works](#how-it-works)). After editing it, run
 `/cgc reload`. No restart is needed. A setting missing from the file uses its default, so an
 older `config.yml` keeps working after an update. A mistake in the file is reported with its
 line number, and the old settings are kept.
@@ -1170,8 +1174,8 @@ line number, and the old settings are kept.
 | `sign-labels` | `true` | Sign labels (`[logs]`, `[Overflow]`, `[No Golems]`, `[Only ...]`). |
 | `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use. Copper chests and chests a player has open are left alone. |
 | `destination-containers` | `[chest, trapped_chest]` | What golems put items into. Add `barrel` and/or `shulker_box` (every colour). Leave `chest` out to keep golems away from plain chests. Golems always take from copper chests. |
-| `groups` | 57 groups | The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
-| `group-aliases` | none (`{}`) | Other names for groups on signs: `alias: group`, or `alias: [group, group]` for several. A group's own name wins. See [Other names for groups](#other-names-for-groups). |
+| `groups` | 57 groups | In `groups.yml`, not `config.yml` (since 3.3.0). The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
+| `group-aliases` | none (`{}`) | In `groups.yml`. Other names for groups on signs: `alias: group`, or `alias: [group, group]` for several. A group's own name wins. See [Other names for groups](#other-names-for-groups). |
 
 ### Busier golems
 

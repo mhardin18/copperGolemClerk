@@ -19,7 +19,7 @@ import org.bukkit.configuration.ConfigurationSection;
 
 /**
  * /cgc groups: the server's item groups compared with this version's built-in ones.
- * Upgrading never changes the groups in config.yml, so a server keeps the groups it
+ * Upgrading never changes the groups in groups.yml, so a server keeps the groups it
  * started with (the defaults changed in 3.1.0 and 3.2.0); this shows how they differ,
  * and the problems the console reported when they were loaded.
  */
@@ -30,14 +30,14 @@ final class GroupsReport {
         SAME,
         /** A built-in group with other items. */
         CHANGED,
-        /** Only in config.yml: the server's own group, or a built-in one under its old name. */
+        /** Only in groups.yml: the server's own group, or a built-in one under its old name. */
         ADDED,
-        /** A built-in group config.yml doesn't have. */
+        /** A built-in group groups.yml doesn't have. */
         MISSING
     }
 
     /**
-     * One group: its name, how it compares, its item count (in config.yml; the built-in
+     * One group: its name, how it compares, its item count (in groups.yml; the built-in
      * count for MISSING), the items it has that the built-in group doesn't (added) and the
      * reverse (removed), and a note (may be empty).
      */
@@ -57,20 +57,20 @@ final class GroupsReport {
         this.plugin = plugin;
     }
 
-    /** The groups config.yml has, as loaded, and the built-in ones. */
+    /** The groups groups.yml has, as loaded, and the built-in ones. */
     private record Loaded(ConfigurationSection root, ItemGroups groups, ItemGroups shipped, List<String> problems) {
     }
 
-    /** Loads both sets of groups again, catching the warnings that loading config.yml's ones logs. */
+    /** Loads both sets of groups again, catching the warnings that loading groups.yml's ones logs. */
     private Loaded load() {
-        ConfigurationSection root = plugin.loadedConfig();
+        ConfigurationSection root = plugin.loadedGroups();
         if (root == null) {
-            root = plugin.shippedConfig(); // config.yml couldn't be read at startup: the defaults are in use
+            root = plugin.shippedGroups(); // groups.yml couldn't be read at startup: the built-in groups are in use
         }
         List<String> problems = new ArrayList<>();
         ItemGroups groups = ItemGroups.load(root.getConfigurationSection("groups"),
                 root.getConfigurationSection("group-aliases"), catching(problems));
-        ConfigurationSection shippedRoot = plugin.shippedConfig();
+        ConfigurationSection shippedRoot = plugin.shippedGroups();
         ItemGroups shipped = ItemGroups.load(shippedRoot.getConfigurationSection("groups"),
                 shippedRoot.getConfigurationSection("group-aliases"), catching(new ArrayList<>()));
         return new Loaded(root, groups, shipped, problems);
@@ -99,7 +99,7 @@ final class GroupsReport {
         return log;
     }
 
-    /** Every built-in group in its order, then the groups only config.yml has. */
+    /** Every built-in group in its order, then the groups only groups.yml has. */
     static List<Diff> compare(ItemGroups groups, ItemGroups shipped) {
         List<Diff> diffs = new ArrayList<>();
         for (int s = 0; s < shipped.groupCount(); s++) {
@@ -126,12 +126,12 @@ final class GroupsReport {
         return diffs;
     }
 
-    /** For a built-in group config.yml lacks: the older name it has instead, and the items left in no group. */
+    /** For a built-in group groups.yml lacks: the older name it has instead, and the items left in no group. */
     private static String missingNote(ItemGroups groups, String name, List<Material> builtIn) {
         List<String> notes = new ArrayList<>();
         for (var e : ItemGroups.RENAMED.entrySet()) {
             if (e.getValue().contains(name) && groups.namedGroup(e.getKey()) >= 0) {
-                notes.add("your config.yml has " + e.getKey() + " instead");
+                notes.add("your " + CopperGolemClerk.GROUPS_FILE + " has " + e.getKey() + " instead");
             }
         }
         long homeless = builtIn.stream().filter(m -> groups.groupsOf(m) == null).count();
@@ -141,7 +141,7 @@ final class GroupsReport {
         return String.join("; ", notes);
     }
 
-    /** For a group only config.yml has: whether it's a built-in group's older name. */
+    /** For a group only groups.yml has: whether it's a built-in group's older name. */
     private static String oldNameNote(ItemGroups groups, ItemGroups shipped, String name) {
         for (var e : ItemGroups.RENAMED.entrySet()) {
             if (groups.namedGroup(e.getKey()) == groups.namedGroup(name)
@@ -229,14 +229,14 @@ final class GroupsReport {
         List<Diff> diffs = compare(groups, loaded.shipped());
         List<Overlap> overlaps = overlaps(groups, loaded.shipped(), false);
         long same = diffs.stream().filter(d -> d.kind() == Kind.SAME).count();
-        if (plugin.loadedConfig() == null) {
-            sender.sendMessage(Component.text("config.yml couldn't be read when the plugin started, so the built-in"
-                    + " groups are in use. Fix the file and run /cgc reload.", NamedTextColor.RED));
+        if (plugin.loadedGroups() == null) {
+            sender.sendMessage(Component.text(plugin.groupsFileName() + " couldn't be read when the plugin started, so the"
+                    + " built-in groups are in use. Fix the file and run /cgc reload.", NamedTextColor.RED));
         }
         sender.sendMessage(Component.text(groups.groupCount() + " item groups; " + same + " of the "
                 + loaded.shipped().groupCount() + " built-in " + version + " groups are unchanged.", NamedTextColor.GOLD));
         if (!loaded.problems().isEmpty()) {
-            sender.sendMessage(Component.text("Problems (the console reports these when config.yml is loaded):",
+            sender.sendMessage(Component.text("Problems (the console reports these when " + plugin.groupsFileName() + " is loaded):",
                     NamedTextColor.RED));
             capped(sender, loaded.problems(), NamedTextColor.RED);
         }
@@ -245,7 +245,7 @@ final class GroupsReport {
                     + " the group with the fewest items):", NamedTextColor.YELLOW));
             capped(sender, overlaps.stream().map(o -> overlapLine(groups, o)).toList(), NamedTextColor.YELLOW);
         }
-        section(sender, diffs, Kind.MISSING, "Built-in groups your config.yml doesn't have:", NamedTextColor.YELLOW,
+        section(sender, diffs, Kind.MISSING, "Built-in groups your " + plugin.groupsFileName() + " doesn't have:", NamedTextColor.YELLOW,
                 d -> d.name() + " (" + d.size() + " items" + (d.note().isEmpty() ? "" : "; " + d.note()) + ")");
         section(sender, diffs, Kind.CHANGED, "Built-in groups with other items:", NamedTextColor.WHITE,
                 d -> d.name() + ": " + counts(d));
@@ -314,7 +314,7 @@ final class GroupsReport {
             int builtIn = loaded.shipped().findGroup(name);
             throw new IllegalArgumentException("No group named '" + name + "'"
                     + (near != null ? "; did you mean " + near + "?"
-                    : builtIn >= 0 ? ". It's a built-in group your config.yml doesn't have." : "."));
+                    : builtIn >= 0 ? ". It's a built-in group your " + plugin.groupsFileName() + " doesn't have." : "."));
         }
         String real = groups.groupName(index);
         Diff diff = compare(groups, loaded.shipped()).stream().filter(d -> d.name().equals(real)).findFirst().orElseThrow();
@@ -327,7 +327,7 @@ final class GroupsReport {
         sender.sendMessage(Component.text("Group " + real + ": " + items.size() + " items", NamedTextColor.GOLD)
                 .append(Component.text(" (" + state + ")", NamedTextColor.WHITE)));
         List<String> entries = loaded.root().getStringList("groups." + real);
-        line(sender, "In config.yml: " + String.join(", ", entries), NamedTextColor.GRAY);
+        line(sender, "In " + plugin.groupsFileName() + ": " + String.join(", ", entries), NamedTextColor.GRAY);
         List<String> aliases = groups.aliasesOf(index);
         line(sender, "Sign label: " + groups.signLabel(index)
                 + (aliases.isEmpty() ? "" : " (also called " + String.join(", ", aliases) + ")"), NamedTextColor.GRAY);

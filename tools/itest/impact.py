@@ -65,6 +65,7 @@ SOURCE_SUITES = {
     "GolemRescue": ["rescue"],
     "GolemStats": ["stats"],
     "GolemTraffic": ["traffic", "lids", "cauldrons"],
+    "GroupsFile": ["config"],
     "GroupsReport": ["config"],
     "HelpText": ["commands"],
     "HomeFinder": SORTING + ["destinations", "reach", "overflow-hopper"] + ["distance"],
@@ -85,6 +86,7 @@ SOURCE_SUITES = {
     "WalkClock": FURNACE + ["reach", "destinations", "overflow-hopper", "distance"],
     "Versions": ["commands"],
     "src/main/resources/config.yml": ["options", "config", "distance"],
+    "src/main/resources/groups.yml": ["config", "edge", "scenes"],
     "src/main/resources/plugin.yml": ["commands"],
     "tools/itest/hooks/": ["conflicts", "lids", "gestures"],
 }
