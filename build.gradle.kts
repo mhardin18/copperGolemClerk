@@ -71,6 +71,26 @@ tasks.jacocoTestReport {
     }
 }
 
+// Coverage of the in-game tests: run pluginDev with the JaCoCo agent (see tools/itest/README.md,
+// "Code coverage"), then ./gradlew jacocoItestReport -PitestExec=<path to the .exec file>.
+// It merges in the unit tests' data when there is some (./gradlew test first).
+// The classes must be the ones that ran on the server: build the same commit.
+val jacocoItestReport by tasks.registering(JacocoReport::class) {
+    description = "Coverage report for the in-game tests (and the unit tests, if they ran)."
+    group = "verification"
+    val itestExec = providers.gradleProperty("itestExec").orElse("/opt/minecraft/pluginDev/coverage/itest.exec")
+    executionData(files(itestExec, layout.buildDirectory.file("jacoco/test.exec")).filter { it.isFile })
+    sourceSets(sourceSets.main.get())
+    reports {
+        xml.required.set(true)
+        csv.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/itest/html"))
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/itest/itest.xml"))
+        csv.outputLocation.set(layout.buildDirectory.file("reports/jacoco/itest/itest.csv"))
+    }
+}
+
 tasks.processResources {
     // Rebuild plugin.yml when the version changes (otherwise Gradle reuses the old one).
     inputs.property("version", project.version)

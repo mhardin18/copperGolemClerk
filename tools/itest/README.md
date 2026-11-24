@@ -275,6 +275,24 @@ last one as `STATE ticks`, then `NOW STATE ticks` for any still going.
 Build it with `./gradlew build` in `hooks/` and copy the jar to pluginDev's plugins
 folder. Without it the `conflicts`, `lids` and `gestures` suites are skipped.
 
+## Code coverage
+
+Unit tests: `./gradlew test jacocoTestReport`, then open
+`build/reports/jacoco/test/html/index.html`.
+
+In-game tests: give pluginDev the JaCoCo agent for the run with a systemd drop-in, for example
+`/etc/systemd/system/mcd.service.d/coverage.conf`:
+
+```
+[Service]
+Environment="JVM_MISC=<the unit's JVM_MISC> -javaagent:/opt/minecraft/pluginDev/coverage/jacocoagent.jar=destfile=/opt/minecraft/pluginDev/coverage/itest.exec,append=true,includes=com.exigentsol.coppergolemclerk.*"
+```
+
+(`jacocoagent.jar` is inside `org.jacoco.agent-<version>.jar` in Gradle's cache.) Run
+`systemctl daemon-reload`, run the tests (the data is written when the server stops), then
+`./gradlew test jacocoItestReport` from the same commit for a report of both, in
+`build/reports/jacoco/itest/html/index.html`. Remove the drop-in and reload afterwards.
+
 ## Unit tests
 
 `./gradlew test` in the project root runs the JUnit tests (sign word matching, YAML error
