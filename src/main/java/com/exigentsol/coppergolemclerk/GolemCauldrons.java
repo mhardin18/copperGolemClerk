@@ -151,6 +151,9 @@ final class GolemCauldrons implements Listener {
     private final Map<UUID, Map.Entry<Block, Long>> noWay = new HashMap<>();
     /** The cauldron each idle golem was last turned back at, and until when it keeps away. */
     private final Map<UUID, Map.Entry<Block, Long>> keepAway = new HashMap<>();
+    /** When each golem's refused path was last logged: vanilla retries every few ticks. */
+    private final Map<UUID, Long> keepAwayLogged = new HashMap<>();
+    private static final long KEEP_AWAY_LOG_MILLIS = 2_000;
     private boolean planning;
 
     /**
@@ -178,6 +181,7 @@ final class GolemCauldrons implements Listener {
             detours.clear();
             held.clear();
             keepAway.clear();
+            keepAwayLogged.clear();
         }
         listening = on;
     }
@@ -276,9 +280,12 @@ final class GolemCauldrons implements Listener {
         if (away != null) {
             if (now > away.getValue()) {
                 keepAway.remove(id);
+                keepAwayLogged.remove(id);
             } else if (nearCauldron(to, away.getKey()) && !atContainer(to)) {
                 event.setCancelled(true);
-                if (plugin.debug()) {
+                Long logged = keepAwayLogged.get(id);
+                if (plugin.debug() && (logged == null || now - logged >= KEEP_AWAY_LOG_MILLIS)) {
+                    keepAwayLogged.put(id, now);
                     plugin.getLogger().info(String.format("Kept an idle copper golem from going back to the %s at %d,%d,%d"
                             + " (its path ended at %d,%d,%d)", pretty(away.getKey().getType()), away.getKey().getX(),
                             away.getKey().getY(), away.getKey().getZ(), to.getBlockX(), to.getBlockY(), to.getBlockZ()));
@@ -401,6 +408,7 @@ final class GolemCauldrons implements Listener {
             held.keySet().removeIf(g -> plugin.getServer().getEntity(g) == null);
             noWay.keySet().removeIf(g -> plugin.getServer().getEntity(g) == null);
             keepAway.keySet().removeIf(g -> plugin.getServer().getEntity(g) == null);
+            keepAwayLogged.keySet().removeIf(g -> !keepAway.containsKey(g));
         }
         Map.Entry<Block, Long> none = noWay.get(id);
         if (none != null && now < none.getValue() && none.getKey().equals(goal.getBlock())) {
