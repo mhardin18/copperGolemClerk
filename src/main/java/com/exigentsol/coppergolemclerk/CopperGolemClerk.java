@@ -223,16 +223,18 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
      */
     void setUpGroupsFile() { // package-private: unit tests
         File file = new File(getDataFolder(), GROUPS_FILE);
-        if (file.exists()) {
-            return;
+        if (file.exists() && !(file.isFile() && file.length() == 0)) {
+            return; // an empty groups.yml (a write cut short, say) counts as none
         }
         File config = new File(getDataFolder(), "config.yml");
+        File backup = null;
         try {
             String raw = config.isFile() ? java.nio.file.Files.readString(config.toPath()) : "";
             boolean crlf = raw.contains("\r\n");
             String current = crlf ? raw.replace("\r\n", "\n") : raw;
             if (!GroupsFile.hasGroups(current)) {
-                saveResource(GROUPS_FILE, false);
+                java.nio.file.Files.createDirectories(getDataFolder().toPath());
+                writeAtomically(file, shippedGroupsText());
                 return;
             }
             try {
@@ -246,16 +248,41 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                         + " written (check the permissions), so they weren't moved. The groups in config.yml are used.");
                 return;
             }
-            File backup = backupFile("config");
+            backup = backupFile("config");
             java.nio.file.Files.copy(config.toPath(), backup.toPath());
-            java.nio.file.Files.writeString(file.toPath(), crlf ? move.groups().replace("\n", "\r\n") : move.groups());
-            java.nio.file.Files.writeString(config.toPath(), crlf ? move.config().replace("\n", "\r\n") : move.config());
+            // groups.yml first: if config.yml can't be written after it, the groups are in both, never in neither.
+            writeAtomically(file, crlf ? move.groups().replace("\n", "\r\n") : move.groups());
+            File written = backup;
+            backup = null; // groups.yml has them now: keep the backup
+            writeAtomically(config, crlf ? move.config().replace("\n", "\r\n") : move.config());
             getLogger().info("Moved " + String.join(" and ", move.moved()) + " from config.yml to " + GROUPS_FILE
                     + ", unchanged: item groups have their own file now. Edit them there. The old config.yml is "
-                    + backup.getName() + ".");
+                    + written.getName() + ".");
         } catch (IOException e) {
-            getLogger().warning("Couldn't set up " + GROUPS_FILE + " (" + e.getClass().getSimpleName() + ": " + e.getMessage()
-                    + "); the groups in config.yml, or the built-in ones, are used.");
+            if (backup != null) {
+                backup.delete(); // nothing was moved: don't leave a new backup behind on every reload
+            }
+            boolean moved = file.isFile() && file.length() > 0;
+            getLogger().warning("Couldn't " + (moved ? "finish moving the item groups to " : "set up ") + GROUPS_FILE
+                    + " (" + e.getClass().getSimpleName() + ": " + e.getMessage() + "); "
+                    + (moved ? GROUPS_FILE + " has them, and the copy left in config.yml is ignored."
+                       : "the groups in config.yml, or the built-in ones, are used."));
+        }
+    }
+
+    /** Write a file through a temporary one renamed over it, so a crash never leaves it cut short. */
+    private void writeAtomically(File target, String text) throws IOException {
+        java.nio.file.Path tmp = java.nio.file.Files.createTempFile(getDataFolder().toPath(), "." + target.getName() + "-", ".tmp");
+        try {
+            java.nio.file.Files.writeString(tmp, text);
+            try {
+                java.nio.file.Files.move(tmp, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                java.nio.file.Files.move(tmp, target.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            java.nio.file.Files.deleteIfExists(tmp);
         }
     }
 
@@ -558,6 +585,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         } else if (oldGroups) {
             groupsRoot = config; // they couldn't be moved (setUpGroupsFile said why): use them where they are
             groupsFrom = "config.yml";
+        } else if (!configRead) {
+            groupsFrom = "config.yml"; // unreadable before its groups could be moved: the built-in groups are in use
+        } else if (groupsFile.exists()) {
+            getLogger().warning(GROUPS_FILE + " isn't a file (a folder?), so the built-in groups are used. Remove it"
+                    + " and run /cgc reload to get a new one.");
         }
         if (configRead) {
             loadedConfig = config;
@@ -682,7 +714,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         }
         ConfigurationSection groupsSection = groupsRoot != null ? groupsRoot : shippedGroups();
         groups = ItemGroups.load(groupsSection.getConfigurationSection("groups"),
-                groupsSection.getConfigurationSection("group-aliases"), getLogger());
+                groupsSection.getConfigurationSection("group-aliases"), getLogger(), groupsFrom);
         loadedGroups = groupsRoot;
         groupsFileName = groupsFrom;
         getLogger().info("Loaded " + groups.groupCount() + " item groups (match-mode: " + mode + ").");

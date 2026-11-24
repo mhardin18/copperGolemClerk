@@ -18,7 +18,8 @@ final class GroupsFile {
     /** The top-level keys that moved, in the order groups.yml has them. */
     static final List<String> KEYS = List.of("group-aliases", "groups");
 
-    private static final Pattern KEY = Pattern.compile("^([A-Za-z0-9][A-Za-z0-9_-]*):");
+    /** A top-level key, bare or quoted ("groups": works in YAML too). */
+    private static final Pattern KEY = Pattern.compile("^([\"']?)([A-Za-z0-9][A-Za-z0-9_-]*)\\1:");
 
     /** The new config.yml and groups.yml texts, and which keys moved. */
     record Move(String config, String groups, List<String> moved) {
@@ -29,7 +30,7 @@ final class GroupsFile {
 
     /** True if a config.yml's text still has groups or group-aliases (top level). */
     static boolean hasGroups(String config) {
-        List<String> lines = List.of(config.replace("\r\n", "\n").split("\n", -1));
+        List<String> lines = List.of(withoutBom(config).replace("\r\n", "\n").split("\n", -1));
         return KEYS.stream().anyMatch(k -> lineOf(lines, k) >= 0);
     }
 
@@ -38,7 +39,8 @@ final class GroupsFile {
      * shipped groups.yml's text. Null if config.yml has neither. Both texts use \n.
      */
     static Move move(String config, String shippedGroups) {
-        List<String> lines = new ArrayList<>(List.of(config.split("\n", -1)));
+        String bom = config.startsWith("\uFEFF") ? "\uFEFF" : "";
+        List<String> lines = new ArrayList<>(List.of(withoutBom(config).split("\n", -1)));
         List<String> groups = new ArrayList<>(List.of(shippedGroups.split("\n", -1)));
         List<String> moved = new ArrayList<>();
         for (String key : KEYS) {
@@ -68,6 +70,17 @@ final class GroupsFile {
         if (moved.isEmpty()) {
             return null;
         }
+        if (!moved.contains("groups")) {
+            // Only aliases: the file had no groups (only vanilla sorting), and moving mustn't add the built-in ones.
+            int at = lineOf(groups, "groups");
+            if (at >= 0) {
+                int start = at;
+                while (start > 0 && groups.get(start - 1).startsWith("#")) {
+                    start--;
+                }
+                groups.subList(start, blockEnd(groups, at)).clear();
+            }
+        }
         // Only blank lines may be left at the end where the groups were: keep one newline.
         while (lines.size() > 1 && lines.get(lines.size() - 1).isBlank() && lines.get(lines.size() - 2).isBlank()) {
             lines.remove(lines.size() - 1);
@@ -76,13 +89,17 @@ final class GroupsFile {
         if (!groupsText.endsWith("\n")) {
             groupsText += "\n";
         }
-        return new Move(String.join("\n", lines), groupsText, moved);
+        return new Move(bom + String.join("\n", lines), groupsText, moved);
+    }
+
+    private static String withoutBom(String text) {
+        return text.startsWith("\uFEFF") ? text.substring(1) : text;
     }
 
     static int lineOf(List<String> lines, String key) {
         for (int i = 0; i < lines.size(); i++) {
             Matcher m = KEY.matcher(lines.get(i));
-            if (m.find() && m.group(1).equals(key)) {
+            if (m.find() && m.group(2).equals(key)) {
                 return i;
             }
         }

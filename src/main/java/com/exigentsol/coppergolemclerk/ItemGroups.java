@@ -63,16 +63,21 @@ public final class ItemGroups {
 
     /** The groups, plus their other names from group-aliases (aliasSection may be null). */
     public static ItemGroups load(ConfigurationSection section, ConfigurationSection aliasSection, Logger log) {
-        ItemGroups groups = loadGroups(section, log);
+        return load(section, aliasSection, log, "groups.yml");
+    }
+
+    /** As above; file is where the groups were read from, for the console's messages. */
+    public static ItemGroups load(ConfigurationSection section, ConfigurationSection aliasSection, Logger log, String file) {
+        ItemGroups groups = loadGroups(section, log, file);
         groups.aliases = loadAliases(groups, aliasSection, log);
         return groups;
     }
 
-    private static ItemGroups loadGroups(ConfigurationSection section, Logger log) {
+    private static ItemGroups loadGroups(ConfigurationSection section, Logger log, String file) {
         List<String> names = new ArrayList<>();
         Map<Material, BitSet> membership = new EnumMap<>(Material.class);
         if (section == null) {
-            log.warning("No 'groups' section in groups.yml; only vanilla sorting will apply.");
+            log.warning("No 'groups' section in " + file + "; only vanilla sorting will apply.");
             return new ItemGroups(names, membership, allItems());
         }
 

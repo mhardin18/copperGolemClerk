@@ -153,4 +153,50 @@ class GroupsFilePaperTest extends PaperTest {
         assertEquals(0, plugin.groups().groupCount());
         assertTrue(logged("No 'groups' section in groups.yml"), log.toString());
     }
+
+    @Test
+    void anEmptyGroupsYmlCountsAsMissing() throws Exception {
+        String config = plugin.shippedConfigText() + OWN;
+        Files.writeString(file("config.yml").toPath(), config);
+        Files.writeString(file("groups.yml").toPath(), ""); // a write cut short
+        assertNull(plugin.loadSettings());
+        assertEquals(2, plugin.groups().groupCount(), "the groups were moved after all");
+        assertTrue(Files.readString(file("groups.yml").toPath()).contains("wood: [OAK_LOG]"));
+    }
+
+    @Test
+    void groupsYmlAsAFolderIsReported() throws Exception {
+        Files.delete(file("groups.yml").toPath());
+        Files.createDirectory(file("groups.yml").toPath());
+        assertNull(plugin.loadSettings());
+        assertEquals(plugin.shippedGroups().getConfigurationSection("groups").getKeys(false).size(),
+                plugin.groups().groupCount(), "the built-in groups");
+        assertTrue(logged("groups.yml isn't a file"), log.toString());
+    }
+
+    @Test
+    void noTemporaryFilesAreLeftBehind() throws Exception {
+        oldServer(plugin.shippedConfigText() + OWN);
+        assertNull(plugin.loadSettings());
+        String[] left = plugin.getDataFolder().list((dir, name) -> name.endsWith(".tmp"));
+        assertEquals(0, left.length, java.util.Arrays.toString(left));
+    }
+
+    @Test
+    void theMissingGroupsWarningNamesTheFileTheyCameFrom() throws Exception {
+        // groups.yml can't be written (here: a file of that name can't be created because the
+        // folder is read-only), so config.yml's groups stay in use from there.
+        oldServer(plugin.shippedConfigText() + "group-aliases:\n  rock: stone\n");
+        java.io.File dir = plugin.getDataFolder();
+        assertTrue(dir.setWritable(false));
+        try {
+            assertNull(plugin.loadSettings());
+        } finally {
+            dir.setWritable(true);
+        }
+        if (!file("groups.yml").exists()) { // root ignores folder permissions: then the move happened
+            assertTrue(logged("No 'groups' section in config.yml"), log.toString());
+            assertTrue(logged("can't be written"), log.toString());
+        }
+    }
 }

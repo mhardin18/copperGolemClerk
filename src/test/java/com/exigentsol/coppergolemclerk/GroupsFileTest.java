@@ -85,6 +85,29 @@ class GroupsFileTest {
     }
 
     @Test
+    void aConfigWithOnlyAliasesGetsNoBuiltInGroups() throws Exception {
+        GroupsFile.Move move = GroupsFile.move("a: 1\ngroup-aliases:\n  rock: stone\n", resource("groups.yml"));
+        assertEquals(List.of("group-aliases"), move.moved());
+        YamlConfiguration yaml = yaml(move.groups());
+        assertFalse(yaml.contains("groups"), "it had no groups (only vanilla sorting) and still has none");
+        assertEquals("stone", yaml.getString("group-aliases.rock"));
+    }
+
+    @Test
+    void quotedKeysAndAByteOrderMarkAreFound() throws Exception {
+        String quoted = "a: 1\n\"groups\":\n  x: [DIRT]\n";
+        assertTrue(GroupsFile.hasGroups(quoted));
+        GroupsFile.Move move = GroupsFile.move(quoted, resource("groups.yml"));
+        assertEquals("a: 1\n", move.config());
+        assertEquals(List.of("DIRT"), yaml(move.groups()).getStringList("groups.x"));
+        String bom = "\uFEFFgroups:\n  x: [DIRT]\nb: 2\n";
+        assertTrue(GroupsFile.hasGroups(bom));
+        GroupsFile.Move fromBom = GroupsFile.move(bom, resource("groups.yml"));
+        assertEquals("\uFEFFb: 2\n", fromBom.config(), "the mark stays at the start of config.yml");
+        assertEquals(List.of("DIRT"), yaml(fromBom.groups()).getStringList("groups.x"));
+    }
+
+    @Test
     void groupsWithoutAliasesKeepTheShippedEmptyAliases() throws Exception {
         GroupsFile.Move move = GroupsFile.move("match-mode: all\n" + OWN_GROUPS, resource("groups.yml"));
         assertEquals(List.of("groups"), move.moved());

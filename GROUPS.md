@@ -55,7 +55,10 @@ written, the console says so and the groups stay in use from `config.yml`.
 
 Groups put back into `config.yml` later are ignored, and the console says so: only
 `groups.yml` counts once it exists. A deleted `groups.yml` comes back with the built-in
-groups at the next reload or restart.
+groups at the next reload or restart. An empty `groups.yml` counts as a missing one. The
+files are written whole (to a temporary file that's then renamed), so a crash mid-move never
+leaves one cut short. A config with `group-aliases:` but no `groups:` (only vanilla sorting)
+gets a `groups.yml` with no groups either.
 
 **Renamed groups keep working.** When a built-in group is renamed, signs work with either
 name, whichever your file has. For example, `[foliage]` finds an older file's
