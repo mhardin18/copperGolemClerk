@@ -213,7 +213,7 @@ final class OverflowFetcher {
                 }
                 fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block),
                         halves, type, target, false, now, new WalkClock(target, now)));
-                golem.getPathfinder().moveTo(target, 1.0);
+                PluginPaths.moveTo(golem, target);
                 if (plugin.debug()) {
                     plugin.getLogger().info(String.format("%s is idle; fetching %s from overflow chest at %d,%d,%d",
                             golem.getType(), type, block.getX(), block.getY(), block.getZ()));
@@ -253,7 +253,7 @@ final class OverflowFetcher {
         }
         fetching.put(golem.getUniqueId(), new Fetch(block.getWorld().getUID(), HomeFinder.Pos.of(block), halves,
                 type, target, true, now, new WalkClock(target, now)));
-        golem.getPathfinder().moveTo(target, 1.0);
+        PluginPaths.moveTo(golem, target);
         if (plugin.debug()) {
             plugin.getLogger().info(String.format("%s is idle; taking %s from the copper chest at %d,%d,%d (%s)",
                     golem.getType(), type, block.getX(), block.getY(), block.getZ(),
@@ -396,7 +396,7 @@ final class OverflowFetcher {
             return;
         }
         // Vanilla AI may have redirected it; keep it heading to the chest.
-        golem.getPathfinder().moveTo(fetch.target(), 1.0);
+        PluginPaths.moveTo(golem, fetch.target());
     }
 
     /** True if a chest in the golem's range (from where it is now) would still take this item from the overflow chest. */

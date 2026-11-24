@@ -97,7 +97,7 @@ final class Reach {
         spots.sort(Comparator.comparingInt(Spot::row)
                 .thenComparingDouble(spot -> spot.target().distanceSquared(at)));
         for (Spot spot : spots) {
-            var path = golem.getPathfinder().findPath(spot.target());
+            var path = PluginPaths.findPath(golem, spot.target());
             if (path != null && path.canReachFinalPoint()) {
                 return spot;
             }
@@ -190,7 +190,7 @@ final class Reach {
         }
         some.sort(Comparator.comparingInt(Spot::row).thenComparingDouble(spot -> spot.target().distanceSquared(at)));
         for (Spot spot : some) {
-            var path = golem.getPathfinder().findPath(spot.target());
+            var path = PluginPaths.findPath(golem, spot.target());
             if (path != null && path.canReachFinalPoint()) {
                 return spot;
             }

@@ -139,6 +139,9 @@ public final class GolemTestHooks extends JavaPlugin implements Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equals("golemwalk")) {
+            return walk(sender, args);
+        }
         if (args.length != 6) {
             sender.sendMessage("Usage: /" + command.getName() + " x1 y1 z1 x2 y2 z2");
             return true;
@@ -246,5 +249,37 @@ public final class GolemTestHooks extends JavaPlugin implements Listener {
             }
         }
         throw new NoSuchFieldException(o.getClass().getName() + "." + name);
+    }
+
+    /**
+     * /golemwalk x1 y1 z1 x2 y2 z2 tx ty tz: every copper golem in the box sets off for the spot,
+     * through Paper's pathfinder as vanilla's wandering does. Coming from this plugin, not
+     * CopperGolemClerk, it counts as the golem's own path there (for the cauldron keep-away test).
+     */
+    private boolean walk(CommandSender sender, String[] args) {
+        if (args.length != 9) {
+            sender.sendMessage("Usage: /golemwalk x1 y1 z1 x2 y2 z2 tx ty tz");
+            return true;
+        }
+        double[] n = new double[9];
+        for (int i = 0; i < 9; i++) {
+            n[i] = Double.parseDouble(args[i]);
+        }
+        World world = getServer().getWorlds().getFirst();
+        org.bukkit.util.BoundingBox box = new org.bukkit.util.BoundingBox(n[0], n[1], n[2], n[3] + 1, n[4] + 1, n[5] + 1);
+        Location to = new Location(world, n[6], n[7], n[8]);
+        int sent = 0;
+        int refused = 0;
+        for (Entity e : world.getNearbyEntities(box)) {
+            if (e instanceof CopperGolem golem) {
+                if (golem.getPathfinder().moveTo(to, 1.0)) {
+                    sent++;
+                } else {
+                    refused++;
+                }
+            }
+        }
+        sender.sendMessage("walk sent " + sent + " refused " + refused);
+        return true;
     }
 }

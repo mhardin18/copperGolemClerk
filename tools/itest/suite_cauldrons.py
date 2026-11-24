@@ -7,7 +7,10 @@ the golems whose feet are in a filled cauldron; a scenario fails if one was ever
 or died. Pushes are a velocity (Motion) toward the cauldron: the golem moves by physics, as when
 another mob or a player bumps it.
 """
-from arena import SIZE, Trigger, _count, expect, scenario
+import re
+import time
+
+from arena import SIZE, Skip, Trigger, _count, expect, scenario
 from suite_furnace import slot
 from suite_furnace_edge import logged, no_errors
 from suite_lava import drip_cauldron
@@ -515,4 +518,117 @@ def _(c):
         t.fire_when(lambda: True, lambda: None)
         return [(t.since() > 90, "waited 90 s"), expect(c, "overflow", "bucket", 1), expect(c, "buckets", "bucket", 1),
                 expect(c, "fuelchest", "bucket", 0), no_errors(c)]
+    return check
+
+
+# ---- an idle golem near a cauldron in a nook (survival's dripstone lava farm, 2026-11-24)
+
+def nook(c, dx=8, dz=8):
+    """Three cauldrons sunk into the floor (empty, lava, empty) under pointed dripstone, in a
+    1-block-high nook walled on three sides and open to the south (dz + 1)."""
+    for i, kind in enumerate(("cauldron", "lava_cauldron", "cauldron")):
+        x = dx + i
+        sunken(c, x, dz, kind)
+        c.block(x, dz, "pointed_dripstone[vertical_direction=down,thickness=tip]", dy=1)
+        c.block(x, dz, "stone", dy=2)
+        c.block(x, dz - 1, "stone")
+        c.block(x, dz - 1, "stone", dy=1)
+    for x in (dx - 1, dx + 3):
+        for dy in (0, 1, 2):
+            c.block(x, dz, "stone", dy=dy)
+
+
+class Wander:
+    """Every 5 s, send the platform's golems toward a spot with GolemTestHooks' /golemwalk: the
+    golem's own path, as vanilla's wandering picks one (not a CopperGolemClerk job)."""
+
+    def __init__(self, c, spots):
+        """spots: (dx, dz, dy) to cycle through, one per walk."""
+        self.c = c
+        x1, y1, z1 = c.abs(-2, -2, -1)
+        x2, y2, z2 = c.abs(SIZE + 2, SIZE + 2, 4)
+        self.cmds = []
+        for dx, dz, dy in spots:
+            x, y, z = c.abs(dx, dz, dy)
+            self.cmds.append(f"golemwalk {x1} {y1} {z1} {x2} {y2} {z2} {x + 0.5} {y} {z + 0.5}")
+        if "Unknown" in c.r.cmd(self.cmds[0]) or "Usage" in c.r.cmd(self.cmds[0]):
+            raise Skip("needs GolemTestHooks with /golemwalk on pluginDev")
+        self.sent, self.refused, self.last, self.n = 0, 0, 0, 0
+
+    def poll(self):
+        if time.time() - self.last >= 5:
+            self.last = time.time()
+            cmd = self.cmds[self.n % len(self.cmds)]
+            self.n += 1
+            m = re.search(r"walk sent (\d+) refused (\d+)", self.c.r.cmd(cmd))
+            if m:
+                self.sent += int(m.group(1))
+                self.refused += int(m.group(2))
+
+
+def kept_away(c):
+    return sum(1 for l in c.cell_lines() if "Kept an idle copper golem from going back" in l)
+
+
+def shove(c, dx, dz, mx):
+    """Throw the platform's golem sideways (Motion mx along x) from (dx, dz), as a bump does."""
+    sel = c.selector("copper_golem")
+    x, y, z = c.abs(dx, dz)
+    c.r.cmd(f"tp {sel} {x + 0.5} {y} {z + 0.5}")
+    c.r.cmd(f"data merge entity {sel.replace(']', ',limit=1]')} {{Motion:[{mx}d,0.2d,0.0d]}}")
+
+
+def nook_scene(c, holding=None):
+    """The nook, a home copper chest with nothing to sort, a golem in the nook on the empty
+    cauldron beside the lava one, thrown toward the lava once (the guard turns it back), then
+    sent back over the cauldrons every 5 s as vanilla's wandering did on survival."""
+    nook(c)
+    c.chest("copper", 4, 14, block="waxed_copper_chest")
+    c.golem(8, 9)
+    if holding:
+        c.run(f"item replace entity {c.selector('copper_golem')} weapon.mainhand with minecraft:{holding}")
+    state = {"last": 0.0}
+    walk = Wander(c, [(9, 8, 1), (8, 8, 1), (10, 8, 1), (9, 9, 0)])  # survival's targets: over and beside the lava
+
+    def poll():
+        if kept(c) == 0:  # a throw doesn't always reach the rim: again every 3 s until the guard turns it back
+            if c.elapsed() >= 5 and time.time() - state["last"] >= 3:
+                shove(c, 8, 8, 0.45)  # toward the lava cauldron at (9, 8)
+                state["last"] = time.time()
+        else:
+            walk.poll()
+    return walk, poll
+
+
+@scenario("cauldron-nook-idle-keeps-away", "cauldrons", 120, "An idle golem in a 1-high nook with a lava cauldron sunk into its floor (survival's dripstone farm) is thrown toward the lava (the guard turns it back), then sent back over and beside the cauldron every 5 seconds, as vanilla's wandering did: those paths are refused for 30 seconds; never in a cauldron, alive.", alone=True)
+def _(c):
+    w = Watch(c)
+    walk, poll = nook_scene(c)
+
+    def check():
+        w.poll()
+        poll()
+        return [(walk.n >= 4, f"{walk.n} walks after the turn-back (want 4+)"),
+                (kept(c) >= 1, f"turned back at the lava {kept(c)} times (want 1+)"),
+                (kept_away(c) >= 3, f"its paths back to the cauldron were refused {kept_away(c)} times (want 3+);"
+                 f" walks sent {walk.sent}, refused {walk.refused}")] + w.checks()
+    return check
+
+
+@scenario("cauldron-nook-carrying-not-held-back", "cauldrons", 120, "The same nook and throw with the golem holding a stone (not idle): its paths toward the cauldron aren't refused (keep-away is only for idle golems); never in a cauldron, alive.", alone=True)
+def _(c):
+    w = Watch(c)
+    walk, poll = nook_scene(c, holding="stone")
+
+    def check():
+        w.poll()
+        poll()
+        lines = c.cell_lines()
+        put_back = next((i for i, l in enumerate(lines) if "returned STONE" in l), len(lines))
+        while_holding = sum(1 for l in lines[:put_back] if "Kept an idle copper golem from going back" in l)
+        return [(walk.n >= 4, f"{walk.n} walks after the turn-back (want 4+)"),
+                (kept(c) >= 1, f"turned back at the lava {kept(c)} times (want 1+)"),
+                (walk.sent >= 2, f"{walk.sent} walks sent"),
+                (while_holding == 0, f"paths refused {while_holding} times while it held the stone (want 0: it's"
+                 f" carrying something){'; put the stone back, idle after' if put_back < len(lines) else ''}")] + w.checks()
     return check
