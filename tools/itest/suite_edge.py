@@ -277,7 +277,7 @@ def _(c):
                     expect(c, "overflow", "granite", 16), (c.holding() == 0, f"golem holding {c.holding()} (want 0)")]
 
 
-@scenario("fetcher-limit", "edge", 300, "Six idle golems, six fetchable items in one overflow chest: never more than 2 fetch from it at once, all 6 delivered.")
+@scenario("fetcher-limit", "edge", 300, "Six idle golems, six fetchable items in one overflow chest: never more than 4 (fetchers-per-overflow-chest's default since 3.3.0) fetch from it at once, all 6 delivered.")
 def _(c):
     items = [("birch_log", "oak_log", "logs"), ("granite", "andesite", "stone"), ("orange_wool", "white_wool", "wool"),
              ("red_stained_glass", "glass", "glass"), ("blue_dye", "red_dye", "dyes"), ("iron_ore", "coal_ore", "ores")]
@@ -301,7 +301,7 @@ def _(c):
 
     def check():
         peak = max_concurrent()
-        return [(peak <= 2, f"at most {peak} golems fetched from the overflow chest at once (want 2 or fewer)")] + \
+        return [(peak <= 4, f"at most {peak} golems fetched from the overflow chest at once (want 4 or fewer)")] + \
                [expect(c, name, fetch, 16) for fetch, _, name in items]
     return check
 

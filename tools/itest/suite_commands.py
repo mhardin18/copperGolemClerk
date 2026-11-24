@@ -269,3 +269,27 @@ def _(c):
 def _(c):
     again = version_check(c, "http://127.0.0.1:9/releases")  # port 9: nothing listens
     return lambda: [has(again(), "The last check failed")]
+
+
+@scenario("storage-report", "commands", 30, "/cgc storage sums up the storage in golem range: a full [logs] chest flagged FULL, a [stone] chest, the [Overflow] chest, one empty chest and a copper chest's waiting items.")
+def _(c):
+    c.chest("logs", 6, 10, [("oak_log", 64)] * 27)
+    c.sign(6, 10, "[logs]")
+    c.chest("stone", 10, 10, [("granite", 32)])
+    c.sign(10, 10, "[stone]")
+    c.chest("overflow", 14, 10, [("kelp", 10)])
+    c.sign(14, 10, "[Overflow]")
+    c.chest("empty", 18, 10)
+    c.chest("copper", 2, 14, [("birch_log", 5)], block="waxed_copper_chest")
+    x, y, z = c.abs(10, 10)
+
+    def check():
+        reply = say(c, f"cgc storage {x} {y} {z}")
+        lines = reply.split("\n") if "\n" in reply else re.split(r"(?=  \S)", reply)
+        logs = next((l for l in lines if "logs" in l and "slots" in l), "")
+        return [has(reply, "Storage within golem range:"),
+                ("FULL" in logs, f"the [logs] chest is flagged FULL: {logs.strip() or reply.strip()[:200]}"),
+                has(reply, "[Overflow]: 1 container"),
+                has(reply, "Empty chests: 1"),
+                has(reply, "Copper chests: 1, with 5 items waiting to be sorted")]
+    return check
