@@ -1237,8 +1237,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                     }
                 }
                 for (Material m : Material.values()) {
+                    if (m.isLegacy() || !m.isItem()) {
+                        continue; // a legacy material has no key: getKey() throws
+                    }
                     String key = m.getKey().getKey();
-                    if (!m.isLegacy() && m.isItem() && key.startsWith(prefix) && out.size() < 100) {
+                    if (key.startsWith(prefix) && out.size() < 100) {
                         out.add(key);
                     }
                 }
@@ -1284,8 +1287,11 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
                 String prefix = args[2].toLowerCase(Locale.ROOT);
                 List<String> out = new ArrayList<>();
                 for (Material m : Material.values()) {
+                    if (m.isLegacy() || !m.isItem()) {
+                        continue; // a legacy material has no key: getKey() throws
+                    }
                     String key = m.getKey().getKey();
-                    if (!m.isLegacy() && m.isItem() && key.startsWith(prefix) && out.size() < 100) {
+                    if (key.startsWith(prefix) && out.size() < 100) {
                         out.add(key);
                     }
                 }

@@ -412,16 +412,17 @@ class CommandDispatchPaperTest extends PaperTest {
      * This pins the current behaviour; when it is fixed, replace with the commented assertions.
      */
     @Test
-    void itemCompletionThrowsOnLegacyMaterials_bug() {
-        assertThrows(IllegalArgumentException.class, () -> suggest(player(), "find", "cobblest"));
-        assertThrows(IllegalArgumentException.class, () -> suggest(admin(), "groups", "item", "oak_l"));
-        // expected after a fix: suggest(player(), "find", "cobblest") contains "cobblestone"
+    void itemCompletionSkipsLegacyMaterials() {
+        // Paper still lists ~460 LEGACY_ materials, and their getKey() throws: completion used to fail.
+        assertTrue(suggest(player(), "find", "cobblest").contains("cobblestone"));
+        assertTrue(suggest(admin(), "groups", "item", "oak_l").contains("oak_log"));
+        assertTrue(suggest(player(), "find", "").stream().noneMatch(s -> s.startsWith("legacy")));
     }
 
     @Test
-    void findCompletionThrowsForAnyPrefix_bug() {
-        // even a prefix only a group has: the item loop runs after the groups and throws
-        assertThrows(IllegalArgumentException.class, () -> suggest(player(), "find", "log"));
+    void findCompletionOffersGroupsAndItems() {
+        List<String> got = suggest(player(), "find", "log");
+        assertTrue(got.contains("logs"), "the group: " + got);
     }
 
     @Test
