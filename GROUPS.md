@@ -96,10 +96,14 @@ restart). A new one with the built-in groups and no aliases is written. Your set
 Only a fresh `groups.yml` gets these. See
 [What upgrading does to your groups](#what-upgrading-does-to-your-groups).
 
-### 3.3.0
+### 3.3.0: 57 groups
 
 - The groups and aliases moved from `config.yml` to their own file, `groups.yml`
-  ([details](#groups-have-their-own-file-330)). The groups themselves are the same.
+  ([details](#groups-have-their-own-file-330)). Moving them doesn't change any group.
+- New `resin` group with all 8 resin items: the resin clump, resin brick, resin block,
+  resin bricks (chiseled too) and resin brick slab, stairs and wall. The resin brick item
+  moved there from `materials`; the blocks stay in `building` and the clump in `mob-drops`
+  as well, but golems prefer `[resin]` (it has the fewest items).
 - The nether brick item moved from `materials` to `nether`, next to the nether brick
   blocks. Before, golems took it to a `[materials]` chest and never to a `[nether]` one.
 
@@ -163,7 +167,7 @@ properties.
 | [`[ores]`](#ores) | `ores` | Ores | 22 |
 | [`[mineral blocks]`](#mineral-blocks) | `mineral-blocks` | Mineral blocks | 8 |
 | [`[ingots and gems]`](#ingots-and-gems) | `ingots-and-gems` | Ingots & gems | 19 |
-| [`[materials]`](#materials) | `materials` | Crafting materials | 8 |
+| [`[materials]`](#materials) | `materials` | Crafting materials | 7 |
 | [`[amethyst]`](#amethyst) | `amethyst` | Amethyst | 6 |
 | [`[animal gear]`](#animal-gear) | `animal-gear` | Saddles & animal armor | 31 |
 | [`[armor]`](#armor) | `armor` | Armor | 31 |
@@ -203,6 +207,7 @@ properties.
 | [`[deepslate]`](#deepslate) | `deepslate` | Deepslate | 20 |
 | [`[tuff]`](#tuff) | `tuff` | Tuff | 14 |
 | [`[sandstone]`](#sandstone) | `sandstone` | Sandstone | 20 |
+| [`[resin]`](#resin) | `resin` | Resin | 8 |
 | [`[building]`](#building) | `building` | Bricks, quartz & other building | 29 |
 
 ### music-discs
@@ -387,13 +392,13 @@ charcoal, coal, copper ingot, copper nugget, diamond, emerald, gold ingot, gold 
 
 ### materials
 
-`[materials]`: Crafting materials, 8 items.
+`[materials]`: Crafting materials, 7 items.
 
-Entries: `BOWL`, `BRICK`, `CLAY_BALL`, `FLINT`, `GLOWSTONE_DUST`, `PAPER`, `RESIN_BRICK`, `STICK`
+Entries: `BOWL`, `BRICK`, `CLAY_BALL`, `FLINT`, `GLOWSTONE_DUST`, `PAPER`, `STICK`
 
 <details><summary>Items</summary>
 
-bowl, brick, clay ball, flint, glowstone dust, paper, resin brick, stick
+bowl, brick, clay ball, flint, glowstone dust, paper, stick
 
 </details>
 
@@ -862,6 +867,18 @@ Entries: `*SANDSTONE*`
 <details><summary>Items</summary>
 
 chiseled red sandstone, chiseled sandstone, cut red sandstone, cut red sandstone slab, cut sandstone, cut sandstone slab, red sandstone, red sandstone slab, red sandstone stairs, red sandstone wall, sandstone, sandstone slab, sandstone stairs, sandstone wall, smooth red sandstone, smooth red sandstone slab, smooth red sandstone stairs, smooth sandstone, smooth sandstone slab, smooth sandstone stairs
+
+</details>
+
+### resin
+
+`[resin]`: Resin, 8 items.
+
+Entries: `*RESIN*`
+
+<details><summary>Items</summary>
+
+resin brick, chiseled resin bricks, resin block, resin brick slab, resin brick stairs, resin brick wall, resin bricks, resin clump
 
 </details>
 

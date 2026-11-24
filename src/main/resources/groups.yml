@@ -219,7 +219,7 @@ groups:
     - RAW_COPPER
     - RAW_GOLD
     - RAW_IRON
-  # Crafting materials (8 items)
+  # Crafting materials (7 items)
   materials:
     - BOWL
     - BRICK
@@ -227,7 +227,6 @@ groups:
     - FLINT
     - GLOWSTONE_DUST
     - PAPER
-    - RESIN_BRICK
     - STICK
   # Amethyst (6 items)
   amethyst:
@@ -639,6 +638,9 @@ groups:
   # Sandstone (20 items)
   sandstone:
     - "*SANDSTONE*"
+  # Resin (8 items)
+  resin:
+    - "*RESIN*"
   # Bricks, quartz & other building (29 items)
   building:
     - "MUD_*"

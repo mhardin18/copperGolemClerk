@@ -102,7 +102,7 @@ Spigot and Bukkit aren't supported. The plugin uses Paper-only golem events.
 4. Check the console for `Enabling CopperGolemClerk`, or run `/plugins` in game.
 
 On first start the plugin creates two files in `plugins/CopperGolemClerk/`: `config.yml`
-(the settings) and `groups.yml` (the item groups: 56 that cover nearly every survival item).
+(the settings) and `groups.yml` (the item groups: 57 that cover nearly every survival item).
 The defaults work as they are. After editing either file, run `/cgc reload` to apply it
 without a restart.
 
@@ -179,7 +179,7 @@ The same forms work on signs. See [`*` patterns, `#` tags and `@` properties](#-
 
 ### The default groups
 
-A fresh `groups.yml` has 56 groups. They cover nearly every item you can get in survival on
+A fresh `groups.yml` has 57 groups. They cover nearly every item you can get in survival on
 Paper 26.3, and every name fits on one sign line. An item can be in more than one group.
 
 **[GROUPS.md](GROUPS.md)** lists every built-in group: its sign label, its entries and every
@@ -1164,8 +1164,8 @@ line number, and the old settings are kept.
 | `sign-labels` | `true` | Sign labels (`[logs]`, `[Overflow]`, `[No Golems]`, `[Only ...]`). |
 | `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use. Copper chests and chests a player has open are left alone. |
 | `destination-containers` | `[chest, trapped_chest]` | What golems put items into. Add `barrel` and/or `shulker_box` (every colour). Leave `chest` out to keep golems away from plain chests. Golems always take from copper chests. |
-| `groups` | 56 groups | The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
-| `group-aliases` | none (`{}`) | Other names for groups on signs: `alias: group`, or `alias: [group, group]` for several. A group's own name wins. See [Other names for groups](#other-names-for-groups). |
+| `groups` | 57 groups | In `groups.yml`, not `config.yml` (since 3.3.0). The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
+| `group-aliases` | none (`{}`) | In `groups.yml`. Other names for groups on signs: `alias: group`, or `alias: [group, group]` for several. A group's own name wins. See [Other names for groups](#other-names-for-groups). |
 
 ### Busier golems
 
