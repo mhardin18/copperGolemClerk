@@ -44,7 +44,8 @@ import org.bukkit.util.Vector;
  *   a spot it was just found to have no way to. Without this, vanilla kept picking wander spots
  *   in a nook over a lava cauldron (a dripstone farm, say), and the golem hovered at its mouth,
  *   turned back over and over. A golem carrying something is never held back: its trips (a
- *   bucket to be filled at a lava cauldron, say) go where they need to.
+ *   bucket to be filled at a lava cauldron, say) go where they need to; nor is a path to a
+ *   container (a copper chest beside the cauldron still gets its golem).
  * - The damage and fire of a lava cauldron come in the same tick a golem touches it, before
  *   the move can be undone, so a golem the plugin manages takes no harm from touching one and
  *   is put out.
@@ -275,7 +276,7 @@ final class GolemCauldrons implements Listener {
         if (away != null) {
             if (now > away.getValue()) {
                 keepAway.remove(id);
-            } else if (nearCauldron(to, away.getKey())) {
+            } else if (nearCauldron(to, away.getKey()) && !atContainer(to)) {
                 event.setCancelled(true);
                 if (plugin.debug()) {
                     plugin.getLogger().info(String.format("Kept an idle copper golem from going back to the %s at %d,%d,%d"
@@ -299,6 +300,17 @@ final class GolemCauldrons implements Listener {
         double dx = to.getX() - (cauldron.getX() + 0.5);
         double dz = to.getZ() - (cauldron.getZ() + 0.5);
         return dx * dx + dz * dz <= KEEP_AWAY_RADIUS * KEEP_AWAY_RADIUS && Math.abs(to.getY() - cauldron.getY()) <= 2.5;
+    }
+
+    /**
+     * A path to a container (vanilla sends a golem to its copper chest, or a chest, by the
+     * container's own block): never held back, so a copper chest beside a cauldron still gets
+     * its golem.
+     */
+    static boolean atContainer(Location to) {
+        Block block = to.getBlock();
+        return block.getState(false) instanceof org.bukkit.block.Container
+                || block.getRelative(BlockFace.DOWN).getState(false) instanceof org.bukkit.block.Container;
     }
 
     private static boolean emptyHanded(CopperGolem golem) {

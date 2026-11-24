@@ -660,7 +660,8 @@ found to have no way to. Without that, a cauldron in a nook (a dripstone lava fa
 cauldrons sunk into the floor, say) drew an idle golem back again and again, and it hovered
 at the mouth, turned back every few seconds. A golem carrying something, or sent somewhere
 by the plugin (fetching from `[Overflow]`, a furnace job, greeting, walking home), goes
-where it needs to as before. To keep golems out of such a nook altogether, put a fence gate
+where it needs to as before, and so does a golem on its way to a container (its copper chest
+beside the cauldron, say). To keep golems out of such a nook altogether, put a fence gate
 across it: mobs can't open one, and you can.
 
 ### Bigger storage areas

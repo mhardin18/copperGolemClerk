@@ -252,6 +252,17 @@ class CauldronGuardPaperTest extends PaperTest {
     }
 
     @Test
+    void aPathToAContainerBesideTheCauldronIsNeverHeldBack() {
+        Block cauldron = sunken(0, Material.LAVA_CAULDRON);
+        Block copper = world.getBlockAt(1, FLOOR, 2);
+        copper.setType(Material.WAXED_COPPER_CHEST);
+        CopperGolem golem = golem(1, 0);
+        assertTrue(stepInto(golem, cauldron).isCancelled());
+        assertFalse(pathTo(golem, 1.5, FLOOR, 2.5).isCancelled(), "vanilla sending it to its copper chest for work");
+        assertTrue(pathTo(golem, 1.5, FLOOR, 1.5).isCancelled(), "the floor beside the chest is still near the cauldron");
+    }
+
+    @Test
     void keepingAwayIsOffWithTheSettingOrForAVanillaGolem() {
         Block cauldron = sunken(0, Material.LAVA_CAULDRON);
         CopperGolem golem = golem(1, 0);
