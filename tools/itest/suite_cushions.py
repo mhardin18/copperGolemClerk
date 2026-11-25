@@ -15,8 +15,15 @@ def cushion(c, dx, dz, color="white"):
 
 
 def seated(c):
-    """How many copper golems on the platform are sitting on a cushion."""
-    return _count(c.r.cmd(f"execute as {c.selector('copper_golem')} on vehicle if entity @s[type=minecraft:cushion]"))
+    """How many cushions on the platform have a copper golem sitting on them.
+
+    Tags them and counts the tags: `execute as <golems> on vehicle if entity ...` reports only
+    the last golem's count, so it never says more than 1."""
+    cushions = c.selector("cushion")
+    c.r.cmd(f"tag {cushions} remove itest_occupied")
+    c.r.cmd(f"execute as {c.selector('copper_golem')} on vehicle if entity @s[type=minecraft:cushion] "
+            f"run tag @s add itest_occupied")
+    return _count(c.r.cmd(f"execute if entity {cushions[:-1]},tag=itest_occupied]"))
 
 
 def sat_down(c):
