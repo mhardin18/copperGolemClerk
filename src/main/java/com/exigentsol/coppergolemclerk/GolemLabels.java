@@ -177,6 +177,12 @@ final class GolemLabels implements Listener {
         if (plugin.greetings() != null && plugin.greetings().isVisiting(id)) {
             return "saying hello";
         }
+        if (Seats.onCushion(golem)) {
+            return "sitting on a cushion";
+        }
+        if (plugin.cushions() != null && plugin.cushions().isWalking(id)) {
+            return "going to sit down";
+        }
         SortListener sort = plugin.sortListener();
         String furnaceJob = sort == null ? null : sort.furnaces().statusOf(id);
         if (furnaceJob != null) {

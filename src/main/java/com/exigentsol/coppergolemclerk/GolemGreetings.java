@@ -91,6 +91,11 @@ final class GolemGreetings {
         return visits.containsKey(golem);
     }
 
+    /** Visiting, or walking back to its work after a visit. */
+    boolean isBusy(UUID golem) {
+        return visits.containsKey(golem) || returning.containsKey(golem);
+    }
+
     /** Runs every 10 ticks. */
     void tick() {
         if (!plugin.greetOtherGolems()) {
@@ -134,8 +139,9 @@ final class GolemGreetings {
         returning.clear();
     }
 
-    private boolean idle(CopperGolem golem) {
-        if (!golem.isValid() || golem.isLeashed() || golem.isInsideVehicle()
+    /** Nothing to do (see the class comment). A golem sitting on a cushion can still be idle. */
+    boolean idle(CopperGolem golem) {
+        if (!golem.isValid() || golem.isLeashed() || Seats.riding(golem) // on a cushion: stands up to go
                 || !golem.getEquipment().getItemInMainHand().isEmpty()
                 || fetcher.isFetching(golem.getUniqueId()) || traffic.isYielding(golem.getUniqueId())
                 || chestVisits.atChest(golem.getUniqueId()) // walked off now, it would leave the lid open
@@ -284,7 +290,7 @@ final class GolemGreetings {
      * if that's in this world and within search-distance; else its nearest copper chest or
      * furnace; else where it stands.
      */
-    private Location workAnchor(CopperGolem golem) {
+    Location workAnchor(CopperGolem golem) {
         Location at = golem.getLocation();
         GolemRescue.Home home = plugin.rescue() == null ? null : plugin.rescue().homeOf(golem);
         if (home != null && home.world().equals(at.getWorld().getName())) {
@@ -342,7 +348,7 @@ final class GolemGreetings {
      * True if the golem could walk the path back the other way: no step down of more than a
      * block, which it couldn't jump back up.
      */
-    private static boolean twoWay(CopperGolem golem, Pathfinder.PathResult path) {
+    static boolean twoWay(CopperGolem golem, Pathfinder.PathResult path) {
         int y = golem.getLocation().getBlockY();
         for (Location point : path.getPoints()) {
             if (y - point.getBlockY() > 1) {
