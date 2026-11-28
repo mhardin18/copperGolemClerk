@@ -3,7 +3,7 @@
 **Now hiring: storage clerks.** Must be small, shiny and good with chests. Pay is one copper
 block and a pumpkin. Your new clerks sort the way you would: birch logs in with the oak logs,
 pickaxes with the tools, whatever your signs say where they say it. Every chest they touch is
-left tidy. More than 50 ready-made item groups mean they start work the moment you drop the plugin in.
+left tidy. 57 ready-made item groups mean they start work the moment you drop the plugin in.
 
 For server owners, the clerks come with good manners. Commands respect GriefPrevention claims,
 claim owners get full-chest alerts, golem limits per claim are optional, and nearly every
@@ -40,6 +40,11 @@ cobblestone.
   limit. Upgrading keeps your value.
 - **`/cgc settings`** lists the settings that differ from this version's defaults, and
   **`/cgc groups`** compares your item groups with the built-in ones (admins and the console).
+- **New and moved groups.** A new `resin` group holds all the resin items, and the nether brick
+  item is in `nether` now, not `materials`. Your own `groups.yml` is never changed: add them
+  yourself (see GROUPS.md) and `/cgc groups` shows what differs.
+- **Greetings stay out of the way.** A golem only says hello to an iron or snow golem it can
+  walk up to within 2 blocks up or down, and never goes where it couldn't walk back to work.
 - **Groups have their own file.** Item groups and their aliases are in `groups.yml` now, and
   `config.yml` has only the settings. Upgrading moves yours there unchanged.
 
@@ -121,8 +126,8 @@ love to hear about it.)
 
 ### 🧩 Sort by kind, not just by exact item
 A golem carrying spruce planks uses your chest of oak planks. Stews go with the food,
-swords with the weapons, every colour of wool together. Groups are plain lists in the
-config, so you can change them or make your own. Give a group other names with
+swords with the weapons, every colour of wool together. Groups are plain lists in
+`groups.yml`, so you can change them or make your own. Give a group other names with
 `group-aliases` (say `mechanisms: redstone`), and `[mechanisms]` on a sign means that group.
 
 ### 🏷️ Read signs and item frames

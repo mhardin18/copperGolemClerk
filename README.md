@@ -9,7 +9,7 @@ or put one item in it to say what it's for. Golems pick the right chest, walk st
 it, keep the chests tidy, and tell you when one is full.
 
 This is a Paper plugin for **Paper 26.3**, build 190 or newer (Java 25). It works out of
-the box with about 50 item groups that cover nearly every survival item. Everything else
+the box with 57 item groups that cover nearly every survival item. Everything else
 is optional.
 
 Download it from [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
@@ -20,7 +20,7 @@ Download it from [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
 
 **Sorting that understands your storage**
 - **Groups:** a golem carrying birch logs uses the chest of oak logs. A stew goes with the
-  food, a pickaxe with the tools. About 50 groups ship ready to use. You can edit them or
+  food, a pickaxe with the tools. 57 groups ship ready to use. You can edit them or
   add your own, or give a group other names with `group-aliases`.
 - **Sign and item frame labels:** `[logs]`, `[oak log]`, `[*_ORE]`, `[#planks]`, or an item in
   a frame. The most specific chest wins: `[stews]` beats `[food]` for a stew.
@@ -49,6 +49,7 @@ Download it from [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
 - **Lost golems walk home**, and you're told where one is if it's stuck.
 - Golems **keep off trapdoors**, **stay out of portals** and **keep out of cauldrons** that
   hold lava, water or powder snow.
+- Idle golems **say hello** to iron and snow golems and **sit on cushions**.
 - Every golem death is logged with its cause.
 
 **For players**
@@ -254,7 +255,7 @@ A rule too long for one line can carry on to the next
 
 | Line        | Accepts                         |
 |-------------|---------------------------------|
-| `[logs]`    | the `logs` group from the config |
+| `[logs]`    | the `logs` group from `groups.yml` |
 | `[oak log]` | that one item                    |
 | `[*_ORE]`   | items matching the pattern       |
 | `[#planks]` | items in that tag                |
@@ -878,8 +879,8 @@ giving way, greetings, sitting on cushions, lost-golem rescue or tidying.
 While you hold bamboo, golems using this plugin show a small green light on their antenna.
 Vanilla golems don't. Nobody else sees the lights.
 
-Every copper golem within 48 blocks also shows a small label saying what it's doing, for
-example:
+While you hold bamboo, every copper golem within 48 blocks also shows you a small label
+saying what it's doing, for example:
 `carrying 12 birch log`, `fetching granite`, `no chest for 3 kelp`, `taking 5 kelp back`,
 `giving way`, `saying hello`, `sitting on a cushion`, `lost, walking home`, `vanilla mode`,
 `over the golem limit: vanilla` or `idle`. Once its copper starts to weather, a second line
@@ -1170,6 +1171,7 @@ Shows what's in the `[Overflow]` chests within golem range of you (`search-dista
 sideways, 8 up or down), split into:
 
 - items with no chest (with a sign label to use for each group)
+- items whose chest golems can't use (with what to fix)
 - items whose chest is full
 - items golems will move on their own
 
