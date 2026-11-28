@@ -12,6 +12,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,6 +86,70 @@ class ChestTidierMorePaperTest extends PaperTest {
                 ? List.of(Material.DIRT, Material.STONE) : List.of(Material.STONE, Material.DIRT),
                 types(out).subList(0, 2));
         assertNull(out[2]);
+    }
+
+    private static ItemStack book(Object... enchantsAndLevels) {
+        ItemStack book = new ItemStack(Material.ENCHANTED_BOOK);
+        book.editMeta(org.bukkit.inventory.meta.EnchantmentStorageMeta.class, m -> {
+            for (int i = 0; i < enchantsAndLevels.length; i += 2) {
+                m.addStoredEnchant((Enchantment) enchantsAndLevels[i], (Integer) enchantsAndLevels[i + 1], true);
+            }
+        });
+        return book;
+    }
+
+    private static List<String> books(ItemStack[] stacks) {
+        List<String> out = new ArrayList<>();
+        for (ItemStack s : stacks) {
+            if (s != null && s.getItemMeta() instanceof org.bukkit.inventory.meta.EnchantmentStorageMeta m) {
+                out.add(m.getStoredEnchants().entrySet().stream()
+                        .map(e -> ChestTidier.sortName(e.getKey()) + " " + e.getValue())
+                        .sorted().reduce((x, y) -> x + " + " + y).orElse("none"));
+            }
+        }
+        return out;
+    }
+
+    @Test
+    void enchantedBooksGoAToZByEnchantmentThenLowestLevelFirst() {
+        ItemStack[] in = slots(book(Enchantment.UNBREAKING, 3), book(Enchantment.PROTECTION, 4), book(Enchantment.MENDING, 1),
+                book(Enchantment.PROTECTION, 1), book(Enchantment.AQUA_AFFINITY, 1), book(Enchantment.BINDING_CURSE, 1),
+                book(Enchantment.BANE_OF_ARTHROPODS, 5), book(Enchantment.PROTECTION, 2));
+        assertEquals(List.of("aqua affinity 1", "bane of arthropods 5", "curse of binding 1", "mending 1",
+                "protection 1", "protection 2", "protection 4", "unbreaking 3"),
+                books(ChestTidier.arrange(in, plugin.groups())));
+    }
+
+    @Test
+    void aBookWithSeveralEnchantmentsGoesByItsFirstAToZ() {
+        ItemStack[] in = slots(book(Enchantment.PROTECTION, 4, Enchantment.UNBREAKING, 3), book(Enchantment.PROTECTION, 4),
+                book(Enchantment.UNBREAKING, 1, Enchantment.MENDING, 1), book(Enchantment.PROTECTION, 3, Enchantment.UNBREAKING, 3));
+        assertEquals(List.of("mending 1 + unbreaking 1", "protection 3 + unbreaking 3", "protection 4",
+                "protection 4 + unbreaking 3"), books(ChestTidier.arrange(in, plugin.groups())));
+    }
+
+    @Test
+    void booksSortAmongTheirGroupAndOtherItemsKeepTheirOrder() {
+        ItemStack sword = item(Material.DIAMOND_SWORD, 1);
+        sword.addUnsafeEnchantment(Enchantment.SHARPNESS, 5);
+        ItemStack plainSword = item(Material.DIAMOND_SWORD, 1);
+        ItemStack[] out = ChestTidier.arrange(slots(sword, book(Enchantment.MENDING, 1), plainSword,
+                item(Material.BOOK, 3), book(Enchantment.EFFICIENCY, 5)), plugin.groups());
+        assertEquals(List.of("efficiency 5", "mending 1"), books(out));
+        List<ItemStack> swords = java.util.Arrays.stream(out).filter(x -> x != null && x.getType() == Material.DIAMOND_SWORD).toList();
+        assertEquals(List.of(sword, plainSword), swords, "enchanted tools aren't reordered");
+        assertEquals(0, ChestTidier.bookOrder(sword, plainSword));
+        assertEquals(0, ChestTidier.bookOrder(item(Material.BOOK, 1), book(Enchantment.MENDING, 1)));
+    }
+
+    @Test
+    void sortNamesFollowTheEnglishNames() {
+        assertEquals("sweeping edge", ChestTidier.sortName(Enchantment.SWEEPING_EDGE));
+        assertEquals("curse of vanishing", ChestTidier.sortName(Enchantment.VANISHING_CURSE));
+        assertEquals("curse of binding", ChestTidier.sortName(Enchantment.BINDING_CURSE));
+        assertEquals("bane of arthropods", ChestTidier.sortName(Enchantment.BANE_OF_ARTHROPODS));
+        assertEquals("sweeping edge", ChestTidier.sortName("sweeping"), "26.3 keys Sweeping Edge as sweeping");
+        assertEquals("my mod enchant", ChestTidier.sortName("my_mod_enchant"), "others: the key, with spaces");
     }
 
     @Test
