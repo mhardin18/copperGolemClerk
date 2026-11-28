@@ -9,6 +9,7 @@ Versions are the plugin release each change came out with.
 ## 3.3.0 (in progress)
 
 ### New
+- `cushion-greet-first` puts the cushion within 8 blocks of both the start and the iron golem. A golem with no chest stays where it said hello, and from there the old spot was 8.9 blocks away, past the range golems look for cushions in (it failed once that way).
 - `cushions`: a new suite for `sit-on-cushions`. An idle golem sits on a cushion 6 blocks away; three golems and two cushions give two seated golems; a seated golem gets up when logs land in its copper chest, sorts them and sits again; with an iron golem nearby it says hello before sitting, and with a short greeting cooldown a seated golem gets up to greet again; `sit-on-cushions: false` never sits, and turning it off stands the plugin's golem up but leaves one put on a cushion with `/ride`. The platform clean-up also removes cushions.
 - `greet-not-another-floor` only fails a visit that starts below the terrace. A copper golem that wanders up the steps first is on the iron golem's floor and may say hello (it failed once that way).
 - `books`: a new suite for enchantment sign labels. Books from a copper chest go to `[Mending]`, `[Efficiency bks]` and `[books]` chests by their first enchantment; a `[Books: Silk,` / `Aqua, Fire]` list over two sign lines takes those books; `[Bk: A-E]` and `[Bk: F*, So*-U]` take books by A-to-Z range; a far `[Bk: Protection]` beats a near `[BK: P*]`, with `[Bk: A-Z]` as the catch-all; a Smite book with no chest is returned while the Mending book behind it is still delivered.

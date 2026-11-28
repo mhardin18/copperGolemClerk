@@ -940,8 +940,9 @@ home, or its nearest copper chest or furnace), and the golem must be able to wal
 back: it won't drop down a ledge to get there. It gives up after 15 seconds, or 6 seconds
 without getting closer, and doesn't look again for a minute.
 
-A seated golem gets up as soon as there's work: items in a copper chest it would take, a
-furnace job or a fetch. Vanilla's AI does nothing while a golem sits, so the plugin gets it
+A seated golem gets up for work: at once for a furnace job or a fetch, and within 2 seconds
+of items turning up in a copper chest it would take (it looks again every 2 seconds, since
+looking means reading every container in range). Vanilla's AI does nothing while a golem sits, so the plugin gets it
 up. Golems have no sitting pose, so a seated golem stands on the cushion, a little higher.
 
 Golems the plugin sat down get up when the plugin stops, when `sit-on-cushions` is turned off,

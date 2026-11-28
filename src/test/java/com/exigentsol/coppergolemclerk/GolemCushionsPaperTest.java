@@ -78,6 +78,7 @@ class GolemCushionsPaperTest extends PaperTest {
 
     private void tick() {
         map("nextCheck").clear();
+        map("workChecked").clear();
         cushions.tick();
     }
 
@@ -220,6 +221,30 @@ class GolemCushionsPaperTest extends PaperTest {
         tick();
         assertFalse(g.isInsideVehicle());
         assertTrue(logged("got up from its cushion: there's work to do"), log.toString());
+    }
+
+    @Test
+    void theWorkCheckIsKeptForTwoSecondsButHoldingAnItemCountsAtOnce() {
+        ScriptGolem g = golemAt(5, 0);
+        CushionMock c = cushion(5, 0);
+        c.addPassenger(g);
+        tick();
+        copperChest(5, 4, item(Material.DIRT, 3));
+        cushions.tick(); // within 2 s of the last look: not seen yet
+        assertEquals(c, g.getVehicle(), "the scan is kept");
+        long[] checked = (long[]) map("workChecked").get(g.getUniqueId());
+        checked[0] -= GolemCushions.WORK_CHECK_MILLIS;
+        cushions.tick();
+        assertFalse(g.isInsideVehicle(), "looked again after 2 s");
+
+        ScriptGolem h = golemAt(0, 40);
+        cushion(4, 40);
+        longIdle(h);
+        tick();
+        assertTrue(cushions.isWalking(h.getUniqueId()));
+        h.getEquipment().setItemInMainHand(item(Material.DIRT, 1));
+        cushions.tick(); // the cached scan says idle, but holding an item is checked every time
+        assertFalse(cushions.isWalking(h.getUniqueId()));
     }
 
     @Test

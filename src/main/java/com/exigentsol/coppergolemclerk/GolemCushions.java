@@ -26,6 +26,10 @@ import org.bukkit.persistence.PersistentDataType;
  * that ends at the cushion with no drop it couldn't climb back up. It gives up if it isn't
  * there in 15 seconds, or gets no closer for 6, and doesn't look again for a minute.
  *
+ * Cost: the "nothing to do" check reads every container in range, so the answer about
+ * sorting waiting nearby is kept for WORK_CHECK_MILLIS (the cheap checks, like holding an
+ * item, are made every time). A seated golem gets up within 2 seconds of work appearing.
+ *
  * Standing up: vanilla's AI does nothing while a golem sits (it would sit for ever), so the
  * plugin gets it up. Every plugin job walks through PluginPaths.moveTo, which stands a seated
  * golem up first (furnace jobs, fetches, greetings). Here, a seated golem stands up when it
@@ -57,6 +61,13 @@ final class GolemCushions {
     private static final int LEASH = 16;
     /** Close enough to the cushion to sit on it. */
     private static final double SIT_DISTANCE = 1.2;
+    /**
+     * How long a golem's "sorting waiting nearby?" answer is kept. Finding out reads every
+     * container within the search distance, and this runs twice a second for every golem:
+     * asked each time, it cost about 0.4 ms a tick for 20 golems at search distance 32 and
+     * 0.8 ms at 128 (tools/perf, 3.3.0 against 3.1.0). Getting up for new work can wait 2 s.
+     */
+    static final long WORK_CHECK_MILLIS = 2_000;
 
     private final CopperGolemClerk plugin;
     private final GolemGreetings greetings;
@@ -64,6 +75,8 @@ final class GolemCushions {
     private final Map<UUID, Walk> walks = new HashMap<>();
     private final Map<UUID, Long> idleSince = new HashMap<>();
     private final Map<UUID, Long> nextCheck = new HashMap<>();
+    /** When each golem's nearby work was last looked for, and whether there was any. */
+    private final Map<UUID, long[]> workChecked = new HashMap<>();
 
     GolemCushions(CopperGolemClerk plugin, GolemGreetings greetings) {
         this.plugin = plugin;
@@ -94,13 +107,13 @@ final class GolemCushions {
                 }
                 if (Seats.onCushion(golem)) {
                     walks.remove(id);
-                    if (!greetings.idle(golem)) {
+                    if (!idle(golem, now)) {
                         standUp(golem, "there's work to do");
                     }
                     continue;
                 }
                 unmark(golem); // got off some other way (the cushion broke, a job stood it up)
-                if (!greetings.idle(golem) || greetings.isBusy(id)) {
+                if (!idle(golem, now) || greetings.isBusy(id)) {
                     walks.remove(id); // work first, then greetings: they've taken over its pathfinder
                     idleSince.remove(id);
                     continue;
@@ -121,6 +134,20 @@ final class GolemCushions {
         walks.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
         idleSince.keySet().removeIf(id -> plugin.getServer().getEntity(id) == null);
         nextCheck.values().removeIf(t -> t <= now);
+        workChecked.values().removeIf(c -> now - c[0] >= WORK_CHECK_MILLIS);
+    }
+
+    /** greetings.idle, with the container scan kept for WORK_CHECK_MILLIS. */
+    private boolean idle(CopperGolem golem, long now) {
+        if (greetings.occupied(golem)) {
+            return false;
+        }
+        long[] checked = workChecked.get(golem.getUniqueId());
+        if (checked == null || now - checked[0] >= WORK_CHECK_MILLIS) {
+            checked = new long[] {now, greetings.sortingWaiting(golem) ? 1 : 0};
+            workChecked.put(golem.getUniqueId(), checked);
+        }
+        return checked[1] == 0;
     }
 
     /** Stand up every golem the plugin seated (the plugin is stopping). */
