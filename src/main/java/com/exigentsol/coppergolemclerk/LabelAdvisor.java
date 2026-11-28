@@ -159,11 +159,11 @@ final class LabelAdvisor {
         Map<Material, Integer> contents = contents(inventory);
         if (labels.hasItemRules()) {
             Map<Material, Integer> notCovered = new EnumMap<>(Material.class);
-            contents.forEach((m, n) -> {
-                if (!labels.accepts(m)) {
-                    notCovered.put(m, n);
+            for (ItemStack stack : inventory.getStorageContents()) { // by stack: [Mending books] looks at each book
+                if (stack != null && !stack.isEmpty() && !labels.accepts(stack)) {
+                    notCovered.merge(stack.getType(), stack.getAmount(), Integer::sum);
                 }
-            });
+            }
             if (notCovered.isEmpty()) {
                 if (!inCheck) {
                     say(sender, NamedTextColor.GREEN, contents.isEmpty()
@@ -181,7 +181,9 @@ final class LabelAdvisor {
                     say(sender, NamedTextColor.AQUA, "  To keep them here, add " + s.label() + "  = " + s.meaning() + tooWide(s));
                 }
             }
-            takenElsewhere(sender, inventory, contents, labels::specificity);
+            // Books this chest's enchantment label covers: nothing is more specific.
+            takenElsewhere(sender, inventory, contents, m -> m == Material.ENCHANTED_BOOK && labels.hasEnchantmentRules()
+                    && notCovered.get(m) == null ? EnchantmentLabels.SPECIFICITY : labels.specificity(m));
             return;
         }
         if (contents.isEmpty()) {

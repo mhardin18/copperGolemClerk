@@ -24,6 +24,9 @@ cobblestone.
   past vanilla's reach, fetching from `[Overflow]`, furnace jobs), the golem now turns to the
   chest and reaches in.
 - **No more open lids.** A golem waits until the chest lid closes before it goes to say hello.
+- **A chest per enchantment.** Name an enchantment on a sign, like `[Mending]` or
+  `[Efficiency bks]`, and golems take those enchanted books there. `[books]` still catches
+  the rest.
 - **Enchanted books in order.** When golems tidy a chest, enchanted books go A to Z by
   enchantment, then by level, lowest first: Protection I, II, III, IV, then Unbreaking.
 - **More fetchers.** `fetchers-per-overflow-chest` now defaults to 4 (was 2), and 0 means no

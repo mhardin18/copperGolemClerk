@@ -429,7 +429,7 @@ class HomeFinderMorePaperTest extends PaperTest {
         homes().homesFor(g, item(LOG, 4));
         Map<UUID, Object> cache = ScriptGolem.field(homes(), "cache");
         assertEquals(1, cache.size());
-        Object old = ScriptGolem.make(HomeFinder.class, "CacheEntry", LOG, world.getUID(), -5000, new HomeFinder.Homes(Set.of(), Set.of(), Set.of(), Set.of(), Set.of()));
+        Object old = ScriptGolem.make(HomeFinder.class, "CacheEntry", LOG, null, world.getUID(), -5000, new HomeFinder.Homes(Set.of(), Set.of(), Set.of(), Set.of(), Set.of()));
         cache.put(g.getUniqueId(), old);
         homes().prune();
         assertTrue(cache.isEmpty());

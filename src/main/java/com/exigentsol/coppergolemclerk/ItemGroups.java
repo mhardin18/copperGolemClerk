@@ -30,7 +30,15 @@ public final class ItemGroups {
      * A label rule and how many item types it covers (fewer = more specific).
      * meaning says in words what the label was read as, for /cgc check.
      */
-    record Rule(Predicate<Material> test, int size, String meaning) {
+    record Rule(Predicate<Material> test, int size, String meaning, Predicate<org.bukkit.enchantments.Enchantment> enchantment) {
+        Rule(Predicate<Material> test, int size, String meaning) {
+            this(test, size, meaning, null);
+        }
+
+        /** An enchanted-book label ([Mending books]): matches books, not item types (see EnchantmentLabels). */
+        boolean byEnchantment() {
+            return enchantment != null;
+        }
     }
 
     /** Another name for one or more groups, from group-aliases. */
@@ -296,6 +304,12 @@ public final class ItemGroups {
         EnumSet<Material> dyed = plain == null ? null : withDyedVersions(plain, items::contains);
         if (dyed != null) {
             rule = ruleFor(dyed::contains, "item and its dyed versions");
+        }
+        if (rule == null && plainName) {
+            Rule book = EnchantmentLabels.rule(key); // [Mending books]
+            if (book != null) {
+                return Optional.of(book);
+            }
         }
         if (rule == null && plainName) {
             // Last try: items with these words in their name ([stew] = mushroom/rabbit/suspicious stew).

@@ -30,6 +30,7 @@ import arena  # noqa: E402
 import impact  # noqa: E402
 import results as saved  # noqa: E402
 import suite_alerts  # noqa: E402,F401
+import suite_books  # noqa: E402,F401
 import suite_commands  # noqa: E402,F401
 import suite_config  # noqa: E402
 import suite_conflicts  # noqa: E402,F401

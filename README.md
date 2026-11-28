@@ -22,8 +22,8 @@ Download it from [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
 - **Groups:** a golem carrying birch logs uses the chest of oak logs. A stew goes with the
   food, a pickaxe with the tools. About 50 groups ship ready to use. You can edit them or
   add your own, or give a group other names with `group-aliases`.
-- **Sign and item frame labels:** `[logs]`, `[oak log]`, `[*_ORE]`, `[#planks]`, or an item
-  in a frame. The most specific chest wins: `[stews]` beats `[food]` for a stew.
+- **Sign and item frame labels:** `[logs]`, `[oak log]`, `[*_ORE]`, `[#planks]`, `[Mending]` for
+  enchanted books, or an item in a frame. The most specific chest wins: `[stews]` beats `[food]` for a stew.
 - **`[Overflow]` chests** catch anything without a home. Idle golems move items back out
   once you add a chest for them.
 - **`[No Golems]`** keeps golems out of a chest. **`[Only ...]`** on a copper chest makes
@@ -255,6 +255,7 @@ A rule too long for one line can carry on to the next
 | `[oak log]` | that one item                    |
 | `[*_ORE]`   | items matching the pattern       |
 | `[#planks]` | items in that tag                |
+| `[Mending]` | enchanted books whose first enchantment is Mending ([see below](#enchanted-books-by-enchantment)) |
 | `[Overflow]`| anything with no other home      |
 | `[No Golems]`| nothing: golems leave it alone  |
 | `[Only Logs]`| on a copper chest: golems take only logs out |
@@ -275,6 +276,31 @@ How a label is read:
 - An item that comes in all 16 dye colours also covers them. `[Shulker Box]`, `[Candle]`
   and `[Bundle]` take the plain item and every colour. `[Red Candle]` takes only red.
   (`[Terracotta]` is a group: plain, dyed and glazed terracotta.)
+
+#### Enchanted books by enchantment
+
+All enchanted books are one item to Minecraft, so `[books]` or a framed enchanted book takes
+every one. To give each enchantment its own chest, name the enchantment on the sign:
+`[Mending]`, `[Efficiency]`, `[Fire Protection]`. A golem takes each book to the chest for its
+enchantment. One sign can name several (`[Mending]` and `[Unbreaking]` on two lines), and a
+`[books]` chest nearby catches the books that have no chest of their own.
+
+- Use the English name, in any case. `books`, `book`, `bks` or `bk` may follow it:
+  `[Efficiency bks]` is the same as `[Efficiency]`.
+- Four names are too wide for one sign line, so they have short forms: `[Bane]` (Bane of
+  Arthropods), `[Binding]` and `[Vanishing]` (the curses) and `[Projectile]` (Projectile
+  Protection). The full names work too, carried on to the next line. `[Curse]` takes both
+  curses.
+- A book with several enchantments goes by the first of them A to Z, the order golems keep
+  books in when they [tidy a chest](#golems-tidy-the-chests-they-use). A Protection and
+  Unbreaking book goes to a `[Protection]` chest, never an `[Unbreaking]` one.
+- An enchantment label beats `[books]` and a framed enchanted book, so the book goes to its
+  own chest first.
+- A group or item with the same name comes first, so a label is only read as an enchantment
+  when it names no group or item. `[Only ...]` filters on copper chests can't name
+  enchantments.
+- Labels only steer new deliveries. To sort books already in your chests, put them in a
+  copper chest a few stacks at a time and the golems carry each to its chest.
 
 #### Labels too long for one line
 

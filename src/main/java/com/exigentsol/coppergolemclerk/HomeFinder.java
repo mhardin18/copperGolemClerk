@@ -60,7 +60,8 @@ final class HomeFinder {
     record Homes(Set<Pos> matching, Set<Pos> allMatching, Set<Pos> overflow, Set<Pos> empty, Set<Pos> high) {
     }
 
-    private record CacheEntry(Material type, UUID world, int tick, Homes homes) {
+    /** book: an enchanted book's first enchantment, since [Mending] chests take only some books (else null). */
+    private record CacheEntry(Material type, org.bukkit.enchantments.Enchantment book, UUID world, int tick, Homes homes) {
     }
 
     /**
@@ -130,12 +131,13 @@ final class HomeFinder {
         int tick = Bukkit.getCurrentTick();
         Homes homes;
         CacheEntry cached = cache.get(id);
-        if (cached != null && cached.type() == held.getType() && cached.world().equals(golem.getWorld().getUID())
+        if (cached != null && cached.type() == held.getType()
+                && java.util.Objects.equals(cached.book(), EnchantmentLabels.first(held)) && cached.world().equals(golem.getWorld().getUID())
                 && tick - cached.tick() < CACHE_TICKS) {
             homes = cached.homes();
         } else {
             homes = scan(golem, held);
-            cache.put(id, new CacheEntry(held.getType(), golem.getWorld().getUID(), tick, homes));
+            cache.put(id, new CacheEntry(held.getType(), EnchantmentLabels.first(held), golem.getWorld().getUID(), tick, homes));
         }
         return switch (step) {
             case ANY -> homes;

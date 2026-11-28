@@ -238,7 +238,7 @@ final class OverflowFetcher {
         Inventory inventory = ((Container) state).getInventory();
         Material type = null;
         for (ItemStack stack : inventory.getStorageContents()) {
-            if (stack != null && !stack.isEmpty() && returns.mayTake(inventory, stack.getType())) {
+            if (stack != null && !stack.isEmpty() && returns.mayTake(inventory, stack)) {
                 type = stack.getType();
                 break;
             }
@@ -301,18 +301,16 @@ final class OverflowFetcher {
         List<ItemStack> candidates = new ArrayList<>();
         for (ItemStack stack : overflow.getStorageContents()) {
             if (stack == null || stack.isEmpty() || claimed.contains(stack.getType())
+                    // Before seen, so one book doesn't hide the others: a homeless Smite book, or
+                    // a Mending book in a chest signed [Mending] and [Overflow] (already home).
+                    || returns.isHomeless(overflow, stack) || (labels.hasItemRules() && labels.accepts(stack))
                     || !seen.add(stack.getType())) {
-                continue;
+                continue; // (a chest signed e.g. [logs] and [Overflow]: its logs are already home)
             }
             if (since != null && !worthFetching(stack, totals.get(stack.getType()), since.get(stack.getType()), now)) {
                 continue; // a hopper is still filling this in: wait for a fuller trip
             }
-            if (labels.hasItemRules() && labels.accepts(stack.getType())) {
-                continue; // a chest signed e.g. [logs] and [Overflow]: its logs are already home
-            }
-            if (!returns.isHomeless(overflow, stack.getType())) { // skip items returned here as homeless
-                candidates.add(stack);
-            }
+            candidates.add(stack);
         }
         Set<Material> withHome = homes.typesWithHome(golem, candidates);
         for (ItemStack stack : candidates) { // first in chest order

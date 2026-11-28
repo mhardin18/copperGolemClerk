@@ -84,6 +84,35 @@ final class ChestLabels {
             return specificity(type) != Integer.MAX_VALUE;
         }
 
+        /** Like accepts(Material), and enchanted-book labels ([Mending books]) see the book's enchantments. */
+        boolean accepts(ItemStack stack) {
+            return specificity(stack) != Integer.MAX_VALUE;
+        }
+
+        /** Like specificity(Material), counting enchanted-book labels for an enchanted book. */
+        int specificity(ItemStack stack) {
+            int best = specificity(stack.getType());
+            org.bukkit.enchantments.Enchantment first = null;
+            boolean looked = false;
+            for (ItemGroups.Rule rule : rules) {
+                if (rule.byEnchantment()) {
+                    if (!looked) {
+                        first = EnchantmentLabels.first(stack);
+                        looked = true;
+                    }
+                    if (first != null && rule.enchantment().test(first)) {
+                        best = Math.min(best, rule.size());
+                    }
+                }
+            }
+            return best;
+        }
+
+        /** True if a label names an enchantment ([Mending books]). */
+        boolean hasEnchantmentRules() {
+            return rules.stream().anyMatch(ItemGroups.Rule::byEnchantment);
+        }
+
         /** Item count of the narrowest label that accepts this type (Integer.MAX_VALUE if none). */
         int specificity(Material type) {
             int best = Integer.MAX_VALUE;
@@ -145,7 +174,7 @@ final class ChestLabels {
                             String filter = onlyLabel(inner);
                             if (filter != null) {
                                 ItemGroups.Rule rule = groups.signRule(filter);
-                                if (rule != null) {
+                                if (rule != null && !rule.byEnchantment()) { // [Only Mending books]: not a filter
                                     only.add(rule);
                                     onlyNames.add("[" + inner + "]");
                                 } else {

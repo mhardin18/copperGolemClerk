@@ -98,6 +98,10 @@ item-frame-labels: true
 #   [#planks]        an item tag: # then a vanilla or datapack tag name ([#logs] or
 #                    [#minecraft:logs]). An unknown tag, or a bare [#], matches nothing.
 #   [@edible]        a property: @edible, @fuel (burns in a furnace) or @record
+#   [Mending]        enchanted books whose first enchantment (A to Z) is Mending. Any
+#                    enchantment's English name; "books", "bk" or "bks" may follow
+#                    ([Efficiency bks]). Short forms: [Bane], [Binding], [Vanishing],
+#                    [Projectile]. [Curse] takes both curses. Groups and items come first.
 # A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
 #

@@ -1,7 +1,6 @@
 package com.exigentsol.coppergolemclerk;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,22 @@ final class Returns {
 
     private final CopperGolemClerk plugin;
     /** Homeless item types per copper chest block, with expiry time (millis). */
-    private final Map<ChestKey, Map<Material, Long>> homeless = new HashMap<>();
+    /**
+     * What a homeless mark is for: an item type, and for an enchanted book its first
+     * enchantment (A to Z), since [Mending] chests take some books and not others. One
+     * homeless Smite book mustn't park every book in the chest.
+     */
+    record Kind(Material type, org.bukkit.enchantments.Enchantment book) {
+        static Kind of(ItemStack stack) {
+            return new Kind(stack.getType(), EnchantmentLabels.first(stack));
+        }
+
+        static Kind of(Material type) {
+            return new Kind(type, null);
+        }
+    }
+
+    private final Map<ChestKey, Map<Kind, Long>> homeless = new HashMap<>();
 
     Returns(CopperGolemClerk plugin) {
         this.plugin = plugin;
@@ -131,11 +145,12 @@ final class Returns {
                 continue;
             }
             Material type = held.getType();
+            Kind kind = Kind.of(held);
             Map<Integer, ItemStack> leftover = inventory.addItem(held.clone());
             ItemStack rest = leftover.isEmpty() ? ItemStack.empty() : leftover.values().iterator().next();
             equipment.setItemInMainHand(rest);
 
-            markHomeless(inventory, type);
+            markHomeless(inventory, kind);
             ReachDelivery.flashLid(plugin, block);
             plugin.gestures().put(golem, block);
             Location at = block.getLocation().clone().add(0.5, 0.5, 0.5);
@@ -153,11 +168,19 @@ final class Returns {
     }
 
     /** Remember that this item had no home when it was put into this chest. */
+    void markHomeless(Inventory inventory, ItemStack item) {
+        markHomeless(inventory, Kind.of(item));
+    }
+
     void markHomeless(Inventory inventory, Material type) {
+        markHomeless(inventory, Kind.of(type));
+    }
+
+    private void markHomeless(Inventory inventory, Kind kind) {
         long expires = System.currentTimeMillis() + plugin.homelessRetryMillis();
         for (Block half : ChestLabels.blocksOf(inventory)) {
             homeless.computeIfAbsent(new ChestKey(half.getWorld().getUID(), HomeFinder.Pos.of(half)),
-                    k -> new EnumMap<>(Material.class)).put(type, expires);
+                    k -> new HashMap<>()).put(kind, expires);
         }
     }
 
@@ -182,7 +205,7 @@ final class Returns {
         if (inventory.isEmpty()) {
             return false; // nothing to take: don't walk over to find that out
         }
-        Map<Material, Long> marks = marksFor(inventory);
+        Map<Kind, Long> marks = marksFor(inventory);
         ChestLabels.Labels filter = ChestLabels.filterOf(inventory, plugin);
         if (marks.isEmpty() && filter.only().isEmpty()) {
             return true;
@@ -198,7 +221,7 @@ final class Returns {
             if (stack == null || stack.isEmpty()) {
                 continue;
             }
-            boolean isHomeless = marks.containsKey(stack.getType()) || !filter.mayTake(stack.getType());
+            boolean isHomeless = marks.containsKey(Kind.of(stack)) || !filter.mayTake(stack.getType());
             if (firstFilled == null) {
                 firstFilled = i;
                 firstIsHomeless = isHomeless;
@@ -227,10 +250,10 @@ final class Returns {
         if (inventory.isEmpty()) {
             return false;
         }
-        Map<Material, Long> marks = marksFor(inventory);
+        Map<Kind, Long> marks = marksFor(inventory);
         ChestLabels.Labels filter = ChestLabels.filterOf(inventory, plugin);
         for (ItemStack stack : inventory.getStorageContents()) {
-            if (stack != null && !stack.isEmpty() && !marks.containsKey(stack.getType())
+            if (stack != null && !stack.isEmpty() && !marks.containsKey(Kind.of(stack))
                     && filter.mayTake(stack.getType())) {
                 return true;
             }
@@ -243,21 +266,31 @@ final class Returns {
         return !isHomeless(inventory, type) && ChestLabels.filterOf(inventory, plugin).mayTake(type);
     }
 
+    /** True if a golem may take this item from this copper chest: not homeless, and allowed by any [Only ...] filter. */
+    boolean mayTake(Inventory inventory, ItemStack item) {
+        return !isHomeless(inventory, item) && ChestLabels.filterOf(inventory, plugin).mayTake(item.getType());
+    }
+
     /** True if this item type was returned to this chest as homeless (and the mark hasn't expired). */
     boolean isHomeless(Inventory inventory, Material type) {
-        return marksFor(inventory).containsKey(type);
+        return marksFor(inventory).containsKey(Kind.of(type));
+    }
+
+    /** True if this item (for a book: with this first enchantment) was returned here as homeless. */
+    boolean isHomeless(Inventory inventory, ItemStack item) {
+        return marksFor(inventory).containsKey(Kind.of(item));
     }
 
     /** Unexpired homeless marks for the chest (both halves) behind this inventory. */
-    private Map<Material, Long> marksFor(Inventory inventory) {
-        Map<Material, Long> marks = new EnumMap<>(Material.class);
+    private Map<Kind, Long> marksFor(Inventory inventory) {
+        Map<Kind, Long> marks = new HashMap<>();
         if (homeless.isEmpty()) {
             return marks;
         }
         long now = System.currentTimeMillis();
         for (Block half : ChestLabels.blocksOf(inventory)) {
             ChestKey key = new ChestKey(half.getWorld().getUID(), HomeFinder.Pos.of(half));
-            Map<Material, Long> forChest = homeless.get(key);
+            Map<Kind, Long> forChest = homeless.get(key);
             if (forChest == null) {
                 continue;
             }

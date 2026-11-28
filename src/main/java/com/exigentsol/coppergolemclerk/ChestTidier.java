@@ -182,7 +182,7 @@ final class ChestTidier {
         return Integer.compare(ea.size(), eb.size());
     }
 
-    private static final Comparator<Enchantment> BY_NAME = Comparator
+    static final Comparator<Enchantment> BY_NAME = Comparator
             .comparing((Enchantment e) -> sortName(e))
             .thenComparing(e -> e.getKey().toString());
 
