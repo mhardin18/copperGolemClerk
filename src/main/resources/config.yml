@@ -80,7 +80,8 @@ allow-empty-chests: true
 # enchanted books count as the same item, for example.
 item-frame-labels: true
 
-# Sign labels: put a wall sign on any side of a chest (or a standing sign on top)
+# Sign labels: put a wall sign on any side of a chest (or a standing or hanging sign
+# on top)
 # and write rules on it in square brackets, one or more per line.
 # A rule too long for one line can continue on the next. Leave the [ open and close
 # it later: "[Only light" then "sources]" gives [Only light sources]. Lines are joined
