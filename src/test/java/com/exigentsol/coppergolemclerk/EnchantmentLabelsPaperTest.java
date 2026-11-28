@@ -130,6 +130,69 @@ class EnchantmentLabelsPaperTest extends PaperTest {
         assertFalse(rule("books").byEnchantment(), "no colon: still the books group");
     }
 
+    private java.util.Set<String> names(String label) {
+        ItemGroups.Rule r = rule(label);
+        java.util.Set<String> out = new java.util.TreeSet<>();
+        if (r == null) {
+            return out;
+        }
+        for (Enchantment e : RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT)) {
+            if (r.enchantment().test(e)) {
+                out.add(ChestTidier.sortName(e));
+            }
+        }
+        return out;
+    }
+
+    @Test
+    void starsTakeNamesByTheirStart() {
+        assertEquals(java.util.Set.of("aqua affinity"), names("Bk: A*"));
+        assertEquals(java.util.Set.of("fire aspect", "fire protection"), names("Bk: Fi*"));
+        assertEquals(java.util.Set.of("projectile protection", "protection"), names("bks: Pro*"));
+        assertEquals(java.util.Set.of("channeling", "curse of binding", "curse of vanishing"), names("Books: C*"), "curses under C");
+        assertTrue(names("Bk: F*").containsAll(java.util.Set.of("feather falling", "flame", "fortune", "frost walker")));
+    }
+
+    @Test
+    void rangesTakeNamesFromOneStartThroughAnother() {
+        java.util.Set<String> ch = names("Bk: C-H");
+        assertEquals(ch, names("Bk: C*-H*"));
+        assertEquals(ch, names("Bk: c - h *"));
+        assertTrue(ch.containsAll(java.util.Set.of("channeling", "curse of vanishing", "density", "efficiency", "frost walker")));
+        assertFalse(ch.contains("impaling"));
+        assertFalse(ch.contains("breach"));
+        assertEquals(java.util.Set.of("soul speed", "sweeping edge", "swift sneak", "thorns", "unbreaking"), names("Bk: So*-U"));
+        assertEquals(java.util.Set.of("riptide", "sharpness", "silk touch", "smite", "soul speed", "sweeping edge", "swift sneak"),
+                names("Bk: Ri*-Sw*"));
+    }
+
+    @Test
+    void starsRangesAndNamesMix() {
+        java.util.Set<String> mixed = names("Bk: A*, B*, C-H*, Mending, Silk-Touch");
+        assertTrue(mixed.containsAll(java.util.Set.of("aqua affinity", "bane of arthropods", "breach", "fortune", "mending", "silk touch")));
+        assertFalse(mixed.contains("smite"));
+        assertEquals(java.util.Set.of("silk touch"), names("Bk: Silk-Touch"), "a dash in a name isn't a range");
+        assertEquals(java.util.Set.of("fire protection"), names("Bk: fire-protection"));
+    }
+
+    @Test
+    void backwardsOrEmptyRangesAreSkipped() {
+        assertNull(rule("Bk: U-So"));
+        assertNull(rule("Bk: G-H"));
+        assertNull(rule("Bk: X*"));
+        ItemGroups.Rule r = rule("Bk: Mending, U-So, G*");
+        assertEquals("enchanted books whose first enchantment (A to Z) is Mending (not an enchantment, skipped: u-so, g*)",
+                r.meaning());
+    }
+
+    @Test
+    void outsideAListAStarIsStillAnItemPattern() {
+        ItemGroups.Rule f = rule("F*");
+        assertNotNull(f);
+        assertFalse(f.byEnchantment());
+        assertTrue(f.test().test(Material.FURNACE));
+    }
+
     @Test
     void firstWordsOnlyWorkInAList() {
         assertNull(rule("Aqua"), "on its own Aqua names nothing");

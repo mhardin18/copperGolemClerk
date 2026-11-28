@@ -9,7 +9,7 @@ Versions are the plugin release each change came out with.
 ## 3.3.0 (in progress)
 
 ### New
-- `books`: a new suite for enchantment sign labels. Books from a copper chest go to `[Mending]`, `[Efficiency bks]` and `[books]` chests by their first enchantment; a `[Books: Silk,` / `Aqua, Fire]` list over two sign lines takes those books; a Smite book with no chest is returned while the Mending book behind it is still delivered.
+- `books`: a new suite for enchantment sign labels. Books from a copper chest go to `[Mending]`, `[Efficiency bks]` and `[books]` chests by their first enchantment; a `[Books: Silk,` / `Aqua, Fire]` list over two sign lines takes those books; `[Bk: A-E]` and `[Bk: F*, So*-U]` take books by A-to-Z range; a Smite book with no chest is returned while the Mending book behind it is still delivered.
 - `tidy-enchanted-books`: a golem delivers a Mending book to a `[books]` chest of jumbled enchanted books, which end up A to Z by enchantment, lowest level first.
 - Code coverage: `./gradlew test jacocoTestReport` (unit tests) and `jacocoItestReport` (the in-game tests, from the JaCoCo agent on pluginDev; see itest README, "Code coverage"). About 860 new unit tests took line coverage from 48% to 94% (branches 34% to 84%), with fake golems that have scripted pathfinders and fake GriefPrevention and LuckPerms classes. They found two bugs, both fixed: tab completion for `/cgc find` and `/cgc groups item` threw on Paper's `LEGACY_` materials, and an unreachable `find-enabled` check.
 - `commands`: `storage-report` runs `/cgc storage` on a server for the first time (a full `[logs]` chest flagged FULL, `[Overflow]`, an empty chest and a copper chest's waiting items). In-game coverage showed `StorageReport` at 3%.

@@ -105,6 +105,7 @@ item-frame-labels: true
 #   [Books: Mending, Silk, Aqua]  several enchantments; Book:, Bks: or Bk: work too.
 #                    The first word of a name is enough here (Fire = both Fire
 #                    enchantments), and the list can carry on over the sign's lines.
+#                    Starts and ranges A to Z work too: [Bk: A*, Fi*, C-H, So*-U].
 # A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
 #

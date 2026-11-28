@@ -33,6 +33,15 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
  * they'd take over labels like [Soul] (soul sand) or [Fire] (fire charges). An entry that
  * names nothing is skipped and /cgc check lists it; the others still count.
  *
+ * A list entry can also be the start of names with a *, or a range: F* is every name
+ * starting with F, Fi* the two Fire ones; C-H (or C*-H*) is every name from C through H, and
+ * the ends can be longer: So*-U, Ri*-Sw*. A range takes the names that sort at or after its
+ * first end and whose start, as long as its second end, sorts at or before it, so Ri*-Sw*
+ * includes Swift Sneak. The order is the A to Z order of the names (curses under C), the
+ * order ChestTidier keeps books in. A * or a range only means this inside a list: on its own,
+ * [F*] is an item pattern. A dash is a range only when the entry isn't a name: Silk-Touch is
+ * Silk Touch. A range backwards, or one that matches nothing, is skipped like a typo.
+ *
  * A book goes by its first enchantment A to Z (the order ChestTidier puts books in), so a
  * Protection + Unbreaking book goes to a [Protection] chest, never an [Unbreaking] one. An
  * enchantment label is narrower than any item label, so it beats [books] or a framed
@@ -60,18 +69,23 @@ final class EnchantmentLabels {
     /** books:, book:, bks: or bk:, then the list. */
     private static final Pattern LIST = Pattern.compile("^(?:books?|bks?) ?:(.*)$");
 
+    /** A range of names: C-H, C*-H*, So*-U, Ri*-Sw*. */
+    private static final Pattern RANGE = Pattern.compile("^([a-z][a-z ]*?) ?\\*? ?- ?([a-z][a-z ]*?) ?\\*?$");
+    /** The start of names: F*, Fi*, Fire P*. */
+    private static final Pattern START = Pattern.compile("^([a-z][a-z ]*?) ?\\*$");
+
     /** True if the label is a book list ([Books: ...]): read before groups and items. */
     static boolean isList(String label) {
-        return LIST.matcher(normalize(label)).matches();
+        return LIST.matcher(listText(label)).matches();
     }
 
     /** The rule for a label like "mending", "mending books" or "books: mending, aqua", or null. */
     static ItemGroups.Rule rule(String label) {
-        String text = normalize(label);
-        Matcher list = LIST.matcher(text);
+        Matcher list = LIST.matcher(listText(label));
         if (list.matches()) {
             return listRule(list.group(1));
         }
+        String text = normalize(label);
         String name = withoutSuffix(text);
         if (name.equals("curse") || name.equals("curses")) {
             return rule(e -> ChestTidier.sortName(e).startsWith("curse of "), "a curse");
@@ -84,11 +98,15 @@ final class EnchantmentLabels {
         Set<Enchantment> all = new LinkedHashSet<>();
         List<String> unknown = new ArrayList<>();
         for (String entry : entries.split(",")) {
-            String name = withoutSuffix(entry.trim());
+            String raw = entry.trim();
+            String name = withoutSuffix(raw.replace('-', ' ').replaceAll("\\s+", " "));
             if (name.isEmpty()) {
                 continue;
             }
-            List<Enchantment> found = listEntry(name);
+            List<Enchantment> found = name.contains("*") ? List.of() : listEntry(name);
+            if (found.isEmpty()) {
+                found = byPattern(withoutSuffix(raw));
+            }
             if (found.isEmpty()) {
                 unknown.add(entry.trim());
             }
@@ -123,9 +141,38 @@ final class EnchantmentLabels {
         return out;
     }
 
+    /** F*, Fi*, C-H, So*-U: names by their start, or a range of them A to Z (empty if neither). */
+    private static List<Enchantment> byPattern(String entry) {
+        Matcher range = RANGE.matcher(entry);
+        Matcher start = START.matcher(entry);
+        Predicate<String> test;
+        if (range.matches()) {
+            String from = range.group(1);
+            String to = range.group(2);
+            test = n -> n.compareTo(from) >= 0 && n.substring(0, Math.min(n.length(), to.length())).compareTo(to) <= 0;
+        } else if (start.matches()) {
+            String prefix = start.group(1);
+            test = n -> n.startsWith(prefix);
+        } else {
+            return List.of();
+        }
+        List<Enchantment> out = new ArrayList<>();
+        for (Enchantment e : enchantments()) {
+            if (test.test(ChestTidier.sortName(e))) {
+                out.add(e);
+            }
+        }
+        return out;
+    }
+
     private static ItemGroups.Rule rule(Predicate<Enchantment> test, String what) {
         return new ItemGroups.Rule(m -> false, SPECIFICITY,
                 "enchanted books whose first enchantment (A to Z) is " + what, test);
+    }
+
+    /** Like normalize, but keeping dashes, which make ranges in a list (C-H). */
+    private static String listText(String label) {
+        return label.trim().toLowerCase(Locale.ROOT).replace('_', ' ').replaceAll("\\s+", " ");
     }
 
     private static String normalize(String label) {

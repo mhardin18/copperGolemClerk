@@ -59,3 +59,24 @@ def _(c):
         return [(sorted(listed) == ["aqua_affinity 1", "fire_protection 4", "silk_touch 1"], f"[Books: ...]: {listed}"),
                 (books == ["power 5"], f"[books]: {books}")]
     return check
+
+
+@scenario("book-ranges", "books", 150, "[Bk: A-E] takes Aqua Affinity and Efficiency, [Bk: F*, So*-U] takes Fortune and Thorns; Mending goes to [books].")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    for slot, book in enumerate([dict(fortune=3), dict(aqua_affinity=1), dict(mending=1), dict(thorns=3), dict(efficiency=5)]):
+        put_book(c, 2, 10, slot, **book)
+    c.chest("a-e", 10, 8)
+    c.sign(10, 8, "[Bk: A-E]")
+    c.chest("f-u", 10, 12)
+    c.sign(10, 12, "[Bk: F*, So*-U]")
+    c.chest("books", 14, 10)
+    c.sign(14, 10, "[books]")
+    c.golem(4, 10)
+
+    def check():
+        ae, fu, books = book_slots(c, "a-e"), book_slots(c, "f-u"), book_slots(c, "books")
+        return [(sorted(ae) == ["aqua_affinity 1", "efficiency 5"], f"[Bk: A-E]: {ae}"),
+                (sorted(fu) == ["fortune 3", "thorns 3"], f"[Bk: F*, So*-U]: {fu}"),
+                (books == ["mending 1"], f"[books]: {books}")]
+    return check

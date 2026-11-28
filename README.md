@@ -295,6 +295,21 @@ enchantment. One sign can name several (`[Mending]` and `[Unbreaking]` on two li
   Touch. `Fire` means both Fire Aspect and Fire Protection, and `Curse` both curses; write the
   full name for just one. A name that matches nothing is skipped, and `/cgc check` says which.
   First words work only in a list: on its own, `[Soul]` still means soul sand and soul soil.
+- A list can also take names by how they start, and ranges of them, in A to Z order:
+
+  | In a list | Takes |
+  |---|---|
+  | `F*` | every name starting with F (Feather Falling to Frost Walker) |
+  | `Fi*` | Fire Aspect and Fire Protection |
+  | `C-H` or `C*-H*` | every name from C through H: Channeling to Frost Walker |
+  | `So*-U` | Soul Speed, Sweeping Edge, Swift Sneak, Thorns, Unbreaking |
+  | `Ri*-Sw*` | Riptide through Swift Sneak |
+
+  A range takes the names from its first end through its last, both included, so a wall of
+  `[Bk: A-E]`, `[Bk: F-L]`, `[Bk: M-R]`, `[Bk: S-Z]` makes an alphabetical library. Curses are
+  under C (Curse of Binding). They mix with names: `[Bk: A*, B*, C-H*, Mending]`. A range
+  backwards (`U-So`) or one that matches nothing (`G-H`) is skipped like a typo. A `*` means
+  this only in a list: on its own, `[F*]` is an item pattern (furnace, fence...).
 - Four names are too wide for one sign line, so they have short forms: `[Bane]` (Bane of
   Arthropods), `[Binding]` and `[Vanishing]` (the curses) and `[Projectile]` (Projectile
   Protection). The full names work too, carried on to the next line. `[Curse]` takes both
