@@ -3,6 +3,8 @@
 Reads the plugin's debug lines ("going to say hello", "said hello"), so pluginDev must
 run with debug: true.
 """
+import re
+
 from arena import Trigger, _count, expect, scenario
 from suite_modes import LUCK, golem
 from suite_options import set_options
@@ -144,7 +146,10 @@ def _(c):
     c.run(f"fill {x - 1} {y + 3} {z - 1} {x + 1} {y + 3} {z + 1} minecraft:oak_fence hollow")
     c.run(f"summon minecraft:iron_golem {x + 0.5} {y + 3} {z + 0.5} {{Tags:[\"itest_other\"]}}")
     golem(c, 4, 10)
-    return lambda: [(c.elapsed() > 40, "waited 40 seconds"), (not hellos(c, "going to say hello"), "no visit")]
+    def from_below():  # a golem that wanders up the steps is on the terrace's floor: it may go
+        return [l for l in hellos(c, "going to say hello")
+                if (m := re.search(r" at -?\d+,(-?\d+),", l)) and int(m.group(1)) < y + 3]
+    return lambda: [(c.elapsed() > 40, "waited 40 seconds"), (not from_below(), "no visit from below the terrace")]
 
 
 def ledge(c):

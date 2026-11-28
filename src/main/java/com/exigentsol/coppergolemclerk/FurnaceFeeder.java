@@ -613,7 +613,7 @@ final class FurnaceFeeder {
             }
         }
         // 2b. An empty bucket waiting in a [Fuel] container and a lava cauldron full again: go and fill it.
-        Block bucketSource = fuelSource(golem, golem.getLocation(), golem.isInsideVehicle(), Material.BUCKET);
+        Block bucketSource = fuelSource(golem, golem.getLocation(), Seats.riding(golem), Material.BUCKET);
         if (bucketSource != null) {
             Block full = lavaCauldron(golem);
             if (full != null && claimAllows(golem, full)
@@ -634,12 +634,12 @@ final class FurnaceFeeder {
                 continue; // someone put in a fuel that isn't in furnace-fuel (or an empty bucket): leave it
             }
             if (sources == null) {
-                sources = fuelSources(golem, golem.getLocation(), golem.isInsideVehicle()); // the same for every furnace
+                sources = fuelSources(golem, golem.getLocation(), Seats.riding(golem)); // the same for every furnace
             }
             if (sources.isEmpty()) {
                 break; // no [Fuel] container in range has any furnace-fuel
             }
-            FuelPick pick = pickFor(sources, () -> backlogOf(furnace, golem.getLocation(), golem.isInsideVehicle(), golem));
+            FuelPick pick = pickFor(sources, () -> backlogOf(furnace, golem.getLocation(), Seats.riding(golem), golem));
             if (!isEmpty(fuel) && fuel.getType() != pick.type()) {
                 continue; // burning a fuel lower on the list: let it run out, then switch
             }
@@ -984,7 +984,7 @@ final class FurnaceFeeder {
      * sideways and 8 up or down (1 while riding). See CauldronIndex.
      */
     private static Block nearestCauldron(Entity golem, java.util.function.Predicate<Block> wanted) {
-        boolean riding = golem.isInsideVehicle();
+        boolean riding = Seats.riding(golem);
         int h = riding ? 1 : HomeFinder.searchDistance();
         int v = riding ? 1 : CauldronIndex.VERTICAL;
         return CauldronIndex.nearest(golem.getLocation().getBlock(), h, v, wanted, System.currentTimeMillis());

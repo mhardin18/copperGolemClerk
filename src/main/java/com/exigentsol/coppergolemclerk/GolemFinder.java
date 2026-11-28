@@ -341,7 +341,9 @@ final class GolemFinder implements Listener {
         if (golem.isLeashed()) {
             notes.add("on a lead");
         }
-        if (golem.isInsideVehicle()) {
+        if (Seats.onCushion(golem)) {
+            notes.add("sitting on a cushion");
+        } else if (golem.isInsideVehicle()) {
             notes.add("riding");
         }
         return notes;

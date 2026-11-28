@@ -75,6 +75,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private GolemStats stats;
     private volatile boolean joinSummary = true;
     private GolemGreetings greetings;
+    private GolemCushions cushions;
     private ChestVisits chestVisits;
     private GolemGestures gestures;
     private GolemLabels labels;
@@ -117,6 +118,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     private volatile long alertCooldownMillis = 30 * 60_000L;
     private volatile boolean greetOtherGolems = true;
     private volatile long greetCooldownMillis = 5 * 60_000L;
+    private volatile boolean sitOnCushions = true;
     private volatile Material golemToggleItem = Material.BAMBOO;
     private volatile boolean modeMarkers = true;
     private volatile float modeMarkerHeight = 0.3f;
@@ -168,6 +170,8 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         getServer().getPluginManager().registerEvents(gestures, this);
         greetings = new GolemGreetings(this, listener.fetcher(), listener.returns(), traffic, chestVisits);
         getServer().getScheduler().runTaskTimer(this, greetings::tick, 10, 10);
+        cushions = new GolemCushions(this, greetings);
+        getServer().getScheduler().runTaskTimer(this, cushions::tick, 10, 10); // after greetings: they come first
         paths = new GolemPaths(this);
         getServer().getPluginManager().registerEvents(paths, this);
         paths.setSearchDistance(searchDistance);
@@ -440,6 +444,9 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
     @Override
     public void onDisable() {
         CauldronIndex.clear();
+        if (cushions != null) {
+            cushions.standUpAll(); // vanilla never gets a golem off a cushion
+        }
         if (itemFinder != null) {
             itemFinder.removeAll();
         }
@@ -713,6 +720,7 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         statusLabelsEverywhere = config.getBoolean("status-labels-everywhere", false); // not in config.yml: for tests
         greetOtherGolems = config.getBoolean("greet-other-golems", true);
         greetCooldownMillis = (long) (Math.max(0.1, config.getDouble("greet-cooldown-minutes", 5)) * 60_000L);
+        sitOnCushions = config.getBoolean("sit-on-cushions", true);
         rescueLostGolems = config.getBoolean("rescue-lost-golems", true);
         lostGolemTeleportHome = config.getBoolean("lost-golem-teleport-home", false);
         fullChestAlerts = config.getBoolean("full-chest-alerts", true);
@@ -1091,6 +1099,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
         return greetCooldownMillis;
     }
 
+    boolean sitOnCushions() {
+        return sitOnCushions;
+    }
+
     boolean statusLabels() {
         return statusLabels;
     }
@@ -1105,6 +1117,10 @@ public class CopperGolemClerk extends JavaPlugin { // not final: MockBukkit subc
 
     GolemGreetings greetings() {
         return greetings;
+    }
+
+    GolemCushions cushions() {
+        return cushions;
     }
 
     GolemTraffic traffic() {

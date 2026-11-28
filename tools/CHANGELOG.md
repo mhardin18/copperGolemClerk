@@ -9,6 +9,8 @@ Versions are the plugin release each change came out with.
 ## 3.3.0 (in progress)
 
 ### New
+- `cushions`: a new suite for `sit-on-cushions`. An idle golem sits on a cushion 6 blocks away; three golems and two cushions give two seated golems; a seated golem gets up when logs land in its copper chest, sorts them and sits again; with an iron golem nearby it says hello before sitting, and with a short greeting cooldown a seated golem gets up to greet again; `sit-on-cushions: false` never sits, and turning it off stands the plugin's golem up but leaves one put on a cushion with `/ride`. The platform clean-up also removes cushions.
+- `greet-not-another-floor` only fails a visit that starts below the terrace. A copper golem that wanders up the steps first is on the iron golem's floor and may say hello (it failed once that way).
 - `tidy-enchanted-books`: a golem delivers a Mending book to a `[books]` chest of jumbled enchanted books, which end up A to Z by enchantment, lowest level first.
 - Code coverage: `./gradlew test jacocoTestReport` (unit tests) and `jacocoItestReport` (the in-game tests, from the JaCoCo agent on pluginDev; see itest README, "Code coverage"). About 860 new unit tests took line coverage from 48% to 94% (branches 34% to 84%), with fake golems that have scripted pathfinders and fake GriefPrevention and LuckPerms classes. They found two bugs, both fixed: tab completion for `/cgc find` and `/cgc groups item` threw on Paper's `LEGACY_` materials, and an unreachable `find-enabled` check.
 - `commands`: `storage-report` runs `/cgc storage` on a server for the first time (a full `[logs]` chest flagged FULL, `[Overflow]`, an empty chest and a copper chest's waiting items). In-game coverage showed `StorageReport` at 3%.
