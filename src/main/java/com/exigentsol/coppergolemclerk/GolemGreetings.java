@@ -141,21 +141,32 @@ final class GolemGreetings {
 
     /** Nothing to do (see the class comment). A golem sitting on a cushion can still be idle. */
     boolean idle(CopperGolem golem) {
-        if (!golem.isValid() || golem.isLeashed() || Seats.riding(golem) // on a cushion: stands up to go
+        return !occupied(golem) && !sortingWaiting(golem);
+    }
+
+    /** The cheap half of idle: holding something, on a job, at a chest, leashed or riding. */
+    boolean occupied(CopperGolem golem) {
+        return !golem.isValid() || golem.isLeashed() || Seats.riding(golem) // on a cushion: stands up to go
                 || !golem.getEquipment().getItemInMainHand().isEmpty()
                 || fetcher.isFetching(golem.getUniqueId()) || traffic.isYielding(golem.getUniqueId())
                 || chestVisits.atChest(golem.getUniqueId()) // walked off now, it would leave the lid open
                 || plugin.rescue().isRescuing(golem.getUniqueId())
-                || (plugin.sortListener() != null && plugin.sortListener().furnaces().isBusy(golem.getUniqueId()))) {
-            return false;
-        }
+                || (plugin.sortListener() != null && plugin.sortListener().furnaces().isBusy(golem.getUniqueId()));
+    }
+
+    /**
+     * The dear half of idle: a copper chest in range with something to take. It reads every
+     * container within the search distance, so callers that ask often (GolemCushions, twice a
+     * second) keep the answer for a while.
+     */
+    boolean sortingWaiting(CopperGolem golem) {
         for (BlockState state : HomeFinder.containersInRange(golem, Returns::isCopperChest)) {
             var inventory = ((Container) state).getInventory();
             if (returns.hasPickable(inventory) && !ChestLabels.noGolems(inventory, plugin)) {
-                return false; // there's sorting to do
+                return true; // there's sorting to do
             }
         }
-        return true;
+        return false;
     }
 
     private void maybeStart(CopperGolem golem, long now) {

@@ -76,7 +76,7 @@ def _(c):
 @scenario("cushion-greet-first", "cushions", 120, "With an iron golem and a cushion both nearby, the golem says hello first, then sits down.")
 def _(c):
     boxed(c, "iron_golem", 14, 14)
-    cushion(c, 10, 6)
+    cushion(c, 10, 10)  # within 8 of both: a golem with no chest stays where it said hello
     golem(c, 4, 10)
     def check():
         hello, sat = hellos(c), sat_down(c)
