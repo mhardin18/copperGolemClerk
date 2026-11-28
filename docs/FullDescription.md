@@ -24,6 +24,9 @@ cobblestone.
   past vanilla's reach, fetching from `[Overflow]`, furnace jobs), the golem now turns to the
   chest and reaches in.
 - **No more open lids.** A golem waits until the chest lid closes before it goes to say hello.
+- **Golems take a seat.** A golem with nothing to do for a while walks to a free cushion nearby
+  and sits on it, and gets up the moment there's work, or an iron or snow golem to greet.
+  Turn it off with `sit-on-cushions: false`.
 - **More fetchers.** `fetchers-per-overflow-chest` now defaults to 4 (was 2), and 0 means no
   limit. Upgrading keeps your value.
 - **`/cgc settings`** lists the settings that differ from this version's defaults, and

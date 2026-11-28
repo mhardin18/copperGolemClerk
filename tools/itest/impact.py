@@ -28,7 +28,7 @@ SMOKE = [
     "furnace-empty", "take-out-when-done", "lava-bucket-waits-in-fuel", "edge30-supply-barrel",
     "overflow-no-hopper-fetched", "overflow-hopper-above-waits-for-8",
     # golems: modes, traffic, greetings, rescue, labels, deaths, tidying
-    "vanilla-mode-sorts-like-vanilla", "mode-markers", "give-way-niche", "greet-iron-golem",
+    "vanilla-mode-sorts-like-vanilla", "mode-markers", "give-way-niche", "greet-iron-golem", "cushion-sit",
     "greet-not-while-sorting", "rescue-home-learned", "labels-hidden-normally", "death-log-kill",
     "tidy-merge-stacks", "other-plugin-forces-accept",
     # commands
@@ -55,7 +55,9 @@ SOURCE_SUITES = {
     "GolemFinder": ["finder"],
     "GolemCauldrons": ["cauldrons", "traffic"],
     "GolemGestures": ["gestures", "reach", "lids"],
-    "GolemGreetings": ["greet", "lids"],
+    "GolemGreetings": ["greet", "lids", "cushions"],
+    "GolemCushions": ["cushions"],
+    "Seats": ["cushions", "greet", "furnace"],
     "ChestVisits": ["greet", "lids"],
     "GolemLabels": ["labels"],
     "GolemLimits": ["limits"],
@@ -75,7 +77,7 @@ SOURCE_SUITES = {
     "LabelAdvisor": ["commands", "find"],
     "OverflowFetcher": SORTING + ["overflow-hopper", "destinations", "reach", "gestures", "cauldrons"] + ["distance", "work-order"],
     "PaperSupport": [],
-    "PluginPaths": SORTING + FURNACE + ["cauldrons", "greet", "rescue", "reach", "lids"],
+    "PluginPaths": SORTING + FURNACE + ["cauldrons", "greet", "rescue", "reach", "lids", "cushions"],
     "Reach": ["reach", "destinations", "edge30"],
     "ReachDelivery": ["reach", "destinations", "edge30", "gestures"] + ["distance"],
     "Returns": ["core", "edge", "world", "edge26"],

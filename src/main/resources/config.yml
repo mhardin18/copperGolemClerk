@@ -447,6 +447,15 @@ greet-other-golems: true
 # How long a golem waits after greeting before it greets again (minutes). Lower means
 # more visits. They are purely for show, and any work that turns up ends a visit.
 greet-cooldown-minutes: 5
+# A copper golem that has had nothing to do for 20 seconds walks to a free cushion within
+# 8 blocks (2 up or down, and within 16 blocks of its work) and sits on it. It gets up
+# as soon as there's work, and greetings come first: a seated golem gets up to say hello.
+# It only takes a path it could walk back along. Golems have no sitting pose, so a seated
+# golem stands on the cushion. When the plugin stops (or this is turned off, or the golem
+# is switched to vanilla), golems it sat down get up; vanilla never gets a golem off a cushion.
+# true (default): golems sit on cushions.
+# false: they don't.
+sit-on-cushions: true
 
 # Lost golems: a golem's home is the last place it got work from (the copper chest it
 # took items from, the [Overflow] chest it fetched from, the [Furnace Supply] or [Fuel]

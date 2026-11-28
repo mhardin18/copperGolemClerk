@@ -480,7 +480,7 @@ final class OverflowFetcher {
 
     private static boolean isIdle(CopperGolem golem) {
         EntityEquipment equipment = golem.getEquipment();
-        return golem.isValid() && !golem.isLeashed() && !golem.isInsideVehicle()
+        return golem.isValid() && !golem.isLeashed() && !Seats.riding(golem) // seated: stands up to go
                 && equipment.getItemInMainHand().isEmpty();
     }
 }
