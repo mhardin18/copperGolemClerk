@@ -325,7 +325,7 @@ public final class SortListener implements Listener {
                     if (cameFromThisChest(event.getEntity(), held, container)) {
                         // Fetched from here and couldn't be delivered (e.g. its home is unreachable):
                         // don't let idle golems fetch it again straight away.
-                        returns.markHomeless(container, held.getType());
+                        returns.markHomeless(container, held);
                         reason = "overflow chest; fetched from here but undeliverable, so not fetched again for a while";
                     }
                 }

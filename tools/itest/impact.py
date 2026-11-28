@@ -41,10 +41,11 @@ SORTING = ["core", "edge", "setup", "world", "dimensions"]
 FURNACE = ["furnace", "furnace-edge", "furnace-refill", "furnace-trips", "lava", "edge30", "work-order"]
 SOURCE_SUITES = {
     "Alerts": ["alerts"],
-    "ChestLabels": ["core", "edge", "filters", "edge26"],
-    "ChestMatcher": ["core", "edge", "filters", "destinations"],
+    "EnchantmentLabels": ["books", "tidy"],
+    "ChestLabels": ["books", "core", "edge", "filters", "edge26"],
+    "ChestMatcher": ["books", "core", "edge", "filters", "destinations"],
     "ChestReports": ["commands", "filters", "reach", "lava"],
-    "ChestTidier": ["tidy"],
+    "ChestTidier": ["tidy", "books"],
     "Claims": ["claims", "find", "limits"],
     "ConfigUpgrade": ["config"],
     # Settings live here too: options and config are added when the diff reads settings (see suites_for).
@@ -80,7 +81,7 @@ SOURCE_SUITES = {
     "PluginPaths": SORTING + FURNACE + ["cauldrons", "greet", "rescue", "reach", "lids", "cushions"],
     "Reach": ["reach", "destinations", "edge30"],
     "ReachDelivery": ["reach", "destinations", "edge30", "gestures"] + ["distance"],
-    "Returns": ["core", "edge", "world", "edge26"],
+    "Returns": ["books", "core", "edge", "world", "edge26"],
     "SettingsReport": ["config"],
     "SortListener": SORTING + ["reach", "destinations", "conflicts", "cauldrons"] + ["distance", "work-order"],
     "StorageReport": ["commands"],

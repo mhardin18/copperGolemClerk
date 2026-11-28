@@ -27,8 +27,15 @@ cobblestone.
 - **Golems take a seat.** A golem with nothing to do for a while walks to a free cushion nearby
   and sits on it, and gets up the moment there's work, or an iron or snow golem to greet.
   Turn it off with `sit-on-cushions: false`.
-- **Enchanted books in order.** When golems tidy a chest, enchanted books go A to Z by
-  enchantment, then by level, lowest first: Protection I, II, III, IV, then Unbreaking.
+- **A chest per enchantment.** Name an enchantment on a sign, like `[Mending]` or
+  `[Efficiency bks]`, or several with `[Books: Mending, Aqua, Silk]`, a start like `[Bk: Fi*]`
+  or a range like `[Bk: A-E]`, and golems take those enchanted books there. A book goes by its
+  first enchantment A to Z. The label covering fewer enchantments wins, and all of them beat
+  `[books]` and a framed enchanted book, so `[Bk: A-Z]` is a catch-all. A homeless book no
+  longer holds up the other books in a copper chest.
+- **Enchanted books in order.** When golems tidy a chest (`tidy-chests`), enchanted books go
+  A to Z by enchantment, then by level, lowest first: Protection I, II, III, IV, then
+  Unbreaking.
 - **More fetchers.** `fetchers-per-overflow-chest` now defaults to 4 (was 2), and 0 means no
   limit. Upgrading keeps your value.
 - **`/cgc settings`** lists the settings that differ from this version's defaults, and
@@ -152,7 +159,7 @@ output, say), golems wait until 8 of an item have built up, or 2 minutes. They d
 over for every ingot.
 
 ### 🗄️ Bigger storage rooms
-- Golems **tidy** as they go: partial stacks are merged and like items kept together.
+- Golems **tidy** as they go: partial stacks are merged, like items kept together and enchanted books put in order.
 - They **step aside** for each other in one-wide aisles instead of getting stuck.
 
 Each of these is an optional setting:

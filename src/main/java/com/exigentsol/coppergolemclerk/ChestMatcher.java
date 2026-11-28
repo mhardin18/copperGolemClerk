@@ -76,9 +76,9 @@ final class ChestMatcher {
         if (labels.noGolems()) {
             return new Match(Kind.NO_GOLEMS, "[No Golems] sign");
         }
-        if (labels.hasItemRules() && labels.accepts(heldType)) {
+        if (labels.hasItemRules() && labels.accepts(held)) {
             return new Match(Kind.LABEL_MATCH, "label matches " + String.join(", ", labels.names()),
-                    labels.specificity(heldType));
+                    labels.specificity(held));
         }
         if (labels.overflow()) {
             return new Match(Kind.OVERFLOW, "overflow chest");

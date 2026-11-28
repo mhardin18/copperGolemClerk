@@ -432,6 +432,9 @@ final class ChestReports {
     }
 
     private String describe(ItemGroups.Rule rule) {
+        if (rule.byEnchantment()) {
+            return rule.meaning();
+        }
         List<Material> items = plugin.groups().itemsMatching(rule.test());
         String meaning = rule.meaning();
         if (items.size() == 1 && (meaning.equals("item") || meaning.equals("framed item"))) {
@@ -510,7 +513,7 @@ final class ChestReports {
             ChestLabels.Labels own = overflowLabels.get(c);
             for (ItemStack s : inv.getStorageContents()) {
                 // Items the chest's own labels take (e.g. [logs] + [Overflow]) are home, not overflow.
-                if (s != null && !s.isEmpty() && !(own.hasItemRules() && own.accepts(s.getType()))) {
+                if (s != null && !s.isEmpty() && !(own.hasItemRules() && own.accepts(s))) {
                     contents.merge(s.getType(), new Seen(s.getType(), s, s.getAmount()),
                             (a, b) -> new Seen(a.type(), a.sample(), a.count() + b.count()));
                 }
