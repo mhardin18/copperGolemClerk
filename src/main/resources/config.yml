@@ -106,8 +106,11 @@ item-frame-labels: true
 #                    The first word of a name is enough here (Fire = both Fire
 #                    enchantments), and the list can carry on over the sign's lines.
 #                    Starts and ranges A to Z work too: [Bk: A*, Fi*, C-H, So*-U].
-#                    The label covering fewer enchantments wins: [Bk: Protection]
-#                    before [Bk: P*] before [Bk: A-Z].
+#                    A name that isn't an enchantment is skipped (/cgc check says so).
+#   A book goes by its first enchantment A to Z. An enchantment label beats [books],
+#   [Enchanted Book] and a framed enchanted book, and the one covering fewer
+#   enchantments wins: [Bk: Protection] before [Bk: P*] before [Bk: A-Z].
+#   [Only ...] can't name an enchantment.
 # A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
 #
@@ -507,8 +510,9 @@ log-golem-deaths: true
 
 # Golems tidy a chest while putting something in it. Partial stacks of the same item
 # are merged, and like items are moved next to each other (by group, in the order the
-# groups are listed in groups.yml). Enchanted books go A to Z by enchantment, then by
-# level, lowest first. Copper chests and chests a player has open are left alone.
+# groups are listed in groups.yml). Enchanted books go A to Z by enchantment (curses under
+# C), then by level, lowest first. Other enchanted items keep their order. Copper chests
+# and chests a player has open are left alone.
 tidy-chests: true
 
 # Worlds where the plugin does nothing (golems there behave as in vanilla), by folder

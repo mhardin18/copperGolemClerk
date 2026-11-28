@@ -22,15 +22,18 @@ Download it from [Hangar](https://hangar.papermc.io/mhardin18/CopperGolemClerk),
 - **Groups:** a golem carrying birch logs uses the chest of oak logs. A stew goes with the
   food, a pickaxe with the tools. About 50 groups ship ready to use. You can edit them or
   add your own, or give a group other names with `group-aliases`.
-- **Sign and item frame labels:** `[logs]`, `[oak log]`, `[*_ORE]`, `[#planks]`, `[Mending]` for
-  enchanted books, or an item in a frame. The most specific chest wins: `[stews]` beats `[food]` for a stew.
+- **Sign and item frame labels:** `[logs]`, `[oak log]`, `[*_ORE]`, `[#planks]`, or an item in
+  a frame. The most specific chest wins: `[stews]` beats `[food]` for a stew.
+- **A chest per enchantment:** `[Mending]`, `[Efficiency]`, `[Books: Silk, Aqua]` or a range
+  like `[Bk: A-E]` send enchanted books to their own chests.
 - **`[Overflow]` chests** catch anything without a home. Idle golems move items back out
   once you add a chest for them.
 - **`[No Golems]`** keeps golems out of a chest. **`[Only ...]`** on a copper chest makes
   golems take only some items out of it.
 - Golems walk straight to the right chest instead of dropping things in the first
   empty one. They put back what they can't place.
-- **Tidy chests:** partial stacks are merged and like items kept together.
+- **Tidy chests:** partial stacks are merged and like items kept together, and enchanted
+  books are put in order A to Z by enchantment.
 
 **Bigger, faster storage rooms**
 - **Taller stacks** (a setting): golems reach chests up to 6 rows high (vanilla: 2).
@@ -255,8 +258,8 @@ A rule too long for one line can carry on to the next
 | `[oak log]` | that one item                    |
 | `[*_ORE]`   | items matching the pattern       |
 | `[#planks]` | items in that tag                |
-| `[Mending]` | enchanted books whose first enchantment is Mending ([see below](#enchanted-books-by-enchantment)) |
-| `[Books: Mending, Silk]` | enchanted books for any of those enchantments; first words are enough |
+| `[Mending]` | enchanted books whose first enchantment is Mending ([details](#enchanted-books-by-enchantment)) |
+| `[Books: Mending, Silk]` | enchanted books with any of those as their first enchantment |
 | `[Overflow]`| anything with no other home      |
 | `[No Golems]`| nothing: golems leave it alone  |
 | `[Only Logs]`| on a copper chest: golems take only logs out |
@@ -280,22 +283,36 @@ How a label is read:
 
 #### Enchanted books by enchantment
 
-All enchanted books are one item to Minecraft, so `[books]` or a framed enchanted book takes
-every one. To give each enchantment its own chest, name the enchantment on the sign:
-`[Mending]`, `[Efficiency]`, `[Fire Protection]`. A golem takes each book to the chest for its
-enchantment. One sign can name several (`[Mending]` and `[Unbreaking]` on two lines), and a
-`[books]` chest nearby catches the books that have no chest of their own.
+All enchanted books are one item to Minecraft, so `[books]`, `[Enchanted Book]` or a framed
+enchanted book takes every one. To give each enchantment its own chest, name the enchantment
+on the sign: `[Mending]`, `[Efficiency]`, `[Fire Protection]`. A golem takes each book to the
+chest for its enchantment. One sign can name several (`[Mending]` and `[Unbreaking]` on two
+lines).
 
-- Use the English name, in any case. `books`, `book`, `bks` or `bk` may follow it:
-  `[Efficiency bks]` is the same as `[Efficiency]`.
-- To name several on one sign, start a list with `Books:` (or `Book:`, `Bks:`, `Bk:`) and
-  separate the names with commas: `[Books: Mending, Aqua, Silk, Bane]`. A list can carry on
-  over the sign's lines; end each line after a comma (`[Books: Mending, Aqua,` / `Silk, Bane]`).
-  In a list, the first word of a name is enough: `Aqua` is Aqua Affinity, `Silk` is Silk
-  Touch. `Fire` means both Fire Aspect and Fire Protection, and `Curse` both curses; write the
-  full name for just one. A name that matches nothing is skipped, and `/cgc check` says which.
-  First words work only in a list: on its own, `[Soul]` still means soul sand and soul soil.
-- A list can also take names by how they start, and ranges of them, in A to Z order:
+**One enchantment.**
+
+- Write the English name, in any case, with spaces, underscores or dashes. `books`, `book`,
+  `bks` or `bk` may follow it: `[Efficiency bks]` is the same as `[Efficiency]`.
+- Four names are too wide for one sign line, so they have short forms: `[Bane]` (Bane of
+  Arthropods), `[Binding]` and `[Vanishing]` (the curses) and `[Projectile]` (Projectile
+  Protection). The full names work too, carried on to the next line. `[Curse]` takes both
+  curses.
+- A group or item with the same name comes first. A single label is read as an enchantment
+  only when it names no group or item, so `[Soul]` is still soul sand and soul soil.
+
+**Lists.** Start with `Books:` (or `Book:`, `Bks:`, `Bk:`; any case, the colon is needed) and
+separate the entries with commas: `[Books: Mending, Aqua, Silk, Bane]`. A list is read before
+groups, items and patterns.
+
+- A list can carry on over the sign's lines. End each line after a comma
+  (`[Books: Mending, Aqua,` / `Silk, Bane]`); the lines are joined with a space. No `/` goes
+  on the sign.
+- An entry is a full name, a short form, or the first word of a name: `Aqua` is Aqua
+  Affinity, `Silk` is Silk Touch. `Fire` means both Fire Aspect and Fire Protection, and
+  `Curse` both curses; write the full name for just one. First words work only in a list: on
+  its own, `[Soul]` is still soul sand and `[Fire]` fire items.
+- An entry can also take names by how they start, or a range of them. They follow the A to Z
+  order of the names, with the curses under C:
 
   | In a list | Takes |
   |---|---|
@@ -305,29 +322,39 @@ enchantment. One sign can name several (`[Mending]` and `[Unbreaking]` on two li
   | `So*-U` | Soul Speed, Sweeping Edge, Swift Sneak, Thorns, Unbreaking |
   | `Ri*-Sw*` | Riptide through Swift Sneak |
 
-  A range takes the names from its first end through its last, both included, so a wall of
-  `[Bk: A-E]`, `[Bk: F-L]`, `[Bk: M-R]`, `[Bk: S-Z]` makes an alphabetical library. Curses are
-  under C (Curse of Binding). They mix with names: `[Bk: A*, B*, C-H*, Mending]`. A range
-  backwards (`U-So`) or one that matches nothing (`G-H`) is skipped like a typo. A `*` means
-  this only in a list: on its own, `[F*]` is an item pattern (furnace, fence...).
-- Four names are too wide for one sign line, so they have short forms: `[Bane]` (Bane of
-  Arthropods), `[Binding]` and `[Vanishing]` (the curses) and `[Projectile]` (Projectile
-  Protection). The full names work too, carried on to the next line. `[Curse]` takes both
-  curses.
-- A book with several enchantments goes by the first of them A to Z, the order golems keep
-  books in when they [tidy a chest](#golems-tidy-the-chests-they-use). A Protection and
-  Unbreaking book goes to a `[Protection]` chest, never an `[Unbreaking]` one.
-- An enchantment label beats `[books]`, `[Enchanted Book]` and a framed enchanted book, so the
-  book goes to its own chest first. Between enchantment labels, the one covering fewer
-  enchantments wins, the way `[stews]` beats `[food]`: a Protection book goes to
-  `[Bk: Protection]` before `[Bk: P*]` (5 enchantments), and `[Bk: P*]` before `[Bk: A-Z]`. So
-  `[Bk: A-Z]` or `[Enchanted Book]` makes a safe catch-all for books with no chest of their own.
-  Labels covering the same number: the nearest chest.
-- A group or item with the same name comes first, so a label is only read as an enchantment
-  when it names no group or item. `[Only ...]` filters on copper chests can't name
-  enchantments.
-- Labels only steer new deliveries. To sort books already in your chests, put them in a
-  copper chest a few stacks at a time and the golems carry each to its chest.
+  The ends of a range can be any length, the stars are optional, and both ends are included,
+  so a wall of `[Bk: A-E]`, `[Bk: F-L]`, `[Bk: M-R]`, `[Bk: S-Z]` makes an alphabetical
+  library. They mix with names: `[Bk: A*, B*, C-H*, Mending]`. A dash inside a real name is
+  still the name (`Silk-Touch`). A range backwards (`U-So`) or one that matches nothing
+  (`G-H`, `X*`) is skipped like a typo. A `*` or a range means this only in a list: on its
+  own, `[F*]` is an item pattern (furnace, fence...).
+- An entry that is not an enchantment is skipped and the rest still count.
+  `/cgc check` on the chest names the entries it skipped.
+
+**Which chest a book goes to.**
+
+- A book goes by its first enchantment A to Z, the order golems keep books in when they
+  [tidy a chest](#golems-tidy-the-chests-they-use). A Protection and Unbreaking book goes to
+  a chest covering Protection, never to `[Unbreaking]`. If none covers Protection, it falls to
+  `[books]`, `[Enchanted Book]` or a framed enchanted book, then to an `[Overflow]` or empty
+  chest as usual.
+- An enchantment label beats every item label: `[books]`, `[Enchanted Book]` and a framed
+  enchanted book (any enchanted book in a frame takes every enchanted book). Between
+  enchantment labels, the one covering fewer enchantments wins, the way `[stews]` beats
+  `[food]`: a Protection book goes to `[Bk: Protection]` before `[Bk: P*]` (5 enchantments),
+  and `[Bk: P*]` before `[Bk: A-Z]`. Labels covering the same number: the nearest chest. So
+  `[Bk: A-Z]` or `[Enchanted Book]` makes a safe catch-all that keeps books with no chest of
+  their own out of `[Overflow]`.
+- `[Only ...]` on a copper chest can't name an enchantment: `/cgc check` reports it as an
+  unknown label.
+- A book no chest takes is put back in its copper chest with a "no home" mark, as any other
+  item is. The mark is per first enchantment, so a homeless Smite book doesn't keep golems
+  from taking the other books in that chest.
+- `/cgc find mending` doesn't search by enchantment.
+
+Labels only steer new deliveries. To sort books already in your chests, put the signs up,
+then put the books in a copper chest a few stacks at a time. Golems carry each one to its
+chest, and tidying puts it in order.
 
 #### Labels too long for one line
 
@@ -407,13 +434,16 @@ a chest that isn't a copper chest it does nothing.
 When several chests would take an item, golems use the most specific one. Labels (frames and
 signs) come before contents. The order is:
 
-1. A framed item.
-2. The sign label covering the fewest items.
-3. A chest already holding that exact item.
-4. A group match by contents.
+1. For an enchanted book, a sign label naming its first enchantment, the one covering the
+   fewest enchantments first ([details](#enchanted-books-by-enchantment)).
+2. A framed item.
+3. The sign label covering the fewest items.
+4. A chest already holding that exact item.
+5. A group match by contents.
 
-So a stew goes to `[stews]` before `[food]`, and a `[logs]` chest wins over an unlabelled
-chest that happens to hold birch logs. Frame and sign labels on one chest combine.
+So a stew goes to `[stews]` before `[food]`, a `[logs]` chest wins over an unlabelled chest
+that happens to hold birch logs, and a Mending book goes to `[Mending]` before `[books]` or a
+framed enchanted book. Frame and sign labels on one chest combine.
 
 To see this at work, hold an item and run `/cgc check` on a chest, or run `/cgc label`. If the
 chest matches but golems would take the item to a more specific chest nearby, the command
@@ -463,6 +493,8 @@ After that, with `return-unsortable-items` (on by default), the item is put back
 copper chest it came from. Golems can't walk to copper chests while carrying, so the plugin
 moves it directly. The item is marked "no home" there for `homeless-retry-minutes` (default 5).
 Golems take other items first and skip a copper chest that has only "no home" items left.
+For an enchanted book the mark is for its first enchantment, so one homeless book doesn't
+park the other books.
 
 To give the item a home, add a sign or item frame label. Golems within `search-distance` of
 it try again right away. `/cgc reload` clears every mark.
@@ -938,8 +970,10 @@ something in, and again as the item drops in. The new item then sits with its ki
   `groups.yml`, then by item. Stacks fill the chest from the first slot.
 - Enchanted books are put in order of their enchantment, A to Z by its English name, then by
   level, lowest first: Aqua Affinity, Bane of Arthropods, Curse of Binding, Mending,
-  Protection I, Protection IV, Unbreaking III. A book with several enchantments goes by the
-  first of them A to Z. Other enchanted items, such as tools, keep their order.
+  Protection I, Protection IV, Unbreaking III. The curses sort under C, and Sweeping Edge
+  under S. A book with several enchantments goes by the first of them A to Z, then its
+  level, then the next enchantment; a book whose enchantments are the start of another's
+  comes first. Other enchanted items, such as tools, keep their order.
 
 Copper chests are left alone. So is a chest a player has open, which is tidied after they
 close it.
@@ -1176,6 +1210,8 @@ for you for `find-highlight-seconds` (10). Players can search once every 2 secon
 - A word that names one item finds just that item. `torch` is the torch, not copper or soul
   torches. Under the results, an "Also nearby" line lists other items near you with the word
   in their name, and suggests `*torch*` to find them all.
+- Enchantments aren't searched: `/cgc find mending` looks for an item named mending, not for
+  books with the enchantment.
 - A number that ends an item's name is part of it (`music disc 13`, `disc fragment 5`).
   `/cgc find music disc 13` is the disc, and `/cgc find music disc 13 50` is that disc within
   50 blocks.
@@ -1224,11 +1260,11 @@ line number, and the old settings are kept.
 | `match-mode` | `all` | When a chest counts as a group match by its contents. `all`: every item in the chest must share a group with the carried item, so one stray item stops group matching and chests stay tidy. `any`: one item from the group is enough. |
 | `prefer-matching-chests` | `true` | A golem first looks over every chest in range (`search-distance` blocks sideways, 8 up or down) and walks straight to the best one that has room. Without it, it tries the nearest chests one by one and drops its item in the first empty one. |
 | `return-unsortable-items` | `true` | After the last step, put the item back into the copper chest it came from (or the nearest one with room), instead of carrying it around for ever. |
-| `homeless-retry-minutes` | `5` | Items put back are marked "no home" in that copper chest for this long. Golems take other items first and skip a chest with only those left. A new or changed sign or item frame label nearby clears the marks within `search-distance`. `/cgc reload` clears them all. |
+| `homeless-retry-minutes` | `5` | Items put back are marked "no home" in that copper chest for this long. Golems take other items first and skip a chest with only those left (a book is marked by its first enchantment). A new or changed sign or item frame label nearby clears the marks within `search-distance`. `/cgc reload` clears them all. |
 | `allow-empty-chests` | `true` | Golems may use an empty chest as a last resort. `false`: only labelled chests, chests already holding the item or its group, and `[Overflow]` chests. |
 | `overflow-before-empty` | `true` | When no matching chest has room, try `[Overflow]` chests before empty ones. `false` fills empty chests first. |
 | `item-frame-labels` | `true` | An item in a frame on a chest means "only this item goes here". |
-| `sign-labels` | `true` | Sign labels (`[logs]`, `[Overflow]`, `[No Golems]`, `[Only ...]`). |
+| `sign-labels` | `true` | Sign labels (`[logs]`, `[Overflow]`, `[No Golems]`, `[Only ...]`, and enchantment labels such as `[Mending]` and `[Books: Silk, Aqua]`). |
 | `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use, with enchanted books A to Z by enchantment, then by level. Copper chests and chests a player has open are left alone. |
 | `destination-containers` | `[chest, trapped_chest]` | What golems put items into. Add `barrel` and/or `shulker_box` (every colour). Leave `chest` out to keep golems away from plain chests. Golems always take from copper chests. |
 | `groups` | 57 groups | In `groups.yml`, not `config.yml` (since 3.3.0). The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
