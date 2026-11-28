@@ -39,6 +39,35 @@ class EnchantmentLabelsPaperTest extends PaperTest {
         assertTrue(r.enchantment().test(e), text);
     }
 
+    // ---- the README's chart
+
+    @Test
+    void theReadmesChartListsEveryEnchantmentUnderItsFirstLetter() throws java.io.IOException {
+        String readme = java.nio.file.Files.readString(java.nio.file.Path.of("README.md"));
+        String chart = readme.substring(readme.indexOf("<summary>Every enchantment by first letter"));
+        chart = chart.substring(0, chart.indexOf("</details>"));
+        java.util.Set<String> listed = new java.util.TreeSet<>();
+        java.util.regex.Matcher row = java.util.regex.Pattern.compile("(?m)^\\| ([A-Z]) \\| (\\d+) \\| (.+) \\|$").matcher(chart);
+        String previous = "";
+        while (row.find()) {
+            String letter = row.group(1);
+            String[] names = row.group(3).split(", ");
+            assertTrue(letter.compareTo(previous) > 0, "letters in order: " + letter);
+            assertEquals(Integer.parseInt(row.group(2)), names.length, "count for " + letter);
+            for (String name : names) {
+                assertEquals(letter, name.substring(0, 1), name);
+                listed.add(name.toLowerCase(java.util.Locale.ROOT));
+            }
+            previous = letter;
+        }
+        java.util.Set<String> registry = new java.util.TreeSet<>();
+        for (Enchantment e : RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT)) {
+            registry.add(ChestTidier.sortName(e));
+        }
+        assertEquals(registry, listed, "README chart vs the server's enchantments");
+        assertTrue(chart.contains("(" + registry.size() + " in Minecraft"), "the count in the summary");
+    }
+
     // ---- reading labels
 
     @Test

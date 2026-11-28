@@ -331,6 +331,37 @@ groups, items and patterns.
 - An entry that is not an enchantment is skipped and the rest still count.
   `/cgc check` on the chest names the entries it skipped.
 
+<details>
+<summary>Every enchantment by first letter (43 in Minecraft 26.3)</summary>
+
+The A to Z order golems use for book labels and when they tidy a chest. The curses are under C
+and Sweeping Edge under S.
+
+| Letter | # | Enchantments |
+|---|---|---|
+| A | 1 | Aqua Affinity |
+| B | 3 | Bane of Arthropods, Blast Protection, Breach |
+| C | 3 | Channeling, Curse of Binding, Curse of Vanishing |
+| D | 2 | Density, Depth Strider |
+| E | 1 | Efficiency |
+| F | 6 | Feather Falling, Fire Aspect, Fire Protection, Flame, Fortune, Frost Walker |
+| I | 2 | Impaling, Infinity |
+| K | 1 | Knockback |
+| L | 5 | Looting, Loyalty, Luck of the Sea, Lunge, Lure |
+| M | 2 | Mending, Multishot |
+| P | 5 | Piercing, Power, Projectile Protection, Protection, Punch |
+| Q | 1 | Quick Charge |
+| R | 2 | Respiration, Riptide |
+| S | 6 | Sharpness, Silk Touch, Smite, Soul Speed, Sweeping Edge, Swift Sneak |
+| T | 1 | Thorns |
+| U | 1 | Unbreaking |
+| W | 1 | Wind Burst |
+
+No enchantment starts with G, H, J, N, O, V, X, Y or Z. Two first words are shared: Fire
+(Fire Aspect, Fire Protection) and Curse (both curses); in a list each means both.
+
+</details>
+
 **Which chest a book goes to.**
 
 - A book goes by its first enchantment A to Z, the order golems keep books in when they
