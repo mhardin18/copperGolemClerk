@@ -33,11 +33,14 @@ final class PluginPaths {
         }
     }
 
+    /** Walk somewhere. A golem sitting on a cushion stands up first (it can't walk seated). */
     static boolean moveTo(Mob mob, Location to) {
+        Seats.standUp(mob);
         return mine(() -> mob.getPathfinder().moveTo(to, 1.0));
     }
 
     static boolean moveTo(Mob mob, Pathfinder.PathResult path) {
+        Seats.standUp(mob);
         return mine(() -> mob.getPathfinder().moveTo(path, 1.0));
     }
 

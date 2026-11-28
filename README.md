@@ -623,6 +623,7 @@ collects the output.
 2. Sort copper chests.
 3. Re-sort `[Overflow]` chests.
 4. Say hello to iron and snow golems.
+5. Sit on a cushion.
 
 A big bank of furnaces can't keep copper chests waiting for ever. After 3 furnace jobs in a
 row, a golem sorts once if a copper chest has items (`furnace-jobs-before-sorting`). Then it
@@ -841,7 +842,7 @@ vanilla behavior. Right-click again to switch it back. The mode is saved on the 
 
 A vanilla golem gets none of the plugin's features: no smart sorting or labels, no overflow,
 returns, fetching, furnace work, trapdoor, portal and cauldron avoidance, taller reach,
-giving way, greetings, lost-golem rescue or tidying.
+giving way, greetings, sitting on cushions, lost-golem rescue or tidying.
 
 While you hold bamboo, golems using this plugin show a small green light on their antenna.
 Vanilla golems don't. Nobody else sees the lights.
@@ -849,7 +850,7 @@ Vanilla golems don't. Nobody else sees the lights.
 Every copper golem within 48 blocks also shows a small label saying what it's doing, for
 example:
 `carrying 12 birch log`, `fetching granite`, `no chest for 3 kelp`, `taking 5 kelp back`,
-`giving way`, `saying hello`, `lost, walking home`, `vanilla mode`,
+`giving way`, `saying hello`, `sitting on a cushion`, `lost, walking home`, `vanilla mode`,
 `over the golem limit: vanilla` or `idle`. Once its copper starts to weather, a second line
 says how far along it is (`oxidized: may turn into a statue` in red). Nobody else sees the
 labels. Turn them off with `status-labels: false`.
@@ -895,6 +896,28 @@ A visit that ends without a hello goes back to the copper chest or furnace for u
 seconds, and stops if work turns up. With `debug: true`, each such visit is logged with the
 reason ("stopped going to say hello: ..."). Turn greetings off with
 `greet-other-golems: false`.
+
+### Golems sit on cushions
+
+A copper golem that has had nothing to do for 20 seconds walks to a free cushion and sits on
+it. Nothing to do means the same as for greetings, and greetings come first: a golem on its
+way to a cushion goes to say hello instead, and a seated golem gets up to say hello.
+
+It picks the nearest cushion within 8 blocks sideways and 2 up or down that nobody is sitting
+on and no other golem is heading for. The cushion must be within 16 blocks of its work (its
+home, or its nearest copper chest or furnace), and the golem must be able to walk onto it and
+back: it won't drop down a ledge to get there. It gives up after 15 seconds, or 6 seconds
+without getting closer, and doesn't look again for a minute.
+
+A seated golem gets up as soon as there's work: items in a copper chest it would take, a
+furnace job or a fetch. Vanilla's AI does nothing while a golem sits, so the plugin gets it
+up. Golems have no sitting pose, so a seated golem stands on the cushion, a little higher.
+
+Golems the plugin sat down get up when the plugin stops, when `sit-on-cushions` is turned off,
+and when the golem is switched to vanilla. A golem a player put on a cushion (with `/ride`) is
+left there then, but still gets up for work while the plugin manages it. `/cgc golems` and
+the status labels show `sitting on a cushion`. With `debug: true`, sitting down, getting up
+and giving up are logged with the reason. Turn it off with `sit-on-cushions: false`.
 
 ### Lost golems find their way home
 
@@ -1305,6 +1328,7 @@ line number, and the old settings are kept.
 | `lost-golem-teleport-home` | `false` | Off by default. When on, a stuck golem is teleported back to its home, but only if the owner of the claim that chest is in has `coppergolemclerk.teleport` (nobody does unless you grant it; checked through LuckPerms when the owner is offline). Golems whose chest isn't in a claim are never teleported. |
 | `greet-other-golems` | `true` | An idle copper golem says hello to an iron or snow golem within 16 blocks of its home and 2 blocks up or down, if it can walk up to it (see [Golems say hello](#golems-say-hello)). |
 | `greet-cooldown-minutes` | `5` | How long before a golem greets again. |
+| `sit-on-cushions` | `true` | A golem with nothing to do for 20 seconds sits on a free cushion within 8 blocks, and gets up for work or to say hello (see [Golems sit on cushions](#golems-sit-on-cushions)). |
 | `max-golems-per-claim` | `0` | How many copper golems in one GriefPrevention claim use this plugin (0: no limit, unless `claim-blocks-per-extra-golem` is set). Golems on unclaimed land aren't limited. Each claim (admin claims too) has its own limit. The oldest keep it, the newest over the limit sort like vanilla, and the claim owner is told. Vanilla golems cost the same tick time (see [Golem limits](#golem-limits)). |
 | `claim-blocks-per-extra-golem` | `0` | Each claim gets one more golem than `max-golems-per-claim` for every this many claim blocks of its area (0: off). |
 | `log-golem-deaths` | `true` | Log every copper golem death (cause, place, what it held) and every other removal (statue, `/kill`). |
@@ -1334,7 +1358,7 @@ line number, and the old settings are kept.
 |---|---|---|
 | `disabled-worlds` | `[]` | Worlds (by folder name) where the plugin does nothing and golems behave as in vanilla, e.g. `[world_nether, world_the_end]`. |
 | `update-check` | `true` | Check GitHub weekly for a newer release; log it and tell admins on join. Nothing is downloaded. |
-| `debug` | `false` | Write every decision the plugin makes to the console, with the reason: chest choices and accept/refuse, furnace jobs, `[Overflow]` fetches, returns, giving way, greetings, carry top-ups, reach, portals, mode toggles, tidying, update checks. Changes nothing golems do. Players never see it. It writes several lines per golem per delivery, so turn it off after setting up or investigating. |
+| `debug` | `false` | Write every decision the plugin makes to the console, with the reason: chest choices and accept/refuse, furnace jobs, `[Overflow]` fetches, returns, giving way, greetings, cushions, carry top-ups, reach, portals, mode toggles, tidying, update checks. Changes nothing golems do. Players never see it. It writes several lines per golem per delivery, so turn it off after setting up or investigating. |
 | `trace-golems` | `false` | Once a second, log each golem's state, position, held item and whether it's walking, when any of those changed (up to a line a second per walking golem). Even chattier than `debug`. Use it to follow exactly what golems do. |
 
 ## Permissions

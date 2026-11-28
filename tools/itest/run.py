@@ -40,6 +40,7 @@ import suite_filters  # noqa: E402,F401
 import suite_finder  # noqa: E402,F401
 import suite_gestures  # noqa: E402,F401
 import suite_cauldrons  # noqa: E402,F401
+import suite_cushions  # noqa: E402,F401
 import suite_greet  # noqa: E402,F401
 import suite_labels  # noqa: E402,F401
 import suite_lids  # noqa: E402,F401

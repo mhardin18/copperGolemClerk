@@ -449,7 +449,7 @@ final class HomeFinder {
      * 32 sideways, 8 up/down of its block, 1 if riding; loaded chunks only), nearest first.
      */
     static List<BlockState> containersInRange(Entity golem, Predicate<Material> types) {
-        return containersInRange(golem.getLocation(), golem.isInsideVehicle(), types);
+        return containersInRange(golem.getLocation(), Seats.riding(golem), types);
     }
 
     /** Same, around any spot (for /cgc overflow). */

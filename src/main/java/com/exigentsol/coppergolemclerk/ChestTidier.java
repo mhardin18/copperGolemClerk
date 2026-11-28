@@ -196,7 +196,7 @@ final class ChestTidier {
      * The enchantment's English name in lower case, from its key: bane_of_arthropods gives
      * "bane of arthropods". Vanilla's curses are keyed backwards (binding_curse is Curse of
      * Binding), so they sort under C like their names, and sweeping is Sweeping Edge. With
-     * those, all 44 of 26.3's enchantments match their English names. Not the player's
+     * those, all 43 of 26.3's enchantments match their English names. Not the player's
      * language: the server doesn't know it, and one chest has one order for everybody.
      */
     static String sortName(Enchantment enchantment) {
