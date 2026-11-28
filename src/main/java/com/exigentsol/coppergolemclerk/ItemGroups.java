@@ -268,6 +268,9 @@ public final class ItemGroups {
     }
 
     private Optional<Rule> parseSignRule(String key) {
+        if (EnchantmentLabels.isList(key)) { // [Books: Mending, Aqua]: enchantments, never a group or item
+            return Optional.ofNullable(EnchantmentLabels.rule(key));
+        }
         boolean plainName = !key.startsWith("#") && !key.startsWith("@") && !key.contains("*");
         if (plainName) {
             // A group wins: exact name first, then allowing singular/plural ("rail" = "rails").

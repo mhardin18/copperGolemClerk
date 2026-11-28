@@ -102,6 +102,9 @@ item-frame-labels: true
 #                    enchantment's English name; "books", "bk" or "bks" may follow
 #                    ([Efficiency bks]). Short forms: [Bane], [Binding], [Vanishing],
 #                    [Projectile]. [Curse] takes both curses. Groups and items come first.
+#   [Books: Mending, Silk, Aqua]  several enchantments; Book:, Bks: or Bk: work too.
+#                    The first word of a name is enough here (Fire = both Fire
+#                    enchantments), and the list can carry on over the sign's lines.
 # A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
 #

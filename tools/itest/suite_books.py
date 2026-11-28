@@ -41,3 +41,21 @@ def _(c):
         return [(book_slots(c, "mending") == ["mending 1"], f"[Mending]: {book_slots(c, 'mending')}"),
                 (book_slots(c, "copper") == ["smite 5"], f"copper chest: {book_slots(c, 'copper')}")]
     return check
+
+
+@scenario("book-list", "books", 150, "A [Books: Silk, / Aqua, Fire] list over two sign lines takes Silk Touch, Aqua Affinity and Fire Protection books; a Power book goes to [books].")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    for slot, book in enumerate([dict(silk_touch=1), dict(power=5), dict(aqua_affinity=1), dict(fire_protection=4)]):
+        put_book(c, 2, 10, slot, **book)
+    c.chest("list", 10, 10)
+    c.sign(10, 10, ["[Books: Silk,", "Aqua, Fire]"])
+    c.chest("books", 14, 10)
+    c.sign(14, 10, "[books]")
+    c.golem(4, 10)
+
+    def check():
+        listed, books = book_slots(c, "list"), book_slots(c, "books")
+        return [(sorted(listed) == ["aqua_affinity 1", "fire_protection 4", "silk_touch 1"], f"[Books: ...]: {listed}"),
+                (books == ["power 5"], f"[books]: {books}")]
+    return check

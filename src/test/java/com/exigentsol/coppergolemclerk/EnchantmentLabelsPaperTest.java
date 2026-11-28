@@ -88,6 +88,70 @@ class EnchantmentLabelsPaperTest extends PaperTest {
         assertTrue(labels.unknown().contains("[Only Mending]"), labels.unknown().toString());
     }
 
+    // ---- lists: [Books: Mending, Aqua, Silk, Bane]
+
+    @Test
+    void aListTakesFullNamesShortFormsAndFirstWords() {
+        for (String prefix : new String[] {"Books:", "book:", "BKS:", "bk :", "Bks:"}) {
+            ItemGroups.Rule r = rule(prefix + " Mending, Aqua, Silk, Bane, Fire Protection, Vanishing");
+            assertNotNull(r, prefix);
+            for (Enchantment e : new Enchantment[] {Enchantment.MENDING, Enchantment.AQUA_AFFINITY, Enchantment.SILK_TOUCH,
+                    Enchantment.BANE_OF_ARTHROPODS, Enchantment.FIRE_PROTECTION, Enchantment.VANISHING_CURSE}) {
+                assertTrue(r.enchantment().test(e), prefix + " " + e);
+            }
+            assertFalse(r.enchantment().test(Enchantment.FIRE_ASPECT), "Fire Protection is only that one");
+            assertFalse(r.enchantment().test(Enchantment.PROTECTION), prefix);
+        }
+    }
+
+    @Test
+    void sharedFirstWordsMeanBoth() {
+        ItemGroups.Rule fire = rule("Books: Fire");
+        assertTrue(fire.enchantment().test(Enchantment.FIRE_ASPECT));
+        assertTrue(fire.enchantment().test(Enchantment.FIRE_PROTECTION));
+        ItemGroups.Rule curse = rule("bks: Curse");
+        assertTrue(curse.enchantment().test(Enchantment.BINDING_CURSE));
+        assertTrue(curse.enchantment().test(Enchantment.VANISHING_CURSE));
+        ItemGroups.Rule protection = rule("bks: Protection");
+        assertTrue(protection.enchantment().test(Enchantment.PROTECTION));
+        assertFalse(protection.enchantment().test(Enchantment.PROJECTILE_PROTECTION), "a full name is only that one");
+        assertTrue(rule("bk: Sweeping").enchantment().test(Enchantment.SWEEPING_EDGE));
+    }
+
+    @Test
+    void unknownEntriesAreSkippedAndNamed() {
+        ItemGroups.Rule r = rule("Books: Mending, Mendng, , Power,");
+        assertTrue(r.enchantment().test(Enchantment.MENDING));
+        assertTrue(r.enchantment().test(Enchantment.POWER));
+        assertEquals("enchanted books whose first enchantment (A to Z) is one of Mending, Power"
+                + " (not an enchantment, skipped: mendng)", r.meaning());
+        assertNull(rule("Books: Nonsense"));
+        assertNull(rule("Books:"));
+        assertFalse(rule("books").byEnchantment(), "no colon: still the books group");
+    }
+
+    @Test
+    void firstWordsOnlyWorkInAList() {
+        assertNull(rule("Aqua"), "on its own Aqua names nothing");
+        ItemGroups.Rule soul = rule("Soul");
+        assertTrue(soul == null || !soul.byEnchantment(), "[Soul] keeps meaning soul items");
+        assertNotNull(rule("Books: Soul"));
+    }
+
+    @Test
+    void aListCarriesOnOverTheSignsLines() {
+        ChestMatcher m = new ChestMatcher(plugin);
+        Block chest = chest(0, 0);
+        sign(chest, "[Books: Mending,", "Aqua, Silk,", "Bane]");
+        ChestLabels.Labels labels = m.labelsOf(inv(chest));
+        assertTrue(labels.unknown().isEmpty(), labels.unknown().toString());
+        for (ItemStack book : new ItemStack[] {book(Enchantment.MENDING, 1), book(Enchantment.AQUA_AFFINITY, 1),
+                book(Enchantment.SILK_TOUCH, 1), book(Enchantment.BANE_OF_ARTHROPODS, 5)}) {
+            assertEquals(ChestMatcher.Kind.LABEL_MATCH, m.classify(book, inv(chest)).kind());
+        }
+        assertEquals(ChestMatcher.Kind.LABEL_OTHER, m.classify(book(Enchantment.POWER, 1), inv(chest)).kind());
+    }
+
     // ---- which chest a book goes to
 
     @Test

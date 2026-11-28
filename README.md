@@ -256,6 +256,7 @@ A rule too long for one line can carry on to the next
 | `[*_ORE]`   | items matching the pattern       |
 | `[#planks]` | items in that tag                |
 | `[Mending]` | enchanted books whose first enchantment is Mending ([see below](#enchanted-books-by-enchantment)) |
+| `[Books: Mending, Silk]` | enchanted books for any of those enchantments; first words are enough |
 | `[Overflow]`| anything with no other home      |
 | `[No Golems]`| nothing: golems leave it alone  |
 | `[Only Logs]`| on a copper chest: golems take only logs out |
@@ -287,6 +288,13 @@ enchantment. One sign can name several (`[Mending]` and `[Unbreaking]` on two li
 
 - Use the English name, in any case. `books`, `book`, `bks` or `bk` may follow it:
   `[Efficiency bks]` is the same as `[Efficiency]`.
+- To name several on one sign, start a list with `Books:` (or `Book:`, `Bks:`, `Bk:`) and
+  separate the names with commas: `[Books: Mending, Aqua, Silk, Bane]`. A list can carry on
+  over the sign's lines; end each line after a comma (`[Books: Mending, Aqua,` / `Silk, Bane]`).
+  In a list, the first word of a name is enough: `Aqua` is Aqua Affinity, `Silk` is Silk
+  Touch. `Fire` means both Fire Aspect and Fire Protection, and `Curse` both curses; write the
+  full name for just one. A name that matches nothing is skipped, and `/cgc check` says which.
+  First words work only in a list: on its own, `[Soul]` still means soul sand and soul soil.
 - Four names are too wide for one sign line, so they have short forms: `[Bane]` (Bane of
   Arthropods), `[Binding]` and `[Vanishing]` (the curses) and `[Projectile]` (Projectile
   Protection). The full names work too, carried on to the next line. `[Curse]` takes both

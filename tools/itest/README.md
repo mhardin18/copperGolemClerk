@@ -185,7 +185,7 @@ error or exception in the server log during a scenario fails it.
 | conflicts | other plugins deciding where golems may put things (needs GolemTestHooks) |
 | commands | `/cgc check` on chests (including when a more specific chest wins), `/cgc overflow`, `disabled-worlds` |
 | config | broken configs: unknown entries, bad values, YAML errors, minimal config, console commands, the `/cgc settings` and `/cgc groups` reports |
-| books | sign labels naming an enchantment (`[Mending]`, `[Efficiency bks]`) send enchanted books to their own chests; a homeless book doesn't block the others |
+| books | sign labels naming an enchantment (`[Mending]`, `[Efficiency bks]`, `[Books: Silk, Aqua]` over two lines) send enchanted books to their own chests; a homeless book doesn't block the others |
 | tidy | golems tidy chests they deliver to (while the lid is open): stacks merged, like items together, enchanted books A to Z then by level, option off |
 | options | each config switch changes what golems do |
 | lifecycle | reloads mid-task, reload spam; manual server restart |
