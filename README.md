@@ -317,8 +317,12 @@ enchantment. One sign can name several (`[Mending]` and `[Unbreaking]` on two li
 - A book with several enchantments goes by the first of them A to Z, the order golems keep
   books in when they [tidy a chest](#golems-tidy-the-chests-they-use). A Protection and
   Unbreaking book goes to a `[Protection]` chest, never an `[Unbreaking]` one.
-- An enchantment label beats `[books]` and a framed enchanted book, so the book goes to its
-  own chest first.
+- An enchantment label beats `[books]`, `[Enchanted Book]` and a framed enchanted book, so the
+  book goes to its own chest first. Between enchantment labels, the one covering fewer
+  enchantments wins, the way `[stews]` beats `[food]`: a Protection book goes to
+  `[Bk: Protection]` before `[Bk: P*]` (5 enchantments), and `[Bk: P*]` before `[Bk: A-Z]`. So
+  `[Bk: A-Z]` or `[Enchanted Book]` makes a safe catch-all for books with no chest of their own.
+  Labels covering the same number: the nearest chest.
 - A group or item with the same name comes first, so a label is only read as an enchantment
   when it names no group or item. `[Only ...]` filters on copper chests can't name
   enchantments.

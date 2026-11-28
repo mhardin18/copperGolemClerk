@@ -106,6 +106,8 @@ item-frame-labels: true
 #                    The first word of a name is enough here (Fire = both Fire
 #                    enchantments), and the list can carry on over the sign's lines.
 #                    Starts and ranges A to Z work too: [Bk: A*, Fi*, C-H, So*-U].
+#                    The label covering fewer enchantments wins: [Bk: Protection]
+#                    before [Bk: P*] before [Bk: A-Z].
 # A label with *, # or @ is never read as a group name.
 # Golems then put only matching items in that chest, like item frame labels.
 #

@@ -80,3 +80,24 @@ def _(c):
                 (sorted(fu) == ["fortune 3", "thorns 3"], f"[Bk: F*, So*-U]: {fu}"),
                 (books == ["mending 1"], f"[books]: {books}")]
     return check
+
+
+@scenario("book-narrowest-wins", "books", 150, "[Bk: Protection] far away beats [BK: P*] nearby for a Protection book; the Power book goes to [BK: P*], Mending to the [Bk: A-Z] catch-all.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    for slot, book in enumerate([dict(protection=4), dict(power=5), dict(mending=1)]):
+        put_book(c, 2, 10, slot, **book)
+    c.chest("p", 7, 10)
+    c.sign(7, 10, "[BK: P*]")
+    c.chest("all", 9, 12)
+    c.sign(9, 12, "[Bk: A-Z]")
+    c.chest("protection", 15, 10)
+    c.sign(15, 10, "[Bk: Protection]")
+    c.golem(4, 10)
+
+    def check():
+        prot, p, rest = book_slots(c, "protection"), book_slots(c, "p"), book_slots(c, "all")
+        return [(prot == ["protection 4"], f"[Bk: Protection]: {prot}"),
+                (p == ["power 5"], f"[BK: P*]: {p}"),
+                (rest == ["mending 1"], f"[Bk: A-Z]: {rest}")]
+    return check

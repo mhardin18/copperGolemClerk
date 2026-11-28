@@ -227,7 +227,7 @@ class EnchantmentLabelsPaperTest extends PaperTest {
 
         ChestMatcher.Match toMending = m.classify(book(Enchantment.MENDING, 1), inv(mending));
         assertEquals(ChestMatcher.Kind.LABEL_MATCH, toMending.kind());
-        assertEquals(EnchantmentLabels.SPECIFICITY, toMending.specificity());
+        assertEquals(EnchantmentLabels.BASE + 1, toMending.specificity());
         ChestMatcher.Match toBooks = m.classify(book(Enchantment.MENDING, 1), inv(books));
         assertEquals(ChestMatcher.Kind.LABEL_MATCH, toBooks.kind());
         assertTrue(toMending.specificity() < toBooks.specificity(), "the enchantment label wins over [books]");
@@ -245,6 +245,34 @@ class EnchantmentLabelsPaperTest extends PaperTest {
         ItemStack sword = item(Material.DIAMOND_SWORD, 1);
         sword.addUnsafeEnchantment(Enchantment.MENDING, 1);
         assertEquals(ChestMatcher.Kind.LABEL_OTHER, m.classify(sword, inv(mending)).kind(), "only books");
+    }
+
+    @Test
+    void theNarrowerEnchantmentLabelWins() {
+        ChestMatcher m = new ChestMatcher(plugin);
+        Block protection = chest(0, 0);
+        sign(protection, "[Bk: Protection]");
+        Block p = chest(2, 0);
+        sign(p, "[BK: P*]");
+        Block all = chest(4, 0);
+        sign(all, "[Bk: A-Z]");
+        Block any = chest(6, 0);
+        sign(any, "[Enchanted Book]");
+        Block group = chest(8, 0);
+        sign(group, "[books]");
+        ItemStack book = book(Enchantment.PROTECTION, 4);
+        int[] ranks = {m.classify(book, inv(protection)).specificity(), m.classify(book, inv(p)).specificity(),
+                m.classify(book, inv(all)).specificity(), m.classify(book, inv(any)).specificity(),
+                m.classify(book, inv(group)).specificity()};
+        for (int i = 1; i < ranks.length; i++) {
+            assertTrue(ranks[i - 1] < ranks[i], java.util.Arrays.toString(ranks));
+        }
+        assertEquals(EnchantmentLabels.BASE + 1, ranks[0]);
+        assertEquals(EnchantmentLabels.BASE + 5, ranks[1], "P*: Piercing, Power, Projectile Protection, Protection, Punch");
+        ItemStack power = book(Enchantment.POWER, 5);
+        assertEquals(ChestMatcher.Kind.LABEL_OTHER, m.classify(power, inv(protection)).kind());
+        assertEquals(ChestMatcher.Kind.LABEL_MATCH, m.classify(power, inv(p)).kind(), "the other P books go to P*");
+        assertEquals(EnchantmentLabels.BASE + 2, plugin.groups().signRule("Curse").size());
     }
 
     @Test

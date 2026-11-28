@@ -45,13 +45,18 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
  * A book goes by its first enchantment A to Z (the order ChestTidier puts books in), so a
  * Protection + Unbreaking book goes to a [Protection] chest, never an [Unbreaking] one. An
  * enchantment label is narrower than any item label, so it beats [books] or a framed
- * enchanted book. Names are matched in any case, with spaces, underscores or dashes. Only for
+ * enchanted book, and one covering fewer enchantments beats one covering more (see BASE). Names are matched in any case, with spaces, underscores or dashes. Only for
  * chest labels: an [Only ...] filter on a copper chest can't name one.
  */
 final class EnchantmentLabels {
 
-    /** Narrower than any item label (a framed item is 1). */
-    static final int SPECIFICITY = 0;
+    /**
+     * Enchantment labels rank BASE plus how many enchantments they cover: [Protection] (1)
+     * beats [Bk: P*] (5), which beats [Bk: A-Z], the way [stews] beats [food]. All of them
+     * rank below (narrower than) any item label, a framed item being 1, so they beat [books],
+     * [Enchanted Book] and a framed enchanted book. Equal ranks: the nearest chest.
+     */
+    static final int BASE = -1000;
 
     private EnchantmentLabels() {
     }
@@ -166,7 +171,13 @@ final class EnchantmentLabels {
     }
 
     private static ItemGroups.Rule rule(Predicate<Enchantment> test, String what) {
-        return new ItemGroups.Rule(m -> false, SPECIFICITY,
+        int covers = 0;
+        for (Enchantment e : enchantments()) {
+            if (test.test(e)) {
+                covers++;
+            }
+        }
+        return new ItemGroups.Rule(m -> false, BASE + Math.max(1, covers),
                 "enchanted books whose first enchantment (A to Z) is " + what, test);
     }
 

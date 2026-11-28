@@ -183,7 +183,7 @@ final class LabelAdvisor {
             }
             // Books this chest's enchantment label covers: nothing is more specific.
             takenElsewhere(sender, inventory, contents, m -> m == Material.ENCHANTED_BOOK && labels.hasEnchantmentRules()
-                    && notCovered.get(m) == null ? EnchantmentLabels.SPECIFICITY : labels.specificity(m));
+                    && notCovered.get(m) == null ? Integer.MIN_VALUE : labels.specificity(m));
             return;
         }
         if (contents.isEmpty()) {
