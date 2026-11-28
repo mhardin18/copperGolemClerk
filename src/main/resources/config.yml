@@ -506,7 +506,8 @@ log-golem-deaths: true
 
 # Golems tidy a chest while putting something in it. Partial stacks of the same item
 # are merged, and like items are moved next to each other (by group, in the order the
-# groups are listed in groups.yml). Copper chests and chests a player has open are left alone.
+# groups are listed in groups.yml). Enchanted books go A to Z by enchantment, then by
+# level, lowest first. Copper chests and chests a player has open are left alone.
 tidy-chests: true
 
 # Worlds where the plugin does nothing (golems there behave as in vanilla), by folder

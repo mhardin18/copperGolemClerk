@@ -191,3 +191,41 @@ def _(c):
         return [(t.at is not None, "chest broken right after the delivery"),
                 (t.since() > 10, f"waited {t.since():.0f}s of 10s past the tidy delay")]
     return check
+
+
+def book_slots(c, name):
+    """The stored enchantments of each enchanted book in a chest, in slot order, as 'id level' joined by ' + '."""
+    x, y, z = c.chests[name][0]
+    out = []
+    for i in range(54):
+        base = f"data get block {x} {y} {z} Items[{i}]"
+        if not re.search(r"data: (\d+)", c.r.cmd(base + ".Slot")):
+            break
+        stored = c.r.cmd(base + '.components."minecraft:stored_enchantments"')
+        pairs = re.findall(r'"?minecraft:([a-z_]+)"?: (\d+)', stored)
+        out.append(" + ".join(sorted(f"{k} {v}" for k, v in pairs)) or "none")
+    return out
+
+
+def put_book(c, dx, dz, slot, **enchants):
+    x, y, z = c.abs(dx, dz)
+    stored = ",".join(f'"minecraft:{k}":{v}' for k, v in enchants.items())
+    c.run(f"item replace block {x} {y} {z} container.{slot} with minecraft:enchanted_book[stored_enchantments={{{stored}}}]")
+
+
+@scenario("tidy-enchanted-books", "tidy", 150, "A golem delivers a Mending book to a [books] chest of jumbled enchanted books: they end up A to Z by enchantment (Curse of Binding under C), lowest level first.")
+def _(c):
+    c.chest("copper", 2, 10, block="waxed_copper_chest")
+    put_book(c, 2, 10, 0, mending=1)
+    c.chest("books", 12, 10)
+    for slot, book in enumerate([dict(unbreaking=3), dict(protection=4), dict(aqua_affinity=1),
+                                 dict(protection=1), dict(binding_curse=1)]):
+        put_book(c, 12, 10, slot, **book)
+    c.sign(12, 10, "[books]")
+    c.golem(4, 10)
+    want = ["aqua_affinity 1", "binding_curse 1", "mending 1", "protection 1", "protection 4", "unbreaking 3"]
+
+    def check():
+        got = book_slots(c, "books")
+        return [(got == want, f"books in order: {', '.join(got)}")]
+    return check

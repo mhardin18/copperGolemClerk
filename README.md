@@ -905,7 +905,11 @@ something in, and again as the item drops in. The new item then sits with its ki
 - Partial stacks of the same item are merged. Two stacks of 20 and 10 oak logs become one
   stack of 30. Items that differ, such as a renamed or enchanted copy, stay separate.
 - Like items are moved next to each other: by group, in the order the groups are listed in
-  `config.yml`, then by item. Stacks fill the chest from the first slot.
+  `groups.yml`, then by item. Stacks fill the chest from the first slot.
+- Enchanted books are put in order of their enchantment, A to Z by its English name, then by
+  level, lowest first: Aqua Affinity, Bane of Arthropods, Curse of Binding, Mending,
+  Protection I, Protection IV, Unbreaking III. A book with several enchantments goes by the
+  first of them A to Z. Other enchanted items, such as tools, keep their order.
 
 Copper chests are left alone. So is a chest a player has open, which is tidied after they
 close it.
@@ -1195,7 +1199,7 @@ line number, and the old settings are kept.
 | `overflow-before-empty` | `true` | When no matching chest has room, try `[Overflow]` chests before empty ones. `false` fills empty chests first. |
 | `item-frame-labels` | `true` | An item in a frame on a chest means "only this item goes here". |
 | `sign-labels` | `true` | Sign labels (`[logs]`, `[Overflow]`, `[No Golems]`, `[Only ...]`). |
-| `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use. Copper chests and chests a player has open are left alone. |
+| `tidy-chests` | `true` | Merge partial stacks and keep like items together in the chests golems use, with enchanted books A to Z by enchantment, then by level. Copper chests and chests a player has open are left alone. |
 | `destination-containers` | `[chest, trapped_chest]` | What golems put items into. Add `barrel` and/or `shulker_box` (every colour). Leave `chest` out to keep golems away from plain chests. Golems always take from copper chests. |
 | `groups` | 57 groups | In `groups.yml`, not `config.yml` (since 3.3.0). The item groups (see [How it works](#how-it-works)). Order matters for tidying: like items are ordered by the first group they're in. |
 | `group-aliases` | none (`{}`) | In `groups.yml`. Other names for groups on signs: `alias: group`, or `alias: [group, group]` for several. A group's own name wins. See [Other names for groups](#other-names-for-groups). |

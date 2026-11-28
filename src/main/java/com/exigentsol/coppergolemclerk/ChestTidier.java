@@ -6,6 +6,7 @@ import java.util.BitSet;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Bukkit;
@@ -13,14 +14,17 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 
 /**
  * Tidies a chest a golem is putting something in: partial stacks of the same item
  * are merged, and the stacks are reordered so like items sit next to each other
- * (by item group in config order, then by item). Copper chests are left alone, since
- * Returns decides their order.
+ * (by item group in config order, then by item). Enchanted books are put in order of
+ * their enchantment, A to Z by its English name, then by level, lowest first (see
+ * bookOrder). Copper chests are left alone, since Returns decides their order.
  *
  * Paper fires the Sort event twice per visit: when the golem opens the lid, and
  * 3 seconds later, just before the item drops in (vanilla closes the lid and drops
@@ -137,17 +141,75 @@ final class ChestTidier {
             }
         }
 
-        // Order: by first group (config order; no group last), then by item. The sort is
-        // stable, so different versions of one item (enchanted, renamed) keep their order.
+        // Order: by first group (config order; no group last), then by item, then enchanted
+        // books by enchantment. The sort is stable, so other versions of one item (enchanted
+        // tools, renamed items) keep their order.
         stacks.sort(Comparator
                 .comparingInt((ItemStack s) -> groupOrder(s.getType(), groups))
-                .thenComparingInt(s -> s.getType().ordinal()));
+                .thenComparingInt(s -> s.getType().ordinal())
+                .thenComparing(ChestTidier::bookOrder));
 
         ItemStack[] result = new ItemStack[contents.length];
         for (int i = 0; i < stacks.size(); i++) {
             result[i] = stacks.get(i);
         }
         return result;
+    }
+
+    /**
+     * Two enchanted books in chest order: by their enchantments, each book's taken A to Z by
+     * name, compared one at a time (name, then level, lowest first); a book whose enchantments
+     * all match the start of the other's comes first. Anything that isn't an enchanted book
+     * compares equal, so it keeps its place.
+     */
+    static int bookOrder(ItemStack a, ItemStack b) {
+        if (!(a.getItemMeta() instanceof EnchantmentStorageMeta ma)
+                || !(b.getItemMeta() instanceof EnchantmentStorageMeta mb)) {
+            return 0;
+        }
+        List<Map.Entry<Enchantment, Integer>> ea = sortedEnchants(ma);
+        List<Map.Entry<Enchantment, Integer>> eb = sortedEnchants(mb);
+        for (int i = 0; i < Math.min(ea.size(), eb.size()); i++) {
+            int byName = BY_NAME.compare(ea.get(i).getKey(), eb.get(i).getKey());
+            if (byName != 0) {
+                return byName;
+            }
+            int byLevel = Integer.compare(ea.get(i).getValue(), eb.get(i).getValue());
+            if (byLevel != 0) {
+                return byLevel;
+            }
+        }
+        return Integer.compare(ea.size(), eb.size());
+    }
+
+    private static final Comparator<Enchantment> BY_NAME = Comparator
+            .comparing((Enchantment e) -> sortName(e))
+            .thenComparing(e -> e.getKey().toString());
+
+    private static List<Map.Entry<Enchantment, Integer>> sortedEnchants(EnchantmentStorageMeta meta) {
+        List<Map.Entry<Enchantment, Integer>> out = new ArrayList<>(meta.getStoredEnchants().entrySet());
+        out.sort(Map.Entry.comparingByKey(BY_NAME));
+        return out;
+    }
+
+    /**
+     * The enchantment's English name in lower case, from its key: bane_of_arthropods gives
+     * "bane of arthropods". Vanilla's curses are keyed backwards (binding_curse is Curse of
+     * Binding), so they sort under C like their names, and sweeping is Sweeping Edge. With
+     * those, all 44 of 26.3's enchantments match their English names. Not the player's
+     * language: the server doesn't know it, and one chest has one order for everybody.
+     */
+    static String sortName(Enchantment enchantment) {
+        return sortName(enchantment.getKey().getKey());
+    }
+
+    static String sortName(String key) {
+        if (key.equals("sweeping")) {
+            key = "sweeping_edge";
+        } else if (key.endsWith("_curse")) {
+            key = "curse_of_" + key.substring(0, key.length() - "_curse".length());
+        }
+        return key.replace('_', ' ');
     }
 
     private static int groupOrder(Material type, ItemGroups groups) {
